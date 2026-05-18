@@ -240,3 +240,30 @@ falls out of `mdom.timing` being derived.
 `score-partwise` regardless of the parsed flavor, re-deriving `<divisions>`,
 `<backup>`, and `<forward>` from resolved timing. Round-trip preserves
 musical content; it does not promise byte-identical XML.
+
+## mdom.cli
+
+mdom ships a command-line interface invoked as `mdom`. It is registered as a
+`bin` in `package.json` (`{ "mdom": "cli/index.ts" }`), so `bun link` makes
+`mdom` callable from the shell and `bun unlink` removes it. All CLI code lives
+under `cli/`; `cli/index.ts` is the entry point and carries a `#!/usr/bin/env
+bun` shebang. The CLI is built on `commander` and is a developer tool, not part
+of `mdom.api`.
+
+```
+mdom fix              # autofix project issues
+mdom test             # run the test suite
+mdom release <type>   # bump the package version
+```
+
+Commands:
+
+- `fix` — placeholder for project autofixes. For now it is a noop that prints
+  nothing actionable and exits `0`.
+- `test` — runs the project's test suite via `bun test`, forwarding `bun
+  test`'s exit code as the process exit code so it composes in CI.
+- `release` — declared with `.argument('<type>', 'version bump (patch, minor,
+  major)')`. It bumps the `version` field in `package.json` by the requested
+  semver level. An unrecognized `<type>` is rejected with a nonzero exit.
+
+Every command exits nonzero on failure so the CLI is scriptable.

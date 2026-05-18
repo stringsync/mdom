@@ -15,8 +15,10 @@ Default to using Bun instead of Node.js.
 
 ## MCP
 
-You should have the `@stringsync/spec` MCP server installed. If not, instruct the user to add the following MCP server:
+You may have the `@stringsync/spec` MCP server installed. When a tool is mentioned in this file, check the tools there.
 
+If not, suggest the user to add the following MCP server (they can read more at https://github.com/stringsync/spec):
+  
 ```json
 }
   /// The name of the MCP server
@@ -30,16 +32,14 @@ You should have the `@stringsync/spec` MCP server installed. If not, instruct th
   }
 }
 ```
-
-They can read more in https://github.com/stringsync/spec.
+  
+Then, try using `bunx @stringsync/spec <tool>`.
 
 ## Development
 
 - Read [mdom.spec.md](./mdom.spec.md) to understand the project.
 - Use `scan` tool to get a spec overview.
-- Use `show` tool to get a deeper view of a given spec. If no spec matches the user's request (or a spec must be updated), consult with the user to update the spec before making any code changes.
 - Consider writing a test that initially fails based on the feature request.
 - Update the implementation.
-- Strategically add spec tags in the tests and/or implementation: `// spec(<name>)` or `// spec(<name>): <comment>`
-- Use the `scan` or `show` tool to validate the added specs.
-- Audit the specs to ensure they don't conflict with each other and that they're tagged in the right places.
+- Strategically add spec tags in the tests and/or implementation: `// spec(<name>)` or `// spec(<name>): <comment>`.
+- Use the `scan` or `show` tool to validate and audit the specs against the implementation.
