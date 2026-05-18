@@ -29,3 +29,21 @@ test("hello world", () => {
   expect(1).toBe(1);
 });
 ```
+
+## Development
+
+You should have the `@stringsync/spec` MCP server installed. Use the `scan` tool to immediately understand the project layout. After making changes, add spec tags where necessary and double check that the spec matches the implementation. If there's a disagreement, consult the user on how to resolve it.
+
+You can add a spec tag by adding a comment with the following format:
+
+```ts
+// spec([SPEC_NAME])
+```
+
+or with a comment:
+
+```ts
+// spec([SPEC_NAME]): Some comment.
+````
+
+Use the `scan` tool to validate that you've added a legitmate spec.
