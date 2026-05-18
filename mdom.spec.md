@@ -9,22 +9,15 @@ branch on input format.
 
 ## mdom.api
 
-The only entry point is `parse`. It never throws; it returns a discriminated
-result so callers must handle failure in typed contexts.
+The only entry point is `parse`. It returns a `Document`, or throws an
+`MdomError` (see `mdom.errors`) on failure.
 
 ```ts
-type ParseResult = { ok: true; document: Document } | { ok: false; error: MdomError };
-
-const result = mdom.parse('some MusicXML string');
-if (!result.ok) {
-  // result.error is an MdomError; result.document is not accessible here
-  return;
-}
-result.document; // Document
+const document = mdom.parse('some MusicXML string'); // Document, or throws MdomError
 ```
 
-There is intentionally no throwing `parse` and no separate `tryParse`. The
-result type is the contract.
+There is intentionally no result-object variant. Throwing is the contract;
+callers handle failure with `try`/`catch` and narrow by `error.kind`.
 
 ## mdom.errors
 
@@ -33,10 +26,11 @@ All errors extend `MdomError`. The taxonomy, narrowing by `error.kind`:
 - `XmlParseError` — input is not well-formed XML.
 - `InvalidMusicXmlError` — well-formed XML but not valid MusicXML.
 - `UnsupportedFeatureError` — valid MusicXML mdom does not yet model.
-- `TodoError` — unimplemented code path (`errors.todo()`), interim only.
+- `TodoError` — unimplemented code path, interim only.
 
-`parse` only ever returns the first three. `TodoError` surfaces from
-unfinished internals during development.
+Errors are constructed directly (`new XmlParseError(message)`). `parse` only
+ever throws the first three; `TodoError` surfaces from unfinished internals
+during development.
 
 ## mdom.hierarchy
 

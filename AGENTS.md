@@ -43,3 +43,5 @@ Then, try using `bunx @stringsync/spec <tool>`.
 - Update the implementation.
 - Strategically add spec tags in the tests and/or implementation: `// spec(<name>)` or `// spec(<name>): <comment>`.
 - Use the `scan` or `show` tool to validate and audit the specs against the implementation.
+- Run `mdom test` to test the project.
+- Run `mdom fix` to typecheck, format, and lint the project.
