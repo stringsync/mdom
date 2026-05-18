@@ -1,4 +1,4 @@
-import type { Mod } from "./mod";
+import type { Mod } from './mod';
 
 export class Entry {
   constructor(private readonly mods: Mod[]) {}

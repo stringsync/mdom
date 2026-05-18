@@ -13,11 +13,9 @@ The only entry point is `parse`. It never throws; it returns a discriminated
 result so callers must handle failure in typed contexts.
 
 ```ts
-type ParseResult =
-  | { ok: true; document: Document }
-  | { ok: false; error: MdomError };
+type ParseResult = { ok: true; document: Document } | { ok: false; error: MdomError };
 
-const result = mdom.parse("some MusicXML string");
+const result = mdom.parse('some MusicXML string');
 if (!result.ok) {
   // result.error is an MdomError; result.document is not accessible here
   return;
@@ -62,10 +60,10 @@ Navigation is graph-first. Every node carries back-references, so traversal
 is bidirectional and possible from any node:
 
 ```ts
-measure.parent();   // Document
-note.parent();       // up the chain: Voice → Stave → Part → Measure → Document
-node.document();     // root, reachable from anywhere
-node.key();          // this node's address (see below)
+measure.parent(); // Document
+note.parent(); // up the chain: Voice → Stave → Part → Measure → Document
+node.document(); // root, reachable from anywhere
+node.key(); // this node's address (see below)
 ```
 
 ## mdom.keys
@@ -75,11 +73,11 @@ so a deeper key is a superset of its ancestors:
 
 ```ts
 type MeasureKey = { measureIndex: number };
-type PartKey    = MeasureKey & { partIndex: number };
-type StaveKey   = PartKey    & { staveIndex: number };
-type VoiceKey   = StaveKey   & { voiceIndex: number };
-type EntryKey   = VoiceKey   & { entryIndex: number };
-type ModKey     = EntryKey   & { modIndex: number };
+type PartKey = MeasureKey & { partIndex: number };
+type StaveKey = PartKey & { staveIndex: number };
+type VoiceKey = StaveKey & { voiceIndex: number };
+type EntryKey = VoiceKey & { entryIndex: number };
+type ModKey = EntryKey & { modIndex: number };
 ```
 
 Resolution goes through a single overloaded `at` on `Document`, not a matrix
@@ -87,8 +85,8 @@ of per-level getters:
 
 ```ts
 doc.at(measureKey); // Measure | undefined
-doc.at(modKey);     // Mod | undefined
-doc.measures();     // Measure[]   (collection accessors per level)
+doc.at(modKey); // Mod | undefined
+doc.measures(); // Measure[]   (collection accessors per level)
 ```
 
 Keys survive serialization, making them suitable for cursors, selections,
@@ -102,13 +100,15 @@ the domain is structured, so types beat stringly-typed selectors.
 Each level exposes a collection; flatteners descend the hierarchy:
 
 ```ts
-doc.measures()
-   .slice(4, 8)
-   .parts().named("Violin I")
-   .voices()
-   .notes()                       // descends to notes, drops rests/chords-as-units
-   .where((n) => n.pitch.midi >= 60)
-   .at(beat(2.5));                // entries sounding at that musical time
+doc
+  .measures()
+  .slice(4, 8)
+  .parts()
+  .named('Violin I')
+  .voices()
+  .notes() // descends to notes, drops rests/chords-as-units
+  .where((n) => n.pitch.midi >= 60)
+  .at(beat(2.5)); // entries sounding at that musical time
 ```
 
 `NodeList<T>` provides `map`, `filter`, `where`, `first`, `slice`, `at(time)`,
@@ -119,7 +119,7 @@ Convenience shortcuts for the common cases:
 
 ```ts
 doc.notesAt({ measure: 3, beat: 1 }); // NodeList<Note>
-doc.mods.ofType(Slur);                 // every Slur in the document
+doc.mods.ofType(Slur); // every Slur in the document
 ```
 
 ## mdom.timing
@@ -131,10 +131,10 @@ MusicXML expresses duration in per-context `<divisions>` ticks with
 exposes timing in quarter notes, independent of divisions:
 
 ```ts
-entry.start;     // quarter notes from the start of its measure
-entry.absStart;  // quarter notes from the start of the score
-entry.duration;  // quarter notes
-entry.tuplet;    // { actual: number; normal: number } | undefined
+entry.start; // quarter notes from the start of its measure
+entry.absStart; // quarter notes from the start of the score
+entry.duration; // quarter notes
+entry.tuplet; // { actual: number; normal: number } | undefined
 ```
 
 Because mdom is mutable (`mdom.mutation`), timing is **derived on read**, not
@@ -146,10 +146,10 @@ this is the round-trip contract.
 Measure-level musical context lives on the relevant node:
 
 ```ts
-measure.time();  // { beats: number; beatType: number }
-measure.key();   // { fifths: number; mode: "major" | "minor" | ... }
+measure.time(); // { beats: number; beatType: number }
+measure.key(); // { fifths: number; mode: "major" | "minor" | ... }
 measure.tempo(); // quarter notes per minute | undefined
-stave.clef();    // { sign: "G" | "F" | "C"; line: number }
+stave.clef(); // { sign: "G" | "F" | "C"; line: number }
 ```
 
 ## mdom.entries
@@ -157,10 +157,10 @@ stave.clef();    // { sign: "G" | "F" | "C"; line: number }
 An `Entry` is the atomic timed unit within a voice. Its `kind` discriminates:
 
 ```ts
-entry.kind;     // "note" | "rest" | "chord"
-entry.notes;    // Note[]: 1 for a note, N for a chord, 0 for a rest
+entry.kind; // "note" | "rest" | "chord"
+entry.notes; // Note[]: 1 for a note, N for a chord, 0 for a rest
 entry.duration; // quarter notes (see mdom.timing)
-entry.mods;     // ModList (see mdom.mods)
+entry.mods; // ModList (see mdom.mods)
 ```
 
 A chord is **one** `Entry` with multiple `Note`s — MusicXML's per-note
@@ -180,8 +180,8 @@ ergonomic querying.
 
 ```ts
 abstract class Mod {
-  kind: string;          // discriminant, also reflected by the subclass
-  entries(): Entry[];     // host entries (see spanning below)
+  kind: string; // discriminant, also reflected by the subclass
+  entries(): Entry[]; // host entries (see spanning below)
 }
 
 class Slur extends Mod {}
@@ -198,9 +198,9 @@ class Lyric extends Mod {}
 callers never cast:
 
 ```ts
-entry.mods.ofType(Slur);  // Slur[]
-entry.mods.first(Tie);    // Tie | undefined
-entry.mods.has(Beam);     // boolean
+entry.mods.ofType(Slur); // Slur[]
+entry.mods.first(Tie); // Tie | undefined
+entry.mods.has(Beam); // boolean
 ```
 
 `instanceof` still works for ad-hoc checks; `ofType(Ctor)` is the path for
@@ -216,7 +216,7 @@ entry (`entry.mods`) and from the whole document (`doc.mods.ofType(Slur)`).
 
 ## mdom.mutation
 
-mdom is mutable; making MusicXML easy to render *and* edit is the point.
+mdom is mutable; making MusicXML easy to render _and_ edit is the point.
 Nodes carry parent back-references, so structural edits keep the graph
 consistent. Derived timing (`mdom.timing`) recomputes on read after any edit.
 
@@ -226,7 +226,7 @@ Representative surface (to be detailed as it's built):
 voice.insert(index, entry);
 voice.remove(entry);
 entry.setDuration(quarterNotes);
-note.setPitch({ step: "D", octave: 4, alter: 1 });
+note.setPitch({ step: 'D', octave: 4, alter: 1 });
 entry.mods.add(new Slur(/* ... */));
 entry.mods.remove(slur);
 ```
@@ -251,19 +251,23 @@ bun` shebang. The CLI is built on `commander` and is a developer tool, not part
 of `mdom.api`.
 
 ```
-mdom fix              # autofix project issues
+mdom fix [--check]    # format, lint, and typecheck
 mdom test             # run the test suite
 mdom release <type>   # bump the package version
 ```
 
 Commands:
 
-- `fix` — placeholder for project autofixes. For now it is a noop that prints
-  nothing actionable and exits `0`.
+- `fix` — formats, lints, and typechecks the project, reporting each step's
+  pass/fail and throwing if any step fails. `--check` checks without writing
+  fixes (CI mode); without it, formatter and linter apply fixes in place.
 - `test` — runs the project's test suite via `bun test`, forwarding `bun
-  test`'s exit code as the process exit code so it composes in CI.
+test`'s exit code as the process exit code so it composes in CI.
 - `release` — declared with `.argument('<type>', 'version bump (patch, minor,
-  major)')`. It bumps the `version` field in `package.json` by the requested
+major)')`. It bumps the `version` field in `package.json` by the requested
   semver level. An unrecognized `<type>` is rejected with a nonzero exit.
 
-Every command exits nonzero on failure so the CLI is scriptable.
+Command actions are composed from shared wrappers in `cli/util.ts`:
+`withErrorHandling` turns a thrown error into a red message and a nonzero
+exit; `withTiming` prints elapsed time on completion. Every command exits
+nonzero on failure so the CLI is scriptable.

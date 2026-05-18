@@ -19,7 +19,7 @@ bun unlink
 Once linked:
 
 ```sh
-mdom fix              # autofix project issues
+mdom fix [--check]    # format, lint, and typecheck
 mdom test             # run the test suite
 mdom release <type>   # bump the package version (patch, minor, major)
 ```

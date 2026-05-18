@@ -1,4 +1,4 @@
-import type { Stave } from "./stave";
+import type { Stave } from './stave';
 
 export class Part {
   constructor(private readonly staves: Stave[]) {}

@@ -1,4 +1,4 @@
-import type { Voice } from "./voice";
+import type { Voice } from './voice';
 
 export class Stave {
   constructor(private readonly voices: Voice[]) {}

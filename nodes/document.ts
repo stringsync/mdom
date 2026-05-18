@@ -1,12 +1,5 @@
-import type {
-  EntryKey,
-  MeasureKey,
-  ModKey,
-  PartKey,
-  StaveKey,
-  VoiceKey,
-} from "./keys";
-import type { Measure } from "./measure";
+import type { EntryKey, MeasureKey, ModKey, PartKey, StaveKey, VoiceKey } from './keys';
+import type { Measure } from './measure';
 
 export class Document {
   constructor(private readonly measures: Measure[]) {}

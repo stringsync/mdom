@@ -2,7 +2,7 @@ class MdomError extends Error {}
 
 class TodoError extends MdomError {
   constructor() {
-    super("TODO");
+    super('TODO');
   }
 }
 

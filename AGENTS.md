@@ -18,7 +18,7 @@ Default to using Bun instead of Node.js.
 You may have the `@stringsync/spec` MCP server installed. When a tool is mentioned in this file, check the tools there.
 
 If not, suggest the user to add the following MCP server (they can read more at https://github.com/stringsync/spec):
-  
+
 ```json
 }
   /// The name of the MCP server
@@ -32,7 +32,7 @@ If not, suggest the user to add the following MCP server (they can read more at 
   }
 }
 ```
-  
+
 Then, try using `bunx @stringsync/spec <tool>`.
 
 ## Development
