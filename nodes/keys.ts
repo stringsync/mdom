@@ -1,5 +1,3 @@
-// spec(nodes.hiearchy): Document query keys are progressive.
-
 export type MeasureKey = {
   measureIndex: number;
 };
