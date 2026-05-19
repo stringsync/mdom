@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { mdom } from '../mdom';
 import { Document } from '../nodes/document';
-import { type Score, score } from './musicxml';
+import { durations as d, type Score, score } from './musicxml';
 
 // spec(testkit.musicxml): the builder emits valid MusicXML for mdom.parse —
 // every fixture below round-trips through the parse contract (well-formed
@@ -48,8 +48,8 @@ describe('testkit.musicxml', () => {
     const xml = score((s) => {
       s.part('P', (p) => {
         p.measure((m) => {
-          m.note('C4', 0.5); // eighth -> needs /2
-          m.note('C4', 1 / 3); // triplet eighth -> needs /3
+          m.note('C4', d.eighth); // needs /2
+          m.note('C4', d.triplet.eighth); // needs /3
         });
       });
     });
@@ -63,7 +63,7 @@ describe('testkit.musicxml', () => {
   test('divisions forces a specific value', () => {
     const xml = score((s) => {
       s.divisions(4).part('P', (p) => {
-        p.measure((m) => m.note('C4', 1));
+        p.measure((m) => m.note('C4', d.quarter));
       });
     });
 
@@ -77,8 +77,8 @@ describe('testkit.musicxml', () => {
     const xml = score((s) => {
       s.part('P', (p) => {
         p.measure((m) => {
-          m.chord(['C4', 'E4', 'G4'], 2);
-          m.rest(2);
+          m.chord(['C4', 'E4', 'G4'], d.half);
+          m.rest(d.half);
         });
       });
     });
@@ -94,9 +94,9 @@ describe('testkit.musicxml', () => {
     const xml = score((s) => {
       s.part('P', (p) => {
         p.measure((m) => {
-          m.note('C4', 0.5, (n) => n.slur('start').beam('begin').staccato());
-          m.note('D4', 0.5, (n) => n.slur('stop').beam('end').tie('start').lyric('la'));
-          m.note('E4', 1 / 3, (n) => n.tuplet(3, 2));
+          m.note('C4', d.eighth, (n) => n.slur('start').beam('begin').staccato());
+          m.note('D4', d.eighth, (n) => n.slur('stop').beam('end').tie('start').lyric('la'));
+          m.note('E4', d.triplet.eighth, (n) => n.tuplet(3, 2));
         });
       });
     });
@@ -124,9 +124,9 @@ describe('testkit.musicxml', () => {
             ],
           },
           (m) => {
-            m.note('C5', 4, (n) => n.voice(1).staff(1));
-            m.backup(4);
-            m.note('C3', 4, (n) => n.voice(2).staff(2));
+            m.note('C5', d.whole, (n) => n.voice(1).staff(1));
+            m.backup(d.whole);
+            m.note('C3', d.whole, (n) => n.voice(2).staff(2));
           }
         );
       });
@@ -144,7 +144,7 @@ describe('testkit.musicxml', () => {
   test('measure attributes render key, time, clef, and tempo', () => {
     const xml = score((s) => {
       s.part('P', (p) => {
-        p.measure({ time: [3, 4], key: 2, clef: ['G', 2], tempo: 120 }, (m) => m.note('C4', 3));
+        p.measure({ time: [3, 4], key: 2, clef: ['G', 2], tempo: 120 }, (m) => m.note('C4', d.dotted.half));
       });
     });
 
@@ -184,7 +184,7 @@ describe('testkit.musicxml', () => {
       s.part('P', (p) => {
         p.measure((m) => {
           m.raw('<barline location="right"><bar-style>light-heavy</bar-style></barline>');
-          m.note('C4', 1, (n) => n.raw('<stem>up</stem>'));
+          m.note('C4', d.quarter, (n) => n.raw('<stem>up</stem>'));
         });
       });
     });
@@ -198,7 +198,7 @@ describe('testkit.musicxml', () => {
   test('text is XML-escaped', () => {
     const xml = score((s) => {
       s.part('Voice & "Lead"', (p) => {
-        p.measure((m) => m.note('C4', 1, (n) => n.lyric('rock & roll')));
+        p.measure((m) => m.note('C4', d.quarter, (n) => n.lyric('rock & roll')));
       });
     });
 

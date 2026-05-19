@@ -33,6 +33,29 @@ function lcm(a: number, b: number): number {
   return (a / gcd(a, b)) * b;
 }
 
+// spec(testkit.durations): durations are quarter notes; named so call sites
+// read as music, not arithmetic. dotted/triplet are parallel namespaces:
+// durations.dotted.half, durations.triplet.eighth.
+type NoteValues = Record<'whole' | 'half' | 'quarter' | 'eighth' | 'sixteenth' | '32nd', number>;
+
+const base: NoteValues = {
+  whole: 4,
+  half: 2,
+  quarter: 1,
+  eighth: 0.5,
+  sixteenth: 0.25,
+  '32nd': 0.125,
+};
+
+const scale = (f: (d: number) => number): NoteValues =>
+  Object.fromEntries(Object.entries(base).map(([k, v]) => [k, f(v)])) as NoteValues;
+
+export const durations = {
+  ...base,
+  dotted: scale((d) => d * 1.5),
+  triplet: scale((d) => (d * 2) / 3),
+};
+
 // spec(testkit.durations): durations are quarter notes; the builder derives
 // the minimal integer <divisions> so every duration lands on a tick.
 function denominator(quarters: number): number {
