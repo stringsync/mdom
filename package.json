@@ -1,5 +1,5 @@
 {
-  "name": "mdom",
+  "name": "@stringsync/mdom",
   "version": "0.0.0",
   "module": "index.ts",
   "type": "module",
