@@ -149,7 +149,16 @@ automatically; there is no separate timing-sync step. Serialization
 re-derives `<divisions>`, `<backup>`, and `<forward>` from resolved timing —
 this is the round-trip contract.
 
-Measure-level musical context lives on the relevant node:
+Resolved timing is in quarter notes only; the measure-level musical context
+that gives those quarter notes meaning (time signature, tempo, etc.) lives on
+the relevant node — see `mdom.context`.
+
+## mdom.context
+
+Musical context — the meter, key, tempo, and clef a passage is read in —
+lives on the node whose span it applies to, not on every `Entry`. It is the
+counterpart to `mdom.timing`: timing says *when* in quarter notes, context
+says *how those quarter notes are read*.
 
 ```ts
 measure.time(); // { beats: number; beatType: number }
@@ -157,6 +166,11 @@ measure.keySignature(); // { fifths: number; mode: "major" | "minor" | ... }
 measure.tempo(); // quarter notes per minute | undefined
 stave.clef(); // { sign: "G" | "F" | "C"; line: number }
 ```
+
+Context is resolved, not raw: a value set in an earlier measure stays in
+effect until changed, so each accessor returns the value in force at that
+node rather than only what that measure's MusicXML restated. `tempo()`
+returns `undefined` when no tempo has been established.
 
 ## mdom.entries
 
