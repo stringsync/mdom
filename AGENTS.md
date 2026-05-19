@@ -2,7 +2,7 @@
 
 Default to using Bun instead of Node.js.
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
+- Use `bun <file>` instead of `node <file>` or `ts-node <file>` (but use `mdom` to run the CLI)
 - Use `bun test` instead of `jest` or `vitest`
 - Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
 - Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
@@ -36,6 +36,8 @@ If not, suggest the user to add the following MCP server (they can read more at 
 Then, try using `bunx @stringsync/spec <tool>`.
 
 ## Development
+
+When the user mentions a specific spec (which has the form `<module>.<name>`), use the `show` tool to view it.
 
 - Read [mdom.spec.md](./mdom.spec.md) to understand the project.
 - Use `scan` tool to get a spec overview.

@@ -60,6 +60,11 @@ node.document(); // root, reachable from anywhere
 node.key(); // this node's address (see below)
 ```
 
+> **TODO:** `node.key()` here (the node's address) collides with
+> `measure.key()` in `mdom.timing` (the musical key signature,
+> `{ fifths, mode }`). One must be renamed — e.g. `keySignature()` for the
+> musical one — before `mdom.timing` is implemented.
+
 ## mdom.keys
 
 Keys are stable, serializable addresses for navigation and querying. Each key extends the one above it,

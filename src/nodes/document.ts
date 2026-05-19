@@ -1,8 +1,17 @@
 import type { EntryKey, MeasureKey, ModKey, PartKey, StaveKey, VoiceKey } from './keys';
 import type { Measure } from './measure';
 
+// spec(mdom.navigation): the Document is the graph root; it has no parent and
+// document() returns itself so the root is reachable from anywhere.
 export class Document {
-  constructor(private readonly measures: Measure[]) {}
+  constructor(private readonly measures: Measure[]) {
+    // spec(mdom.navigation): wire each child's back-reference to this node.
+    this.measures.forEach((measure, index) => measure.attach(this, index));
+  }
+
+  document(): Document {
+    return this;
+  }
 
   getMeasures() {
     return this.measures;
