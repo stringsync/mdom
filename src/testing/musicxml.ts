@@ -1,4 +1,4 @@
-// spec(testkit.musicxml): a lightweight MusicXML builder for fixtures —
+// spec(testing.musicxml): a lightweight MusicXML builder for fixtures —
 // describe the music a test cares about, emit valid MusicXML for mdom.parse.
 // Deliberately not a complete MusicXML model; raw() is the escape hatch.
 
@@ -8,7 +8,7 @@ export type PitchSpec = string | { step: Step; octave: number; alter?: number };
 
 type Resolved = { step: Step; octave: number; alter: number };
 
-// spec(testkit.pitch): a pitch is scientific-notation ('C#4', 'Bb3',
+// spec(testing.pitch): a pitch is scientific-notation ('C#4', 'Bb3',
 // 'F##5') or { step, octave, alter }.
 function resolvePitch(spec: PitchSpec): Resolved {
   if (typeof spec !== 'string') {
@@ -16,7 +16,7 @@ function resolvePitch(spec: PitchSpec): Resolved {
   }
   const match = /^([A-Ga-g])([#xb]*)(-?\d+)$/.exec(spec.trim());
   if (!match) {
-    throw new Error(`testkit: invalid pitch '${spec}'`);
+    throw new Error(`testing: invalid pitch '${spec}'`);
   }
   let alter = 0;
   for (const ch of match[2]!) {
@@ -33,7 +33,7 @@ function lcm(a: number, b: number): number {
   return (a / gcd(a, b)) * b;
 }
 
-// spec(testkit.durations): durations are quarter notes; named so call sites
+// spec(testing.durations): durations are quarter notes; named so call sites
 // read as music, not arithmetic. dotted/triplet are parallel namespaces:
 // durations.dotted.half, durations.triplet.eighth.
 type NoteValues = Record<'whole' | 'half' | 'quarter' | 'eighth' | 'sixteenth' | '32nd', number>;
@@ -56,7 +56,7 @@ export const durations = {
   triplet: scale((d) => (d * 2) / 3),
 };
 
-// spec(testkit.durations): durations are quarter notes; the builder derives
+// spec(testing.durations): durations are quarter notes; the builder derives
 // the minimal integer <divisions> so every duration lands on a tick.
 function denominator(quarters: number): number {
   for (let q = 1; q <= 10080; q++) {
@@ -65,7 +65,7 @@ function denominator(quarters: number): number {
       return q / gcd(p === 0 ? q : p, q);
     }
   }
-  throw new Error(`testkit: cannot express duration ${quarters} as a tick`);
+  throw new Error(`testing: cannot express duration ${quarters} as a tick`);
 }
 
 function esc(text: string): string {
@@ -78,7 +78,7 @@ function escAttr(text: string): string {
 
 type Child = { duration: number; render: (divisions: number) => string };
 
-// spec(testkit.mods): the optional last argument to note/rest/chord is a
+// spec(testing.mods): the optional last argument to note/rest/chord is a
 // callback over a chainable mod configurator covering the mdom.mods surface,
 // plus voice/staff placement and type/dot overrides.
 export class NoteMods {
@@ -125,7 +125,7 @@ export class NoteMods {
     return this;
   }
 
-  // spec(testkit.mods): spanning mods emit their MusicXML start/stop
+  // spec(testing.mods): spanning mods emit their MusicXML start/stop
   // endpoints on the hosting notes; reconstructing the span is mdom's job.
   tie(type: 'start' | 'stop'): this {
     this.ties.push(`<tie type="${type}"/>`);
@@ -196,7 +196,7 @@ export class NoteMods {
     return this;
   }
 
-  // spec(testkit.escapes): raw() exists at note scope to inject verbatim XML
+  // spec(testing.escapes): raw() exists at note scope to inject verbatim XML
   // so a test never has to extend the builder for a one-off case.
   raw(xml: string): this {
     this.extra.push(xml);
@@ -312,7 +312,7 @@ export class Measure {
     return this;
   }
 
-  // spec(testkit.escapes): raw() exists at measure scope to inject verbatim
+  // spec(testing.escapes): raw() exists at measure scope to inject verbatim
   // XML so a test never has to extend the builder for a one-off case.
   raw(xml: string): this {
     this.children.push({ duration: 0, render: () => xml });
@@ -474,11 +474,11 @@ function buildScore(flavor: 'partwise' | 'timewise', build: (s: Score) => void):
   return s.toMusicXML();
 }
 
-// spec(testkit.musicxml): score is the only entry point — it takes a builder
+// spec(testing.musicxml): score is the only entry point — it takes a builder
 // callback and returns a MusicXML string.
 export const score = {
   partwise: (build: (s: Score) => void): string => buildScore('partwise', build),
-  // spec(testkit.escapes): score.timewise emits score-timewise instead of the
+  // spec(testing.escapes): score.timewise emits score-timewise instead of the
   // default score-partwise, so both mdom.parse normalization paths are
   // testable from one description.
   timewise: (build: (s: Score) => void): string => buildScore('timewise', build),

@@ -157,8 +157,8 @@ the relevant node — see `mdom.context`.
 
 Musical context — the meter, key, tempo, and clef a passage is read in —
 lives on the node whose span it applies to, not on every `Entry`. It is the
-counterpart to `mdom.timing`: timing says *when* in quarter notes, context
-says *how those quarter notes are read*.
+counterpart to `mdom.timing`: timing says _when_ in quarter notes, context
+says _how those quarter notes are read_.
 
 ```ts
 measure.time(); // { beats: number; beatType: number }

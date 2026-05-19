@@ -1,10 +1,10 @@
-# testkit
+# testing
 
 Test-only infrastructure for exercising `mdom`. Nothing here ships in the
 public API (`index.ts` does not re-export it); it exists so tests can
 describe music instead of hand-writing MusicXML strings.
 
-## testkit.musicxml
+## testing.musicxml
 
 A lightweight MusicXML builder. The deliberate non-goal is being a complete
 MusicXML model (that is what `@stringsync/musicxml` is for, and it is too
@@ -31,7 +31,7 @@ Nesting is expressed with closures, not chained `.end()` calls — scope is
 unambiguous and arbitrary depth (part → measure → note → mods) reads the
 way the hierarchy nests.
 
-## testkit.durations
+## testing.durations
 
 Tests think in quarter notes (matching `mdom.timing`), never in
 `<divisions>` ticks. A duration argument is quarter notes (default `1`); the
@@ -44,7 +44,7 @@ integer `<divisions>` for the whole part so every duration lands on a tick,
 and emits `<backup>`/`<forward>` for multi-voice writing. `score`-level
 `divisions(n)` forces a specific value when a test asserts on it.
 
-## testkit.pitch
+## testing.pitch
 
 A pitch is a scientific-notation string (`'C4'`, `'C#4'`, `'Bb3'`,
 `'F##5'`) or `{ step, octave, alter }`. A chord is one call with several
@@ -56,7 +56,7 @@ m.chord(['C4', 'E4', 'G4'], 2);
 m.rest(1);
 ```
 
-## testkit.mods
+## testing.mods
 
 The optional last argument to `note`/`rest`/`chord` is a callback over a
 chainable mod configurator covering the `mdom.mods` surface — ties, slurs,
@@ -65,7 +65,7 @@ beams, tuplets, articulations, ornaments, dynamics, lyrics — plus
 (`slur`, `tie`, `beam`) emit their MusicXML start/stop endpoints on the
 hosting notes; reconstructing the span is `mdom`'s job, not the builder's.
 
-## testkit.escapes
+## testing.escapes
 
 The builder models only what fixtures commonly need. For anything else —
 exotic elements, deliberately invalid or unsupported MusicXML, both score
