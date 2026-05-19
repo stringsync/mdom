@@ -37,6 +37,22 @@ describe('keys', () => {
     expect(document.at(mod.key())).toBe(mod);
   });
 
+  // spec(mdom.keys): `at` is also relative from any node — the key drops the
+  // indices the node already pins, so `node.at(rel)` is `document.at(absolute)`.
+  test('at resolves a descendant relative to any node', () => {
+    const { measure, part, stave, voice, entry, mod } = tree();
+
+    // From a Measure: only the indices below it.
+    expect(measure.at({ partIndex: 1, staveIndex: 1, voiceIndex: 1, entryIndex: 1, modIndex: 1 })).toBe(mod);
+    expect(measure.at({ partIndex: 1, staveIndex: 1, voiceIndex: 1, entryIndex: 1 })).toBe(entry);
+    // From deeper nodes, the relative key shrinks accordingly.
+    expect(part.at({ staveIndex: 1, voiceIndex: 1 })).toBe(voice);
+    expect(stave.at({ voiceIndex: 1, entryIndex: 1 })).toBe(entry);
+    expect(voice.at({ entryIndex: 1, modIndex: 1 })).toBe(mod);
+    // Out-of-range relative key resolves to undefined, like absolute `at`.
+    expect(entry.at({ modIndex: 99 })).toBeUndefined();
+  });
+
   // spec(mdom.keys): a deeper key is a superset of its ancestors, so the
   // deepest index present decides the level — a ModKey resolves to a Mod even
   // though it structurally satisfies every ancestor key.

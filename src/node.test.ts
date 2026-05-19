@@ -6,9 +6,9 @@ import { Node } from './node';
 // A minimal concrete Node that exercises the abstract base class in isolation,
 // independent of the real Measure/Part/Stave/Voice/Entry/Mod hierarchy. The
 // key includes the sibling index so the protected index() is observable.
-class TestNode<P> extends Node<P, { index: number }> {
-  key(): { index: number } {
-    return { index: this.index() };
+class TestNode<P> extends Node<P, { measureIndex: number }> {
+  key(): { measureIndex: number } {
+    return { measureIndex: this.index() };
   }
 }
 
@@ -31,13 +31,13 @@ describe('Node', () => {
 
     child.attach(parent, 3);
 
-    expect(child.key()).toEqual({ index: 3 });
+    expect(child.key()).toEqual({ measureIndex: 3 });
   });
 
   test('sibling index defaults to 0 before attach', () => {
     const orphan = new TestNode<Document>();
 
-    expect(orphan.key()).toEqual({ index: 0 });
+    expect(orphan.key()).toEqual({ measureIndex: 0 });
   });
 
   // spec(mdom.navigation): attach() is the single wiring point, so re-attaching
@@ -51,7 +51,7 @@ describe('Node', () => {
     child.attach(secondParent, 4);
 
     expect(child.parent()).toBe(secondParent);
-    expect(child.key()).toEqual({ index: 4 });
+    expect(child.key()).toEqual({ measureIndex: 4 });
   });
 
   // spec(mdom.navigation): the document root is reachable from anywhere.

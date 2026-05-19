@@ -37,8 +37,7 @@ describe('normalize', () => {
         expect(doc.measures()).toHaveLength(2);
         // A Measure is a timewise slice: each measure holds part A then part B.
         const firstNote = (measureIndex: number, partIndex: number) =>
-          doc.measures()[measureIndex]!.parts()[partIndex]!.staves()[0]!.voices()[0]!.entries()[0]!.notes[0]!.pitch
-            .name;
+          doc.at({ measureIndex, partIndex, staveIndex: 0, voiceIndex: 0, entryIndex: 0 })!.notes[0]!.pitch.name;
         expect(firstNote(0, 0)).toBe('C4');
         expect(firstNote(0, 1)).toBe('E4');
         expect(firstNote(1, 0)).toBe('D4');
@@ -64,7 +63,7 @@ describe('normalize', () => {
       expect(doc.measures()).toHaveLength(2);
       const second = doc.measures()[1]!;
       expect(second.parts()).toHaveLength(2);
-      expect(second.parts()[0]!.staves()[0]!.voices()[0]!.entries()[0]!.notes[0]!.pitch.name).toBe('D4');
+      expect(second.at({ partIndex: 0, staveIndex: 0, voiceIndex: 0, entryIndex: 0 })!.notes[0]!.pitch.name).toBe('D4');
       // "Short" has no notes in measure 2 — still a Part, just empty.
       expect(second.parts()[1]!.staves()).toHaveLength(0);
     });
@@ -97,17 +96,17 @@ describe('normalize', () => {
         )
       );
 
-      const staves = doc.measures()[0]!.parts()[0]!.staves();
+      const staves = doc.at({ measureIndex: 0, partIndex: 0 })!.staves();
       expect(staves).toHaveLength(2);
       // staff 1 sorts first even though its note appeared second.
-      expect(staves[0]!.voices()[0]!.entries()[0]!.notes[0]!.pitch.name).toBe('C5');
-      expect(staves[1]!.voices()[0]!.entries()[0]!.notes[0]!.pitch.name).toBe('C2');
+      expect(staves[0]!.at({ voiceIndex: 0, entryIndex: 0 })!.notes[0]!.pitch.name).toBe('C5');
+      expect(staves[1]!.at({ voiceIndex: 0, entryIndex: 0 })!.notes[0]!.pitch.name).toBe('C2');
     });
 
     test('a note without <staff> defaults to staff 1', () => {
       const doc = normalize(element.partwise((s) => s.part('M', (p) => p.measure((m) => m.note('C4')))));
 
-      expect(doc.measures()[0]!.parts()[0]!.staves()).toHaveLength(1);
+      expect(doc.at({ measureIndex: 0, partIndex: 0 })!.staves()).toHaveLength(1);
     });
 
     test('voices are ordered by first appearance, not by voice number', () => {
@@ -123,7 +122,7 @@ describe('normalize', () => {
         )
       );
 
-      const voices = doc.measures()[0]!.parts()[0]!.staves()[0]!.voices();
+      const voices = doc.at({ measureIndex: 0, partIndex: 0, staveIndex: 0 })!.voices();
       expect(voices).toHaveLength(2);
       // voice "3" appeared first, so it is the first Voice.
       expect(voices[0]!.entries().map((e) => e.notes[0]!.pitch.name)).toEqual(['C4', 'D4']);
@@ -142,7 +141,7 @@ describe('normalize', () => {
         )
       );
 
-      const voices = doc.measures()[0]!.parts()[0]!.staves()[0]!.voices();
+      const voices = doc.at({ measureIndex: 0, partIndex: 0, staveIndex: 0 })!.voices();
       expect(voices).toHaveLength(1);
       expect(voices[0]!.entries()).toHaveLength(2);
     });
@@ -154,7 +153,7 @@ describe('normalize', () => {
     test('a 3-note chord becomes one Entry of kind "chord" with three notes', () => {
       const doc = normalize(element.partwise((s) => s.part('M', (p) => p.measure((m) => m.chord(['C4', 'E4', 'G4'])))));
 
-      const entries = doc.measures()[0]!.parts()[0]!.staves()[0]!.voices()[0]!.entries();
+      const entries = doc.at({ measureIndex: 0, partIndex: 0, staveIndex: 0, voiceIndex: 0 })!.entries();
       expect(entries).toHaveLength(1);
       expect(entries[0]!.kind).toBe('chord');
       expect(entries[0]!.notes.map((n) => n.pitch.name)).toEqual(['C4', 'E4', 'G4']);
@@ -168,7 +167,7 @@ describe('normalize', () => {
         element.partwise((s) => s.part('M', (p) => p.measure((m) => m.note('C4', 1, (n) => n.raw('<chord/>')))))
       );
 
-      const entries = doc.measures()[0]!.parts()[0]!.staves()[0]!.voices()[0]!.entries();
+      const entries = doc.at({ measureIndex: 0, partIndex: 0, staveIndex: 0, voiceIndex: 0 })!.entries();
       expect(entries).toHaveLength(1);
       expect(entries[0]!.kind).toBe('note');
       expect(entries[0]!.notes.map((n) => n.pitch.name)).toEqual(['C4']);
@@ -190,7 +189,7 @@ describe('normalize', () => {
         )
       );
 
-      const entries = doc.measures()[0]!.parts()[0]!.staves()[0]!.voices()[0]!.entries();
+      const entries = doc.at({ measureIndex: 0, partIndex: 0, staveIndex: 0, voiceIndex: 0 })!.entries();
       expect(entries.map((e) => e.kind)).toEqual(['note', 'rest']);
       expect(entries[1]!.notes).toHaveLength(0);
     });
@@ -207,7 +206,7 @@ describe('normalize', () => {
         )
       );
 
-      const entries = doc.measures()[0]!.parts()[0]!.staves()[0]!.voices()[0]!.entries();
+      const entries = doc.at({ measureIndex: 0, partIndex: 0, staveIndex: 0, voiceIndex: 0 })!.entries();
       expect(entries[0]!.notes[0]!.pitch).toMatchObject({ name: 'C#4', midi: 61, alter: 1 });
       expect(entries[1]!.notes[0]!.pitch).toMatchObject({ name: 'Bb3', midi: 58, alter: -1 });
     });
@@ -219,7 +218,7 @@ describe('normalize', () => {
         element.partwise((s) => s.part('M', (p) => p.measure((m) => m.raw('<note><pitch/></note>'))))
       );
 
-      const note = doc.measures()[0]!.parts()[0]!.staves()[0]!.voices()[0]!.entries()[0]!.notes[0]!;
+      const note = doc.at({ measureIndex: 0, partIndex: 0, staveIndex: 0, voiceIndex: 0, entryIndex: 0 })!.notes[0]!;
       expect(note.pitch).toMatchObject({ step: 'C', octave: 4, alter: 0, name: 'C4', midi: 60 });
     });
   });
