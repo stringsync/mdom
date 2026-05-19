@@ -101,8 +101,8 @@ describe('mdom.navigation', () => {
 
   test('key() reflects sibling position', () => {
     const document = new Document([new Measure([]), new Measure([new Part([]), new Part([])])]);
-    const secondMeasure = document.getMeasures()[1]!;
-    const secondPart = secondMeasure.getParts()[1]!;
+    const secondMeasure = document.measures()[1]!;
+    const secondPart = secondMeasure.parts()[1]!;
 
     expect(secondMeasure.key()).toEqual({ measureIndex: 1 });
     expect(secondPart.key()).toEqual({ measureIndex: 1, partIndex: 1 });

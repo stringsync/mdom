@@ -60,6 +60,15 @@ node.document(); // root, reachable from anywhere
 node.key(); // this node's address (see below)
 ```
 
+Downward traversal mirrors the hierarchy, and accessors carry no `get`
+prefix — the node-level child accessor matches the `mdom.keys` collection
+accessor of the same name:
+
+```ts
+measure.parts(); // Part[]
+voice.entries(); // Entry[]
+```
+
 > **TODO:** `node.key()` here (the node's address) collides with
 > `measure.key()` in `mdom.timing` (the musical key signature,
 > `{ fifths, mode }`). One must be renamed — e.g. `keySignature()` for the

@@ -5,14 +5,16 @@ import type { Stave } from './stave';
 
 // spec(mdom.hierarchy): a Part lives within a Measure and has many Staves.
 export class Part extends Node<Measure, PartKey> {
-  constructor(private readonly staves: Stave[]) {
+  constructor(private readonly staveNodes: Stave[]) {
     super();
     // spec(mdom.navigation): wire each child's back-reference to this node.
-    this.staves.forEach((stave, index) => stave.attach(this, index));
+    this.staveNodes.forEach((stave, index) => stave.attach(this, index));
   }
 
-  getStaves(): Stave[] {
-    return this.staves;
+  // spec(mdom.navigation): downward traversal — a Part's children are its
+  // Staves (see mdom.hierarchy).
+  staves(): Stave[] {
+    return this.staveNodes;
   }
 
   // spec(mdom.navigation): a key extends its parent's, so a deeper key is a
