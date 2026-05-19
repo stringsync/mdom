@@ -435,7 +435,7 @@ class Part {
   }
 }
 
-export class Score {
+class Score {
   private readonly parts: Part[] = [];
   private forcedDivisions?: number;
   private readonly prelude: string[] = [];

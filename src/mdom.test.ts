@@ -9,7 +9,7 @@ import { Mod } from './nodes/mod';
 import { Part } from './nodes/part';
 import { Stave } from './nodes/stave';
 import { Voice } from './nodes/voice';
-import { durations as d, type Score, score } from './testing/score';
+import { durations as d, score } from './testing';
 
 describe('mdom.api', () => {
   test('parse returns a Document for well-formed MusicXML', () => {
@@ -47,7 +47,7 @@ describe('mdom.hierarchy', () => {
   // The same musical description, inlined per flavor, so both mdom.parse
   // normalization paths are exercised from one self-contained fixture.
   test.each(['partwise', 'timewise'] as const)('%s normalizes into the same timewise hierarchy', (flavor) => {
-    const xml = score.flavored(flavor, (s: Score) => {
+    const xml = score.flavored(flavor, (s) => {
       s.part('Flute', (p) => {
         p.measure((m) => {
           m.note('C4', d.quarter, (n) => n.voice(1));
