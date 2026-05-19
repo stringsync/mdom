@@ -2,31 +2,17 @@
 
 A DOM for MusicXML.
 
-## CLI
+## Development
 
-mdom ships a `mdom` command-line tool. To make it callable from your shell:
+Use the `mdom` command-line tool for development.
+
+To install:
 
 ```sh
 bun link
 ```
 
-To remove it:
-
-```sh
-bun unlink
-```
-
-Once linked:
-
-```sh
-mdom fix [options]    # format, lint, and typecheck
-mdom test [args...]   # run the test suite
-mdom release <type>   # bump the package version (patch, minor, major)
-mdom scan [args...]   # scan the project specs
-mdom show [args...]   # show a project spec
-```
-
-To see how the project is implemented, run:
+To get an overview of the project:
 
 ```sh
 mdom scan
