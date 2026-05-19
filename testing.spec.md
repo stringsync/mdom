@@ -11,9 +11,9 @@ MusicXML model (that is what `@stringsync/musicxml` is for, and it is too
 heavy-handed for fixtures). The goal is: describe the music a test cares
 about in a few lines, and emit valid MusicXML for `mdom.parse`.
 
-`score` is the only entry point — a namespace with `score.partwise` and
-`score.timewise`. Each takes a builder callback and returns a MusicXML
-string in the corresponding flavor:
+There are two entry points, both namespaces with `.partwise`, `.timewise`,
+and `.flavored` taking the same builder callback. `score` returns a MusicXML
+string for `mdom.parse`:
 
 ```ts
 const xml = score.partwise((s) => {
@@ -26,6 +26,12 @@ const xml = score.partwise((s) => {
   });
 });
 ```
+
+`element` mirrors `score` but returns the parsed xml-js root element instead
+of a string. `normalize()` consumes that element rather than a string, so its
+unit tests describe music through the same builder — xml-js stays an
+implementation detail of `testing`, never imported by a test, and the
+hand-written-XML temptation is removed even for normalize-level coverage.
 
 Nesting is expressed with closures, not chained `.end()` calls — scope is
 unambiguous and arbitrary depth (part → measure → note → mods) reads the

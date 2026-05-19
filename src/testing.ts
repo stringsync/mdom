@@ -1,7 +1,7 @@
 // spec(testing.musicxml): a lightweight MusicXML builder for fixtures —
 // describe the music a test cares about, emit valid MusicXML for mdom.parse.
 // Deliberately not a complete MusicXML model; raw() is the escape hatch.
-import { type Element, js2xml } from 'xml-js';
+import { type Element, js2xml, xml2js } from 'xml-js';
 
 type Step = 'C' | 'D' | 'E' | 'F' | 'G' | 'A' | 'B';
 
@@ -554,8 +554,8 @@ function buildScore(flavor: 'partwise' | 'timewise', build: (s: Score) => void):
   return s.toMusicXML();
 }
 
-// spec(testing.musicxml): score is the only entry point — it takes a builder
-// callback and returns a MusicXML string.
+// spec(testing.musicxml): score is the string entry point — it takes a builder
+// callback and returns a MusicXML string for mdom.parse.
 export const score = {
   partwise: (build: (s: Score) => void): string => buildScore('partwise', build),
   // spec(testing.escapes): score.timewise emits score-timewise instead of the
@@ -563,4 +563,23 @@ export const score = {
   // testable from one description.
   timewise: (build: (s: Score) => void): string => buildScore('timewise', build),
   flavored: (flavor: 'partwise' | 'timewise', build: (s: Score) => void): string => buildScore(flavor, build),
+};
+
+// spec(testing.musicxml): element mirrors score but returns the parsed xml-js
+// root element instead of a string, so unit tests for normalize() (which
+// consumes that element, not a string) describe music through the same builder
+// and never hand-write XML or touch xml-js themselves.
+function rootOf(xml: string): Element {
+  const tree = xml2js(xml, { compact: false }) as Element;
+  const root = tree.elements?.find((el) => el.type === 'element');
+  if (!root) {
+    throw new Error('testing: builder produced no root element');
+  }
+  return root;
+}
+
+export const element = {
+  partwise: (build: (s: Score) => void): Element => rootOf(buildScore('partwise', build)),
+  timewise: (build: (s: Score) => void): Element => rootOf(buildScore('timewise', build)),
+  flavored: (flavor: 'partwise' | 'timewise', build: (s: Score) => void): Element => rootOf(buildScore(flavor, build)),
 };
