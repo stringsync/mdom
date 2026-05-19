@@ -25,10 +25,12 @@ program
 program
   .command('test')
   .description('run the test suite')
+  .allowUnknownOption()
+  .argument('[args...]', 'arguments forwarded to `bun test`')
   .action(
     withErrorHandling(
-      withTiming(async () => {
-        await test();
+      withTiming(async (args: string[]) => {
+        await test(args);
       })
     )
   );

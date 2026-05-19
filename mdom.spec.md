@@ -251,7 +251,7 @@ of `mdom.api`.
 
 ```
 mdom fix [--check]    # format, lint, and typecheck
-mdom test             # run the test suite
+mdom test [args...]   # run the test suite
 mdom release <type>   # bump the package version
 ```
 
@@ -261,7 +261,9 @@ Commands:
   pass/fail and throwing if any step fails. `--check` checks without writing
   fixes (CI mode); without it, formatter and linter apply fixes in place.
 - `test` — runs the project's test suite via `bun test`, forwarding `bun
-test`'s exit code as the process exit code so it composes in CI.
+test`'s exit code as the process exit code so it composes in CI. Any extra
+  arguments (including unknown options like `--watch` or a test name filter)
+  are passed through verbatim to the underlying `bun test`.
 - `release` — declared with `.argument('<type>', 'version bump (patch, minor,
 major)')`. It bumps the `version` field in `package.json` by the requested
   semver level. An unrecognized `<type>` is rejected with a nonzero exit.
