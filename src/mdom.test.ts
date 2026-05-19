@@ -9,7 +9,7 @@ import { Mod } from './nodes/mod';
 import { Part } from './nodes/part';
 import { Stave } from './nodes/stave';
 import { Voice } from './nodes/voice';
-import { type Score, score } from './testkit/musicxml';
+import { durations as d, type Score, score } from './testkit/musicxml';
 
 describe('mdom.api', () => {
   test('parse returns a Document for well-formed MusicXML', () => {
@@ -50,15 +50,15 @@ describe('mdom.hierarchy', () => {
     const xml = score.flavored(flavor, (s: Score) => {
       s.part('Flute', (p) => {
         p.measure((m) => {
-          m.note('C4', 1, (n) => n.voice(1));
-          m.chord(['E4', 'G4'], 1, (n) => n.voice(1));
-          m.rest(1, (n) => n.voice(1));
+          m.note('C4', d.quarter, (n) => n.voice(1));
+          m.chord(['E4', 'G4'], d.quarter, (n) => n.voice(1));
+          m.rest(d.quarter, (n) => n.voice(1));
         });
       });
       s.part('Piano', (p) => {
         p.measure((m) => {
-          m.note('C#3', 2, (n) => n.voice(1).staff(1));
-          m.note('C2', 2, (n) => n.voice(5).staff(2));
+          m.note('C#3', d.half, (n) => n.voice(1).staff(1));
+          m.note('C2', d.half, (n) => n.voice(5).staff(2));
         });
       });
     });
