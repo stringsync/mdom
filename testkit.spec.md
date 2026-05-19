@@ -71,4 +71,4 @@ flavors — there is always a raw escape:
   normalization paths are testable from one description.
 - `raw(xml)` exists at score, measure, and note scope to inject verbatim
   XML, so a test never has to extend the builder to cover a one-off case.
-</content>
+  </content>

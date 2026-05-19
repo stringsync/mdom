@@ -260,6 +260,8 @@ of `mdom.api`.
 mdom fix [--check]    # format, lint, and typecheck
 mdom test [args...]   # run the test suite
 mdom release <type>   # bump the package version
+mdom scan [args...]   # scan the project specs
+mdom show [args...]   # show a project spec
 ```
 
 Commands:
@@ -274,6 +276,12 @@ test`'s exit code as the process exit code so it composes in CI. Any extra
 - `release` — declared with `.argument('<type>', 'version bump (patch, minor,
 major)')`. It bumps the `version` field in `package.json` by the requested
   semver level. An unrecognized `<type>` is rejected with a nonzero exit.
+- `scan` / `show` — thin pass-throughs to the `@stringsync/spec` CLI, run via
+  `bunx -y @stringsync/spec <subcommand>`. Both `allowUnknownOption()` and
+  forward all extra arguments verbatim, propagating the child's exit code so
+  they compose in CI. `scan` gives a spec overview; `show <module>.<name>`
+  inspects one spec. These let `mdom` be the single entry point for auditing
+  the implementation against the spec — no MCP server required.
 
 Command actions are composed from shared wrappers in `cli/util.ts`:
 `withErrorHandling` turns a thrown error into a red message and a nonzero

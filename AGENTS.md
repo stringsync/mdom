@@ -13,37 +13,17 @@ Default to using Bun instead of Node.js.
 - Use Bun.$`ls` instead of execa.
 - Use `bun test` to run tests.
 
-## MCP
-
-You may have the `@stringsync/spec` MCP server installed. When a tool is mentioned in this file, check the tools there.
-
-If not, suggest the user to add the following MCP server (they can read more at https://github.com/stringsync/spec):
-
-```json
-}
-  /// The name of the MCP server
-  "@stringsync/spec": {
-    /// The command which runs the MCP server
-    "command": "bunx",
-    /// The arguments to pass to the MCP server
-    "args": ["-y","@stringsync/spec","mcp"],
-    /// The environment variables to set
-    "env": {}
-  }
-}
-```
-
-Then, try using `bunx @stringsync/spec <tool>`.
-
 ## Development
 
-When the user mentions a specific spec (which has the form `<module>.<name>`), use the `show` tool to view it.
+Everything goes through the `mdom` command — no MCP server required.
+
+When the user mentions a specific spec (which has the form `<module>.<name>`), run `mdom show <module>.<name>` to view it.
 
 - Read [mdom.spec.md](./mdom.spec.md) to understand the project.
-- Use `scan` tool to get a spec overview.
+- Run `mdom scan` to get a spec overview and see how the project is implemented.
 - Consider writing a test that initially fails based on the feature request.
 - Update the implementation.
 - Strategically add spec tags in the tests and/or implementation: `// spec(<name>)` or `// spec(<name>): <comment>`.
-- Use the `scan` or `show` tool to validate and audit the specs against the implementation.
+- Run `mdom scan` or `mdom show <module>.<name>` to validate and audit the specs against the implementation.
 - Run `mdom test` to test the project.
 - Run `mdom fix` to typecheck, format, and lint the project.

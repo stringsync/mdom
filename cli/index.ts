@@ -4,6 +4,7 @@ import { program } from 'commander';
 import { fix } from './fix.ts';
 import { test } from './test.ts';
 import { release } from './release.ts';
+import { spec } from './spec.ts';
 import { withErrorHandling, withTiming } from './util.ts';
 
 program.name('mdom').description('A DOM for MusicXML.');
@@ -44,6 +45,34 @@ program
     withErrorHandling(async (type: string) => {
       await release(type);
     })
+  );
+
+// spec(mdom.cli): scan command
+program
+  .command('scan')
+  .description('scan the project specs (via @stringsync/spec)')
+  .allowUnknownOption()
+  .argument('[args...]', 'arguments forwarded to `@stringsync/spec scan`')
+  .action(
+    withErrorHandling(
+      withTiming(async (args: string[]) => {
+        await spec('scan', args);
+      })
+    )
+  );
+
+// spec(mdom.cli): show command
+program
+  .command('show')
+  .description('show a project spec (via @stringsync/spec)')
+  .allowUnknownOption()
+  .argument('[args...]', 'arguments forwarded to `@stringsync/spec show`')
+  .action(
+    withErrorHandling(
+      withTiming(async (args: string[]) => {
+        await spec('show', args);
+      })
+    )
   );
 
 program.parse();
