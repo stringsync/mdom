@@ -32,15 +32,25 @@ export class Document {
     // spec(mdom.keys): a deeper key is a superset of its ancestors, so drill
     // down through the hierarchy and stop at the deepest index present.
     const measure = this.measureNodes.at(key.measureIndex);
-    if (!measure || !('partIndex' in key)) return measure;
+    if (!measure || !('partIndex' in key)) {
+      return measure;
+    }
     const part = measure.parts().at(key.partIndex);
-    if (!part || !('staveIndex' in key)) return part;
+    if (!part || !('staveIndex' in key)) {
+      return part;
+    }
     const stave = part.staves().at(key.staveIndex);
-    if (!stave || !('voiceIndex' in key)) return stave;
+    if (!stave || !('voiceIndex' in key)) {
+      return stave;
+    }
     const voice = stave.voices().at(key.voiceIndex);
-    if (!voice || !('entryIndex' in key)) return voice;
+    if (!voice || !('entryIndex' in key)) {
+      return voice;
+    }
     const entry = voice.entries().at(key.entryIndex);
-    if (!entry || !('modIndex' in key)) return entry;
+    if (!entry || !('modIndex' in key)) {
+      return entry;
+    }
     return entry.mods().at(key.modIndex);
   }
 

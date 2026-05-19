@@ -13,6 +13,7 @@ export default defineConfig([
   tseslint.configs.recommended,
   {
     rules: {
+      curly: ['error', 'all'],
       '@typescript-eslint/member-ordering': [
         'error',
         {

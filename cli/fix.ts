@@ -4,11 +4,13 @@ import chalk from 'chalk';
 export async function fix(opts: { check: boolean }): Promise<void> {
   const failures = new Array<string>();
 
-  if (!format(opts.check)) {
-    failures.push('format');
-  }
+  // lint with --fix first so the formatter gets the final pass over any
+  // autofixes eslint applies (e.g. braces added by the `curly` rule).
   if (!lint(opts.check)) {
     failures.push('lint');
+  }
+  if (!format(opts.check)) {
+    failures.push('format');
   }
   if (!typecheck()) {
     failures.push('typecheck');
