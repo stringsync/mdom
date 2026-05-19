@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { mdom } from '../mdom';
 import { Document } from '../nodes/document';
-import { durations as d, type Score, score } from './musicxml';
+import { durations as d, type Score, score } from './score';
 
 // spec(testing.musicxml): the builder emits valid MusicXML for mdom.parse —
 // every fixture below round-trips through the parse contract (well-formed

@@ -1,12 +1,38 @@
 // spec(testing.musicxml): a lightweight MusicXML builder for fixtures —
 // describe the music a test cares about, emit valid MusicXML for mdom.parse.
 // Deliberately not a complete MusicXML model; raw() is the escape hatch.
+import { type Element, js2xml } from 'xml-js';
 
-export type Step = 'C' | 'D' | 'E' | 'F' | 'G' | 'A' | 'B';
+type Step = 'C' | 'D' | 'E' | 'F' | 'G' | 'A' | 'B';
 
-export type PitchSpec = string | { step: Step; octave: number; alter?: number };
+type PitchSpec = string | { step: Step; octave: number; alter?: number };
 
 type Resolved = { step: Step; octave: number; alter: number };
+
+// The builder describes music as an xml-js element tree and serializes it
+// once with js2xml, so escaping and self-closing tags are the library's job,
+// not hand-rolled string interpolation.
+type Attrs = Record<string, string | number | undefined>;
+
+function el(name: string, attributes?: Attrs, children: Element[] = []): Element {
+  const node: Element = { type: 'element', name, elements: children };
+  if (attributes) {
+    const defined = Object.entries(attributes).filter(([, v]) => v !== undefined);
+    if (defined.length > 0) {
+      node.attributes = Object.fromEntries(defined) as Element['attributes'];
+    }
+  }
+  return node;
+}
+
+function leaf(name: string, value: string | number, attributes?: Attrs): Element {
+  return el(name, attributes, [{ type: 'text', text: value }]);
+}
+
+// Rendering is deferred until toMusicXML knows the tick context; raw() also
+// needs the serialization-scoped placeholder sink so verbatim XML survives
+// js2xml without being re-escaped.
+type RenderCtx = { divisions: number; raw: (xml: string) => Element };
 
 // spec(testing.pitch): a pitch is scientific-notation ('C#4', 'Bb3',
 // 'F##5') or { step, octave, alter }.
@@ -68,31 +94,23 @@ function denominator(quarters: number): number {
   throw new Error(`testing: cannot express duration ${quarters} as a tick`);
 }
 
-function esc(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-function escAttr(text: string): string {
-  return esc(text).replace(/"/g, '&quot;');
-}
-
-type Child = { duration: number; render: (divisions: number) => string };
+type Child = { duration: number; render: (ctx: RenderCtx) => Element[] };
 
 // spec(testing.mods): the optional last argument to note/rest/chord is a
 // callback over a chainable mod configurator covering the mdom.mods surface,
 // plus voice/staff placement and type/dot overrides.
-export class NoteMods {
+class NoteMods {
   private graceFlag = false;
   private voiceNum?: number;
   private typeName?: string;
   private dots = 0;
   private accidentalName?: string;
-  private timeMod?: string;
+  private timeMod?: Element;
   private staffNum?: number;
-  private readonly ties: string[] = [];
-  private readonly beams: string[] = [];
-  private readonly notations: string[] = [];
-  private readonly lyrics: string[] = [];
+  private readonly ties: Element[] = [];
+  private readonly beams: Element[] = [];
+  private readonly notations: Element[] = [];
+  private readonly lyrics: Element[] = [];
   private readonly extra: string[] = [];
 
   grace(): this {
@@ -128,31 +146,31 @@ export class NoteMods {
   // spec(testing.mods): spanning mods emit their MusicXML start/stop
   // endpoints on the hosting notes; reconstructing the span is mdom's job.
   tie(type: 'start' | 'stop'): this {
-    this.ties.push(`<tie type="${type}"/>`);
-    this.notations.push(`<tied type="${type}"/>`);
+    this.ties.push(el('tie', { type }));
+    this.notations.push(el('tied', { type }));
     return this;
   }
 
   slur(type: 'start' | 'stop' | 'continue', number = 1): this {
-    this.notations.push(`<slur type="${type}" number="${number}"/>`);
+    this.notations.push(el('slur', { type, number }));
     return this;
   }
 
   beam(value: 'begin' | 'continue' | 'end' | 'forward hook' | 'backward hook', number = 1): this {
-    this.beams.push(`<beam number="${number}">${value}</beam>`);
+    this.beams.push(leaf('beam', value, { number }));
     return this;
   }
 
   tuplet(actual: number, normal: number, bracket: 'start' | 'stop' | false = 'start'): this {
-    this.timeMod = `<time-modification><actual-notes>${actual}</actual-notes><normal-notes>${normal}</normal-notes></time-modification>`;
+    this.timeMod = el('time-modification', undefined, [leaf('actual-notes', actual), leaf('normal-notes', normal)]);
     if (bracket) {
-      this.notations.push(`<tuplet type="${bracket}"/>`);
+      this.notations.push(el('tuplet', { type: bracket }));
     }
     return this;
   }
 
   articulation(name: string): this {
-    this.notations.push(`<articulations><${name}/></articulations>`);
+    this.notations.push(el('articulations', undefined, [el(name)]));
     return this;
   }
 
@@ -173,7 +191,7 @@ export class NoteMods {
   }
 
   ornament(name: string): this {
-    this.notations.push(`<ornaments><${name}/></ornaments>`);
+    this.notations.push(el('ornaments', undefined, [el(name)]));
     return this;
   }
 
@@ -182,17 +200,17 @@ export class NoteMods {
   }
 
   fermata(): this {
-    this.notations.push('<fermata/>');
+    this.notations.push(el('fermata'));
     return this;
   }
 
   dynamic(name: string): this {
-    this.notations.push(`<dynamics><${name}/></dynamics>`);
+    this.notations.push(el('dynamics', undefined, [el(name)]));
     return this;
   }
 
   lyric(text: string, syllabic: 'single' | 'begin' | 'middle' | 'end' = 'single'): this {
-    this.lyrics.push(`<lyric number="1"><syllabic>${syllabic}</syllabic><text>${esc(text)}</text></lyric>`);
+    this.lyrics.push(el('lyric', { number: 1 }, [leaf('syllabic', syllabic), leaf('text', text)]));
     return this;
   }
 
@@ -207,32 +225,46 @@ export class NoteMods {
     return this.graceFlag;
   }
 
+  graceEl(): Element | undefined {
+    return this.graceFlag ? el('grace') : undefined;
+  }
+
   // MusicXML <note> child order: grace?, (chord?, pitch|rest), duration?,
   // tie*, voice?, type?, dot*, accidental?, time-modification?, staff?,
   // beam*, notations?, lyric*.
-  renderGrace(): string {
-    return this.graceFlag ? '<grace/>' : '';
-  }
-
-  renderTail(): string {
-    const notations = this.notations.length > 0 ? `<notations>${this.notations.join('')}</notations>` : '';
-    return [
-      this.ties.join(''),
-      this.voiceNum !== undefined ? `<voice>${this.voiceNum}</voice>` : '',
-      this.typeName ? `<type>${esc(this.typeName)}</type>` : '',
-      '<dot/>'.repeat(this.dots),
-      this.accidentalName ? `<accidental>${esc(this.accidentalName)}</accidental>` : '',
-      this.timeMod ?? '',
-      this.staffNum !== undefined ? `<staff>${this.staffNum}</staff>` : '',
-      this.beams.join(''),
-      notations,
-      this.lyrics.join(''),
-      this.extra.join(''),
-    ].join('');
+  tail(ctx: RenderCtx): Element[] {
+    const out: Element[] = [...this.ties];
+    if (this.voiceNum !== undefined) {
+      out.push(leaf('voice', this.voiceNum));
+    }
+    if (this.typeName) {
+      out.push(leaf('type', this.typeName));
+    }
+    for (let i = 0; i < this.dots; i++) {
+      out.push(el('dot'));
+    }
+    if (this.accidentalName) {
+      out.push(leaf('accidental', this.accidentalName));
+    }
+    if (this.timeMod) {
+      out.push(this.timeMod);
+    }
+    if (this.staffNum !== undefined) {
+      out.push(leaf('staff', this.staffNum));
+    }
+    out.push(...this.beams);
+    if (this.notations.length > 0) {
+      out.push(el('notations', undefined, this.notations));
+    }
+    out.push(...this.lyrics);
+    for (const xml of this.extra) {
+      out.push(ctx.raw(xml));
+    }
+    return out;
   }
 }
 
-export type AttributesSpec = {
+type AttributesSpec = {
   divisions?: number;
   key?: number | { fifths: number; mode?: string };
   time?: [number, number];
@@ -241,46 +273,57 @@ export type AttributesSpec = {
   tempo?: number;
 };
 
-function renderAttributes(spec: AttributesSpec, divisions?: number): string {
-  const parts: string[] = [];
-  const div = spec.divisions ?? divisions;
+function renderAttributes(spec: AttributesSpec, ctx: RenderCtx): Element[] {
+  const inner: Element[] = [];
+  const div = spec.divisions ?? ctx.divisions;
   if (div !== undefined) {
-    parts.push(`<divisions>${div}</divisions>`);
+    inner.push(leaf('divisions', div));
   }
   if (spec.key !== undefined) {
     const key = typeof spec.key === 'number' ? { fifths: spec.key } : spec.key;
-    const mode = key.mode ? `<mode>${esc(key.mode)}</mode>` : '';
-    parts.push(`<key><fifths>${key.fifths}</fifths>${mode}</key>`);
+    const children = [leaf('fifths', key.fifths)];
+    if (key.mode) {
+      children.push(leaf('mode', key.mode));
+    }
+    inner.push(el('key', undefined, children));
   }
   if (spec.time) {
-    parts.push(`<time><beats>${spec.time[0]}</beats><beat-type>${spec.time[1]}</beat-type></time>`);
+    inner.push(el('time', undefined, [leaf('beats', spec.time[0]), leaf('beat-type', spec.time[1])]));
   }
   if (spec.staves !== undefined) {
-    parts.push(`<staves>${spec.staves}</staves>`);
+    inner.push(leaf('staves', spec.staves));
   }
   if (spec.clef) {
     const clefs = Array.isArray(spec.clef[0])
       ? (spec.clef as Array<[string, number]>)
       : [spec.clef as [string, number]];
     clefs.forEach(([sign, line], i) => {
-      const number = clefs.length > 1 ? ` number="${i + 1}"` : '';
-      parts.push(`<clef${number}><sign>${esc(sign)}</sign><line>${line}</line></clef>`);
+      const attrs = clefs.length > 1 ? { number: i + 1 } : undefined;
+      inner.push(el('clef', attrs, [leaf('sign', sign), leaf('line', line)]));
     });
   }
-  const attributesXml = parts.length > 0 ? `<attributes>${parts.join('')}</attributes>` : '';
-  const tempo = spec.tempo
-    ? `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit>` +
-      `<per-minute>${spec.tempo}</per-minute></metronome></direction-type>` +
-      `<sound tempo="${spec.tempo}"/></direction>`
-    : '';
-  return attributesXml + tempo;
+  const out: Element[] = [];
+  if (inner.length > 0) {
+    out.push(el('attributes', undefined, inner));
+  }
+  if (spec.tempo) {
+    out.push(
+      el('direction', { placement: 'above' }, [
+        el('direction-type', undefined, [
+          el('metronome', undefined, [leaf('beat-unit', 'quarter'), leaf('per-minute', spec.tempo)]),
+        ]),
+        el('sound', { tempo: spec.tempo }),
+      ])
+    );
+  }
+  return out;
 }
 
-export class Measure {
+class Measure {
   private readonly children: Child[] = [];
 
   attributes(spec: AttributesSpec): this {
-    this.children.push({ duration: 0, render: (d) => renderAttributes(spec, d) });
+    this.children.push({ duration: 0, render: (ctx) => renderAttributes(spec, ctx) });
     return this;
   }
 
@@ -299,7 +342,7 @@ export class Measure {
   backup(quarters: number): this {
     this.children.push({
       duration: 0,
-      render: (d) => `<backup><duration>${Math.round(quarters * d)}</duration></backup>`,
+      render: (ctx) => [el('backup', undefined, [leaf('duration', Math.round(quarters * ctx.divisions))])],
     });
     return this;
   }
@@ -307,7 +350,7 @@ export class Measure {
   forward(quarters: number): this {
     this.children.push({
       duration: 0,
-      render: (d) => `<forward><duration>${Math.round(quarters * d)}</duration></forward>`,
+      render: (ctx) => [el('forward', undefined, [leaf('duration', Math.round(quarters * ctx.divisions))])],
     });
     return this;
   }
@@ -315,7 +358,7 @@ export class Measure {
   // spec(testing.escapes): raw() exists at measure scope to inject verbatim
   // XML so a test never has to extend the builder for a one-off case.
   raw(xml: string): this {
-    this.children.push({ duration: 0, render: () => xml });
+    this.children.push({ duration: 0, render: (ctx) => [ctx.raw(xml)] });
     return this;
   }
 
@@ -323,8 +366,8 @@ export class Measure {
     return this.children.map((c) => c.duration);
   }
 
-  renderBody(divisions: number): string {
-    return this.children.map((c) => c.render(divisions)).join('');
+  renderBody(ctx: RenderCtx): Element[] {
+    return this.children.flatMap((c) => c.render(ctx));
   }
 
   private pushNote(pitches: Resolved[], duration: number, build?: (n: NoteMods) => void): this {
@@ -332,30 +375,43 @@ export class Measure {
     build?.(mods);
     this.children.push({
       duration,
-      render: (d) => {
-        const grace = mods.renderGrace();
-        const durationXml = mods.isGrace() ? '' : `<duration>${Math.round(duration * d)}</duration>`;
-        const heads = pitches.length === 0 ? ['<rest/>'] : pitches.map((p, i) => renderPitch(p, i > 0));
+      render: (ctx) => {
+        const durationEl = mods.isGrace() ? undefined : leaf('duration', Math.round(duration * ctx.divisions));
+        const heads = pitches.length === 0 ? [[el('rest')]] : pitches.map((p, i) => pitchEls(p, i > 0));
         // A chord is N <note> elements; the tail (voice, beams, notations,
         // lyrics) rides on the last so it applies to the chord as a unit.
-        return heads
-          .map((head, i) => {
-            const tail = i === heads.length - 1 ? mods.renderTail() : '';
-            return `<note>${grace}${head}${durationXml}${tail}</note>`;
-          })
-          .join('');
+        return heads.map((head, i) => {
+          const children: Element[] = [];
+          const grace = mods.graceEl();
+          if (grace) {
+            children.push(grace);
+          }
+          children.push(...head);
+          if (durationEl) {
+            children.push(durationEl);
+          }
+          if (i === heads.length - 1) {
+            children.push(...mods.tail(ctx));
+          }
+          return el('note', undefined, children);
+        });
       },
     });
     return this;
   }
 }
 
-function renderPitch(p: Resolved, chord: boolean): string {
-  const alter = p.alter !== 0 ? `<alter>${p.alter}</alter>` : '';
-  return `${chord ? '<chord/>' : ''}<pitch><step>${p.step}</step>${alter}<octave>${p.octave}</octave></pitch>`;
+function pitchEls(p: Resolved, chord: boolean): Element[] {
+  const inner: Element[] = [leaf('step', p.step)];
+  if (p.alter !== 0) {
+    inner.push(leaf('alter', p.alter));
+  }
+  inner.push(leaf('octave', p.octave));
+  const pitch = el('pitch', undefined, inner);
+  return chord ? [el('chord'), pitch] : [pitch];
 }
 
-export class Part {
+class Part {
   readonly measures: Measure[] = [];
   private readonly specs: Array<AttributesSpec | undefined> = [];
 
@@ -382,7 +438,7 @@ export class Part {
 export class Score {
   private readonly parts: Part[] = [];
   private forcedDivisions?: number;
-  private prelude = '';
+  private readonly prelude: string[] = [];
 
   constructor(private readonly flavor: 'partwise' | 'timewise' = 'partwise') {}
 
@@ -392,7 +448,7 @@ export class Score {
   }
 
   raw(xml: string): this {
-    this.prelude += xml;
+    this.prelude.push(xml);
     return this;
   }
 
@@ -405,15 +461,37 @@ export class Score {
 
   toMusicXML(): string {
     const divisions = this.resolveDivisions();
-    const partList = this.parts
-      .map((p) => `<score-part id="${escAttr(p.id)}"><part-name>${esc(p.name)}</part-name></score-part>`)
-      .join('');
+    // js2xml escapes text and attributes, so verbatim raw() XML is stitched
+    // back in after serialization via unique placeholders.
+    const raws: string[] = [];
+    const token = (i: number): string => `__MDOM_RAW_${i}__`;
+    const ctx: RenderCtx = {
+      divisions,
+      raw: (xml) => {
+        const node: Element = { type: 'text', text: token(raws.length) };
+        raws.push(xml);
+        return node;
+      },
+    };
+
     const root = this.flavor === 'partwise' ? 'score-partwise' : 'score-timewise';
-    const body = this.flavor === 'partwise' ? this.renderPartwise(divisions) : this.renderTimewise(divisions);
-    return (
-      `<?xml version="1.0" encoding="UTF-8"?>` +
-      `<${root} version="4.0">${this.prelude}<part-list>${partList}</part-list>${body}</${root}>`
+    const prelude = this.prelude.map((xml) => ctx.raw(xml));
+    const partList = el(
+      'part-list',
+      undefined,
+      this.parts.map((p) => el('score-part', { id: p.id }, [leaf('part-name', p.name)]))
     );
+    const body = this.flavor === 'partwise' ? this.renderPartwise(ctx) : this.renderTimewise(ctx);
+
+    const tree: Element = {
+      declaration: { attributes: { version: '1.0', encoding: 'UTF-8' } },
+      elements: [el(root, { version: '4.0' }, [...prelude, partList, ...body])],
+    };
+    let xml = js2xml(tree);
+    raws.forEach((fragment, i) => {
+      xml = xml.split(token(i)).join(fragment);
+    });
+    return xml;
   }
 
   private resolveDivisions(): number {
@@ -435,36 +513,38 @@ export class Score {
 
   // The first measure of each part carries <divisions> so the parser sees a
   // tick context before any note; explicit per-measure attributes merge in.
-  private measureBody(part: Part, index: number, divisions: number): string {
+  private measureBody(part: Part, index: number, ctx: RenderCtx): Element[] {
     const spec = part.specFor(index);
-    const merged = index === 0 ? { divisions, ...spec } : spec;
-    const attributesXml = merged ? renderAttributes(merged, divisions) : '';
-    return attributesXml + part.measures[index]!.renderBody(divisions);
+    const merged = index === 0 ? { divisions: ctx.divisions, ...spec } : spec;
+    const attributes = merged ? renderAttributes(merged, ctx) : [];
+    return [...attributes, ...part.measures[index]!.renderBody(ctx)];
   }
 
-  private renderPartwise(divisions: number): string {
-    return this.parts
-      .map((part) => {
-        const measures = part.measures
-          .map((_, i) => `<measure number="${i + 1}">${this.measureBody(part, i, divisions)}</measure>`)
-          .join('');
-        return `<part id="${escAttr(part.id)}">${measures}</part>`;
-      })
-      .join('');
+  private renderPartwise(ctx: RenderCtx): Element[] {
+    return this.parts.map((part) =>
+      el(
+        'part',
+        { id: part.id },
+        part.measures.map((_, i) => el('measure', { number: i + 1 }, this.measureBody(part, i, ctx)))
+      )
+    );
   }
 
-  private renderTimewise(divisions: number): string {
+  private renderTimewise(ctx: RenderCtx): Element[] {
     const count = Math.max(0, ...this.parts.map((p) => p.measures.length));
-    let out = '';
+    const measures: Element[] = [];
     for (let i = 0; i < count; i++) {
-      out += `<measure number="${i + 1}">`;
-      for (const part of this.parts) {
-        const body = i < part.measures.length ? this.measureBody(part, i, divisions) : '';
-        out += `<part id="${escAttr(part.id)}">${body}</part>`;
-      }
-      out += `</measure>`;
+      measures.push(
+        el(
+          'measure',
+          { number: i + 1 },
+          this.parts.map((part) =>
+            el('part', { id: part.id }, i < part.measures.length ? this.measureBody(part, i, ctx) : [])
+          )
+        )
+      );
     }
-    return out;
+    return measures;
   }
 }
 

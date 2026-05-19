@@ -9,7 +9,7 @@ import { Mod } from './nodes/mod';
 import { Part } from './nodes/part';
 import { Stave } from './nodes/stave';
 import { Voice } from './nodes/voice';
-import { durations as d, type Score, score } from './testing/musicxml';
+import { durations as d, type Score, score } from './testing/score';
 
 describe('mdom.api', () => {
   test('parse returns a Document for well-formed MusicXML', () => {
