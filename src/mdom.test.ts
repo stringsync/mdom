@@ -43,11 +43,89 @@ describe('mdom', () => {
   });
 });
 
+// spec(mdom.hierarchy): parse normalizes both flavors into one timewise tree:
+// Document -> Measure -> Part -> Stave -> Voice -> Entry.
+describe('mdom.hierarchy', () => {
+  const PARTWISE = `<?xml version="1.0"?>
+<score-partwise version="4.0">
+  <part-list>
+    <score-part id="P1"><part-name>Flute</part-name></score-part>
+    <score-part id="P2"><part-name>Piano</part-name></score-part>
+  </part-list>
+  <part id="P1">
+    <measure number="1">
+      <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice></note>
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice></note>
+      <note><chord/><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice></note>
+      <note><rest/><duration>4</duration><voice>1</voice></note>
+    </measure>
+  </part>
+  <part id="P2">
+    <measure number="1">
+      <note><pitch><step>C</step><alter>1</alter><octave>3</octave></pitch><duration>8</duration><voice>1</voice><staff>1</staff></note>
+      <note><pitch><step>C</step><octave>2</octave></pitch><duration>8</duration><voice>5</voice><staff>2</staff></note>
+    </measure>
+  </part>
+</score-partwise>`;
+
+  const TIMEWISE = `<?xml version="1.0"?>
+<score-timewise version="4.0">
+  <part-list>
+    <score-part id="P1"><part-name>Flute</part-name></score-part>
+    <score-part id="P2"><part-name>Piano</part-name></score-part>
+  </part-list>
+  <measure number="1">
+    <part id="P1">
+      <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice></note>
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice></note>
+      <note><chord/><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice></note>
+      <note><rest/><duration>4</duration><voice>1</voice></note>
+    </part>
+    <part id="P2">
+      <note><pitch><step>C</step><alter>1</alter><octave>3</octave></pitch><duration>8</duration><voice>1</voice><staff>1</staff></note>
+      <note><pitch><step>C</step><octave>2</octave></pitch><duration>8</duration><voice>5</voice><staff>2</staff></note>
+    </part>
+  </measure>
+</score-timewise>`;
+
+  test.each([
+    ['score-partwise', PARTWISE],
+    ['score-timewise', TIMEWISE],
+  ])('%s normalizes into the same timewise hierarchy', (_flavor, xml) => {
+    const document = mdom.parse(xml);
+
+    expect(document.measures()).toHaveLength(1);
+    const measure = document.measures()[0]!;
+    expect(measure.parts()).toHaveLength(2);
+
+    // spec(mdom.hierarchy): a Part has many Staves; a Stave has many Voices.
+    const flute = measure.parts()[0]!;
+    expect(flute.staves()).toHaveLength(1);
+    const voice = flute.staves()[0]!.voices()[0]!;
+    const entries = voice.entries();
+
+    // spec(mdom.entries): kind discriminates; a chord is one Entry with many
+    // Notes, a rest an Entry with none.
+    expect(entries.map((e) => e.kind)).toEqual(['note', 'chord', 'rest']);
+    expect(entries[0]!.notes.map((n) => n.pitch.name)).toEqual(['C4']);
+    expect(entries[0]!.notes[0]!.pitch.midi).toBe(60);
+    expect(entries[1]!.notes.map((n) => n.pitch.name)).toEqual(['E4', 'G4']);
+    expect(entries[2]!.notes).toHaveLength(0);
+
+    // spec(mdom.hierarchy): a Stave is a staff line within a Part — piano's
+    // two <staff>s become two Staves.
+    const piano = measure.parts()[1]!;
+    expect(piano.staves()).toHaveLength(2);
+    expect(piano.staves()[0]!.voices()[0]!.entries()[0]!.notes[0]!.pitch.name).toBe('C#3');
+    expect(piano.staves()[1]!.voices()[0]!.entries()[0]!.notes[0]!.pitch.name).toBe('C2');
+  });
+});
+
 // spec(mdom.navigation): traversal is bidirectional and possible from any node.
 describe('mdom.navigation', () => {
   function tree() {
     const mod = new Mod();
-    const entry = new Entry([mod]);
+    const entry = new Entry('rest', [], [mod]);
     const voice = new Voice([entry]);
     const stave = new Stave([voice]);
     const part = new Part([stave]);

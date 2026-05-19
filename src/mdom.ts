@@ -3,20 +3,18 @@
 
 import { type Element, xml2js } from 'xml-js';
 import { InvalidMusicXmlError, XmlParseError } from './errors';
+import { normalize } from './normalize';
 import { Document } from './nodes/document';
 
 const MUSICXML_ROOTS = ['score-partwise', 'score-timewise'];
 
 function parse(xml: string): Document {
   const tree = getTree(xml);
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const root = getRoot(tree);
 
   // spec(mdom.api): both MusicXML flavors normalize into one timewise
-  // hierarchy. The real normalization is not built yet, so this returns a
-  // stub Document — the throwing contract is what matters here.
-  return new Document([]);
+  // hierarchy (see mdom.hierarchy).
+  return normalize(root);
 }
 
 function getTree(xml: string) {

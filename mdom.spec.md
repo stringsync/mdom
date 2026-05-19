@@ -69,10 +69,8 @@ measure.parts(); // Part[]
 voice.entries(); // Entry[]
 ```
 
-> **TODO:** `node.key()` here (the node's address) collides with
-> `measure.key()` in `mdom.timing` (the musical key signature,
-> `{ fifths, mode }`). One must be renamed — e.g. `keySignature()` for the
-> musical one — before `mdom.timing` is implemented.
+`node.key()` is unambiguously the node's address; the musical key signature
+is `measure.keySignature()` (see `mdom.timing`).
 
 ## mdom.keys
 
@@ -155,7 +153,7 @@ Measure-level musical context lives on the relevant node:
 
 ```ts
 measure.time(); // { beats: number; beatType: number }
-measure.key(); // { fifths: number; mode: "major" | "minor" | ... }
+measure.keySignature(); // { fifths: number; mode: "major" | "minor" | ... }
 measure.tempo(); // quarter notes per minute | undefined
 stave.clef(); // { sign: "G" | "F" | "C"; line: number }
 ```

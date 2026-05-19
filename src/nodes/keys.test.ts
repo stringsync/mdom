@@ -12,8 +12,8 @@ import { Voice } from './voice';
 // not just "the only one".
 function tree() {
   const mod = new Mod();
-  const entry = new Entry([new Mod(), mod]);
-  const voice = new Voice([new Entry([]), entry]);
+  const entry = new Entry('rest', [], [new Mod(), mod]);
+  const voice = new Voice([new Entry('rest', []), entry]);
   const stave = new Stave([new Voice([]), voice]);
   const part = new Part([new Stave([]), stave]);
   const measure = new Measure([new Part([]), part]);
