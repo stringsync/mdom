@@ -1,11 +1,11 @@
 import type { Element } from 'xml-js';
-import { Document } from './nodes/document';
-import { Entry, type EntryKind } from './nodes/entry';
-import { Measure } from './nodes/measure';
-import { type Note, pitch, type Step } from './nodes/note';
-import { Part } from './nodes/part';
-import { Stave } from './nodes/stave';
-import { Voice } from './nodes/voice';
+import { Document } from './document';
+import { Entry, type EntryKind } from './entry';
+import { Measure } from './measure';
+import { type Note, pitch, type Step } from './note';
+import { Part } from './part';
+import { Stave } from './stave';
+import { Voice } from './voice';
 
 // spec(mdom.hierarchy): both MusicXML flavors normalize into one timewise
 // hierarchy — Document -> Measure -> Part -> Stave -> Voice -> Entry — so

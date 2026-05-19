@@ -2,13 +2,13 @@ import { describe, expect, test } from 'bun:test';
 
 import { InvalidMusicXmlError, XmlParseError } from './errors';
 import { mdom } from './mdom';
-import { Document } from './nodes/document';
-import { Entry } from './nodes/entry';
-import { Measure } from './nodes/measure';
-import { Mod } from './nodes/mod';
-import { Part } from './nodes/part';
-import { Stave } from './nodes/stave';
-import { Voice } from './nodes/voice';
+import { Document } from './document';
+import { Entry } from './entry';
+import { Measure } from './measure';
+import { Mod } from './mod';
+import { Part } from './part';
+import { Stave } from './stave';
+import { Voice } from './voice';
 import { durations as d, score } from './testing';
 
 describe('mdom.api', () => {

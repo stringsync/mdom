@@ -4,7 +4,7 @@
 import { type Element, xml2js } from 'xml-js';
 import { InvalidMusicXmlError, XmlParseError } from './errors';
 import { normalize } from './normalize';
-import { Document } from './nodes/document';
+import { Document } from './document';
 
 const MUSICXML_ROOTS = ['score-partwise', 'score-timewise'];
 
