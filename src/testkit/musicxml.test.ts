@@ -21,7 +21,7 @@ describe('testkit.musicxml', () => {
     expect(mdom.parse(xml)).toBeInstanceOf(Document);
   });
 
-  // spec(testkit.musicxml): a pitch is scientific-notation or { step, octave,
+  // spec(testkit.pitch): a pitch is scientific-notation or { step, octave,
   // alter }; sharps, flats, and double-sharp (x) resolve to <alter>.
   test('pitch shorthand resolves accidentals', () => {
     const xml = score((s) => {
@@ -42,7 +42,7 @@ describe('testkit.musicxml', () => {
     expect(() => mdom.parse(xml)).not.toThrow();
   });
 
-  // spec(testkit.musicxml): durations are quarter notes; the builder derives
+  // spec(testkit.durations): durations are quarter notes; the builder derives
   // the minimal integer <divisions> so every duration lands on a tick.
   test('divisions is derived from quarter-note durations', () => {
     const xml = score((s) => {
@@ -71,7 +71,7 @@ describe('testkit.musicxml', () => {
     expect(xml).toContain('<duration>4</duration>');
   });
 
-  // spec(testkit.musicxml): a chord is one call with several pitches; a rest
+  // spec(testkit.pitch): a chord is one call with several pitches; a rest
   // takes no pitch.
   test('chord emits N notes with <chord/>; rest emits <rest/>', () => {
     const xml = score((s) => {
@@ -88,7 +88,7 @@ describe('testkit.musicxml', () => {
     expect(() => mdom.parse(xml)).not.toThrow();
   });
 
-  // spec(testkit.musicxml): the mod configurator covers the mdom.mods
+  // spec(testkit.mods): the mod configurator covers the mdom.mods
   // surface; spanning mods emit start/stop endpoints on hosting notes.
   test('mods render onto the hosting notes', () => {
     const xml = score((s) => {
@@ -154,7 +154,7 @@ describe('testkit.musicxml', () => {
     expect(() => mdom.parse(xml)).not.toThrow();
   });
 
-  // spec(testkit.musicxml): timewise() emits score-timewise so both
+  // spec(testkit.escapes): timewise() emits score-timewise so both
   // mdom.parse normalization paths are testable from one description.
   test('timewise() emits score-timewise and still parses', () => {
     const build = (s: Score) => {
@@ -176,7 +176,7 @@ describe('testkit.musicxml', () => {
     expect(mdom.parse(timewise)).toBeInstanceOf(Document);
   });
 
-  // spec(testkit.musicxml): raw() at score, measure, and note scope injects
+  // spec(testkit.escapes): raw() at score, measure, and note scope injects
   // verbatim XML so a test never has to extend the builder.
   test('raw() escape hatch at every scope', () => {
     const xml = score((s) => {

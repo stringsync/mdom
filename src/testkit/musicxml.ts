@@ -8,7 +8,7 @@ export type PitchSpec = string | { step: Step; octave: number; alter?: number };
 
 type Resolved = { step: Step; octave: number; alter: number };
 
-// spec(testkit.musicxml): a pitch is scientific-notation ('C#4', 'Bb3',
+// spec(testkit.pitch): a pitch is scientific-notation ('C#4', 'Bb3',
 // 'F##5') or { step, octave, alter }.
 function resolvePitch(spec: PitchSpec): Resolved {
   if (typeof spec !== 'string') {
@@ -33,7 +33,7 @@ function lcm(a: number, b: number): number {
   return (a / gcd(a, b)) * b;
 }
 
-// spec(testkit.musicxml): durations are quarter notes; the builder derives
+// spec(testkit.durations): durations are quarter notes; the builder derives
 // the minimal integer <divisions> so every duration lands on a tick.
 function denominator(quarters: number): number {
   for (let q = 1; q <= 10080; q++) {
@@ -55,7 +55,7 @@ function escAttr(text: string): string {
 
 type Child = { duration: number; render: (divisions: number) => string };
 
-// spec(testkit.musicxml): the optional last argument to note/rest/chord is a
+// spec(testkit.mods): the optional last argument to note/rest/chord is a
 // callback over a chainable mod configurator covering the mdom.mods surface,
 // plus voice/staff placement and type/dot overrides.
 export class NoteMods {
@@ -102,7 +102,7 @@ export class NoteMods {
     return this;
   }
 
-  // spec(testkit.musicxml): spanning mods emit their MusicXML start/stop
+  // spec(testkit.mods): spanning mods emit their MusicXML start/stop
   // endpoints on the hosting notes; reconstructing the span is mdom's job.
   tie(type: 'start' | 'stop'): this {
     this.ties.push(`<tie type="${type}"/>`);
@@ -173,7 +173,7 @@ export class NoteMods {
     return this;
   }
 
-  // spec(testkit.musicxml): raw() exists at note scope to inject verbatim XML
+  // spec(testkit.escapes): raw() exists at note scope to inject verbatim XML
   // so a test never has to extend the builder for a one-off case.
   raw(xml: string): this {
     this.extra.push(xml);
@@ -289,7 +289,7 @@ export class Measure {
     return this;
   }
 
-  // spec(testkit.musicxml): raw() exists at measure scope to inject verbatim
+  // spec(testkit.escapes): raw() exists at measure scope to inject verbatim
   // XML so a test never has to extend the builder for a one-off case.
   raw(xml: string): this {
     this.children.push({ duration: 0, render: () => xml });
@@ -362,7 +362,7 @@ export class Score {
   private forcedDivisions?: number;
   private prelude = '';
 
-  // spec(testkit.musicxml): timewise() emits score-timewise instead of the
+  // spec(testkit.escapes): timewise() emits score-timewise instead of the
   // default score-partwise, so both mdom.parse normalization paths are
   // testable from one description.
   timewise(): this {

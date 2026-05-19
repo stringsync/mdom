@@ -30,7 +30,7 @@ Nesting is expressed with closures, not chained `.end()` calls — scope is
 unambiguous and arbitrary depth (part → measure → note → mods) reads the
 way the hierarchy nests.
 
-### Durations are quarter notes
+## testkit.durations
 
 Tests think in quarter notes (matching `mdom.timing`), never in
 `<divisions>` ticks. A duration argument is quarter notes (default `1`);
@@ -39,7 +39,7 @@ integer `<divisions>` for the whole part so every duration lands on a tick,
 and emits `<backup>`/`<forward>` for multi-voice writing. `score`-level
 `divisions(n)` forces a specific value when a test asserts on it.
 
-### Pitch shorthand
+## testkit.pitch
 
 A pitch is a scientific-notation string (`'C4'`, `'C#4'`, `'Bb3'`,
 `'F##5'`) or `{ step, octave, alter }`. A chord is one call with several
@@ -51,7 +51,7 @@ m.chord(['C4', 'E4', 'G4'], 2);
 m.rest(1);
 ```
 
-### Mods
+## testkit.mods
 
 The optional last argument to `note`/`rest`/`chord` is a callback over a
 chainable mod configurator covering the `mdom.mods` surface — ties, slurs,
@@ -60,7 +60,7 @@ beams, tuplets, articulations, ornaments, dynamics, lyrics — plus
 (`slur`, `tie`, `beam`) emit their MusicXML start/stop endpoints on the
 hosting notes; reconstructing the span is `mdom`'s job, not the builder's.
 
-### Escape hatches
+## testkit.escapes
 
 The builder models only what fixtures commonly need. For anything else —
 exotic elements, deliberately invalid or unsupported MusicXML, both score
@@ -71,3 +71,4 @@ flavors — there is always a raw escape:
   normalization paths are testable from one description.
 - `raw(xml)` exists at score, measure, and note scope to inject verbatim
   XML, so a test never has to extend the builder to cover a one-off case.
+</content>

@@ -9,23 +9,24 @@ import { Mod } from './nodes/mod';
 import { Part } from './nodes/part';
 import { Stave } from './nodes/stave';
 import { Voice } from './nodes/voice';
+import { type Score, score } from './testkit/musicxml';
 
-const MINIMAL_PARTWISE = `<?xml version="1.0"?>
-<score-partwise version="4.0">
-  <part-list><score-part id="P1"><part-name>Music</part-name></score-part></part-list>
-  <part id="P1"><measure number="1"/></part>
-</score-partwise>`;
+const minimal = (s: Score) => s.part('Music', (p) => p.measure());
 
-// spec(mdom.api)
-describe('mdom', () => {
+describe('mdom.api', () => {
   test('parse returns a Document for well-formed MusicXML', () => {
-    const document = mdom.parse(MINIMAL_PARTWISE);
+    const document = mdom.parse(score(minimal));
 
     expect(document).toBeInstanceOf(Document);
   });
 
   test('parse normalizes score-timewise the same way', () => {
-    const document = mdom.parse('<score-timewise><part-list/><measure number="1"/></score-timewise>');
+    const document = mdom.parse(
+      score((s) => {
+        s.timewise();
+        minimal(s);
+      })
+    );
 
     expect(document).toBeInstanceOf(Document);
   });
@@ -46,51 +47,33 @@ describe('mdom', () => {
 // spec(mdom.hierarchy): parse normalizes both flavors into one timewise tree:
 // Document -> Measure -> Part -> Stave -> Voice -> Entry.
 describe('mdom.hierarchy', () => {
-  const PARTWISE = `<?xml version="1.0"?>
-<score-partwise version="4.0">
-  <part-list>
-    <score-part id="P1"><part-name>Flute</part-name></score-part>
-    <score-part id="P2"><part-name>Piano</part-name></score-part>
-  </part-list>
-  <part id="P1">
-    <measure number="1">
-      <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice></note>
-      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice></note>
-      <note><chord/><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice></note>
-      <note><rest/><duration>4</duration><voice>1</voice></note>
-    </measure>
-  </part>
-  <part id="P2">
-    <measure number="1">
-      <note><pitch><step>C</step><alter>1</alter><octave>3</octave></pitch><duration>8</duration><voice>1</voice><staff>1</staff></note>
-      <note><pitch><step>C</step><octave>2</octave></pitch><duration>8</duration><voice>5</voice><staff>2</staff></note>
-    </measure>
-  </part>
-</score-partwise>`;
-
-  const TIMEWISE = `<?xml version="1.0"?>
-<score-timewise version="4.0">
-  <part-list>
-    <score-part id="P1"><part-name>Flute</part-name></score-part>
-    <score-part id="P2"><part-name>Piano</part-name></score-part>
-  </part-list>
-  <measure number="1">
-    <part id="P1">
-      <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice></note>
-      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice></note>
-      <note><chord/><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice></note>
-      <note><rest/><duration>4</duration><voice>1</voice></note>
-    </part>
-    <part id="P2">
-      <note><pitch><step>C</step><alter>1</alter><octave>3</octave></pitch><duration>8</duration><voice>1</voice><staff>1</staff></note>
-      <note><pitch><step>C</step><octave>2</octave></pitch><duration>8</duration><voice>5</voice><staff>2</staff></note>
-    </part>
-  </measure>
-</score-timewise>`;
+  // One musical description; testkit emits it both partwise and timewise so
+  // both mdom.parse normalization paths are exercised from the same source.
+  const music = (s: Score) => {
+    s.part('Flute', (p) => {
+      p.measure((m) => {
+        m.note('C4', 1, (n) => n.voice(1));
+        m.chord(['E4', 'G4'], 1, (n) => n.voice(1));
+        m.rest(1, (n) => n.voice(1));
+      });
+    });
+    s.part('Piano', (p) => {
+      p.measure((m) => {
+        m.note('C#3', 2, (n) => n.voice(1).staff(1));
+        m.note('C2', 2, (n) => n.voice(5).staff(2));
+      });
+    });
+  };
 
   test.each([
-    ['score-partwise', PARTWISE],
-    ['score-timewise', TIMEWISE],
+    ['score-partwise', score(music)],
+    [
+      'score-timewise',
+      score((s) => {
+        s.timewise();
+        music(s);
+      }),
+    ],
   ])('%s normalizes into the same timewise hierarchy', (_flavor, xml) => {
     const document = mdom.parse(xml);
 
