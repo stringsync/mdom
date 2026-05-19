@@ -60,7 +60,7 @@ describe('testkit.musicxml', () => {
     expect(xml).toContain('<duration>2</duration>'); // (1/3) * 6
   });
 
-  test('divisions(n) forces a specific value', () => {
+  test('divisions forces a specific value', () => {
     const xml = score((s) => {
       s.divisions(4).part('P', (p) => {
         p.measure((m) => m.note('C4', 1));
@@ -156,7 +156,7 @@ describe('testkit.musicxml', () => {
 
   // spec(testkit.escapes): timewise() emits score-timewise so both
   // mdom.parse normalization paths are testable from one description.
-  test('timewise() emits score-timewise and still parses', () => {
+  test('timewise emits score-timewise and still parses', () => {
     const build = (s: Score) => {
       s.part('A', (p) => p.measure((m) => m.note('C4')));
       s.part('B', (p) => p.measure((m) => m.note('E4')));
@@ -178,7 +178,7 @@ describe('testkit.musicxml', () => {
 
   // spec(testkit.escapes): raw() at score, measure, and note scope injects
   // verbatim XML so a test never has to extend the builder.
-  test('raw() escape hatch at every scope', () => {
+  test('raw escape hatch at every scope', () => {
     const xml = score((s) => {
       s.raw('<work><work-title>Etude</work-title></work>');
       s.part('P', (p) => {

@@ -117,7 +117,7 @@ describe('mdom.navigation', () => {
     return { document, measure, part, stave, voice, entry, mod };
   }
 
-  test('parent() returns the immediate parent', () => {
+  test('parent returns the immediate parent', () => {
     const { document, measure, part, stave, voice, entry, mod } = tree();
 
     expect(measure.parent()).toBe(document);
@@ -128,13 +128,13 @@ describe('mdom.navigation', () => {
     expect(mod.parent()).toBe(entry);
   });
 
-  test('parent() chains all the way up to the Document', () => {
+  test('parent chains all the way up to the Document', () => {
     const { document, mod } = tree();
 
     expect(mod.parent().parent().parent().parent().parent().parent()).toBe(document);
   });
 
-  test('document() reaches the root from any node', () => {
+  test('document reaches the root from any node', () => {
     const { document, measure, mod } = tree();
 
     expect(document.document()).toBe(document);
@@ -142,7 +142,7 @@ describe('mdom.navigation', () => {
     expect(mod.document()).toBe(document);
   });
 
-  test('key() is this node’s address, each extending its ancestor', () => {
+  test('key is this node’s address, each extending its ancestor', () => {
     const { measure, part, stave, voice, entry, mod } = tree();
 
     expect(measure.key()).toEqual({ measureIndex: 0 });
@@ -160,7 +160,7 @@ describe('mdom.navigation', () => {
     });
   });
 
-  test('key() reflects sibling position', () => {
+  test('key reflects sibling position', () => {
     const document = new Document([new Measure([]), new Measure([new Part([]), new Part([])])]);
     const secondMeasure = document.measures()[1]!;
     const secondPart = secondMeasure.parts()[1]!;
