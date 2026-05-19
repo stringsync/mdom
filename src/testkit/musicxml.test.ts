@@ -9,7 +9,7 @@ import { durations as d, type Score, score } from './musicxml';
 // XML, recognized MusicXML root) without throwing.
 describe('testkit.musicxml', () => {
   test('score is the only entry point and returns a MusicXML string', () => {
-    const xml = score((s) => {
+    const xml = score.partwise((s) => {
       s.part('Violin I', (p) => {
         p.measure((m) => m.note('C4'));
       });
@@ -24,7 +24,7 @@ describe('testkit.musicxml', () => {
   // spec(testkit.pitch): a pitch is scientific-notation or { step, octave,
   // alter }; sharps, flats, and double-sharp (x) resolve to <alter>.
   test('pitch shorthand resolves accidentals', () => {
-    const xml = score((s) => {
+    const xml = score.partwise((s) => {
       s.part('P', (p) => {
         p.measure((m) => {
           m.note('C#4');
@@ -45,7 +45,7 @@ describe('testkit.musicxml', () => {
   // spec(testkit.durations): durations are quarter notes; the builder derives
   // the minimal integer <divisions> so every duration lands on a tick.
   test('divisions is derived from quarter-note durations', () => {
-    const xml = score((s) => {
+    const xml = score.partwise((s) => {
       s.part('P', (p) => {
         p.measure((m) => {
           m.note('C4', d.eighth); // needs /2
@@ -61,7 +61,7 @@ describe('testkit.musicxml', () => {
   });
 
   test('divisions forces a specific value', () => {
-    const xml = score((s) => {
+    const xml = score.partwise((s) => {
       s.divisions(4).part('P', (p) => {
         p.measure((m) => m.note('C4', d.quarter));
       });
@@ -74,7 +74,7 @@ describe('testkit.musicxml', () => {
   // spec(testkit.pitch): a chord is one call with several pitches; a rest
   // takes no pitch.
   test('chord emits N notes with <chord/>; rest emits <rest/>', () => {
-    const xml = score((s) => {
+    const xml = score.partwise((s) => {
       s.part('P', (p) => {
         p.measure((m) => {
           m.chord(['C4', 'E4', 'G4'], d.half);
@@ -91,7 +91,7 @@ describe('testkit.musicxml', () => {
   // spec(testkit.mods): the mod configurator covers the mdom.mods
   // surface; spanning mods emit start/stop endpoints on hosting notes.
   test('mods render onto the hosting notes', () => {
-    const xml = score((s) => {
+    const xml = score.partwise((s) => {
       s.part('P', (p) => {
         p.measure((m) => {
           m.note('C4', d.eighth, (n) => n.slur('start').beam('begin').staccato());
@@ -113,7 +113,7 @@ describe('testkit.musicxml', () => {
   });
 
   test('multi-voice writing via backup/forward and voice/staff placement', () => {
-    const xml = score((s) => {
+    const xml = score.partwise((s) => {
       s.part('Piano', (p) => {
         p.measure(
           {
@@ -142,7 +142,7 @@ describe('testkit.musicxml', () => {
   });
 
   test('measure attributes render key, time, clef, and tempo', () => {
-    const xml = score((s) => {
+    const xml = score.partwise((s) => {
       s.part('P', (p) => {
         p.measure({ time: [3, 4], key: 2, clef: ['G', 2], tempo: 120 }, (m) => m.note('C4', d.dotted.half));
       });
@@ -154,7 +154,7 @@ describe('testkit.musicxml', () => {
     expect(() => mdom.parse(xml)).not.toThrow();
   });
 
-  // spec(testkit.escapes): timewise() emits score-timewise so both
+  // spec(testkit.escapes): score.timewise emits score-timewise so both
   // mdom.parse normalization paths are testable from one description.
   test('timewise emits score-timewise and still parses', () => {
     const build = (s: Score) => {
@@ -162,11 +162,8 @@ describe('testkit.musicxml', () => {
       s.part('B', (p) => p.measure((m) => m.note('E4')));
     };
 
-    const partwise = score(build);
-    const timewise = score((s) => {
-      s.timewise();
-      build(s);
-    });
+    const partwise = score.partwise(build);
+    const timewise = score.timewise(build);
 
     expect(partwise).toContain('<score-partwise');
     expect(timewise).toContain('<score-timewise');
@@ -179,7 +176,7 @@ describe('testkit.musicxml', () => {
   // spec(testkit.escapes): raw() at score, measure, and note scope injects
   // verbatim XML so a test never has to extend the builder.
   test('raw escape hatch at every scope', () => {
-    const xml = score((s) => {
+    const xml = score.partwise((s) => {
       s.raw('<work><work-title>Etude</work-title></work>');
       s.part('P', (p) => {
         p.measure((m) => {
@@ -196,7 +193,7 @@ describe('testkit.musicxml', () => {
   });
 
   test('text is XML-escaped', () => {
-    const xml = score((s) => {
+    const xml = score.partwise((s) => {
       s.part('Voice & "Lead"', (p) => {
         p.measure((m) => m.note('C4', d.quarter, (n) => n.lyric('rock & roll')));
       });

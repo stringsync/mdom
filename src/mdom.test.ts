@@ -9,19 +9,18 @@ import { Mod } from './nodes/mod';
 import { Part } from './nodes/part';
 import { Stave } from './nodes/stave';
 import { Voice } from './nodes/voice';
-import { score } from './testkit/musicxml';
+import { type Score, score } from './testkit/musicxml';
 
 describe('mdom.api', () => {
   test('parse returns a Document for well-formed MusicXML', () => {
-    const document = mdom.parse(score((s) => s.part('Music', (p) => p.measure())));
+    const document = mdom.parse(score.partwise((s) => s.part('Music', (p) => p.measure())));
 
     expect(document).toBeInstanceOf(Document);
   });
 
   test('parse normalizes score-timewise the same way', () => {
     const document = mdom.parse(
-      score((s) => {
-        s.timewise();
+      score.timewise((s) => {
         s.part('Music', (p) => p.measure());
       })
     );
@@ -47,55 +46,49 @@ describe('mdom.api', () => {
 describe('mdom.hierarchy', () => {
   // The same musical description, inlined per flavor, so both mdom.parse
   // normalization paths are exercised from one self-contained fixture.
-  test.each(['score-partwise', 'score-timewise'] as const)(
-    '%s normalizes into the same timewise hierarchy',
-    (flavor) => {
-      const xml = score((s) => {
-        if (flavor === 'score-timewise') {
-          s.timewise();
-        }
-        s.part('Flute', (p) => {
-          p.measure((m) => {
-            m.note('C4', 1, (n) => n.voice(1));
-            m.chord(['E4', 'G4'], 1, (n) => n.voice(1));
-            m.rest(1, (n) => n.voice(1));
-          });
-        });
-        s.part('Piano', (p) => {
-          p.measure((m) => {
-            m.note('C#3', 2, (n) => n.voice(1).staff(1));
-            m.note('C2', 2, (n) => n.voice(5).staff(2));
-          });
+  test.each(['partwise', 'timewise'] as const)('%s normalizes into the same timewise hierarchy', (flavor) => {
+    const xml = score.flavored(flavor, (s: Score) => {
+      s.part('Flute', (p) => {
+        p.measure((m) => {
+          m.note('C4', 1, (n) => n.voice(1));
+          m.chord(['E4', 'G4'], 1, (n) => n.voice(1));
+          m.rest(1, (n) => n.voice(1));
         });
       });
-      const document = mdom.parse(xml);
+      s.part('Piano', (p) => {
+        p.measure((m) => {
+          m.note('C#3', 2, (n) => n.voice(1).staff(1));
+          m.note('C2', 2, (n) => n.voice(5).staff(2));
+        });
+      });
+    });
+    const document = mdom.parse(xml);
 
-      expect(document.measures()).toHaveLength(1);
-      const measure = document.measures()[0]!;
-      expect(measure.parts()).toHaveLength(2);
+    expect(document.measures()).toHaveLength(1);
+    const measure = document.measures()[0]!;
+    expect(measure.parts()).toHaveLength(2);
 
-      // spec(mdom.hierarchy): a Part has many Staves; a Stave has many Voices.
-      const flute = measure.parts()[0]!;
-      expect(flute.staves()).toHaveLength(1);
-      const voice = flute.staves()[0]!.voices()[0]!;
-      const entries = voice.entries();
+    // spec(mdom.hierarchy): a Part has many Staves; a Stave has many Voices.
+    const flute = measure.parts()[0]!;
+    expect(flute.staves()).toHaveLength(1);
+    const voice = flute.staves()[0]!.voices()[0]!;
+    const entries = voice.entries();
 
-      // spec(mdom.entries): kind discriminates; a chord is one Entry with many
-      // Notes, a rest an Entry with none.
-      expect(entries.map((e) => e.kind)).toEqual(['note', 'chord', 'rest']);
-      expect(entries[0]!.notes.map((n) => n.pitch.name)).toEqual(['C4']);
-      expect(entries[0]!.notes[0]!.pitch.midi).toBe(60);
-      expect(entries[1]!.notes.map((n) => n.pitch.name)).toEqual(['E4', 'G4']);
-      expect(entries[2]!.notes).toHaveLength(0);
+    // spec(mdom.entries): kind discriminates; a chord is one Entry with many
+    // Notes, a rest an Entry with none.
+    expect(entries.map((e) => e.kind)).toEqual(['note', 'chord', 'rest']);
+    expect(entries[0]!.notes.map((n) => n.pitch.name)).toEqual(['C4']);
+    expect(entries[0]!.notes[0]!.pitch.midi).toBe(60);
+    expect(entries[1]!.notes.map((n) => n.pitch.name)).toEqual(['E4', 'G4']);
+    expect(entries[2]!.notes).toHaveLength(0);
 
-      // spec(mdom.hierarchy): a Stave is a staff line within a Part — piano's
-      // two <staff>s become two Staves.
-      const piano = measure.parts()[1]!;
-      expect(piano.staves()).toHaveLength(2);
-      expect(piano.staves()[0]!.voices()[0]!.entries()[0]!.notes[0]!.pitch.name).toBe('C#3');
-      expect(piano.staves()[1]!.voices()[0]!.entries()[0]!.notes[0]!.pitch.name).toBe('C2');
-    }
-  );
+    // spec(mdom.hierarchy): a Stave is a staff line within a Part — piano's
+    // two <staff>s become two Staves.
+    const piano = measure.parts()[1]!;
+    expect(piano.staves()).toHaveLength(2);
+    expect(piano.staves()[0]!.voices()[0]!.entries()[0]!.notes[0]!.pitch.name).toBe('C#3');
+    expect(piano.staves()[1]!.voices()[0]!.entries()[0]!.notes[0]!.pitch.name).toBe('C2');
+  });
 });
 
 // spec(mdom.navigation): traversal is bidirectional and possible from any node.

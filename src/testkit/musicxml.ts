@@ -381,17 +381,10 @@ export class Part {
 
 export class Score {
   private readonly parts: Part[] = [];
-  private flavor: 'partwise' | 'timewise' = 'partwise';
   private forcedDivisions?: number;
   private prelude = '';
 
-  // spec(testkit.escapes): timewise() emits score-timewise instead of the
-  // default score-partwise, so both mdom.parse normalization paths are
-  // testable from one description.
-  timewise(): this {
-    this.flavor = 'timewise';
-    return this;
-  }
+  constructor(private readonly flavor: 'partwise' | 'timewise' = 'partwise') {}
 
   divisions(n: number): this {
     this.forcedDivisions = n;
@@ -475,10 +468,19 @@ export class Score {
   }
 }
 
-// spec(testkit.musicxml): score is the only entry point — it takes a builder
-// callback and returns a MusicXML string.
-export function score(build: (s: Score) => void): string {
-  const s = new Score();
+function buildScore(flavor: 'partwise' | 'timewise', build: (s: Score) => void): string {
+  const s = new Score(flavor);
   build(s);
   return s.toMusicXML();
 }
+
+// spec(testkit.musicxml): score is the only entry point — it takes a builder
+// callback and returns a MusicXML string.
+export const score = {
+  partwise: (build: (s: Score) => void): string => buildScore('partwise', build),
+  // spec(testkit.escapes): score.timewise emits score-timewise instead of the
+  // default score-partwise, so both mdom.parse normalization paths are
+  // testable from one description.
+  timewise: (build: (s: Score) => void): string => buildScore('timewise', build),
+  flavored: (flavor: 'partwise' | 'timewise', build: (s: Score) => void): string => buildScore(flavor, build),
+};

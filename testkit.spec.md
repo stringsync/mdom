@@ -11,11 +11,12 @@ MusicXML model (that is what `@stringsync/musicxml` is for, and it is too
 heavy-handed for fixtures). The goal is: describe the music a test cares
 about in a few lines, and emit valid MusicXML for `mdom.parse`.
 
-`score` is the only entry point. It takes a builder callback and returns a
-MusicXML string:
+`score` is the only entry point — a namespace with `score.partwise` and
+`score.timewise`. Each takes a builder callback and returns a MusicXML
+string in the corresponding flavor:
 
 ```ts
-const xml = score((s) => {
+const xml = score.partwise((s) => {
   s.part('Violin I', (p) => {
     p.measure({ time: [3, 4], key: 2, clef: ['G', 2], tempo: 120 }, (m) => {
       m.note('C4');
@@ -70,8 +71,8 @@ The builder models only what fixtures commonly need. For anything else —
 exotic elements, deliberately invalid or unsupported MusicXML, both score
 flavors — there is always a raw escape:
 
-- `score(...).` builder exposes `timewise()` to emit `score-timewise`
-  instead of the default `score-partwise`, so both `mdom.parse`
+- `score.timewise(build)` emits `score-timewise` instead of the default
+  `score-partwise` (`score.partwise(build)`), so both `mdom.parse`
   normalization paths are testable from one description.
 - `raw(xml)` exists at score, measure, and note scope to inject verbatim
   XML, so a test never has to extend the builder to cover a one-off case.
