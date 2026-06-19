@@ -23,14 +23,24 @@ export class MText extends MNode {
 
 export class MElement extends MNode {
   private attrs: Record<string, string> = {};
-  private kids: MNode[] = [];
+  private _children: MNode[] = [];
 
   constructor(readonly tag: string) {
     super();
   }
 
   get children(): readonly MNode[] {
-    return this.kids;
+    return this._children;
+  }
+
+  // Leaf text content. First text node only — value elements hold exactly one.
+  get text(): string | null {
+    for (const node of this._children) {
+      if (node instanceof MText) {
+        return node.value;
+      }
+    }
+    return null;
   }
 
   get attributes(): Record<string, string> {
@@ -50,13 +60,13 @@ export class MElement extends MNode {
   append(child: MNode): void {
     child.remove();
     child.parent = this;
-    this.kids.push(child);
+    this._children.push(child);
   }
 
   removeChild(child: MNode): void {
-    const i = this.kids.indexOf(child);
+    const i = this._children.indexOf(child);
     if (i >= 0) {
-      this.kids.splice(i, 1);
+      this._children.splice(i, 1);
       child.parent = null;
     }
   }
@@ -81,6 +91,16 @@ export class MElement extends MNode {
   }
 
   childrenOfType<T extends MElement>(type: Ctor<T>): T[] {
-    return this.kids.filter((k): k is T => k instanceof type);
+    return this._children.filter((k): k is T => k instanceof type);
+  }
+
+  // Tag-based downward lookup, complementing the type-based childrenOfType.
+  child(tag: string): MElement | null {
+    for (const node of this._children) {
+      if (node instanceof MElement && node.tag === tag) {
+        return node;
+      }
+    }
+    return null;
   }
 }

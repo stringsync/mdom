@@ -2,7 +2,9 @@ import { js2xml, xml2js } from 'xml-js';
 import { MDocument } from './m-document';
 import { MElement, MText, type MNode } from './m-node';
 import { Measure } from './measure';
+import { Note } from './note';
 import { Part } from './part';
+import { Pitch } from './pitch';
 import { Score } from './score';
 
 // Tag -> typed node. Unlisted tags become a plain MElement and still round-trip.
@@ -10,6 +12,8 @@ const REGISTRY: Record<string, new () => MElement> = {
   'score-partwise': Score,
   part: Part,
   measure: Measure,
+  note: Note,
+  pitch: Pitch,
 };
 
 // The slice of xml-js's non-compact JSON shape we read and emit.
