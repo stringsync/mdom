@@ -1,4 +1,4 @@
-// spec(mdom.cli): release bumps the package.json version by semver level
+// release bumps the package.json version by semver level
 const TYPES = ['patch', 'minor', 'major'] as const;
 type BumpType = (typeof TYPES)[number];
 
@@ -29,7 +29,7 @@ function bump(version: string, type: BumpType): string {
 }
 
 export async function release(type: string) {
-  // spec(mdom.cli): unrecognized <type> is rejected with a nonzero exit
+  // unrecognized <type> is rejected with a nonzero exit
   if (!isBumpType(type)) {
     throw new Error(`unknown version bump "${type}" (expected patch, minor, major)`);
   }

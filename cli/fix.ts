@@ -1,4 +1,4 @@
-// spec(mdom.cli): fix formats, lints, and typechecks the project
+// fix formats, lints, and typechecks the project
 import chalk from 'chalk';
 
 export async function fix(opts: { check: boolean }): Promise<void> {

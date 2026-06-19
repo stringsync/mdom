@@ -1,29 +1,39 @@
-## Bun
+# mdom
 
-Default to using Bun instead of Node.js.
+A DOM for MusicXML: a faithful, mutable tree of the document that round-trips
+losslessly, with typed nodes for ergonomic querying.
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>` (but use `mdom` to run the CLI)
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `bunx <package> <command>` instead of `npx <package> <command>`
-- Bun automatically loads .env, so don't use dotenv.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Use Bun.$`ls` instead of execa.
-- Use `bun test` to run tests.
+## Design direction
 
-## Development
+- **Faithful tree, not a model.** Every MusicXML element becomes an `MElement`
+  (tag + attributes + children) in `m-node.ts`. We mirror the markup; we do not
+  re-imagine it. Anything we haven't typed stays a plain `MElement` and still
+  round-trips.
+- **Typed nodes extend `MElement`.** `Score` / `Part` / `Measure` add typed,
+  downward query getters (`score.parts`, `part.measures`). The parser picks the
+  subclass per tag from the registry in `xml.ts`; unknown tags fall back to
+  `MElement`. Add a typed node only when you need ergonomic access to it — do
+  not model the whole spec up front.
+- **Part-major, because partwise MusicXML is.** The tree mirrors
+  `score-partwise → part → measure`. There is no spine decision to make.
+- **Mutation is via methods only.** `children` is a read-only view; mutate with
+  `append` / `remove`. There is exactly one way to change the tree.
+- **Upward queries are derived, never stored.** Nodes carry a generic `parent`
+  (set mechanically by the mutation methods); no class stores a typed parent.
+  Climb with `closest(Type)`. Non-tree relationships (slurs, ties, beams —
+  paired start/stop markers joined by a `number` attribute) are resolved by
+  query methods on the typed node, not by tree structure.
+- **Fidelity is the contract.** Parse then serialize must be idempotent at the
+  serialized level — see `src/round-trip.test.ts`. Whitespace-only text and
+  comments are dropped on parse so this holds; significant text is preserved.
+  Do not add a feature that breaks that test.
 
-Everything goes through the `mdom` command — no MCP server required.
+Parse/serialize live in `xml.ts` (`MDOMParser` / `MXMLSerializer`, built on the
+`xml-js` dependency); nodes stay pure data + queries.
 
-When the user mentions a specific spec (which has the form `<module>.<name>`), run `mdom show <module>.<name>` to view it.
+## Commands
 
-- Read [mdom.spec.md](./mdom.spec.md) to understand the project.
-- Run `mdom scan` to get a spec overview and see how the project is implemented.
-- Consider writing a test that initially fails based on the feature request.
-- Update the implementation.
-- Strategically add spec tags in the tests and/or implementation: `// spec(<name>)` or `// spec(<name>): <comment>`.
-- Run `mdom scan` or `mdom show <module>.<name>` to validate and audit the specs against the implementation.
+After making changes:
+
 - Run `mdom test` to test the project.
 - Run `mdom fix` to typecheck, format, and lint the project.

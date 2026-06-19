@@ -1,4 +1,4 @@
-// spec(mdom.cli): action wrappers shared across commands
+// action wrappers shared across commands
 import chalk from 'chalk';
 
 export function withTiming<T extends unknown[]>(next: (...args: T) => Promise<void>): (...args: T) => Promise<void> {

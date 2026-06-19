@@ -12,8 +12,14 @@ To install:
 bun link
 ```
 
-To get an overview of the project:
+Run the test suite:
 
 ```sh
-mdom scan
+mdom test
+```
+
+Format, lint, and typecheck:
+
+```sh
+mdom fix
 ```

@@ -1,15 +1,14 @@
 #!/usr/bin/env bun
-// spec(mdom.cli): `mdom` entry point, registered as a bin in package.json
+// `mdom` entry point, registered as a bin in package.json
 import { program } from 'commander';
 import { fix } from './fix.ts';
 import { test } from './test.ts';
 import { release } from './release.ts';
-import { spec } from './spec.ts';
 import { withErrorHandling, withTiming } from './util.ts';
 
 program.name('mdom').description('A DOM for MusicXML.');
 
-// spec(mdom.cli): fix command
+// fix command
 program
   .command('fix')
   .description('format, lint, and typecheck')
@@ -22,7 +21,7 @@ program
     )
   );
 
-// spec(mdom.cli): test command
+// test command
 program
   .command('test')
   .description('run the test suite')
@@ -36,7 +35,7 @@ program
     )
   );
 
-// spec(mdom.cli): release command
+// release command
 program
   .command('release')
   .description('bump the package version')
@@ -45,34 +44,6 @@ program
     withErrorHandling(async (type: string) => {
       await release(type);
     })
-  );
-
-// spec(mdom.cli): scan command
-program
-  .command('scan')
-  .description('scan the project specs (via @stringsync/spec)')
-  .allowUnknownOption()
-  .argument('[args...]', 'arguments forwarded to `@stringsync/spec scan`')
-  .action(
-    withErrorHandling(
-      withTiming(async (args: string[]) => {
-        await spec('scan', args);
-      })
-    )
-  );
-
-// spec(mdom.cli): show command
-program
-  .command('show')
-  .description('show a project spec (via @stringsync/spec)')
-  .allowUnknownOption()
-  .argument('[args...]', 'arguments forwarded to `@stringsync/spec show`')
-  .action(
-    withErrorHandling(
-      withTiming(async (args: string[]) => {
-        await spec('show', args);
-      })
-    )
   );
 
 program.parse();
