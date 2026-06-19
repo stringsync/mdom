@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { MDOMParser } from './xml';
 
-// One pitched note (with an alter) and one rest, so every getter is exercised.
 const SAMPLE = `<score-partwise>
   <part-list>
     <score-part id="P1">

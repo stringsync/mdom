@@ -1,6 +1,5 @@
 import { MElement } from './m-node';
 
-// Mirrors <pitch>: the typed leaf values of a pitched note.
 export class Pitch extends MElement {
   constructor() {
     super('pitch');

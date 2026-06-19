@@ -5,7 +5,7 @@ import { Score } from './score';
 
 describe('Score', () => {
   const score = new Score();
-  score.append(new MElement('part-list')); // not a Part — must be ignored
+  score.append(new MElement('part-list'));
   for (const id of ['P1', 'P2']) {
     const part = new Part();
     part.setAttribute('id', id);

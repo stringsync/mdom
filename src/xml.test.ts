@@ -73,11 +73,9 @@ describe('MDOMParser / MXMLSerializer', () => {
     const note = doc.score?.part('P1')?.measure('1')?.notes[0];
     expect(note).not.toBeUndefined();
 
-    // Only the <type> element remains under <note>; non-element nodes are dropped.
     const elementChildren = note?.children.filter((n) => n instanceof MElement) ?? [];
     expect(elementChildren.map((n) => (n as MElement).tag)).toEqual(['type']);
 
-    // Significant text is preserved verbatim.
     expect(note?.type).toBe('  whole  ');
   });
 

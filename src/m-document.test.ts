@@ -64,8 +64,6 @@ describe('MDocument', () => {
   });
 });
 
-// A small but real score-partwise: declaration, doctype, part-list, and one
-// part with two measures. Enough to pin the direction without modeling notes.
 const SAMPLE = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="4.0">

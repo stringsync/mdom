@@ -1,10 +1,3 @@
-// Substrate for the MusicXML DOM: a faithful, generic tree of the document.
-// Typed nodes (Score/Part/Measure) extend MElement; tags we don't model stay
-// plain MElements, so anything we haven't typed still round-trips. The tree is
-// mutated only through methods — `children` is a read-only view — and upward
-// navigation is derived from a generic `parent` link, so no node type needs to
-// know about a specific parent type.
-
 type Ctor<T> = new (...args: never[]) => T;
 
 export abstract class MNode {
@@ -94,7 +87,6 @@ export class MElement extends MNode {
     return this._children.filter((k): k is T => k instanceof type);
   }
 
-  // Tag-based downward lookup, complementing the type-based childrenOfType.
   child(tag: string): MElement | null {
     for (const node of this._children) {
       if (node instanceof MElement && node.tag === tag) {

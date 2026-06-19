@@ -27,7 +27,6 @@ interface XmlNode {
   declaration?: { attributes?: Record<string, string> };
 }
 
-// Mirrors the browser's DOMParser: text in, MDocument out.
 export class MDOMParser {
   parseFromString(xml: string): MDocument {
     const tree = xml2js(xml, { compact: false }) as unknown as XmlNode;
@@ -41,7 +40,6 @@ export class MDOMParser {
   }
 }
 
-// Mirrors the browser's XMLSerializer: MDocument in, text out.
 export class MXMLSerializer {
   serializeToString(doc: MDocument): string {
     const elements: XmlNode[] = [];
@@ -73,9 +71,9 @@ function build(node: XmlNode): MElement {
     } else if (child.type === 'text' && typeof child.text === 'string' && child.text.trim() !== '') {
       el.append(new MText(child.text));
     }
-    // ponytail: whitespace-only text, comments, and CDATA are dropped so
-    // serialization stays idempotent; add MComment/MCData nodes if a real
-    // document needs them preserved.
+    // Whitespace-only text, comments, and CDATA are dropped so serialization
+    // stays idempotent; add MComment/MCData nodes if a real document needs them
+    // preserved.
   }
 
   return el;

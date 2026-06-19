@@ -2,7 +2,6 @@ import { describe, expect, it } from 'bun:test';
 import { MElement, MText } from './m-node';
 import { Pitch } from './pitch';
 
-// Pitch reads nested <step>/<alter>/<octave> text; build those leaves directly.
 function leaf(tag: string, text: string): MElement {
   const el = new MElement(tag);
   el.append(new MText(text));
