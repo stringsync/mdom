@@ -1,6 +1,6 @@
 import { MElement } from './m-node';
 import { Note } from './note';
-import { Part } from './part';
+import { resolveMembers, resolvePartner, noteMarkers, type SpannerSpec } from './spanner';
 
 export type SlurType = 'start' | 'stop' | 'continue';
 
@@ -31,33 +31,24 @@ export class Slur extends MElement {
     return this.closest(Note);
   }
 
-  // The marker at the other end, found by scanning the part in document order
-  // for the nearest matching start/stop with the same `number`. Reused numbers
+  // The marker at the other end, found by scanning the part in document order for
+  // the nearest matching start/stop with the same `number`. Reused numbers
   // resolve correctly: the first stop after a start is its match, because a
   // number can't reopen until it closes. Spans measures (and systems) for free.
   partner(): Slur | null {
-    const part = this.closest(Part);
-    if (!part) {
-      return null;
-    }
-    const markers = part.measures.flatMap((m) => m.notes).flatMap((n) => n.slurs);
-    const self = markers.indexOf(this);
-    if (self < 0) {
-      return null;
-    }
-    if (this.slurType === 'start') {
-      for (let i = self + 1; i < markers.length; i++) {
-        if (markers[i].number === this.number && markers[i].slurType === 'stop') {
-          return markers[i];
-        }
-      }
-    } else if (this.slurType === 'stop') {
-      for (let i = self - 1; i >= 0; i--) {
-        if (markers[i].number === this.number && markers[i].slurType === 'start') {
-          return markers[i];
-        }
-      }
-    }
-    return null;
+    return resolvePartner(this, this.spec());
+  }
+
+  // All markers in this spanner (start..stop), not just the far end.
+  members(): Slur[] {
+    return resolveMembers(this, this.spec());
+  }
+
+  private spec(): SpannerSpec<Slur> {
+    return {
+      siblings: noteMarkers(this, (note) => note.slurs),
+      isOpen: (slur) => slur.slurType === 'start',
+      isClose: (slur) => slur.slurType === 'stop',
+    };
   }
 }

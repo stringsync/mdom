@@ -8,6 +8,16 @@ import { Part } from './part';
 import { Pitch } from './pitch';
 import { Score } from './score';
 import { Slur } from './slur';
+import { Key } from './key';
+import { Time } from './time';
+import { Tie } from './tie';
+import { Beam } from './beam';
+import { Tuplet } from './tuplet';
+import { WavyLine } from './wavy-line';
+import { Wedge } from './wedge';
+import { Pedal } from './pedal';
+import { OctaveShift } from './octave-shift';
+import { Direction } from './direction';
 
 // Tag -> typed node. Unlisted tags become a plain MElement and still round-trip.
 const REGISTRY: Record<string, new () => MElement> = {
@@ -18,6 +28,16 @@ const REGISTRY: Record<string, new () => MElement> = {
   pitch: Pitch,
   clef: Clef,
   slur: Slur,
+  key: Key,
+  time: Time,
+  tied: Tie,
+  beam: Beam,
+  tuplet: Tuplet,
+  'wavy-line': WavyLine,
+  wedge: Wedge,
+  pedal: Pedal,
+  'octave-shift': OctaveShift,
+  direction: Direction,
 };
 
 // The slice of xml-js's non-compact JSON shape we read and emit.
@@ -44,7 +64,7 @@ export class MDOMParser {
   }
 }
 
-export class MXMLSerializer {
+export class MusicXMLSerializer {
   serializeToString(doc: MDocument): string {
     const elements: XmlNode[] = [];
     if (doc.doctype) {

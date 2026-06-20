@@ -6,11 +6,11 @@ import { Note } from './note';
 import { Part } from './part';
 import { Pitch } from './pitch';
 import { Score } from './score';
-import { MDOMParser, MXMLSerializer } from './xml';
+import { MDOMParser, MusicXMLSerializer } from './xml';
 
 describe('MDOMParser / MXMLSerializer', () => {
   const parser = new MDOMParser();
-  const serializer = new MXMLSerializer();
+  const serializer = new MusicXMLSerializer();
 
   it('builds typed nodes from the registry and leaves unknown tags as MElement', () => {
     const doc = parser.parseFromString(`

@@ -44,27 +44,27 @@ describe('Slur.partner() — spanner pairing as a query', () => {
 
   it('pairs a slur within one measure, both directions', () => {
     const [c, , e] = notesOf('1');
-    expect(step(slurNote(c, 'start'))).toBe('E'); // C's start → E's stop
-    expect(step(slurNote(e, 'stop'))).toBe('C'); // E's stop → C's start
+    expect(step(slurNote(c!, 'start'))).toBe('E'); // C's start → E's stop
+    expect(step(slurNote(e!, 'stop'))).toBe('C'); // E's stop → C's start
   });
 
   it('pairs a slur across measures', () => {
-    const f = notesOf('2')[0];
-    const g = notesOf('3')[0];
+    const f = notesOf('2')[0]!;
+    const g = notesOf('3')[0]!;
     expect(step(slurNote(f, 'start'))).toBe('G');
     expect(step(slurNote(g, 'stop'))).toBe('F');
   });
 
   it('does not let a reused number cross-link slurs', () => {
     // C(m1) and F(m2) both open number 1. C must pair with E, not jump to G.
-    const c = notesOf('1')[0];
+    const c = notesOf('1')[0]!;
     expect(step(slurNote(c, 'start'))).toBe('E');
   });
 
   it('resolves nested slurs by number', () => {
     const [a, b, c5] = notesOf('4');
-    expect(step(b.slurs[0].partner()?.note ?? null)).toBe('A'); // inner (2): B→A
-    expect(step(a.slurs.find((s) => s.number === '1')!.partner()?.note ?? null)).toBe('C'); // outer (1): A→C5
-    expect(step(slurNote(c5, 'stop'))).toBe('A');
+    expect(step(b!.slurs[0]!.partner()?.note ?? null)).toBe('A'); // inner (2): B→A
+    expect(step(a!.slurs.find((s) => s.number === '1')!.partner()?.note ?? null)).toBe('C'); // outer (1): A→C5
+    expect(step(slurNote(c5!, 'stop'))).toBe('A');
   });
 });

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './xml';
-import type { Note } from './note';
+import { MDOMParser, type Note } from '../index';
 
 // 4/4, divisions=4 (quarter = 4). m1: two voices written via <backup>, with a
 // chord stacked on beat 0 of voice 1. m2: a <forward> skips a beat.
