@@ -1,4 +1,4 @@
-import { MElement } from './m-node';
+import { MElement, required } from './m-node';
 import { Direction } from './direction';
 import { resolveMembers, resolvePartner, directionMarkers, type SpannerSpec } from './spanner';
 
@@ -14,12 +14,14 @@ export class Pedal extends MElement {
     return this.getAttribute('number') ?? '1';
   }
 
-  get pedalType(): PedalType | null {
-    return this.getAttribute('type') as PedalType | null;
+  // `type` is required on a <pedal> and drives pairing.
+  get pedalType(): PedalType {
+    return required(this.getAttribute('type'), 'type on <pedal>') as PedalType;
   }
 
-  get direction(): Direction | null {
-    return this.closest(Direction);
+  // An attached marker always has its direction.
+  get direction(): Direction {
+    return required(this.closest(Direction), '<direction> ancestor of <pedal>');
   }
 
   partner(): Pedal | null {
@@ -32,14 +34,15 @@ export class Pedal extends MElement {
   }
 
   measureBeat(): number | null {
-    return this.direction?.measureBeat() ?? null;
+    return this.direction.measureBeat();
   }
 
   private spec(): SpannerSpec<Pedal> {
     return {
       siblings: directionMarkers(this, (direction) => direction.pedals),
-      isOpen: (pedal) => pedal.pedalType === 'start' || pedal.pedalType === 'sostenuto',
-      isClose: (pedal) => pedal.pedalType === 'stop',
+      // Raw reads so resolution tolerates a malformed typeless marker.
+      isOpen: (pedal) => pedal.getAttribute('type') === 'start' || pedal.getAttribute('type') === 'sostenuto',
+      isClose: (pedal) => pedal.getAttribute('type') === 'stop',
     };
   }
 }

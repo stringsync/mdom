@@ -1,4 +1,4 @@
-import { MElement } from './m-node';
+import { MElement, required } from './m-node';
 import { Direction } from './direction';
 import { resolveMembers, resolvePartner, directionMarkers, type SpannerSpec } from './spanner';
 
@@ -16,13 +16,15 @@ export class Wedge extends MElement {
     return this.getAttribute('number') ?? '1';
   }
 
-  get wedgeType(): WedgeType | null {
-    return this.getAttribute('type') as WedgeType | null;
+  // `type` is required on a <wedge> and drives pairing.
+  get wedgeType(): WedgeType {
+    return required(this.getAttribute('type'), 'type on <wedge>') as WedgeType;
   }
 
-  // The <direction> this marker hangs off of (direction spanners have no note).
-  get direction(): Direction | null {
-    return this.closest(Direction);
+  // The <direction> this marker hangs off of (direction spanners have no note);
+  // an attached marker always has one.
+  get direction(): Direction {
+    return required(this.closest(Direction), '<direction> ancestor of <wedge>');
   }
 
   partner(): Wedge | null {
@@ -35,14 +37,15 @@ export class Wedge extends MElement {
   }
 
   measureBeat(): number | null {
-    return this.direction?.measureBeat() ?? null;
+    return this.direction.measureBeat();
   }
 
   private spec(): SpannerSpec<Wedge> {
     return {
       siblings: directionMarkers(this, (direction) => direction.wedges),
-      isOpen: (wedge) => wedge.wedgeType === 'crescendo' || wedge.wedgeType === 'diminuendo',
-      isClose: (wedge) => wedge.wedgeType === 'stop',
+      // Raw reads so resolution tolerates a malformed typeless marker.
+      isOpen: (wedge) => wedge.getAttribute('type') === 'crescendo' || wedge.getAttribute('type') === 'diminuendo',
+      isClose: (wedge) => wedge.getAttribute('type') === 'stop',
     };
   }
 }

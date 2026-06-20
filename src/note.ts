@@ -29,6 +29,7 @@ export class Note extends MElement {
     return this.childrenOfType(Pitch)[0] ?? null; // null for rests / unpitched
   }
 
+  // <duration> in divisions; null for grace notes, which carry none (see isGrace).
   get duration(): number | null {
     const duration = this.child('duration')?.text;
     return duration == null ? null : Number(duration);
@@ -78,10 +79,10 @@ export class Note extends MElement {
     return measure ? divisionsBackFrom(measure, measure.children.indexOf(this)) : null;
   }
 
-  // <staves> count in effect (global, not per-staff).
-  staveCount(): number | null {
+  // <staves> count in effect (global, not per-staff); 1 when never declared.
+  staveCount(): number {
     const found = this.attributeBack((attrs) => attrs.child('staves') ?? undefined);
-    return found?.text == null ? null : Number(found.text);
+    return found?.text == null ? 1 : Number(found.text);
   }
 
   // <staff-details><staff-lines> in effect for this note's staff; 5 (the musical
@@ -119,14 +120,20 @@ export class Note extends MElement {
     return duration / divisions;
   }
 
-  // The <voice> this note belongs to.
-  get voice(): string | null {
-    return this.child('voice')?.text ?? null;
+  // The <voice> this note belongs to; '1' when omitted (single-voice parts),
+  // matching note.staff.
+  get voice(): string {
+    return this.child('voice')?.text ?? '1';
   }
 
   // Whether this note carries <chord/> (stacks on the previous note's onset).
   get isChordMember(): boolean {
     return this.child('chord') !== null;
+  }
+
+  // Whether this note carries <grace/> (stolen time, so no <duration>).
+  get isGrace(): boolean {
+    return this.child('grace') !== null;
   }
 
   // The <slur> markers on this note (usually one; two when a note ends one slur

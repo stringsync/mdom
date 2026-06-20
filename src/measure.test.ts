@@ -11,8 +11,8 @@ describe('Measure', () => {
     expect(measure.number).toBe('4');
   });
 
-  it('has a null number when unset', () => {
-    expect(new Measure().number).toBeNull();
+  it('throws when number is unset', () => {
+    expect(() => new Measure().number).toThrow('number on <measure>');
   });
 
   it('lists only notes, ignoring other measure children', () => {

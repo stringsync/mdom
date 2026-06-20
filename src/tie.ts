@@ -1,4 +1,4 @@
-import { MElement } from './m-node';
+import { MElement, required } from './m-node';
 import { Note } from './note';
 import { resolveMembers, resolvePartner, noteMarkers, type SpannerSpec } from './spanner';
 
@@ -17,13 +17,14 @@ export class Tie extends MElement {
     return this.getAttribute('number') ?? '1';
   }
 
-  get tieType(): TieType | null {
-    return this.getAttribute('type') as TieType | null;
+  // `type` is required on a <tied> and drives pairing.
+  get tieType(): TieType {
+    return required(this.getAttribute('type'), 'type on <tied>') as TieType;
   }
 
-  // The note this marker hangs off of.
-  get note(): Note | null {
-    return this.closest(Note);
+  // The note this marker hangs off of. An attached marker always has one.
+  get note(): Note {
+    return required(this.closest(Note), '<note> ancestor of <tied>');
   }
 
   // The marker at the other end (same number), scanning the part in document order.
@@ -38,14 +39,15 @@ export class Tie extends MElement {
 
   // Onset of this end within its measure, in beats.
   measureBeat(): number | null {
-    return this.note?.measureBeat() ?? null;
+    return this.note.measureBeat();
   }
 
   private spec(): SpannerSpec<Tie> {
     return {
       siblings: noteMarkers(this, (note) => note.ties),
-      isOpen: (tie) => tie.tieType === 'start' || tie.tieType === 'let-ring',
-      isClose: (tie) => tie.tieType === 'stop',
+      // Raw reads so resolution tolerates a malformed typeless marker.
+      isOpen: (tie) => tie.getAttribute('type') === 'start' || tie.getAttribute('type') === 'let-ring',
+      isClose: (tie) => tie.getAttribute('type') === 'stop',
     };
   }
 }

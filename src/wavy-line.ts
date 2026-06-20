@@ -1,4 +1,4 @@
-import { MElement } from './m-node';
+import { MElement, required } from './m-node';
 import { Note } from './note';
 import { resolveMembers, resolvePartner, noteMarkers, type SpannerSpec } from './spanner';
 
@@ -15,12 +15,14 @@ export class WavyLine extends MElement {
     return this.getAttribute('number') ?? '1';
   }
 
-  get wavyLineType(): WavyLineType | null {
-    return this.getAttribute('type') as WavyLineType | null;
+  // `type` is required on a <wavy-line> and drives pairing.
+  get wavyLineType(): WavyLineType {
+    return required(this.getAttribute('type'), 'type on <wavy-line>') as WavyLineType;
   }
 
-  get note(): Note | null {
-    return this.closest(Note);
+  // An attached marker always has its note.
+  get note(): Note {
+    return required(this.closest(Note), '<note> ancestor of <wavy-line>');
   }
 
   partner(): WavyLine | null {
@@ -33,14 +35,15 @@ export class WavyLine extends MElement {
   }
 
   measureBeat(): number | null {
-    return this.note?.measureBeat() ?? null;
+    return this.note.measureBeat();
   }
 
   private spec(): SpannerSpec<WavyLine> {
     return {
       siblings: noteMarkers(this, (note) => note.wavyLines),
-      isOpen: (wavyLine) => wavyLine.wavyLineType === 'start',
-      isClose: (wavyLine) => wavyLine.wavyLineType === 'stop',
+      // Raw reads so resolution tolerates a malformed typeless marker.
+      isOpen: (wavyLine) => wavyLine.getAttribute('type') === 'start',
+      isClose: (wavyLine) => wavyLine.getAttribute('type') === 'stop',
     };
   }
 }

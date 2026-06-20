@@ -1,4 +1,4 @@
-import { MElement } from './m-node';
+import { MElement, required } from './m-node';
 import { Measure } from './measure';
 import { Score } from './score';
 
@@ -7,8 +7,10 @@ export class Part extends MElement {
     super('part');
   }
 
-  get id(): string | null {
-    return this.getAttribute('id');
+  // A <part> always carries an id (IDREF to its <score-part>), and addPart sets
+  // one; a part without it is malformed.
+  get id(): string {
+    return required(this.getAttribute('id'), 'id on <part>');
   }
 
   get measures(): Measure[] {
@@ -35,8 +37,9 @@ export class Part extends MElement {
     return measure;
   }
 
-  // <staves> count for this part (first declaration in any measure's attributes).
-  get staveCount(): number | null {
+  // <staves> count for this part (first declaration in any measure's attributes);
+  // 1 (single staff) when never declared.
+  get staveCount(): number {
     for (const measure of this.measures) {
       for (const attrs of measure.childrenNamed('attributes')) {
         const staves = attrs.child('staves')?.text;
@@ -45,6 +48,6 @@ export class Part extends MElement {
         }
       }
     }
-    return null;
+    return 1;
   }
 }

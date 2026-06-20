@@ -1,4 +1,4 @@
-import { MElement } from './m-node';
+import { MElement, required } from './m-node';
 
 // A <clef>. Lives inside <attributes>; one per staff in multi-staff parts.
 export class Clef extends MElement {
@@ -11,18 +11,21 @@ export class Clef extends MElement {
     return this.getAttribute('number') ?? '1';
   }
 
-  get sign(): string | null {
-    return this.child('sign')?.text ?? null; // G, F, C, percussion, TAB
+  // <sign> is required in a well-formed <clef>; absence is a malformed document.
+  get sign(): string {
+    return required(this.child('sign')?.text, '<sign> in <clef>'); // G, F, C, percussion, TAB
   }
 
+  // <line> is optional; its default is sign-dependent (G→2, F→4, C→3), so absence
+  // stays null for the caller (or renderer) to resolve.
   get line(): number | null {
     const line = this.child('line')?.text;
     return line == null ? null : Number(line);
   }
 
-  // <clef-octave-change>: ±1 = ottava (e.g. treble-8 for guitar).
-  get octaveChange(): number | null {
-    const oc = this.child('clef-octave-change')?.text;
-    return oc == null ? null : Number(oc);
+  // <clef-octave-change>: ±1 = ottava (e.g. treble-8 for guitar). Absent means no
+  // transposition — the spec default of 0.
+  get octaveChange(): number {
+    return Number(this.child('clef-octave-change')?.text ?? 0);
   }
 }

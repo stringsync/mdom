@@ -15,8 +15,8 @@ describe('Part', () => {
     expect(part.id).toBe('P1');
   });
 
-  it('has a null id when unset', () => {
-    expect(new Part().id).toBeNull();
+  it('throws when id is unset', () => {
+    expect(() => new Part().id).toThrow('id on <part>');
   });
 
   it('lists its measures', () => {

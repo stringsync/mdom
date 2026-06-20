@@ -1,5 +1,16 @@
 type Ctor<T> = new (...args: never[]) => T;
 
+// Assert a value the *caller* knows is present (a found child, a looked-up part).
+// Throws a located error instead of returning null — the hygienic replacement for
+// `x!`, which crashes later with no message. Use at call sites that have more
+// knowledge than the nullable primitive does.
+export function required<T>(value: T | null | undefined, what: string): T {
+  if (value == null) {
+    throw new Error(`mdom: missing required ${what}`);
+  }
+  return value;
+}
+
 export abstract class MNode {
   parent: MElement | null = null;
 

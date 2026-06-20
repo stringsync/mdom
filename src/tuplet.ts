@@ -1,4 +1,4 @@
-import { MElement } from './m-node';
+import { MElement, required } from './m-node';
 import { Note } from './note';
 import { resolveMembers, resolvePartner, noteMarkers, type SpannerSpec } from './spanner';
 
@@ -15,12 +15,14 @@ export class Tuplet extends MElement {
     return this.getAttribute('number') ?? '1';
   }
 
-  get tupletType(): TupletType | null {
-    return this.getAttribute('type') as TupletType | null;
+  // `type` is required on a <tuplet> and drives pairing.
+  get tupletType(): TupletType {
+    return required(this.getAttribute('type'), 'type on <tuplet>') as TupletType;
   }
 
-  get note(): Note | null {
-    return this.closest(Note);
+  // An attached marker always has its note.
+  get note(): Note {
+    return required(this.closest(Note), '<note> ancestor of <tuplet>');
   }
 
   partner(): Tuplet | null {
@@ -33,14 +35,15 @@ export class Tuplet extends MElement {
   }
 
   measureBeat(): number | null {
-    return this.note?.measureBeat() ?? null;
+    return this.note.measureBeat();
   }
 
   private spec(): SpannerSpec<Tuplet> {
     return {
       siblings: noteMarkers(this, (note) => note.tuplets),
-      isOpen: (tuplet) => tuplet.tupletType === 'start',
-      isClose: (tuplet) => tuplet.tupletType === 'stop',
+      // Raw reads so resolution tolerates a malformed typeless marker.
+      isOpen: (tuplet) => tuplet.getAttribute('type') === 'start',
+      isClose: (tuplet) => tuplet.getAttribute('type') === 'stop',
     };
   }
 }

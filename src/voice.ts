@@ -54,7 +54,7 @@ export class Voice {
   ) {}
 
   get notes(): Note[] {
-    return this.measure.notes.filter((note) => (note.voice ?? '1') === this.id);
+    return this.measure.notes.filter((note) => note.voice === this.id);
   }
 
   chords(): Chord[] {
@@ -179,7 +179,7 @@ function buildPitch(spec: PitchSpec): Pitch {
 function voiceEnd(measure: Measure, voiceId: string): number {
   let end = 0;
   for (const note of measure.notes) {
-    if ((note.voice ?? '1') !== voiceId || note.child('chord') !== null) {
+    if (note.voice !== voiceId || note.child('chord') !== null) {
       continue;
     }
     const onset = onsetOf(measure, note);

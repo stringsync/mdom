@@ -1,4 +1,4 @@
-import { MElement } from './m-node';
+import { MElement, required } from './m-node';
 import { Note } from './note';
 import { resolveMembers, resolvePartner, noteMarkers, type SpannerSpec } from './spanner';
 
@@ -17,12 +17,14 @@ export class Beam extends MElement {
     return this.getAttribute('number') ?? '1';
   }
 
-  get beamValue(): BeamValue | null {
-    return this.text as BeamValue | null;
+  // The begin/continue/end value is required text on a <beam> and drives pairing.
+  get beamValue(): BeamValue {
+    return required(this.text, 'value of <beam>') as BeamValue;
   }
 
-  get note(): Note | null {
-    return this.closest(Note);
+  // An attached marker always has its note.
+  get note(): Note {
+    return required(this.closest(Note), '<note> ancestor of <beam>');
   }
 
   partner(): Beam | null {
@@ -36,14 +38,15 @@ export class Beam extends MElement {
   }
 
   measureBeat(): number | null {
-    return this.note?.measureBeat() ?? null;
+    return this.note.measureBeat();
   }
 
   private spec(): SpannerSpec<Beam> {
     return {
       siblings: noteMarkers(this, (note) => note.beams),
-      isOpen: (beam) => beam.beamValue === 'begin',
-      isClose: (beam) => beam.beamValue === 'end',
+      // Raw text reads so resolution tolerates a malformed valueless marker.
+      isOpen: (beam) => beam.text === 'begin',
+      isClose: (beam) => beam.text === 'end',
     };
   }
 }

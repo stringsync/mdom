@@ -1,4 +1,4 @@
-import { MElement, MText } from './m-node';
+import { MElement, MText, required } from './m-node';
 import { Note } from './note';
 import { Part } from './part';
 import { Clef } from './clef';
@@ -14,8 +14,11 @@ export class Measure extends MElement {
     super('measure');
   }
 
-  get number(): string | null {
-    return this.getAttribute('number');
+  // Valid MusicXML always carries a number attribute, and addMeasure sets one;
+  // a measure without it is malformed. (Use `index` for position — `number` is
+  // the free-form, possibly-repeated printed label.)
+  get number(): string {
+    return required(this.getAttribute('number'), 'number on <measure>');
   }
 
   get notes(): Note[] {
@@ -43,10 +46,10 @@ export class Measure extends MElement {
     return this.attributeBack((attrs) => attrs.childrenOfType(Time).find((time) => appliesToStaff(time, staff)));
   }
 
-  // <staves> count in effect (global).
-  staveCount(): number | null {
+  // <staves> count in effect (global); 1 when never declared.
+  staveCount(): number {
     const staves = this.attributeBack((attrs) => attrs.child('staves') ?? undefined);
-    return staves?.text == null ? null : Number(staves.text);
+    return staves?.text == null ? 1 : Number(staves.text);
   }
 
   // <staff-lines> in effect for `staff` (default '1'); 5 lines when unspecified.
@@ -65,13 +68,13 @@ export class Measure extends MElement {
   voices(): Voice[] {
     const order: string[] = [];
     for (const note of this.notes) {
-      const id = note.voice ?? '1';
+      const id = note.voice;
       if (!order.includes(id)) {
         order.push(id);
       }
     }
     return order.map((id) => {
-      const staff = this.notes.find((note) => (note.voice ?? '1') === id)?.staff ?? '1';
+      const staff = this.notes.find((note) => note.voice === id)?.staff ?? '1';
       return new Voice(this, id, staff);
     });
   }

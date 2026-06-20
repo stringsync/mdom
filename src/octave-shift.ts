@@ -1,4 +1,4 @@
-import { MElement } from './m-node';
+import { MElement, required } from './m-node';
 import { Direction } from './direction';
 import { resolveMembers, resolvePartner, directionMarkers, type SpannerSpec } from './spanner';
 
@@ -15,18 +15,19 @@ export class OctaveShift extends MElement {
     return this.getAttribute('number') ?? '1';
   }
 
-  get octaveShiftType(): OctaveShiftType | null {
-    return this.getAttribute('type') as OctaveShiftType | null;
+  // `type` is required on an <octave-shift> and drives pairing.
+  get octaveShiftType(): OctaveShiftType {
+    return required(this.getAttribute('type'), 'type on <octave-shift>') as OctaveShiftType;
   }
 
-  // Interval span: 8, 15, or 22.
-  get size(): number | null {
-    const size = this.getAttribute('size');
-    return size == null ? null : Number(size);
+  // Interval span: 8, 15, or 22. The MusicXML default for an absent size is 8.
+  get size(): number {
+    return Number(this.getAttribute('size') ?? 8);
   }
 
-  get direction(): Direction | null {
-    return this.closest(Direction);
+  // An attached marker always has its direction.
+  get direction(): Direction {
+    return required(this.closest(Direction), '<direction> ancestor of <octave-shift>');
   }
 
   partner(): OctaveShift | null {
@@ -39,14 +40,15 @@ export class OctaveShift extends MElement {
   }
 
   measureBeat(): number | null {
-    return this.direction?.measureBeat() ?? null;
+    return this.direction.measureBeat();
   }
 
   private spec(): SpannerSpec<OctaveShift> {
     return {
       siblings: directionMarkers(this, (direction) => direction.octaveShifts),
-      isOpen: (shift) => shift.octaveShiftType === 'up' || shift.octaveShiftType === 'down',
-      isClose: (shift) => shift.octaveShiftType === 'stop',
+      // Raw reads so resolution tolerates a malformed typeless marker.
+      isOpen: (shift) => shift.getAttribute('type') === 'up' || shift.getAttribute('type') === 'down',
+      isClose: (shift) => shift.getAttribute('type') === 'stop',
     };
   }
 }

@@ -1,4 +1,4 @@
-import { MElement } from './m-node';
+import { MElement, required } from './m-node';
 import { Note } from './note';
 import { resolveMembers, resolvePartner, noteMarkers, type SpannerSpec } from './spanner';
 
@@ -18,17 +18,19 @@ export class Slur extends MElement {
     return this.getAttribute('number') ?? '1';
   }
 
-  get slurType(): SlurType | null {
-    return this.getAttribute('type') as SlurType | null;
+  // `type` is required on a <slur> and drives pairing; absence is a malformed
+  // marker, not an expected state.
+  get slurType(): SlurType {
+    return required(this.getAttribute('type'), 'type on <slur>') as SlurType;
   }
 
   get placement(): string | null {
     return this.getAttribute('placement');
   }
 
-  // The note this marker hangs off of.
-  get note(): Note | null {
-    return this.closest(Note);
+  // The note this marker hangs off of. An attached marker always has one.
+  get note(): Note {
+    return required(this.closest(Note), '<note> ancestor of <slur>');
   }
 
   // The marker at the other end, found by scanning the part in document order for
@@ -47,8 +49,10 @@ export class Slur extends MElement {
   private spec(): SpannerSpec<Slur> {
     return {
       siblings: noteMarkers(this, (note) => note.slurs),
-      isOpen: (slur) => slur.slurType === 'start',
-      isClose: (slur) => slur.slurType === 'stop',
+      // Raw reads so resolution tolerates a malformed typeless marker (skips it)
+      // rather than throwing through the strict `slurType` getter.
+      isOpen: (slur) => slur.getAttribute('type') === 'start',
+      isClose: (slur) => slur.getAttribute('type') === 'stop',
     };
   }
 }

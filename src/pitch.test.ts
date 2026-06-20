@@ -31,10 +31,14 @@ describe('Pitch', () => {
     expect(pitch.alter).toBe(0.5);
   });
 
-  it('returns null for absent step, alter, and octave', () => {
+  it('defaults a missing alter to natural (0)', () => {
     const pitch = new Pitch();
-    expect(pitch.step).toBeNull();
-    expect(pitch.alter).toBeNull();
-    expect(pitch.octave).toBeNull();
+    expect(pitch.alter).toBe(0);
+  });
+
+  it('throws a located error for a malformed pitch missing step/octave', () => {
+    const pitch = new Pitch();
+    expect(() => pitch.step).toThrow('<step> in <pitch>');
+    expect(() => pitch.octave).toThrow('<octave> in <pitch>');
   });
 });
