@@ -2,11 +2,13 @@ import { MElement } from './m-node';
 import { Note } from './note';
 import type { Measure } from './measure';
 
-// Onset of `target` within `measure`, in divisions (not beats): a single
-// left-to-right cursor fold. <backup>/<forward> move the cursor; <chord/> notes
-// share the prior onset and don't advance it; a zero-duration node (e.g. a
-// <direction>) sits at the cursor. Returns null if `target` isn't in the measure.
-// Callers divide by the divisions in effect to get quarter-note beats.
+/**
+ * Onset of `target` within `measure`, in divisions (not beats): a single
+ * left-to-right cursor fold. `<backup>`/`<forward>` move the cursor; `<chord/>`
+ * notes share the prior onset and don't advance it; a zero-duration node (e.g. a
+ * `<direction>`) sits at the cursor. Returns null if `target` isn't in the
+ * measure. Callers divide by the divisions in effect to get quarter-note beats.
+ */
 export function onsetOf(measure: Measure, target: MElement): number | null {
   let cursor = 0; // divisions elapsed from the measure start
   let chordOnset = 0; // onset of the current chord's first note
@@ -38,8 +40,10 @@ export function onsetOf(measure: Measure, target: MElement): number | null {
   return null;
 }
 
-// The write cursor: divisions elapsed after all current content, in document
-// order — where the next appended note lands unless an onset says otherwise.
+/**
+ * The write cursor: divisions elapsed after all current content, in document
+ * order — where the next appended note lands unless an onset says otherwise.
+ */
 export function writeCursor(measure: Measure): number {
   let cursor = 0;
   for (const node of measure.children) {

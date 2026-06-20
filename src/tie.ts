@@ -4,40 +4,42 @@ import { resolveMembers, resolvePartner, noteMarkers, type SpannerSpec } from '.
 
 export type TieType = 'start' | 'stop' | 'continue' | 'let-ring';
 
-// A <tied> inside <notations> — the notated tie (distinct from the <tie> sound
-// element). Paired start/stop by `number`, resolved on demand by partner(), the
-// same shape every spanner uses.
+/**
+ * A `<tied>` inside `<notations>` — the notated tie (distinct from the `<tie>`
+ * sound element). Paired start/stop by `number`, resolved on demand by
+ * {@link partner}, the same shape every spanner uses.
+ */
 export class Tie extends MElement {
   constructor() {
     super('tied');
   }
 
-  // Pairing key; '1' when omitted.
+  /** Pairing key; '1' when omitted. */
   get number(): string {
     return this.getAttribute('number') ?? '1';
   }
 
-  // `type` is required on a <tied> and drives pairing.
+  /** `type`: required on a `<tied>` and drives pairing. */
   get tieType(): TieType {
     return required(this.getAttribute('type'), 'type on <tied>') as TieType;
   }
 
-  // The note this marker hangs off of. An attached marker always has one.
+  /** The note this marker hangs off of. An attached marker always has one. */
   get note(): Note {
     return required(this.closest(Note), '<note> ancestor of <tied>');
   }
 
-  // The marker at the other end (same number), scanning the part in document order.
+  /** The marker at the other end (same number), scanning the part in document order. */
   partner(): Tie | null {
     return resolvePartner(this, this.spec());
   }
 
-  // All markers in this spanner (start..stop), not just the far end.
+  /** All markers in this spanner (start..stop), not just the far end. */
   members(): Tie[] {
     return resolveMembers(this, this.spec());
   }
 
-  // Onset of this end within its measure, in beats.
+  /** Onset of this end within its measure, in beats. */
   measureBeat(): number | null {
     return this.note.measureBeat();
   }

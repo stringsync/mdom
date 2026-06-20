@@ -6,26 +6,31 @@ import { attributesOf, appendValue, type Measure } from './measure';
 import { onsetOf, writeCursor } from './timeline';
 import { divisionsBackFrom } from './signature';
 
-// MusicXML note-type values, coarsest to finest.
+/** MusicXML note-type values, coarsest to finest. */
 export type NoteType = 'whole' | 'half' | 'quarter' | 'eighth' | '16th' | '32nd' | '64th' | '128th';
 
+/** A musical duration: a note type, optional dots, and an optional onset. */
 export interface DurationSpec {
   type: NoteType;
   dots?: number;
-  // Beat within the measure to place this at; defaults to the voice's own cursor
-  // (the end of its last note). Pass it to jump back and stack, or leave a gap.
+  /**
+   * Beat within the measure to place this at; defaults to the voice's own cursor
+   * (the end of its last note). Pass it to jump back and stack, or leave a gap.
+   */
   onset?: number;
 }
 
+/** A pitch: step, octave, and optional alteration in semitones. */
 export interface PitchSpec {
   step: string;
   octave: number;
   alter?: number;
 }
 
+/** A pitched note: a {@link PitchSpec} plus a {@link DurationSpec}. */
 export type NoteSpec = PitchSpec & DurationSpec;
 
-// Quarter-note beats per note type; dots add half of the previous increment.
+/** Quarter-note beats per note type; dots add half of the previous increment. */
 const QUARTER_BEATS: Record<NoteType, number> = {
   whole: 4,
   half: 2,
@@ -42,10 +47,13 @@ const QUARTER_BEATS: Record<NoteType, number> = {
 // when tuplet writing arrives. ponytail: one constant beats adaptive rescaling.
 const WRITE_DIVISIONS = 256;
 
-// A single <voice> within a measure — read and write. Reading: `notes` is the
-// live slice for this voice and `chords()` groups its <chord/> stacks. Writing:
-// note/rest/chord append on this voice's staff, and mdom lays out the
-// <backup>/<forward>, <duration>, <voice>, and <staff> so the caller never does.
+/**
+ * A single `<voice>` within a measure — read and write. Reading: `notes` is the
+ * live slice for this voice and `chords()` groups its `<chord/>` stacks. Writing:
+ * note/rest/chord append on this voice's staff, and mdom lays out the
+ * `<backup>`/`<forward>`, `<duration>`, `<voice>`, and `<staff>` so the caller
+ * never does.
+ */
 export class Voice {
   constructor(
     readonly measure: Measure,
@@ -53,15 +61,17 @@ export class Voice {
     readonly staff: string = '1'
   ) {}
 
+  /** This voice's notes, in document order. */
   get notes(): Note[] {
     return this.measure.notes.filter((note) => note.voice === this.id);
   }
 
+  /** This voice's notes grouped into chords. */
   chords(): Chord[] {
     return groupChords(this.notes);
   }
 
-  // Append a pitched note. Follows this voice's cursor unless `onset` is given.
+  /** Append a pitched note. Follows this voice's cursor unless `onset` is given. */
   note(spec: NoteSpec): Note {
     const duration = this.open(spec);
     const note = this.build(spec, duration, spec, false);
@@ -69,7 +79,7 @@ export class Voice {
     return note;
   }
 
-  // Append a rest.
+  /** Append a rest. */
   rest(spec: DurationSpec): Note {
     const duration = this.open(spec);
     const note = this.build(spec, duration, null, false);
@@ -77,8 +87,10 @@ export class Voice {
     return note;
   }
 
-  // Append a chord: several pitches sharing one onset and duration. The first
-  // pitch is the lead; the rest get <chord/> so they stack on its onset.
+  /**
+   * Append a chord: several pitches sharing one onset and duration. The first
+   * pitch is the lead; the rest get `<chord/>` so they stack on its onset.
+   */
   chord(pitches: PitchSpec[], spec: DurationSpec): Chord {
     const duration = this.open(spec);
     const notes = pitches.map((pitch, index) => {
@@ -89,8 +101,10 @@ export class Voice {
     return new Chord(notes);
   }
 
-  // Ensure divisions exist, compute this entry's duration, and move the write
-  // cursor to its onset (inserting <backup>/<forward>). Returns the duration.
+  /**
+   * Ensure divisions exist, compute this entry's duration, and move the write
+   * cursor to its onset (inserting `<backup>`/`<forward>`). Returns the duration.
+   */
   private open(spec: DurationSpec): number {
     const divisions = this.divisions();
     const duration = durationDivisions(spec, divisions);
@@ -99,8 +113,10 @@ export class Voice {
     return duration;
   }
 
-  // Insert a <backup> or <forward> so the next appended note sounds at `target`
-  // (in divisions). Nothing when the cursor is already there.
+  /**
+   * Insert a `<backup>` or `<forward>` so the next appended note sounds at
+   * `target` (in divisions). Nothing when the cursor is already there.
+   */
   private align(target: number): void {
     const delta = target - writeCursor(this.measure);
     if (delta === 0) {
@@ -111,8 +127,10 @@ export class Voice {
     this.measure.append(mover);
   }
 
-  // Build one <note> with its children in MusicXML order: chord, pitch/rest,
-  // duration, voice, type, dots, staff.
+  /**
+   * Build one `<note>` with its children in MusicXML order: chord, pitch/rest,
+   * duration, voice, type, dots, staff.
+   */
   private build(spec: DurationSpec, duration: number, pitch: PitchSpec | null, isChord: boolean): Note {
     const note = new Note();
     if (isChord) {
@@ -135,7 +153,7 @@ export class Voice {
     return note;
   }
 
-  // Divisions in effect, or the fixed write value installed into <attributes>.
+  /** Divisions in effect, or the fixed write value installed into `<attributes>`. */
   private divisions(): number {
     const existing = divisionsBackFrom(this.measure, this.measure.children.length);
     if (existing != null) {
@@ -146,9 +164,11 @@ export class Voice {
   }
 }
 
-// <duration> in divisions for a musical type + dots. <duration> must be an
-// integer; with WRITE_DIVISIONS this holds for every type down to a 128th with
-// up to triple dots. Anything finer throws loudly rather than emit invalid XML.
+/**
+ * `<duration>` in divisions for a musical type + dots. `<duration>` must be an
+ * integer; with WRITE_DIVISIONS this holds for every type down to a 128th with
+ * up to triple dots. Anything finer throws loudly rather than emit invalid XML.
+ */
 function durationDivisions(spec: DurationSpec, divisions: number): number {
   let increment = QUARTER_BEATS[spec.type] * divisions;
   let total = increment;
@@ -164,6 +184,7 @@ function durationDivisions(spec: DurationSpec, divisions: number): number {
   return total;
 }
 
+/** Build a `<pitch>` from a {@link PitchSpec}. */
 function buildPitch(spec: PitchSpec): Pitch {
   const pitch = new Pitch();
   appendValue(pitch, 'step', spec.step);
@@ -174,8 +195,10 @@ function buildPitch(spec: PitchSpec): Pitch {
   return pitch;
 }
 
-// Divisions elapsed at the end of the voice's last non-chord note — where the
-// next note in this voice lands by default (0 for an empty voice).
+/**
+ * Divisions elapsed at the end of the voice's last non-chord note — where the
+ * next note in this voice lands by default (0 for an empty voice).
+ */
 function voiceEnd(measure: Measure, voiceId: string): number {
   let end = 0;
   for (const note of measure.notes) {

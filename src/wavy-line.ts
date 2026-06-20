@@ -4,36 +4,41 @@ import { resolveMembers, resolvePartner, noteMarkers, type SpannerSpec } from '.
 
 export type WavyLineType = 'start' | 'stop' | 'continue';
 
-// A <wavy-line> inside <notations><ornaments> (trills, etc.). Paired start/stop
-// by `number` like every spanner.
+/**
+ * A `<wavy-line>` inside `<notations><ornaments>` (trills, etc.). Paired
+ * start/stop by `number` like every spanner.
+ */
 export class WavyLine extends MElement {
   constructor() {
     super('wavy-line');
   }
 
+  /** Pairing key; '1' when omitted. */
   get number(): string {
     return this.getAttribute('number') ?? '1';
   }
 
-  // `type` is required on a <wavy-line> and drives pairing.
+  /** `type`: required on a `<wavy-line>` and drives pairing. */
   get wavyLineType(): WavyLineType {
     return required(this.getAttribute('type'), 'type on <wavy-line>') as WavyLineType;
   }
 
-  // An attached marker always has its note.
+  /** The note this marker hangs off of. An attached marker always has one. */
   get note(): Note {
     return required(this.closest(Note), '<note> ancestor of <wavy-line>');
   }
 
+  /** The marker at the far end (same number), or null. */
   partner(): WavyLine | null {
     return resolvePartner(this, this.spec());
   }
 
-  // All markers in this spanner (start..stop), not just the far end.
+  /** All markers in this spanner (start..stop), not just the far end. */
   members(): WavyLine[] {
     return resolveMembers(this, this.spec());
   }
 
+  /** Onset of this marker's note within its measure, in beats. */
   measureBeat(): number | null {
     return this.note.measureBeat();
   }

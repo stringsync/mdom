@@ -4,35 +4,38 @@ import { resolveMembers, resolvePartner, directionMarkers, type SpannerSpec } fr
 
 export type PedalType = 'start' | 'stop' | 'change' | 'continue' | 'sostenuto';
 
-// A <pedal> under <direction-type>. Direction-attached spanner; pairs by `number`.
+/** A `<pedal>` under `<direction-type>`. Direction-attached spanner; pairs by `number`. */
 export class Pedal extends MElement {
   constructor() {
     super('pedal');
   }
 
+  /** Pairing key; '1' when omitted. */
   get number(): string {
     return this.getAttribute('number') ?? '1';
   }
 
-  // `type` is required on a <pedal> and drives pairing.
+  /** `type`: required on a `<pedal>` and drives pairing. */
   get pedalType(): PedalType {
     return required(this.getAttribute('type'), 'type on <pedal>') as PedalType;
   }
 
-  // An attached marker always has its direction.
+  /** The `<direction>` this marker hangs off of. An attached marker always has one. */
   get direction(): Direction {
     return required(this.closest(Direction), '<direction> ancestor of <pedal>');
   }
 
+  /** The marker at the far end (same number), or null. */
   partner(): Pedal | null {
     return resolvePartner(this, this.spec());
   }
 
-  // All markers in this spanner (start..stop), not just the far end.
+  /** All markers in this spanner (start..stop), not just the far end. */
   members(): Pedal[] {
     return resolveMembers(this, this.spec());
   }
 
+  /** Onset of this marker's direction within its measure, in beats. */
   measureBeat(): number | null {
     return this.direction.measureBeat();
   }

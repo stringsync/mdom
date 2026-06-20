@@ -19,7 +19,7 @@ import { Pedal } from './pedal';
 import { OctaveShift } from './octave-shift';
 import { Direction } from './direction';
 
-// Tag -> typed node. Unlisted tags become a plain MElement and still round-trip.
+/** Tag -> typed node. Unlisted tags become a plain MElement and still round-trip. */
 const REGISTRY: Record<string, new () => MElement> = {
   'score-partwise': Score,
   part: Part,
@@ -40,7 +40,7 @@ const REGISTRY: Record<string, new () => MElement> = {
   direction: Direction,
 };
 
-// The slice of xml-js's non-compact JSON shape we read and emit.
+/** The slice of xml-js's non-compact JSON shape we read and emit. */
 interface XmlNode {
   type?: string;
   name?: string;
@@ -51,6 +51,7 @@ interface XmlNode {
   declaration?: { attributes?: Record<string, string> };
 }
 
+/** Parses a MusicXML string into an {@link MDocument} tree of typed nodes. */
 export class MDOMParser {
   parseFromString(xml: string): MDocument {
     const tree = xml2js(xml, { compact: false }) as unknown as XmlNode;
@@ -64,6 +65,7 @@ export class MDOMParser {
   }
 }
 
+/** Serializes an {@link MDocument} back to a MusicXML string. */
 export class MusicXMLSerializer {
   serializeToString(doc: MDocument): string {
     const elements: XmlNode[] = [];
@@ -80,6 +82,7 @@ export class MusicXMLSerializer {
   }
 }
 
+/** Build a typed (or plain) element tree from an xml-js node, recursively. */
 function build(node: XmlNode): MElement {
   const name = node.name ?? '';
   const Cls = REGISTRY[name];
@@ -103,6 +106,7 @@ function build(node: XmlNode): MElement {
   return el;
 }
 
+/** Convert an mdom node back to the xml-js shape, recursively. */
 function toJs(node: MNode): XmlNode {
   if (node instanceof MText) {
     return { type: 'text', text: node.value };
