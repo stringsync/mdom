@@ -54,6 +54,21 @@ export class MElement extends MNode {
     return null;
   }
 
+  /**
+   * Set leaf text content, reusing the existing text node so its position is
+   * kept (value elements hold exactly one); appends one when there is none. The
+   * in-place counterpart to {@link text} — how an edit rewrites a `<duration>`.
+   */
+  setText(value: string): void {
+    for (const node of this._children) {
+      if (node instanceof MText) {
+        node.value = value;
+        return;
+      }
+    }
+    this.append(new MText(value));
+  }
+
   /** A copy of this element's attributes. */
   get attributes(): Record<string, string> {
     return { ...this.attrs };
@@ -86,6 +101,40 @@ export class MElement extends MNode {
       this._children.splice(i, 1);
       child.parent = null;
     }
+  }
+
+  /**
+   * Insert `child` directly before `ref`, or append when `ref` is null. Detaches
+   * `child` from any old parent first, like {@link append} — the positional way
+   * to add (e.g. a `<grace/>` ahead of everything, or a `<dot>` after `<type>`).
+   */
+  insertBefore(child: MNode, ref: MNode | null): void {
+    if (ref === null) {
+      this.append(child);
+      return;
+    }
+    const index = this._children.indexOf(ref);
+    if (index < 0) {
+      throw new Error('mdom: insertBefore reference is not a child');
+    }
+    child.remove();
+    child.parent = this;
+    this._children.splice(index, 0, child);
+  }
+
+  /**
+   * Swap a direct child for `replacement`, in place — same position, so an edit
+   * keeps the note's child ordering (`<pitch>` for a `<rest>`, say).
+   */
+  replaceChild(child: MNode, replacement: MNode): void {
+    const index = this._children.indexOf(child);
+    if (index < 0) {
+      throw new Error('mdom: replaceChild target is not a child');
+    }
+    replacement.remove();
+    child.parent = null;
+    replacement.parent = this;
+    this._children[index] = replacement;
   }
 
   /**

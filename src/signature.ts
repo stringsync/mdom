@@ -13,9 +13,9 @@ import type { Measure } from './measure';
 export function attributesBackFrom(measure: Measure, fromIndex: number): MElement[] {
   const result: MElement[] = [];
 
-  const kids: readonly MNode[] = measure.children;
+  const children: readonly MNode[] = measure.children;
   for (let index = fromIndex - 1; index >= 0; index--) {
-    const node = kids[index];
+    const node = children[index];
     if (node instanceof MElement && node.tag === 'attributes') {
       result.push(node);
     }

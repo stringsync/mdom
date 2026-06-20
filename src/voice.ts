@@ -1,51 +1,21 @@
 import { MElement } from './m-node';
-import { Note } from './note';
-import { Pitch } from './pitch';
+import {
+  Note,
+  buildPitch,
+  durationDivisions,
+  WRITE_DIVISIONS,
+  type DurationSpec,
+  type NoteSpec,
+  type PitchSpec,
+} from './note';
 import { Chord, groupChords } from './chord';
 import { attributesOf, appendValue, type Measure } from './measure';
 import { onsetOf, writeCursor } from './timeline';
 import { divisionsBackFrom } from './signature';
 
-/** MusicXML note-type values, coarsest to finest. */
-export type NoteType = 'whole' | 'half' | 'quarter' | 'eighth' | '16th' | '32nd' | '64th' | '128th';
-
-/** A musical duration: a note type, optional dots, and an optional onset. */
-export interface DurationSpec {
-  type: NoteType;
-  dots?: number;
-  /**
-   * Beat within the measure to place this at; defaults to the voice's own cursor
-   * (the end of its last note). Pass it to jump back and stack, or leave a gap.
-   */
-  onset?: number;
-}
-
-/** A pitch: step, octave, and optional alteration in semitones. */
-export interface PitchSpec {
-  step: string;
-  octave: number;
-  alter?: number;
-}
-
-/** A pitched note: a {@link PitchSpec} plus a {@link DurationSpec}. */
-export type NoteSpec = PitchSpec & DurationSpec;
-
-/** Quarter-note beats per note type; dots add half of the previous increment. */
-const QUARTER_BEATS: Record<NoteType, number> = {
-  whole: 4,
-  half: 2,
-  quarter: 1,
-  eighth: 0.5,
-  '16th': 0.25,
-  '32nd': 0.125,
-  '64th': 0.0625,
-  '128th': 0.03125,
-};
-
-// Fixed divisions mdom writes (PPQ). 2^8 makes every note type (down to 128th)
-// and up to triple dots land on an integer <duration>; bump to a multiple of 3
-// when tuplet writing arrives. ponytail: one constant beats adaptive rescaling.
-const WRITE_DIVISIONS = 256;
+// The note vocabulary and duration math live in note.ts (Voice builds on Note);
+// re-exported here so callers can keep importing them from either place.
+export type { NoteType, DurationSpec, PitchSpec, NoteSpec } from './note';
 
 /**
  * A single `<voice>` within a measure — read and write. Reading: `notes` is the
@@ -162,37 +132,6 @@ export class Voice {
     appendValue(attributesOf(this.measure), 'divisions', String(WRITE_DIVISIONS));
     return WRITE_DIVISIONS;
   }
-}
-
-/**
- * `<duration>` in divisions for a musical type + dots. `<duration>` must be an
- * integer; with WRITE_DIVISIONS this holds for every type down to a 128th with
- * up to triple dots. Anything finer throws loudly rather than emit invalid XML.
- */
-function durationDivisions(spec: DurationSpec, divisions: number): number {
-  let increment = QUARTER_BEATS[spec.type] * divisions;
-  let total = increment;
-  for (let dot = 0; dot < (spec.dots ?? 0); dot++) {
-    increment /= 2;
-    total += increment;
-  }
-  if (!Number.isInteger(total)) {
-    throw new Error(
-      `cannot represent ${spec.dots ?? 0}-dotted "${spec.type}" at divisions ${divisions}: fractional duration ${total}`
-    );
-  }
-  return total;
-}
-
-/** Build a `<pitch>` from a {@link PitchSpec}. */
-function buildPitch(spec: PitchSpec): Pitch {
-  const pitch = new Pitch();
-  appendValue(pitch, 'step', spec.step);
-  if (spec.alter != null) {
-    appendValue(pitch, 'alter', String(spec.alter));
-  }
-  appendValue(pitch, 'octave', String(spec.octave));
-  return pitch;
 }
 
 /**

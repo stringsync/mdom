@@ -1,4 +1,4 @@
-import { MElement } from './m-node';
+import { MElement, type MNode } from './m-node';
 import { Note } from './note';
 import type { Measure } from './measure';
 
@@ -59,4 +59,49 @@ export function writeCursor(measure: Measure): number {
     }
   }
   return cursor;
+}
+
+/**
+ * After an edit changed `edited`'s duration by `delta` divisions, keep sibling
+ * voices anchored. Within `edited`'s own voice the change ripples for free
+ * (onsets are derived), but the `<backup>`/`<forward>` that hands off to the
+ * *next* voice was sized for the old length: find that voice-separating mover and
+ * shift it by `delta` (a `<backup>` reaches further back, a `<forward>` less far)
+ * so the next voice still starts where it did. A same-voice mover (a mid-voice
+ * gap) is left to ride along, exactly matching the single-voice ripple.
+ *
+ * ponytail: repairs the first separator after the edit, which is all the standard
+ * one-`<backup>`-per-voice layout needs; pathological interleavings aren't fixed.
+ */
+export function repairTimelineAfter(measure: Measure, edited: Note, delta: number): void {
+  if (delta === 0) {
+    return;
+  }
+  const children = measure.children;
+  for (let index = children.indexOf(edited) + 1; index < children.length; index++) {
+    const mover = children[index];
+    if (!(mover instanceof MElement) || (mover.tag !== 'backup' && mover.tag !== 'forward')) {
+      continue;
+    }
+    const next = nextNoteFrom(children, index + 1);
+    if (next && next.voice !== edited.voice) {
+      const duration = mover.child('duration');
+      if (duration) {
+        const current = Number(duration.text ?? 0);
+        duration.setText(String(mover.tag === 'backup' ? current + delta : current - delta));
+      }
+      return;
+    }
+  }
+}
+
+/** The first `<note>` at or after `from` in `children`, or null. */
+function nextNoteFrom(children: readonly MNode[], from: number): Note | null {
+  for (let index = from; index < children.length; index++) {
+    const node = children[index];
+    if (node instanceof Note) {
+      return node;
+    }
+  }
+  return null;
 }
