@@ -33,7 +33,7 @@ describe('Tie — the notated <tied>, paired by the shared spanner shape', () =>
     const opener = part.measure('1')!.notes[1]!.ties[0]!;
     expect(opener.tieType).toBe('start');
     expect(opener.number).toBe('1'); // omitted number defaults to '1'
-    expect(opener.note!.pitch?.step).toBe('D'); // the note it hangs off
+    expect(opener.note.pitch?.step).toBe('D'); // the note it hangs off
   });
 
   it('pairs start↔stop across a barline, both directions', () => {
@@ -48,7 +48,7 @@ describe('Tie — the notated <tied>, paired by the shared spanner shape', () =>
     const start = part.measure('1')!.notes[1]!.ties[0]!;
     const stop = part.measure('2')!.notes[0]!.ties[0]!;
     expect(start.members()).toEqual([start, stop]);
-    expect(start.members().map((member) => member.note!.pitch?.step)).toEqual(['D', 'D']);
+    expect(start.members().map((member) => member.note.pitch?.step)).toEqual(['D', 'D']);
   });
 
   it('reports each end onset within its measure, in beats', () => {

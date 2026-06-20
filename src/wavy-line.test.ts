@@ -25,14 +25,14 @@ describe('wavy-line — a trill spanner nested in <notations><ornaments>', () =>
     const start = part.measure('1')!.notes[0]!.wavyLines[0]!;
     expect(start.wavyLineType).toBe('start');
     expect(start.number).toBe('1');
-    expect(start.note!.pitch?.step).toBe('C');
+    expect(start.note.pitch?.step).toBe('C');
   });
 
   it('pairs the start with the matching stop two notes later via partner()', () => {
     const start = part.measure('1')!.notes[0]!.wavyLines[0]!;
     const stop = start.partner()!;
     expect(stop.wavyLineType).toBe('stop');
-    expect(stop.note!.pitch?.step).toBe('E'); // the third note carries the stop
+    expect(stop.note.pitch?.step).toBe('E'); // the third note carries the stop
   });
 
   it('walks the whole span with members(), start..stop inclusive', () => {

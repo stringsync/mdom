@@ -30,7 +30,7 @@ describe('beam — begin/continue/end run paired by level', () => {
     const beam = firstNote!.beams[0]!;
     expect(beam.beamValue).toBe('begin');
     expect(beam.number).toBe('1');
-    expect(beam.note!.pitch?.step).toBe('C');
+    expect(beam.note.pitch?.step).toBe('C');
   });
 
   it('pairs begin <-> end across the run, ignoring the continue in between', () => {
@@ -38,15 +38,15 @@ describe('beam — begin/continue/end run paired by level', () => {
     const begin = firstNote!.beams[0]!;
     const end = thirdNote!.beams.find((beam) => beam.number === '1')!;
     expect(begin.partner()!.beamValue).toBe('end');
-    expect(begin.partner()!.note!.pitch?.step).toBe('E');
-    expect(end.partner()!.note!.pitch?.step).toBe('C');
+    expect(begin.partner()!.note.pitch?.step).toBe('E');
+    expect(end.partner()!.note.pitch?.step).toBe('C');
   });
 
   it('walks every member of the level-1 span in order, not just the far end', () => {
     // members() returns the whole begin/continue/end run; any member yields it.
     const beam = secondNote!.beams.find((beam) => beam.number === '1')!;
     expect(beam.members().map((beamMember) => beamMember.beamValue)).toEqual(['begin', 'continue', 'end']);
-    expect(beam.members().map((beamMember) => beamMember.note!.pitch?.step)).toEqual(['C', 'D', 'E']);
+    expect(beam.members().map((beamMember) => beamMember.note.pitch?.step)).toEqual(['C', 'D', 'E']);
   });
 
   it('pairs each beam level independently — level 2 spans only its own subset', () => {
@@ -54,7 +54,7 @@ describe('beam — begin/continue/end run paired by level', () => {
     // among level-2 markers without dragging in the level-1 run on C.
     const levelTwoBegin = secondNote!.beams.find((beam) => beam.number === '2')!;
     expect(levelTwoBegin.beamValue).toBe('begin');
-    expect(levelTwoBegin.partner()!.note!.pitch?.step).toBe('E');
-    expect(levelTwoBegin.members().map((beamMember) => beamMember.note!.pitch?.step)).toEqual(['D', 'E']);
+    expect(levelTwoBegin.partner()!.note.pitch?.step).toBe('E');
+    expect(levelTwoBegin.members().map((beamMember) => beamMember.note.pitch?.step)).toEqual(['D', 'E']);
   });
 });

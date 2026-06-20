@@ -36,7 +36,7 @@ describe('tuplet — the <tuplet> bracket marking a group start/stop', () => {
     // .note is the <note> the marker lives inside (via <notations>).
     const start = measure.notes[0]!.tuplets[0]!;
     expect(start.note).toBe(measure.notes[0]!);
-    expect(start.note!.pitch?.step).toBe('C');
+    expect(start.note.pitch?.step).toBe('C');
   });
 
   it('pairs start with stop via partner()', () => {
@@ -44,7 +44,7 @@ describe('tuplet — the <tuplet> bracket marking a group start/stop', () => {
     const start = measure.notes[0]!.tuplets[0]!;
     const stop = start.partner()!;
     expect(stop.tupletType).toBe('stop');
-    expect(stop.note!.pitch?.step).toBe('E');
+    expect(stop.note.pitch?.step).toBe('E');
     expect(stop.partner()).toBe(start); // and back again
   });
 
