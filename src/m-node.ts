@@ -95,4 +95,8 @@ export class MElement extends MNode {
     }
     return null;
   }
+
+  childrenNamed(tag: string): MElement[] {
+    return this._children.filter((k): k is MElement => k instanceof MElement && k.tag === tag);
+  }
 }
