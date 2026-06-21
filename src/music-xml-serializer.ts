@@ -1,6 +1,6 @@
 import { js2xml } from 'xml-js';
 import { MDocument } from './m-document';
-import { MElement, MText, type MNode } from './m-node';
+import { MElement, MText, MCData, type MNode } from './m-node';
 import type { XmlNode } from './xml';
 
 /** Serializes an {@link MDocument} back to a MusicXML string. */
@@ -24,6 +24,9 @@ export class MusicXMLSerializer {
 function toJs(node: MNode): XmlNode {
   if (node instanceof MText) {
     return { type: 'text', text: node.value };
+  }
+  if (node instanceof MCData) {
+    return { type: 'cdata', cdata: node.value };
   }
   const el = node as MElement;
   return {

@@ -1,7 +1,7 @@
 import { xml2js } from 'xml-js';
 import JSZip from 'jszip';
 import { MDocument } from './m-document';
-import { MElement, MText } from './m-node';
+import { MElement, MText, MCData } from './m-node';
 import { Clef } from './clef';
 import { Measure } from './measure';
 import { Note } from './note';
@@ -22,6 +22,8 @@ import { Wedge } from './wedge';
 import { Pedal } from './pedal';
 import { OctaveShift } from './octave-shift';
 import { Direction } from './direction';
+import { Frame } from './frame';
+import { LineDetail } from './line-detail';
 import type { XmlNode } from './xml';
 
 /** Tag -> typed node. Unlisted tags become a plain MElement and still round-trip. */
@@ -46,6 +48,8 @@ const REGISTRY: Record<string, new () => MElement> = {
   pedal: Pedal,
   'octave-shift': OctaveShift,
   direction: Direction,
+  frame: Frame,
+  'line-detail': LineDetail,
 };
 
 /** Parses a MusicXML string into an {@link MDocument} tree of typed nodes. */
@@ -119,10 +123,11 @@ function build(node: XmlNode): MElement {
       el.append(build(child));
     } else if (child.type === 'text' && typeof child.text === 'string' && child.text.trim() !== '') {
       el.append(new MText(child.text));
+    } else if (child.type === 'cdata' && typeof child.cdata === 'string') {
+      el.append(new MCData(child.cdata));
     }
-    // Whitespace-only text, comments, and CDATA are dropped so serialization
-    // stays idempotent; add MComment/MCData nodes if a real document needs them
-    // preserved.
+    // Whitespace-only text and comments are dropped so serialization stays
+    // idempotent; add an MComment node if a real document needs them preserved.
   }
 
   return el;

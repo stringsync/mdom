@@ -30,6 +30,17 @@ export class MText extends MNode {
   }
 }
 
+/**
+ * A `<![CDATA[…]]>` section, preserved verbatim so documents round-trip. Kept
+ * distinct from {@link MText} because the content is emitted unescaped — it
+ * doesn't feed the `text` accessor, which reads ordinary value elements.
+ */
+export class MCData extends MNode {
+  constructor(public value: string) {
+    super();
+  }
+}
+
 /** An element: a tag with attributes, child nodes, and the tree-query axes. */
 export class MElement extends MNode {
   private attrs: Record<string, string> = {};

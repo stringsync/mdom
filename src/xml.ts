@@ -3,6 +3,7 @@ export interface XmlNode {
   type?: string;
   name?: string;
   text?: string | number;
+  cdata?: string;
   doctype?: string;
   attributes?: Record<string, string>;
   elements?: XmlNode[];

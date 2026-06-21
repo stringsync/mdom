@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import { MDOMParser } from './m-dom-parser';
-import { MElement } from './m-node';
+import { MCData, MElement } from './m-node';
 import { Measure } from './measure';
+import { MusicXMLSerializer } from './music-xml-serializer';
 import { Note } from './note';
 import { Part } from './part';
 import { Pitch } from './pitch';
@@ -53,14 +54,13 @@ describe('MDOMParser', () => {
     expect(doc.doctype).toBe('score-partwise SYSTEM "partwise.dtd"');
   });
 
-  it('drops whitespace-only text/comments/CDATA but keeps significant text', () => {
+  it('drops whitespace-only text and comments but keeps significant text', () => {
     const doc = parser.parseFromString(`
       <score-partwise>
         <part id="P1">
           <measure number="1">
             <note>
               <!-- dropped -->
-              <![CDATA[dropped too]]>
               <type>  whole  </type>
             </note>
           </measure>
@@ -75,6 +75,19 @@ describe('MDOMParser', () => {
     expect(elementChildren.map((n) => (n as MElement).tag)).toEqual(['type']);
 
     expect(note?.type).toBe('  whole  ');
+  });
+
+  it('preserves CDATA sections through a parse + serialize round trip', () => {
+    const doc = parser.parseFromString(
+      `<score-partwise><credit><credit-words><![CDATA[a < b & c]]></credit-words></credit></score-partwise>`
+    );
+
+    const words = doc.score?.child('credit')?.child('credit-words');
+    expect(words?.children[0]).toBeInstanceOf(MCData);
+    expect((words?.children[0] as MCData).value).toBe('a < b & c');
+
+    const xml = new MusicXMLSerializer().serializeToString(doc);
+    expect(xml).toContain('<![CDATA[a < b & c]]>');
   });
 
   it('throws when the XML has no root element', () => {

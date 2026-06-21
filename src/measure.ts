@@ -8,6 +8,8 @@ import { Voice } from './voice';
 import { Chord, groupChords } from './chord';
 import { Direction } from './direction';
 import { Barline } from './barline';
+import { Frame } from './frame';
+import { LineDetail } from './line-detail';
 import { attributesBackFrom, appliesToStaff } from './signature';
 
 /** A `<measure>`. Holds notes, directions, and `<attributes>` (signatures). */
@@ -85,6 +87,20 @@ export class Measure extends MElement {
     return lines?.text == null ? 5 : Number(lines.text);
   }
 
+  /**
+   * The `<line-detail>` overrides in effect for `staff` (default '1'): the
+   * per-line appearance from the nearest `<staff-details>`. Empty when that block
+   * sets none, or when no `<staff-details>` applies.
+   */
+  lineDetails(staff = '1'): LineDetail[] {
+    return (
+      this.attributeBack((attrs) => {
+        const details = attrs.childrenNamed('staff-details').find((node) => appliesToStaff(node, staff));
+        return details ? details.childrenOfType(LineDetail) : undefined;
+      }) ?? []
+    );
+  }
+
   /** Notes grouped by `<voice>`, in the order each voice first appears. */
   voices(): Voice[] {
     const order: string[] = [];
@@ -119,6 +135,11 @@ export class Measure extends MElement {
   /** The measure's `<barline>` markers (e.g. a left repeat, a right final bar). */
   get barlines(): Barline[] {
     return this.childrenOfType(Barline);
+  }
+
+  /** The fretboard/chord diagrams (`<frame>`) carried by this measure's `<harmony>` elements. */
+  get frames(): Frame[] {
+    return this.childrenNamed('harmony').flatMap((harmony) => harmony.childrenOfType(Frame));
   }
 
   /**
