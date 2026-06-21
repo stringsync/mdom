@@ -4,6 +4,7 @@ export { Score } from './src/score';
 export { Part } from './src/part';
 export { Measure } from './src/measure';
 export { Note } from './src/note';
+export { Cursor } from './src/cursor';
 export { Accidental } from './src/accidental';
 export { Lyric } from './src/lyric';
 export { Barline } from './src/barline';
