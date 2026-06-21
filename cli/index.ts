@@ -3,10 +3,23 @@
 import { program } from 'commander';
 import { fix } from './fix.ts';
 import { test } from './test.ts';
+import { build } from './build.ts';
 import { release } from './release.ts';
 import { withErrorHandling, withTiming } from './util.ts';
 
 program.name('mdom').description('A DOM for MusicXML.');
+
+// build command
+program
+  .command('build')
+  .description('compile the library to dist/ (bundled JS + .d.ts)')
+  .action(
+    withErrorHandling(
+      withTiming(async () => {
+        build();
+      })
+    )
+  );
 
 // fix command
 program
@@ -38,7 +51,7 @@ program
 // release command
 program
   .command('release')
-  .description('bump the package version')
+  .description('bump the version, then commit, tag, and publish')
   .argument('<type>', 'version bump (patch, minor, major)')
   .action(
     withErrorHandling(async (type: string) => {

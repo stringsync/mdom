@@ -1,11 +1,22 @@
 {
   "name": "@stringsync/mdom",
   "version": "0.0.0",
-  "module": "index.ts",
   "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "bin": {
     "mdom": "cli/index.ts"
   },
+  "files": [
+    "dist"
+  ],
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/bun": "latest",
@@ -15,10 +26,8 @@
     "globals": "^17.6.0",
     "jiti": "^2.7.0",
     "prettier": "^3.8.3",
+    "typescript": "^5",
     "typescript-eslint": "^8.59.3"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
   },
   "dependencies": {
     "jszip": "^3.10.1",

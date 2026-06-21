@@ -13,6 +13,15 @@ export function withTiming<T extends unknown[]>(next: (...args: T) => Promise<vo
   };
 }
 
+// run a command inheriting stdio; throw on failure so the caller halts
+export function run(command: string, args: string[]): void {
+  console.log(chalk.cyan(`$ ${[command, ...args].join(' ')}`));
+  const result = Bun.spawnSync([command, ...args], { stdout: 'inherit', stderr: 'inherit', stdin: 'inherit' });
+  if (result.exitCode !== 0) {
+    throw new Error(`${command} exited with code ${result.exitCode}`);
+  }
+}
+
 export function withErrorHandling<T extends unknown[]>(
   next: (...args: T) => Promise<void>
 ): (...args: T) => Promise<void> {
