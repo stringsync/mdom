@@ -1,6 +1,10 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import { describe, expect, it } from 'bun:test';
 import { MDOMParser, MusicXMLSerializer } from '../index';
-import { EXAMPLE_SUITES, MALFORMED, loadExample } from './examples';
+import { EXAMPLE_SUITES, MALFORMED } from './examples';
+
+const loadExample = (file: string): string => fs.readFileSync(path.join(__dirname, 'examples', file), 'utf-8');
 
 // Cross-exporter compatibility. Each suite is a different source software's MusicXML
 // dialect (Finale, Dolet, MuseScore, Guitar Pro, Sibelius, Dorico, LilyPond, …). The
