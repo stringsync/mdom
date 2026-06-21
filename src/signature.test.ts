@@ -26,9 +26,9 @@ const SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('signature helpers — the backward carry-forward walk', () => {
-  const part = new MDOMParser().parseFromString(SAMPLE).score!.part('P1')!;
-  const measure1 = part.measure('1')!;
-  const measure2 = part.measure('2')!;
+  const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
+  const measure1 = part.getMeasure('1')!;
+  const measure2 = part.getMeasure('2')!;
 
   it('returns <attributes> in effect nearest-first, scanning back from a note index', () => {
     // The first note sits at index 1 (the leading <attributes> is index 0), so its

@@ -29,18 +29,18 @@ export class WavyLine extends MElement {
   }
 
   /** The marker at the far end (same number), or null. */
-  partner(): WavyLine | null {
+  get partner(): WavyLine | null {
     return resolvePartner(this, this.spec());
   }
 
   /** All markers in this spanner (start..stop), not just the far end. */
-  members(): WavyLine[] {
+  get members(): WavyLine[] {
     return resolveMembers(this, this.spec());
   }
 
   /** Onset of this marker's note within its measure, in beats. */
-  measureBeat(): number | null {
-    return this.note.measureBeat();
+  get measureBeat(): number | null {
+    return this.note.measureBeat;
   }
 
   private spec(): SpannerSpec<WavyLine> {

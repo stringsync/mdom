@@ -14,8 +14,8 @@ export class Chord {
   }
 
   /** Onset within the measure, in beats (the lead note's measureBeat()). */
-  measureBeat(): number | null {
-    return this.lead.measureBeat();
+  get measureBeat(): number | null {
+    return this.lead.measureBeat;
   }
 }
 

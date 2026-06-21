@@ -29,7 +29,7 @@ const SAMPLE = `<score-partwise>
 
 describe('Note', () => {
   const parser = new MDOMParser();
-  const notes = parser.parseFromString(SAMPLE).score?.part('P1')?.measure('1')?.notes ?? [];
+  const notes = parser.parseFromString(SAMPLE).score?.getPart('P1')?.getMeasure('1')?.notes ?? [];
 
   it('lists every note in the measure', () => {
     expect(notes.length).toBe(2);

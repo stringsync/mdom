@@ -8,8 +8,8 @@ function measureWith(inner: string): Measure {
       `<score-partwise><part id="P1"><measure number="1">
        <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration></note>${inner}</measure></part></score-partwise>`
     )
-    .score!.part('P1')!
-    .measure('1')!;
+    .score.getPart('P1')!
+    .getMeasure('1')!;
 }
 
 describe('Barline', () => {

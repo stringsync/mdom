@@ -37,12 +37,12 @@ export class Voice {
   }
 
   /** This voice's notes grouped into chords. */
-  chords(): Chord[] {
+  get chords(): Chord[] {
     return groupChords(this.notes);
   }
 
   /** Append a pitched note. Follows this voice's cursor unless `onset` is given. */
-  note(spec: NoteSpec): Note {
+  addNote(spec: NoteSpec): Note {
     const duration = this.open(spec);
     const note = this.build(spec, duration, spec, false);
     this.measure.append(note);
@@ -50,7 +50,7 @@ export class Voice {
   }
 
   /** Append a rest. */
-  rest(spec: DurationSpec): Note {
+  addRest(spec: DurationSpec): Note {
     const duration = this.open(spec);
     const note = this.build(spec, duration, null, false);
     this.measure.append(note);
@@ -61,7 +61,7 @@ export class Voice {
    * Append a chord: several pitches sharing one onset and duration. The first
    * pitch is the lead; the rest get `<chord/>` so they stack on its onset.
    */
-  chord(pitches: PitchSpec[], spec: DurationSpec): Chord {
+  addChord(pitches: PitchSpec[], spec: DurationSpec): Chord {
     const duration = this.open(spec);
     const notes = pitches.map((pitch, index) => {
       const note = this.build(spec, duration, pitch, index > 0);

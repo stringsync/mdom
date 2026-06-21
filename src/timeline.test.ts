@@ -22,19 +22,19 @@ const SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('timeline & grouping', () => {
-  const measure = new MDOMParser().parseFromString(SAMPLE).score!.part('P1')!.measure('1')!;
+  const measure = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!.getMeasure('1')!;
 
   it('groups notes by voice', () => {
-    const voices = measure.voices();
+    const voices = measure.voices;
     expect(voices.map((voice) => voice.id)).toEqual(['1', '2']);
     expect(voices[1]!.notes.map((note) => note.pitch?.step)).toEqual(['C', 'G']);
   });
 
   it('collapses a <chord/> run into one Chord and reads its onset', () => {
-    const triad = measure.chords()[0]!;
+    const triad = measure.chords[0]!;
     expect(triad.lead.pitch?.step).toBe('C');
     expect(triad.notes.map((note) => note.pitch?.step)).toEqual(['C', 'E', 'G']);
-    expect(triad.measureBeat()).toBe(0);
+    expect(triad.measureBeat).toBe(0);
   });
 
   it('reads duration in beats and chord membership off the note', () => {
@@ -52,7 +52,7 @@ describe('timeline & grouping', () => {
 // these elements via the edit API is covered in e2e/crud.test.ts.) divisions=4.
 function measureFrom(body: string): Measure {
   const xml = `<score-partwise><part id="P1"><measure number="1"><attributes><divisions>4</divisions></attributes>${body}</measure></part></score-partwise>`;
-  return new MDOMParser().parseFromString(xml).score!.part('P1')!.measure('1')!;
+  return new MDOMParser().parseFromString(xml).score.getPart('P1')!.getMeasure('1')!;
 }
 
 function noteXml(step: string, octave: number, duration: number | null, lead = ''): string {
@@ -60,7 +60,7 @@ function noteXml(step: string, octave: number, duration: number | null, lead = '
   return `<note>${lead}<pitch><step>${step}</step><octave>${octave}</octave></pitch>${dur}</note>`;
 }
 
-const beatsOf = (measure: Measure): (number | null)[] => measure.notes.map((eachNote) => eachNote.measureBeat());
+const beatsOf = (measure: Measure): (number | null)[] => measure.notes.map((eachNote) => eachNote.measureBeat);
 
 describe('onset fold — backup/forward/chord/grace', () => {
   it('advances the cursor by the duration of each note', () => {
@@ -100,6 +100,6 @@ describe('onset fold — backup/forward/chord/grace', () => {
   });
 
   it('returns null for a note outside any measure', () => {
-    expect(new Note().measureBeat()).toBeNull();
+    expect(new Note().measureBeat).toBeNull();
   });
 });

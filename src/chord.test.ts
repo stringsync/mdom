@@ -18,19 +18,19 @@ const SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('Chord grouping', () => {
-  const measure = new MDOMParser().parseFromString(SAMPLE).score!.part('P1')!.measure('1')!;
+  const measure = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!.getMeasure('1')!;
 
   it('collapses a <chord/> run into one Chord with the lead carrying the onset', () => {
-    // measure.chords() pulls the stacked notes into one sounding group.
-    const triad = measure.chords()[0]!;
+    // measure.chords pulls the stacked notes into one sounding group.
+    const triad = measure.chords[0]!;
     expect(triad.lead.pitch?.step).toBe('C');
     expect(triad.notes.map((note) => note.pitch?.step)).toEqual(['C', 'E', 'G']);
-    expect(triad.measureBeat()).toBe(0); // onset of the lead note
+    expect(triad.measureBeat).toBe(0); // onset of the lead note
   });
 
   it('keeps a standalone note as its own 1-member Chord', () => {
     // The D after the triad starts a fresh group of one.
-    const chords = measure.chords();
+    const chords = measure.chords;
     expect(chords).toHaveLength(2);
     const standalone = chords[1]!;
     expect(standalone.notes.map((note) => note.pitch?.step)).toEqual(['D']);
@@ -38,7 +38,7 @@ describe('Chord grouping', () => {
   });
 
   it('groupChords(notes) collapses the same way as the measure query', () => {
-    // The exported function is the grouping primitive measure.chords() delegates to.
+    // The exported function is the grouping primitive measure.chords delegates to.
     const chords = groupChords(measure.notes);
     expect(chords.map((chord) => chord.notes.map((note) => note.pitch?.step))).toEqual([['C', 'E', 'G'], ['D']]);
     expect(chords[0]!.lead.pitch?.step).toBe('C');

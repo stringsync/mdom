@@ -16,17 +16,17 @@ const SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('Time', () => {
-  const part = new MDOMParser().parseFromString(SAMPLE).score!.part('P1')!;
+  const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
 
   it('reads a simple meter with a symbol', () => {
-    const time = part.measure('1')!.time()!;
+    const time = part.getMeasure('1')!.getTime()!;
     expect(time.beats).toBe('4');
     expect(time.beatType).toBe('4');
     expect(time.symbol).toBe('common');
   });
 
   it('reads a composite meter as ordered components', () => {
-    const time = part.measure('2')!.time()!;
+    const time = part.getMeasure('2')!.getTime()!;
     expect(time.components).toEqual([
       { beats: '3', beatType: '8' },
       { beats: '2', beatType: '8' },

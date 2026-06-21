@@ -24,10 +24,10 @@ describe('Part', () => {
   });
 
   it('finds a measure by number', () => {
-    expect(part.measure('2')?.number).toBe('2');
+    expect(part.getMeasure('2')?.number).toBe('2');
   });
 
   it('returns null for an unknown measure number', () => {
-    expect(part.measure('9')).toBeNull();
+    expect(part.getMeasure('9')).toBeNull();
   });
 });

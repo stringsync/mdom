@@ -9,8 +9,8 @@ function noteWith(inner: string): Note {
        <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration>${inner}</note>
      </measure></part></score-partwise>`
     )
-    .score!.part('P1')!
-    .measure('1')!.notes[0]!;
+    .score.getPart('P1')!
+    .getMeasure('1')!.notes[0]!;
 }
 
 describe('Lyric', () => {

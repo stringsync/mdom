@@ -30,10 +30,10 @@ describe('MDOMParser', () => {
 
     expect(doc.root).toBeInstanceOf(Score);
 
-    const part = doc.score?.part('P1');
+    const part = doc.score?.getPart('P1');
     expect(part).toBeInstanceOf(Part);
 
-    const measure = part?.measure('1');
+    const measure = part?.getMeasure('1');
     expect(measure).toBeInstanceOf(Measure);
 
     const note = measure?.notes[0];
@@ -68,7 +68,7 @@ describe('MDOMParser', () => {
       </score-partwise>
     `);
 
-    const note = doc.score?.part('P1')?.measure('1')?.notes[0];
+    const note = doc.score?.getPart('P1')?.getMeasure('1')?.notes[0];
     expect(note).not.toBeUndefined();
 
     const elementChildren = note?.children.filter((n) => n instanceof MElement) ?? [];

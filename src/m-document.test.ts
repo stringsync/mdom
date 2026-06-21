@@ -52,8 +52,8 @@ describe('MDocument', () => {
     }
 
     expect(doc.score?.parts.length).toBe(1);
-    expect(doc.score?.part('P1')?.measures.length).toBe(2);
-    expect(doc.score?.part('P1')?.measure('2')?.number).toBe('2');
+    expect(doc.score?.getPart('P1')?.measures.length).toBe(2);
+    expect(doc.score?.getPart('P1')?.getMeasure('2')?.number).toBe('2');
   });
 
   it('builds a usable document from scratch, with no MusicXML to start from', () => {
@@ -79,7 +79,7 @@ describe('MDocument', () => {
     part.append(measure);
 
     const reparsed = parser.parseFromString(serializer.serializeToString(doc));
-    expect(reparsed.score?.part('P1')?.measures.length).toBe(1);
+    expect(reparsed.score?.getPart('P1')?.measures.length).toBe(1);
   });
 
   // The contract: serialization is a fixpoint. parse -> serialize -> parse ->

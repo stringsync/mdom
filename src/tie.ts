@@ -30,12 +30,12 @@ export class Tie extends MElement {
   }
 
   /** The marker at the other end (same number), scanning the part in document order. */
-  partner(): Tie | null {
+  get partner(): Tie | null {
     return resolvePartner(this, this.spec());
   }
 
   /** All markers in this spanner (start..stop), not just the far end. */
-  members(): Tie[] {
+  get members(): Tie[] {
     return resolveMembers(this, this.spec());
   }
 
@@ -48,8 +48,8 @@ export class Tie extends MElement {
   }
 
   /** Onset of this end within its measure, in beats. */
-  measureBeat(): number | null {
-    return this.note.measureBeat();
+  get measureBeat(): number | null {
+    return this.note.measureBeat;
   }
 
   private spec(): SpannerSpec<Tie> {

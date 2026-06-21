@@ -15,10 +15,10 @@ const SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('Key', () => {
-  const part = new MDOMParser().parseFromString(SAMPLE).score!.part('P1')!;
+  const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
 
   it('reads fifths and mode, and derives the tonic', () => {
-    const key = part.measure('1')!.key()!;
+    const key = part.getMeasure('1')!.getKey()!;
     expect(key.fifths).toBe(-3);
     expect(key.mode).toBe('major');
     expect(key.rootNote).toBe('Eb');
@@ -27,7 +27,7 @@ describe('Key', () => {
   it('carries the key into a later measure that never declares one', () => {
     // m2 has no <key> of its own; key() returns the one still in effect, so the
     // caller never walks backwards through earlier measures itself.
-    const key = part.measure('2')!.key()!;
+    const key = part.getMeasure('2')!.getKey()!;
     expect(key.fifths).toBe(-3);
     expect(key.rootNote).toBe('Eb');
   });

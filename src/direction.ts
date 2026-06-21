@@ -35,7 +35,7 @@ export class Direction extends MElement {
    * Onset within the measure, in beats — the cursor position where this
    * `<direction>` sits in the backup/forward fold.
    */
-  measureBeat(): number | null {
+  get measureBeat(): number | null {
     const measure = this.closest(Measure);
     if (!measure) {
       return null;

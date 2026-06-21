@@ -14,8 +14,11 @@ export class MDocument {
     return new MDocument(new Score());
   }
 
-  /** The root as a {@link Score}, or null when the root is something else. */
-  get score(): Score | null {
-    return this.root instanceof Score ? this.root : null;
+  /** The root as a {@link Score}. Throws when the root is something else. */
+  get score(): Score {
+    if (!(this.root instanceof Score)) {
+      throw new Error(`mdom: expected a <score-partwise> root, got <${this.root.tag}>`);
+    }
+    return this.root;
   }
 }

@@ -15,7 +15,7 @@ export class Score extends MElement {
   }
 
   /** The part with this id, or null. */
-  part(id: string): Part | null {
+  getPart(id: string): Part | null {
     return this.parts.find((part) => part.id === id) ?? null;
   }
 

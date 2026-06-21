@@ -23,8 +23,7 @@ for (const [source, examples] of Object.entries(EXAMPLE_SUITES)) {
       const xml = loadExample(example);
 
       const score = parser.parseFromString(xml).score;
-      expect(score).not.toBeNull();
-      expect(score!.parts.some((part) => part.measures.length > 0)).toBe(true);
+      expect(score.parts.some((part) => part.measures.length > 0)).toBe(true);
 
       const once = roundTrip(xml);
       expect(roundTrip(once)).toBe(once);
@@ -39,8 +38,7 @@ describe('malformed input', () => {
 
   it('parses valid-but-empty MusicXML to a score with no parts', () => {
     const score = parser.parseFromString(loadExample(MALFORMED.MOSTLY_INVALID)).score;
-    expect(score).not.toBeNull();
-    expect(score!.parts.length).toBe(0);
+    expect(score.parts.length).toBe(0);
   });
 
   it('tolerates non-numeric duration/divisions content and still round-trips', () => {

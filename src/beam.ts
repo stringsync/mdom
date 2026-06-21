@@ -30,22 +30,22 @@ export class Beam extends MElement {
   }
 
   /** The marker at the far end (same number), or null. */
-  partner(): Beam | null {
+  get partner(): Beam | null {
     return resolvePartner(this, this.spec());
   }
 
   /**
    * Every marker in this spanner in order — begin, any continues, end.
-   * {@link partner} is just the far end; members() is the whole span (e.g. a
+   * {@link partner} is just the far end; {@link members} is the whole span (e.g. a
    * 3-note beam group).
    */
-  members(): Beam[] {
+  get members(): Beam[] {
     return resolveMembers(this, this.spec());
   }
 
   /** Onset of this marker's note within its measure, in beats. */
-  measureBeat(): number | null {
-    return this.note.measureBeat();
+  get measureBeat(): number | null {
+    return this.note.measureBeat;
   }
 
   private spec(): SpannerSpec<Beam> {

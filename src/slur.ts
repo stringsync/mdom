@@ -44,12 +44,12 @@ export class Slur extends MElement {
    * resolve correctly: the first stop after a start is its match, because a
    * number can't reopen until it closes. Spans measures (and systems) for free.
    */
-  partner(): Slur | null {
+  get partner(): Slur | null {
     return resolvePartner(this, this.spec());
   }
 
   /** All markers in this spanner (start..stop), not just the far end. */
-  members(): Slur[] {
+  get members(): Slur[] {
     return resolveMembers(this, this.spec());
   }
 

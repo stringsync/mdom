@@ -22,8 +22,8 @@ const SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('tuplet — the <tuplet> bracket marking a group start/stop', () => {
-  const part = new MDOMParser().parseFromString(SAMPLE).score!.part('P1')!;
-  const measure = part.measure('1')!;
+  const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
+  const measure = part.getMeasure('1')!;
 
   it('reads the marker type and number off the opening <tuplet>', () => {
     // The first note opens the group; number defaults to '1' and pairs start↔stop.
@@ -42,17 +42,17 @@ describe('tuplet — the <tuplet> bracket marking a group start/stop', () => {
   it('pairs start with stop via partner()', () => {
     // partner() walks to the far end: the start finds the stop on the third note.
     const start = measure.notes[0]!.tuplets[0]!;
-    const stop = start.partner()!;
+    const stop = start.partner!;
     expect(stop.tupletType).toBe('stop');
     expect(stop.note.pitch?.step).toBe('E');
-    expect(stop.partner()).toBe(start); // and back again
+    expect(stop.partner).toBe(start); // and back again
   });
 
   it('lists every marker of the span via members()', () => {
     // A tuplet has only the two endpoints (no per-note "continue"), so members()
     // is just [start, stop] — the middle note carries no <tuplet> marker.
     const start = measure.notes[0]!.tuplets[0]!;
-    expect(start.members().map((marker) => marker.tupletType)).toEqual(['start', 'stop']);
+    expect(start.members.map((marker) => marker.tupletType)).toEqual(['start', 'stop']);
     expect(measure.notes[1]!.tuplets).toEqual([]);
   });
 
@@ -60,7 +60,7 @@ describe('tuplet — the <tuplet> bracket marking a group start/stop', () => {
     // Three eighths at divisions=2 sit at beats 0, 0.5, 1.0; measureBeat() defers
     // to the underlying note's onset, so the stop lands one quarter-beat in.
     const start = measure.notes[0]!.tuplets[0]!;
-    expect(start.measureBeat()).toBe(0);
-    expect(start.partner()!.measureBeat()).toBe(1);
+    expect(start.measureBeat).toBe(0);
+    expect(start.partner!.measureBeat).toBe(1);
   });
 });

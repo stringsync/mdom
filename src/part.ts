@@ -22,7 +22,7 @@ export class Part extends MElement {
   }
 
   /** The measure with this `number`, or null. */
-  measure(number: string): Measure | null {
+  getMeasure(number: string): Measure | null {
     return this.measures.find((measure) => measure.number === number) ?? null;
   }
 

@@ -33,7 +33,7 @@ describe('LineDetail', () => {
       </score-partwise>
     `);
 
-    const details = doc.score?.part('P1')?.measure('1')?.lineDetails() ?? [];
+    const details = doc.score?.getPart('P1')?.getMeasure('1')?.getLineDetails() ?? [];
     expect(details).toHaveLength(1);
     expect(details[0]).toBeInstanceOf(LineDetail);
     expect(details[0]?.line).toBe(5);

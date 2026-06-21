@@ -33,7 +33,7 @@ export class Cursor {
   static at(target: Note | Voice, beat = 0): Cursor {
     if (target instanceof Note) {
       const measure = required(target.closest(Measure), '<measure> ancestor for cursor');
-      const onset = required(target.measureBeat(), 'measureBeat for cursor');
+      const onset = required(target.measureBeat, 'measureBeat for cursor');
       return new Cursor(measure, target.voice, target.staff, onset);
     }
     return new Cursor(target.measure, target.id, target.staff, beat);
@@ -41,7 +41,7 @@ export class Cursor {
 
   /** The voice this caret sits in (reader + writer). */
   get voice(): Voice {
-    return this.measure.voice(this.voiceId, { staff: this.staff });
+    return this.measure.getOrCreateVoice(this.voiceId, { staff: this.staff });
   }
 
   /**
@@ -53,7 +53,7 @@ export class Cursor {
     // via voice.cursor(1/3)) must equal measureBeat() bit-for-bit; epsilon-compare
     // if that bites. Cursors from next()/prev()/note.cursor() store the note's own
     // measureBeat(), so they always match.
-    return this.stopsIn(this.measure).find((note) => note.measureBeat() === this.onset) ?? null;
+    return this.stopsIn(this.measure).find((note) => note.measureBeat === this.onset) ?? null;
   }
 
   /**
@@ -61,7 +61,7 @@ export class Cursor {
    * same voice when at the end; null past the last note of the part.
    */
   next(): Cursor | null {
-    const later = this.stopsIn(this.measure).find((note) => (note.measureBeat() ?? 0) > this.onset);
+    const later = this.stopsIn(this.measure).find((note) => (note.measureBeat ?? 0) > this.onset);
     if (later) {
       return Cursor.at(later);
     }
@@ -79,7 +79,7 @@ export class Cursor {
    * measure's same voice; null before the first note of the part.
    */
   prev(): Cursor | null {
-    const earlier = this.stopsIn(this.measure).filter((note) => (note.measureBeat() ?? 0) < this.onset);
+    const earlier = this.stopsIn(this.measure).filter((note) => (note.measureBeat ?? 0) < this.onset);
     if (earlier.length > 0) {
       return Cursor.at(earlier[earlier.length - 1]!);
     }
@@ -94,10 +94,7 @@ export class Cursor {
 
   /** The lead notes (chord heads) of this voice in `measure`, in onset order. */
   private stopsIn(measure: Measure): Note[] {
-    return measure
-      .voice(this.voiceId, { staff: this.staff })
-      .chords()
-      .map((chord) => chord.notes[0]!);
+    return measure.getOrCreateVoice(this.voiceId, { staff: this.staff }).chords.map((chord) => chord.notes[0]!);
   }
 
   /** This part's measures stepping out from the current one: +1 forward, -1 back (nearest first). */

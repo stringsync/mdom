@@ -28,7 +28,7 @@ describe('Frame', () => {
       </score-partwise>
     `);
 
-    const frames = doc.score?.part('P1')?.measure('1')?.frames ?? [];
+    const frames = doc.score?.getPart('P1')?.getMeasure('1')?.frames ?? [];
     expect(frames[0]).toBeInstanceOf(Frame);
     expect(frames[0]?.width).toBe(65);
     expect(frames[0]?.height).toBe(80);

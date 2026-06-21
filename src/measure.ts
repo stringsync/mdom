@@ -55,28 +55,28 @@ export class Measure extends MElement {
    * '1'): the nearest declaration at or before this measure. Clefs match their
    * staff exactly; a numberless key/time applies to every staff.
    */
-  clef(staff = '1'): Clef | null {
+  getClef(staff = '1'): Clef | null {
     return this.attributeBack((attrs) => attrs.childrenOfType(Clef).find((clef) => clef.staff === staff));
   }
 
   /** The `<key>` in effect at the start of this measure for `staff`. */
-  key(staff = '1'): Key | null {
+  getKey(staff = '1'): Key | null {
     return this.attributeBack((attrs) => attrs.childrenOfType(Key).find((key) => appliesToStaff(key, staff)));
   }
 
   /** The `<time>` in effect at the start of this measure for `staff`. */
-  time(staff = '1'): Time | null {
+  getTime(staff = '1'): Time | null {
     return this.attributeBack((attrs) => attrs.childrenOfType(Time).find((time) => appliesToStaff(time, staff)));
   }
 
   /** `<staves>` count in effect (global); 1 when never declared. */
-  staveCount(): number {
+  get staveCount(): number {
     const staves = this.attributeBack((attrs) => attrs.child('staves') ?? undefined);
     return staves?.text == null ? 1 : Number(staves.text);
   }
 
   /** `<staff-lines>` in effect for `staff` (default '1'); 5 lines when unspecified. */
-  staveLines(staff = '1'): number {
+  getStaveLines(staff = '1'): number {
     const lines = this.attributeBack((attrs) =>
       attrs
         .childrenNamed('staff-details')
@@ -92,7 +92,7 @@ export class Measure extends MElement {
    * per-line appearance from the nearest `<staff-details>`. Empty when that block
    * sets none, or when no `<staff-details>` applies.
    */
-  lineDetails(staff = '1'): LineDetail[] {
+  getLineDetails(staff = '1'): LineDetail[] {
     return (
       this.attributeBack((attrs) => {
         const details = attrs.childrenNamed('staff-details').find((node) => appliesToStaff(node, staff));
@@ -102,7 +102,7 @@ export class Measure extends MElement {
   }
 
   /** Notes grouped by `<voice>`, in the order each voice first appears. */
-  voices(): Voice[] {
+  get voices(): Voice[] {
     const order: string[] = [];
     for (const note of this.notes) {
       const id = note.voice;
@@ -117,7 +117,7 @@ export class Measure extends MElement {
   }
 
   /** Notes grouped into chords: `<chord/>` runs collapsed, single notes 1-member. */
-  chords(): Chord[] {
+  get chords(): Chord[] {
     return groupChords(this.notes);
   }
 
@@ -146,7 +146,7 @@ export class Measure extends MElement {
    * Get or create the reader/writer for a `<voice>`; remembers the staff so notes
    * added through it are positioned and labeled correctly.
    */
-  voice(id: string, opts?: { staff?: string }): Voice {
+  getOrCreateVoice(id: string, opts?: { staff?: string }): Voice {
     return new Voice(this, id, opts?.staff ?? '1');
   }
 

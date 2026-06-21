@@ -29,18 +29,18 @@ export class Tuplet extends MElement {
   }
 
   /** The marker at the far end (same number), or null. */
-  partner(): Tuplet | null {
+  get partner(): Tuplet | null {
     return resolvePartner(this, this.spec());
   }
 
   /** All markers in this spanner (start..stop), not just the far end. */
-  members(): Tuplet[] {
+  get members(): Tuplet[] {
     return resolveMembers(this, this.spec());
   }
 
   /** Onset of this marker's note within its measure, in beats. */
-  measureBeat(): number | null {
-    return this.note.measureBeat();
+  get measureBeat(): number | null {
+    return this.note.measureBeat;
   }
 
   private spec(): SpannerSpec<Tuplet> {

@@ -18,11 +18,11 @@ describe('Score', () => {
   });
 
   it('finds a part by id', () => {
-    expect(score.part('P2')?.id).toBe('P2');
+    expect(score.getPart('P2')?.id).toBe('P2');
   });
 
   it('returns null for an unknown part id', () => {
-    expect(score.part('P9')).toBeNull();
+    expect(score.getPart('P9')).toBeNull();
   });
 });
 
@@ -40,12 +40,12 @@ const HEADER_SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('score header', () => {
-  const score = new MDOMParser().parseFromString(HEADER_SAMPLE).score!;
+  const score = new MDOMParser().parseFromString(HEADER_SAMPLE).score;
 
   it('reads the title, and each part its label and stave count', () => {
     expect(score.title).toBe('Sonata');
-    expect(score.part('P1')!.label).toBe('Piano');
-    expect(score.part('P1')!.staveCount).toBe(2);
+    expect(score.getPart('P1')!.label).toBe('Piano');
+    expect(score.getPart('P1')!.staveCount).toBe(2);
   });
 });
 
@@ -61,7 +61,7 @@ const SOFTWARE_SAMPLE = `<score-partwise>
 
 describe('score software', () => {
   it('lists every encoding <software>, in order', () => {
-    const score = new MDOMParser().parseFromString(SOFTWARE_SAMPLE).score!;
+    const score = new MDOMParser().parseFromString(SOFTWARE_SAMPLE).score;
     expect(score.software).toEqual(['Finale 2011 for Windows', 'Dolet 5.5 for Finale']);
   });
 

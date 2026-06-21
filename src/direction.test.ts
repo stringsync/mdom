@@ -18,7 +18,7 @@ const SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('direction — spanner collectors and timeline position', () => {
-  const measure = new MDOMParser().parseFromString(SAMPLE).score!.part('P1')!.measure('1')!;
+  const measure = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!.getMeasure('1')!;
 
   it('collects every <direction> in the measure', () => {
     expect(measure.directions).toHaveLength(2);
@@ -33,7 +33,7 @@ describe('direction — spanner collectors and timeline position', () => {
 
   it('places each <direction> on the beat where its cursor sits', () => {
     const [first, second] = measure.directions;
-    expect(first!.measureBeat()).toBe(0);
-    expect(second!.measureBeat()).toBe(2); // after two quarter notes
+    expect(first!.measureBeat).toBe(0);
+    expect(second!.measureBeat).toBe(2); // after two quarter notes
   });
 });

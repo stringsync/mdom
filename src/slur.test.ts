@@ -3,7 +3,7 @@ import { MDOMParser } from './m-dom-parser';
 import type { Note } from './note';
 
 const slurNote = (note: Note, type: 'start' | 'stop'): Note | null =>
-  note.slurs.find((s) => s.slurType === type)?.partner()?.note ?? null;
+  note.slurs.find((s) => s.slurType === type)?.partner?.note ?? null;
 
 const step = (note: Note | null): string | null => note?.pitch?.step ?? null;
 
@@ -38,9 +38,9 @@ const SAMPLE = `<score-partwise>
   </part>
 </score-partwise>`;
 
-describe('Slur.partner() — spanner pairing as a query', () => {
-  const part = new MDOMParser().parseFromString(SAMPLE).score!.part('P1')!;
-  const notesOf = (n: string): Note[] => part.measure(n)!.notes;
+describe('Slur.partner — spanner pairing as a query', () => {
+  const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
+  const notesOf = (n: string): Note[] => part.getMeasure(n)!.notes;
 
   it('pairs a slur within one measure, both directions', () => {
     const [c, , e] = notesOf('1');
@@ -63,8 +63,8 @@ describe('Slur.partner() — spanner pairing as a query', () => {
 
   it('resolves nested slurs by number', () => {
     const [a, b, c5] = notesOf('4');
-    expect(step(b!.slurs[0]!.partner()?.note ?? null)).toBe('A'); // inner (2): B→A
-    expect(step(a!.slurs.find((s) => s.number === '1')!.partner()?.note ?? null)).toBe('C'); // outer (1): A→C5
+    expect(step(b!.slurs[0]!.partner?.note ?? null)).toBe('A'); // inner (2): B→A
+    expect(step(a!.slurs.find((s) => s.number === '1')!.partner?.note ?? null)).toBe('C'); // outer (1): A→C5
     expect(step(slurNote(c5!, 'stop'))).toBe('A');
   });
 });

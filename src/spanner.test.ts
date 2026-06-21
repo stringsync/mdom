@@ -49,7 +49,7 @@ const SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('spanner — the generic start/stop resolver', () => {
-  const part = new MDOMParser().parseFromString(SAMPLE).score!.part('P1')!;
+  const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
 
   // Build a SpannerSpec<Slur> exactly the way Slur.spec() does — every slur in
   // the part in document order, plus how a marker's type opens or closes a span.
@@ -64,7 +64,7 @@ describe('spanner — the generic start/stop resolver', () => {
   it('collects note-attached markers across the part in document order', () => {
     // noteMarkers walks every measure's notes and flat-maps the picked markers,
     // so the slur types come out in the order they appear in the source.
-    const firstSlur = part.measure('1')!.notes[0]!.slurs[0]!;
+    const firstSlur = part.getMeasure('1')!.notes[0]!.slurs[0]!;
     const types = noteMarkers(firstSlur, (note) => note.slurs).map((slur) => slur.slurType);
     expect(types).toEqual([
       'start', // m1 C
@@ -84,7 +84,7 @@ describe('spanner — the generic start/stop resolver', () => {
   it('pairs a start with its stop, both directions', () => {
     // resolvePartner: an opener finds the next closer of the same number; a
     // closer finds the previous opener. m1's slur is self-contained C..E.
-    const [startC, , stopE] = part.measure('1')!.notes;
+    const [startC, , stopE] = part.getMeasure('1')!.notes;
     const spec = slurSpec(startC!.slurs[0]!);
     expect(step(resolvePartner(startC!.slurs[0]!, spec))).toBe('E');
     expect(step(resolvePartner(stopE!.slurs[0]!, spec))).toBe('C');
@@ -93,8 +93,8 @@ describe('spanner — the generic start/stop resolver', () => {
   it('does not let a reused number cross-link spans', () => {
     // C(m1) and F(m2) both open number 1. C must pair with E (its own stop),
     // not jump past it to G — a number can't reopen before it closes.
-    const startC = part.measure('1')!.notes[0]!.slurs[0]!;
-    const startF = part.measure('2')!.notes[0]!.slurs[0]!;
+    const startC = part.getMeasure('1')!.notes[0]!.slurs[0]!;
+    const startF = part.getMeasure('2')!.notes[0]!.slurs[0]!;
     const spec = slurSpec(startC);
     expect(step(resolvePartner(startC, spec))).toBe('E');
     expect(step(resolvePartner(startF, spec))).toBe('G');
@@ -103,7 +103,7 @@ describe('spanner — the generic start/stop resolver', () => {
   it('resolves nested numbers independently', () => {
     // m4: A opens 1 and 2; B closes 2 (inner), C5 closes 1 (outer). The first
     // matching closer per number is the true partner regardless of nesting.
-    const [noteA, noteB, noteC5] = part.measure('4')!.notes;
+    const [noteA, noteB, noteC5] = part.getMeasure('4')!.notes;
     const outerStart = noteA!.slurs.find((slur) => slur.number === '1')!;
     const innerStart = noteA!.slurs.find((slur) => slur.number === '2')!;
     const spec = slurSpec(outerStart);
@@ -116,7 +116,7 @@ describe('spanner — the generic start/stop resolver', () => {
   it('returns the whole start..stop run from any member', () => {
     // resolveMembers from the opener returns every marker of that number in the
     // span — here the 3-point start/continue/stop slur on number 1 in m5.
-    const startD5 = part.measure('5')!.notes[0]!.slurs[0]!;
+    const startD5 = part.getMeasure('5')!.notes[0]!.slurs[0]!;
     const spec = slurSpec(startD5);
     const members = resolveMembers(startD5, spec);
     expect(members.map((slur) => step(slur))).toEqual(['D', 'E', 'F']);
@@ -126,8 +126,8 @@ describe('spanner — the generic start/stop resolver', () => {
   it('returns the whole run from a middle member via spanOpener', () => {
     // resolveMembers walks back to the opener first (spanOpener), so a continue
     // or stop in the middle/end still yields the full begin..end run.
-    const continueE5 = part.measure('5')!.notes[1]!.slurs[0]!;
-    const stopF5 = part.measure('5')!.notes[2]!.slurs[0]!;
+    const continueE5 = part.getMeasure('5')!.notes[1]!.slurs[0]!;
+    const stopF5 = part.getMeasure('5')!.notes[2]!.slurs[0]!;
     const spec = slurSpec(continueE5);
     expect(resolveMembers(continueE5, spec).map((slur) => step(slur))).toEqual(['D', 'E', 'F']);
     expect(resolveMembers(stopF5, spec).map((slur) => step(slur))).toEqual(['D', 'E', 'F']);
@@ -136,7 +136,7 @@ describe('spanner — the generic start/stop resolver', () => {
   it('collects direction-attached markers from <direction>s', () => {
     // directionMarkers is the same walk for direction-hung spanners: it pulls
     // the part's wedges, here the crescendo open and its stop, in document order.
-    const firstWedge = part.measure('1')!.directions.flatMap((direction) => direction.wedges)[0]!;
+    const firstWedge = part.getMeasure('1')!.directions.flatMap((direction) => direction.wedges)[0]!;
     const wedges = directionMarkers(firstWedge, (direction) => direction.wedges);
     expect(wedges.map((wedge) => wedge.wedgeType)).toEqual(['crescendo', 'stop']);
 

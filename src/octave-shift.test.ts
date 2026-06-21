@@ -17,10 +17,10 @@ const SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('octave-shift — a direction-attached ottava spanner', () => {
-  const part = new MDOMParser().parseFromString(SAMPLE).score!.part('P1')!;
+  const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
 
   it('reads type, size, and number off the opener, and has no note (it hangs off a direction)', () => {
-    const ottava = part.measure('1')!.directions.flatMap((direction) => direction.octaveShifts)[0]!;
+    const ottava = part.getMeasure('1')!.directions.flatMap((direction) => direction.octaveShifts)[0]!;
     expect(ottava.octaveShiftType).toBe('down');
     expect(ottava.size).toBe(8);
     expect(ottava.number).toBe('1');
@@ -28,9 +28,9 @@ describe('octave-shift — a direction-attached ottava spanner', () => {
   });
 
   it('pairs the down opener with its stop, and members() walks the whole run', () => {
-    const ottava = part.measure('1')!.directions.flatMap((direction) => direction.octaveShifts)[0]!;
-    const stop = ottava.partner()!;
+    const ottava = part.getMeasure('1')!.directions.flatMap((direction) => direction.octaveShifts)[0]!;
+    const stop = ottava.partner!;
     expect(stop.octaveShiftType).toBe('stop');
-    expect(ottava.members().map((member) => member.octaveShiftType)).toEqual(['down', 'stop']);
+    expect(ottava.members.map((member) => member.octaveShiftType)).toEqual(['down', 'stop']);
   });
 });

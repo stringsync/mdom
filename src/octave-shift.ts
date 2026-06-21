@@ -34,18 +34,18 @@ export class OctaveShift extends MElement {
   }
 
   /** The marker at the far end (same number), or null. */
-  partner(): OctaveShift | null {
+  get partner(): OctaveShift | null {
     return resolvePartner(this, this.spec());
   }
 
   /** All markers in this spanner (start..stop), not just the far end. */
-  members(): OctaveShift[] {
+  get members(): OctaveShift[] {
     return resolveMembers(this, this.spec());
   }
 
   /** Onset of this marker's direction within its measure, in beats. */
-  measureBeat(): number | null {
-    return this.direction.measureBeat();
+  get measureBeat(): number | null {
+    return this.direction.measureBeat;
   }
 
   private spec(): SpannerSpec<OctaveShift> {

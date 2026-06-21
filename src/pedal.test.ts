@@ -18,8 +18,8 @@ const SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('pedal — a direction-attached spanner that pairs start↔stop', () => {
-  const part = new MDOMParser().parseFromString(SAMPLE).score!.part('P1')!;
-  const pedals = part.measure('1')!.directions.flatMap((direction) => direction.pedals);
+  const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
+  const pedals = part.getMeasure('1')!.directions.flatMap((direction) => direction.pedals);
   const start = pedals[0]!;
   const stop = pedals[1]!;
 
@@ -32,17 +32,17 @@ describe('pedal — a direction-attached spanner that pairs start↔stop', () =>
   });
 
   it('pairs the opener with its closer in both directions', () => {
-    expect(start.partner()).toBe(stop); // start finds the next matching stop
-    expect(stop.partner()).toBe(start); // stop finds the previous matching start
+    expect(start.partner).toBe(stop); // start finds the next matching stop
+    expect(stop.partner).toBe(start); // stop finds the previous matching start
   });
 
   it('lists both endpoints as members of the span (opener..closer inclusive)', () => {
-    expect(start.members()).toEqual([start, stop]);
-    expect(stop.members()).toEqual([start, stop]);
+    expect(start.members).toEqual([start, stop]);
+    expect(stop.members).toEqual([start, stop]);
   });
 
   it('locates each marker on the timeline via its direction (in beats)', () => {
-    expect(start.measureBeat()).toBe(0); // at the downbeat
-    expect(stop.measureBeat()).toBe(2); // after two quarter notes
+    expect(start.measureBeat).toBe(0); // at the downbeat
+    expect(stop.measureBeat).toBe(2); // after two quarter notes
   });
 });

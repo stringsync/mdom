@@ -103,7 +103,7 @@ export class Note extends MElement {
    * "carried-forward signature" computation — no Signature objects, no
    * per-fragment threading. The same backward walk answers key/time/divisions.
    */
-  clef(): Clef | null {
+  get clef(): Clef | null {
     const measure = this.closest(Measure);
     if (!measure) {
       return null;
@@ -118,12 +118,12 @@ export class Note extends MElement {
   }
 
   /** `<key>` in effect for this note's staff — same backward walk as {@link clef}. */
-  key(): Key | null {
+  get key(): Key | null {
     return this.attributeBack((attrs) => attrs.childrenOfType(Key).find((key) => appliesToStaff(key, this.staff)));
   }
 
   /** `<time>` in effect for this note's staff. */
-  time(): Time | null {
+  get time(): Time | null {
     return this.attributeBack((attrs) => attrs.childrenOfType(Time).find((time) => appliesToStaff(time, this.staff)));
   }
 
@@ -137,7 +137,7 @@ export class Note extends MElement {
   }
 
   /** `<staves>` count in effect (global, not per-staff); 1 when never declared. */
-  staveCount(): number {
+  get staveCount(): number {
     const found = this.attributeBack((attrs) => attrs.child('staves') ?? undefined);
     return found?.text == null ? 1 : Number(found.text);
   }
@@ -146,7 +146,7 @@ export class Note extends MElement {
    * `<staff-details><staff-lines>` in effect for this note's staff; 5 (the
    * musical default) when never declared.
    */
-  staveLines(): number {
+  get staveLines(): number {
     const lines = this.attributeBack((attrs) =>
       attrs
         .childrenNamed('staff-details')
@@ -161,7 +161,7 @@ export class Note extends MElement {
    * Onset of this note within its measure, in quarter-note beats: a single
    * left-to-right cursor fold (see timeline.ts), divided by divisions.
    */
-  measureBeat(): number | null {
+  get measureBeat(): number | null {
     const measure = this.closest(Measure);
     const divisions = this.divisions;
     if (!measure || divisions == null) {
@@ -198,7 +198,7 @@ export class Note extends MElement {
 
   /**
    * The `<slur>` markers on this note (usually one; two when a note ends one slur
-   * and begins another). Each resolves its far end via `partner()`.
+   * and begins another). Each resolves its far end via `partner`.
    */
   get slurs(): Slur[] {
     return this.childrenNamed('notations').flatMap((notations) => notations.childrenOfType(Slur));
@@ -247,23 +247,23 @@ export class Note extends MElement {
    * Slur this note to `other`: mdom picks an unused slur number and adds the
    * paired `<slur start>`/`<slur stop>` markers (creating `<notations>` as needed).
    */
-  slurTo(other: Note): Slur {
+  addSlur(other: Note): Slur {
     return this.spanTo(other, Slur, (note) => note.slurs);
   }
 
   /** Tie this note to `other`, added as paired `<tied start>`/`<tied stop>` markers. */
-  tieTo(other: Note): Tie {
+  addTie(other: Note): Tie {
     return this.spanTo(other, Tie, (note) => note.ties);
   }
 
   /**
    * Remove the tie between this note and `other`, detaching both `<tied>` markers
    * so neither end dangles. Works in either direction and is a no-op when they
-   * aren't tied. The inverse of {@link tieTo}; to drop an unpaired (let-ring) tie,
+   * aren't tied. The inverse of {@link addTie}; to drop an unpaired (let-ring) tie,
    * call {@link Tie.unlink} on the marker itself.
    */
-  untieFrom(other: Note): void {
-    this.ties.find((tie) => tie.partner()?.note === other)?.unlink();
+  removeTie(other: Note): void {
+    this.ties.find((tie) => tie.partner?.note === other)?.unlink();
   }
 
   /**
@@ -286,7 +286,7 @@ export class Note extends MElement {
    * time survives, so the measure stays balanced — the "delete but keep the beat"
    * an editor's Delete key usually means (vs raw {@link remove}, which closes the gap).
    */
-  makeRest(): void {
+  convertToRest(): void {
     const pitched = this.child('pitch') ?? this.child('unpitched');
     if (pitched) {
       this.replaceChild(pitched, new MElement('rest'));
@@ -298,7 +298,7 @@ export class Note extends MElement {
    * (grace notes carry none). The time it gives up is absorbed by the next note in
    * its voice; a sibling voice is held in place by shrinking the handoff `<backup>`.
    */
-  makeGrace(): void {
+  convertToGrace(): void {
     if (this.isGrace) {
       return;
     }
