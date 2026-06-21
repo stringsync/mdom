@@ -6,6 +6,9 @@ import { Measure } from './measure';
 import { Note } from './note';
 import { Part } from './part';
 import { Pitch } from './pitch';
+import { Accidental } from './accidental';
+import { Lyric } from './lyric';
+import { Barline } from './barline';
 import { Score } from './score';
 import { Slur } from './slur';
 import { Key } from './key';
@@ -26,6 +29,9 @@ const REGISTRY: Record<string, new () => MElement> = {
   measure: Measure,
   note: Note,
   pitch: Pitch,
+  accidental: Accidental,
+  lyric: Lyric,
+  barline: Barline,
   clef: Clef,
   slur: Slur,
   key: Key,

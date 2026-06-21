@@ -7,6 +7,7 @@ import { Time } from './time';
 import { Voice } from './voice';
 import { Chord, groupChords } from './chord';
 import { Direction } from './direction';
+import { Barline } from './barline';
 import { attributesBackFrom, appliesToStaff } from './signature';
 
 /** A `<measure>`. Holds notes, directions, and `<attributes>` (signatures). */
@@ -103,6 +104,11 @@ export class Measure extends MElement {
   /** The measure's directions. */
   get directions(): Direction[] {
     return this.childrenOfType(Direction);
+  }
+
+  /** The measure's `<barline>` markers (e.g. a left repeat, a right final bar). */
+  get barlines(): Barline[] {
+    return this.childrenOfType(Barline);
   }
 
   /**

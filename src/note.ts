@@ -1,5 +1,7 @@
 import { MElement, required } from './m-node';
 import { Pitch } from './pitch';
+import { Accidental } from './accidental';
+import { Lyric } from './lyric';
 import { Clef } from './clef';
 import { Slur } from './slur';
 import { Measure, appendValue } from './measure';
@@ -72,6 +74,11 @@ export class Note extends MElement {
   /** The note's pitch; null for rests / unpitched notes. */
   get pitch(): Pitch | null {
     return this.childrenOfType(Pitch)[0] ?? null;
+  }
+
+  /** The printed `<accidental>` glyph on this note (≠ pitch `alter`), or null when none is drawn. */
+  get accidental(): Accidental | null {
+    return this.childrenOfType(Accidental)[0] ?? null;
   }
 
   /** `<duration>` in divisions; null for grace notes, which carry none (see {@link isGrace}). */
@@ -217,6 +224,11 @@ export class Note extends MElement {
     return this.childrenNamed('notations')
       .flatMap((notations) => notations.childrenNamed('ornaments'))
       .flatMap((ornaments) => ornaments.childrenOfType(WavyLine));
+  }
+
+  /** The `<lyric>` verses attached to this note, in document order (one per verse). */
+  get lyrics(): Lyric[] {
+    return this.childrenOfType(Lyric);
   }
 
   /** `<string>` in `<technical>`: the guitar string this note is fretted on, or null. */
