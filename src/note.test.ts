@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './xml';
+import { MDOMParser } from './m-dom-parser';
 
 const SAMPLE = `<score-partwise>
   <part-list>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './xml';
+import { MDOMParser } from './m-dom-parser';
 
 // 4/4, divisions=4. A <direction> holding a crescendo wedge sits at beat 0, then
 // after two quarter notes a second <direction> holds the closing wedge. A

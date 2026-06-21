@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './xml';
+import { MDOMParser } from './m-dom-parser';
 
 // A sustain pedal spanning one measure: a <pedal type="start"/> at the downbeat
 // and a <pedal type="stop"/> after two quarter notes. Like the wedge, it hangs

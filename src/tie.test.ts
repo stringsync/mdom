@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './xml';
+import { MDOMParser } from './m-dom-parser';
 
 // One part. m1's first note opens a tie (type="start"); m2's note closes it
 // (type="stop") under the same number — the canonical cross-measure tie. m3's

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './xml';
+import { MDOMParser } from './m-dom-parser';
 
 // An <octave-shift> (ottava) spanning m1: a "down" opener and its matching
 // "stop". Like every direction-attached spanner it hangs off a <direction>

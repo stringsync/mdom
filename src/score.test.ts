@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { MElement } from './m-node';
 import { Part } from './part';
 import { Score } from './score';
-import { MDOMParser } from './xml';
+import { MDOMParser } from './m-dom-parser';
 
 describe('Score', () => {
   const score = new Score();

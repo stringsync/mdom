@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './xml';
+import { MDOMParser } from './m-dom-parser';
 
 // A beamed group of three eighth notes (C D E), beamed at level 1 with the
 // canonical begin/continue/end run. The middle and last notes carry a second

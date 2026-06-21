@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './xml';
+import { MDOMParser } from './m-dom-parser';
 
 // A crescendo hairpin spanning a measure: an opening <wedge> direction, two
 // quarter notes, then a closing <wedge> direction. The wedge hangs off a

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './xml';
+import { MDOMParser } from './m-dom-parser';
 import { appliesToStaff, attributesBackFrom, divisionsBackFrom } from './signature';
 
 // m1 declares a leading <attributes> (divisions 4) and a SECOND mid-measure

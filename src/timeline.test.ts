@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './xml';
+import { MDOMParser } from './m-dom-parser';
 
 // 4/4, divisions=4. Voice 1: a C-major triad (one onset, stacked via <chord/>)
 // then a D. Voice 2 (after <backup>): two quarters. The voices interleave in the

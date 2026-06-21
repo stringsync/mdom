@@ -1,16 +1,14 @@
 import { describe, expect, it } from 'bun:test';
-import { MDocument } from './m-document';
-import { MElement, MText } from './m-node';
+import { MDOMParser } from './m-dom-parser';
+import { MElement } from './m-node';
 import { Measure } from './measure';
 import { Note } from './note';
 import { Part } from './part';
 import { Pitch } from './pitch';
 import { Score } from './score';
-import { MDOMParser, MusicXMLSerializer } from './xml';
 
-describe('MDOMParser / MXMLSerializer', () => {
+describe('MDOMParser', () => {
   const parser = new MDOMParser();
-  const serializer = new MusicXMLSerializer();
 
   it('builds typed nodes from the registry and leaves unknown tags as MElement', () => {
     const doc = parser.parseFromString(`
@@ -81,26 +79,5 @@ describe('MDOMParser / MXMLSerializer', () => {
 
   it('throws when the XML has no root element', () => {
     expect(() => parser.parseFromString('<!-- no root -->')).toThrow('MusicXML has no root element');
-  });
-
-  it('serializes declaration, doctype, and text nodes', () => {
-    const score = new Score();
-    const title = new MElement('movement-title');
-    title.append(new MText('Allegro'));
-    score.append(title);
-
-    const doc = new MDocument(score, { version: '1.0', encoding: 'UTF-8' }, 'score-partwise SYSTEM "partwise.dtd"');
-
-    const xml = serializer.serializeToString(doc);
-
-    expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
-    expect(xml).toContain('<!DOCTYPE score-partwise SYSTEM "partwise.dtd">');
-    expect(xml).toContain('<movement-title>Allegro</movement-title>');
-
-    const doctypeIndex = xml.indexOf('<!DOCTYPE');
-    const rootIndex = xml.indexOf('<score-partwise');
-    expect(doctypeIndex).toBeGreaterThan(-1);
-    expect(rootIndex).toBeGreaterThan(-1);
-    expect(doctypeIndex).toBeLessThan(rootIndex);
   });
 });

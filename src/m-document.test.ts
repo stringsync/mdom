@@ -2,7 +2,8 @@ import { describe, expect, it } from 'bun:test';
 import { MDocument } from './m-document';
 import { Measure } from './measure';
 import { Part } from './part';
-import { MDOMParser, MusicXMLSerializer } from './xml';
+import { MDOMParser } from './m-dom-parser';
+import { MusicXMLSerializer } from './music-xml-serializer';
 
 const SAMPLE = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">

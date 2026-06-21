@@ -20,4 +20,5 @@ export { Time } from './src/time';
 export { Tuplet } from './src/tuplet';
 export { WavyLine } from './src/wavy-line';
 export { Wedge } from './src/wedge';
-export { MDOMParser, MusicXMLSerializer } from './src/xml';
+export { MDOMParser } from './src/m-dom-parser';
+export { MusicXMLSerializer } from './src/music-xml-serializer';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './xml';
+import { MDOMParser } from './m-dom-parser';
 import { resolveMembers, resolvePartner, noteMarkers, directionMarkers } from './spanner';
 import type { Slur } from './slur';
 import type { Wedge } from './wedge';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './xml';
+import { MDOMParser } from './m-dom-parser';
 
 // m1: common time. m2: a composite 3+2/8 meter (two beats/beat-type pairs).
 const SAMPLE = `<score-partwise>

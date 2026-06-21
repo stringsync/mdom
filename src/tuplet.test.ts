@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './xml';
+import { MDOMParser } from './m-dom-parser';
 
 // A triplet of three eighth notes (three notes in the time of two). The bracket
 // is marked by <tuplet> in <notations>: type="start" on the first note,

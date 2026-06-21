@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './xml';
+import { MDOMParser } from './m-dom-parser';
 import type { Note } from './note';
 
 // Piano (2 staves). Exercises the three things the vexml Signature carry-forward

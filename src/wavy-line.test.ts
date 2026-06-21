@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './xml';
+import { MDOMParser } from './m-dom-parser';
 
 // A trill's <wavy-line> spanning two notes: a `start` on the first note and a
 // `stop` on a later one. Each <wavy-line> lives two levels deep, in

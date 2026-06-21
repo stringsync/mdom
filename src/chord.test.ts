@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { groupChords } from './chord';
-import { MDOMParser } from './xml';
+import { MDOMParser } from './m-dom-parser';
 
 // divisions=4. Voice 1: a C-major triad stacked at one onset via <chord/> (lead
 // C, then E and G carrying <chord/>), followed by a standalone D. The grouping
