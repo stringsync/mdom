@@ -22,3 +22,4 @@ export { WavyLine } from './src/wavy-line';
 export { Wedge } from './src/wedge';
 export { MDOMParser } from './src/m-dom-parser';
 export { MusicXMLSerializer } from './src/music-xml-serializer';
+export { MXLSerializer } from './src/mxl-serializer';

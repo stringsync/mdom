@@ -1,4 +1,5 @@
 import { xml2js } from 'xml-js';
+import JSZip from 'jszip';
 import { MDocument } from './m-document';
 import { MElement, MText } from './m-node';
 import { Clef } from './clef';
@@ -64,6 +65,43 @@ export class MDOMParser {
     const doctype = top.find((n) => n.type === 'doctype');
     return new MDocument(build(root), tree.declaration?.attributes ?? null, doctype?.doctype ?? null);
   }
+
+  /**
+   * Parses a compressed `.mxl` archive into an {@link MDocument}. Reads
+   * `META-INF/container.xml`, follows its first `<rootfile>` to the MusicXML
+   * entry, and parses that. Throws if the container or rootfile is missing.
+   */
+  async parseFromBlob(blob: Blob): Promise<MDocument> {
+    const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+    const containerFile = zip.file('META-INF/container.xml');
+    if (!containerFile) {
+      throw new Error('MXL archive has no META-INF/container.xml');
+    }
+    const container = xml2js(await containerFile.async('string'), { compact: false }) as unknown as XmlNode;
+    const fullPath = findRootfilePath(container);
+    if (!fullPath) {
+      throw new Error('MXL container.xml has no <rootfile>');
+    }
+    const rootFile = zip.file(fullPath);
+    if (!rootFile) {
+      throw new Error(`MXL archive is missing its rootfile: ${fullPath}`);
+    }
+    return this.parseFromString(await rootFile.async('string'));
+  }
+}
+
+/** Depth-first search for the first `<rootfile>` element's full-path attribute. */
+function findRootfilePath(node: XmlNode): string | undefined {
+  if (node.name === 'rootfile') {
+    return node.attributes?.['full-path'];
+  }
+  for (const child of node.elements ?? []) {
+    const found = findRootfilePath(child);
+    if (found) {
+      return found;
+    }
+  }
+  return undefined;
 }
 
 /** Build a typed (or plain) element tree from an xml-js node, recursively. */
