@@ -37,6 +37,19 @@ export class Score extends MElement {
   }
 
   /**
+   * The programs that wrote this file: every `<identification><encoding><software>`,
+   * in document order. Often several — an exporter plus its MusicXML plugin (e.g.
+   * `['Finale 2011 for Windows', 'Dolet 5.5 for Finale']`). Empty when unstated.
+   * The source key for handling exporter quirks; not all writers fill it in.
+   */
+  get software(): string[] {
+    const encoding = this.child('identification')?.child('encoding');
+    return (encoding?.childrenNamed('software') ?? [])
+      .map((node) => node.text)
+      .filter((text): text is string => text != null);
+  }
+
+  /**
    * Create a `<part>`, registering its `<score-part>`/`<part-name>` in the
    * `<part-list>` (created if absent). The id is generated when omitted.
    */

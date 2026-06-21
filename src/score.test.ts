@@ -48,3 +48,24 @@ describe('score header', () => {
     expect(score.part('P1')!.staveCount).toBe(2);
   });
 });
+
+const SOFTWARE_SAMPLE = `<score-partwise>
+  <identification>
+    <encoding>
+      <software>Finale 2011 for Windows</software>
+      <software>Dolet 5.5 for Finale</software>
+      <encoding-date>2010-12-10</encoding-date>
+    </encoding>
+  </identification>
+</score-partwise>`;
+
+describe('score software', () => {
+  it('lists every encoding <software>, in order', () => {
+    const score = new MDOMParser().parseFromString(SOFTWARE_SAMPLE).score!;
+    expect(score.software).toEqual(['Finale 2011 for Windows', 'Dolet 5.5 for Finale']);
+  });
+
+  it('is empty when the file names no software', () => {
+    expect(new Score().software).toEqual([]);
+  });
+});
