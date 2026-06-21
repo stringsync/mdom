@@ -219,6 +219,18 @@ export class Note extends MElement {
       .flatMap((ornaments) => ornaments.childrenOfType(WavyLine));
   }
 
+  /** `<string>` in `<technical>`: the guitar string this note is fretted on, or null. */
+  get string(): number | null {
+    const value = this.technicalChild('string')?.text;
+    return value == null ? null : Number(value);
+  }
+
+  /** `<fret>` in `<technical>`: where the string is stopped (0 = open), or null. */
+  get fret(): number | null {
+    const value = this.technicalChild('fret')?.text;
+    return value == null ? null : Number(value);
+  }
+
   /**
    * Slur this note to `other`: mdom picks an unused slur number and adds the
    * paired `<slur start>`/`<slur stop>` markers (creating `<notations>` as needed).
@@ -285,6 +297,17 @@ export class Note extends MElement {
     if (measure) {
       repairTimelineAfter(measure, this, -stolen);
     }
+  }
+
+  /**
+   * Place this note on a guitar string at a fret — the core of tablature,
+   * `<notations><technical><string>/<fret>`. Upserts both (creating
+   * `<notations>`/`<technical>` as needed), leaving pitch and timeline alone: a
+   * tab note carries its sounding pitch *and* where it's fretted.
+   */
+  setStringFret(spec: { string: number; fret: number }): void {
+    this.upsertTechnical('string', spec.string);
+    this.upsertTechnical('fret', spec.fret);
   }
 
   /**
@@ -371,6 +394,42 @@ export class Note extends MElement {
     const notations = new MElement('notations');
     this.append(notations);
     return notations;
+  }
+
+  /** First `<tag>` inside this note's `<notations><technical>`, or null. */
+  private technicalChild(tag: string): MElement | null {
+    for (const notations of this.childrenNamed('notations')) {
+      for (const technical of notations.childrenNamed('technical')) {
+        const found = technical.child(tag);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return null;
+  }
+
+  /** Get or create this note's `<notations><technical>` child. */
+  private technical(): MElement {
+    const notations = this.notations();
+    const existing = notations.childrenNamed('technical')[0];
+    if (existing) {
+      return existing;
+    }
+    const technical = new MElement('technical');
+    notations.append(technical);
+    return technical;
+  }
+
+  /** Set (or create) a numeric `<tag>` inside this note's `<technical>` block. */
+  private upsertTechnical(tag: string, value: number): void {
+    const technical = this.technical();
+    const existing = technical.child(tag);
+    if (existing) {
+      existing.setText(String(value));
+    } else {
+      appendValue(technical, tag, String(value));
+    }
   }
 }
 
