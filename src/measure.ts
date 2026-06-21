@@ -25,6 +25,16 @@ export class Measure extends MElement {
     return required(this.getAttribute('number'), 'number on <measure>');
   }
 
+  /** The `width` attribute in tenths (a layout hint); null when unset. */
+  get width(): number | null {
+    const width = this.getAttribute('width');
+    return width == null ? null : Number(width);
+  }
+
+  set width(tenths: number) {
+    this.setAttribute('width', String(tenths));
+  }
+
   /** The measure's notes. */
   get notes(): Note[] {
     return this.childrenOfType(Note);

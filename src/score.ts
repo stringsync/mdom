@@ -1,6 +1,7 @@
 import { MElement } from './m-node';
 import { Part } from './part';
 import { appendValue } from './measure';
+import { Scaling } from './scaling';
 
 /** The `<score-partwise>` root. Holds the parts and the part-list metadata. */
 export class Score extends MElement {
@@ -16,6 +17,18 @@ export class Score extends MElement {
   /** The part with this id, or null. */
   part(id: string): Part | null {
     return this.parts.find((part) => part.id === id) ?? null;
+  }
+
+  /**
+   * The `<defaults><scaling>` for converting tenths to a physical size (mm or
+   * px) — e.g. `score.scaling.toMillimeters(measure.width)`. Falls back to
+   * {@link Scaling.default} when `<scaling>` is absent, so it always converts.
+   */
+  get scaling(): Scaling {
+    const scaling = this.child('defaults')?.child('scaling');
+    const millimeters = scaling?.child('millimeters')?.text;
+    const tenths = scaling?.child('tenths')?.text;
+    return millimeters != null && tenths != null ? new Scaling(Number(millimeters), Number(tenths)) : Scaling.default;
   }
 
   /** `<movement-title>`, falling back to `<work><work-title>`. */

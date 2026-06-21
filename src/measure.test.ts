@@ -15,6 +15,14 @@ describe('Measure', () => {
     expect(() => new Measure().number).toThrow('number on <measure>');
   });
 
+  it('gets and sets width', () => {
+    const measure = new Measure();
+    expect(measure.width).toBeNull();
+    measure.width = 120.5;
+    expect(measure.width).toBe(120.5);
+    expect(measure.getAttribute('width')).toBe('120.5');
+  });
+
   it('lists only notes, ignoring other measure children', () => {
     const measure = new Measure();
     measure.append(new MElement('attributes'));
