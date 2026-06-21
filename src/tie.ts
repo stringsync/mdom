@@ -1,6 +1,6 @@
 import { MElement, required } from './m-node';
 import { Note } from './note';
-import { resolveMembers, resolvePartner, noteMarkers, type SpannerSpec } from './spanner';
+import { resolveMembers, resolvePartner, removeSpan, noteMarkers, type SpannerSpec } from './spanner';
 
 export type TieType = 'start' | 'stop' | 'continue' | 'let-ring';
 
@@ -37,6 +37,14 @@ export class Tie extends MElement {
   /** All markers in this spanner (start..stop), not just the far end. */
   members(): Tie[] {
     return resolveMembers(this, this.spec());
+  }
+
+  /**
+   * Remove this tie: detach both ends (`<tied start>` and its `<tied stop>`) so the
+   * partner isn't orphaned. A let-ring tie, having no partner, just removes itself.
+   */
+  unlink(): void {
+    removeSpan(this, this.spec());
   }
 
   /** Onset of this end within its measure, in beats. */

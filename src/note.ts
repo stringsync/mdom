@@ -233,6 +233,16 @@ export class Note extends MElement {
   }
 
   /**
+   * Remove the tie between this note and `other`, detaching both `<tied>` markers
+   * so neither end dangles. Works in either direction and is a no-op when they
+   * aren't tied. The inverse of {@link tieTo}; to drop an unpaired (let-ring) tie,
+   * call {@link Tie.unlink} on the marker itself.
+   */
+  untieFrom(other: Note): void {
+    this.ties.find((tie) => tie.partner()?.note === other)?.unlink();
+  }
+
+  /**
    * Replace this note's pitch in place (or give a rest one). The duration is
    * unchanged, so the timeline doesn't move and any attached slur/tie/beam — which
    * a remove-and-re-add would orphan — stays bound to this same note.

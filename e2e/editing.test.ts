@@ -225,3 +225,51 @@ describe('creating spanners by intent', () => {
     expect(first.ties[0]!.partner()!.note).toBe(second);
   });
 });
+
+// Removing a tie is the inverse of tieTo: drop the <tied> pair without orphaning
+// either end (the dangling-partner trap the slur test flagged). untieFrom names
+// the two notes; for an unpaired (let-ring) tie, the marker's own unlink() does it.
+describe('removing a tie by intent', () => {
+  it('unties two notes, taking both <tied> ends so neither dangles', () => {
+    const voice = MDocument.empty().score!.addPart({ id: 'P1' }).addMeasure().voice('1');
+    const first = voice.note({ step: 'C', octave: 4, type: 'half' });
+    const second = voice.note({ step: 'C', octave: 4, type: 'half' });
+    first.tieTo(second);
+
+    first.untieFrom(second);
+
+    expect(first.ties.length).toBe(0);
+    expect(second.ties.length).toBe(0); // the partner <tied stop> went with it
+  });
+
+  it('cuts one link of a tie chain, leaving the rest tied', () => {
+    const voice = MDocument.empty().score!.addPart({ id: 'P1' }).addMeasure().voice('1');
+    const first = voice.note({ step: 'C', octave: 4, type: 'quarter' });
+    const middle = voice.note({ step: 'C', octave: 4, type: 'quarter' });
+    const last = voice.note({ step: 'C', octave: 4, type: 'quarter' });
+    first.tieTo(middle); // the middle note ends up holding both ends...
+    middle.tieTo(last);
+
+    middle.untieFrom(first); // ...so untie names which one to cut
+
+    expect(first.ties.length).toBe(0);
+    expect(middle.ties.length).toBe(1); // only the start toward `last` survives
+    expect(middle.ties[0]!.partner()!.note).toBe(last);
+    expect(last.ties[0]!.tieType).toBe('stop');
+  });
+
+  it('drops an unpaired let-ring tie via the marker, which has no partner', () => {
+    const doc = new MDOMParser().parseFromString(
+      `<score-partwise><part id="P1"><measure number="1">
+         <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration>
+           <notations><tied type="let-ring"/></notations></note>
+       </measure></part></score-partwise>`
+    );
+    const note = doc.score!.part('P1')!.measure('1')!.notes[0]!;
+    expect(note.ties[0]!.partner()).toBeNull(); // an opener with no stop
+
+    note.ties[0]!.unlink();
+
+    expect(note.ties.length).toBe(0);
+  });
+});

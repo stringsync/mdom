@@ -87,6 +87,16 @@ export function resolveMembers<T extends MElement>(marker: T, spec: SpannerSpec<
   return spec.siblings.slice(start, end + 1).filter((candidate) => numberOf(candidate) === number);
 }
 
+/**
+ * Remove a span outright: detach `marker` and its partner (if any), so neither end
+ * is left dangling. An opener with no closer — a let-ring tie, say — drops itself.
+ */
+export function removeSpan<T extends MElement>(marker: T, spec: SpannerSpec<T>): void {
+  const partner = resolvePartner(marker, spec);
+  marker.remove();
+  partner?.remove();
+}
+
 /** All markers of one note-attached spanner type across the part, document order. */
 export function noteMarkers<T extends MElement>(marker: MElement, pick: (note: Note) => T[]): T[] {
   const part = marker.closest(Part);
