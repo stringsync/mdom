@@ -231,6 +231,39 @@ export class Note extends MElement {
       .flatMap((ornaments) => ornaments.childrenOfType(WavyLine));
   }
 
+  /**
+   * Articulation marking names in `<notations><articulations>` (staccato, accent,
+   * tenuto, …), in document order — the child tags, mirroring {@link slurs}/{@link ties}.
+   */
+  get articulations(): string[] {
+    return this.childrenNamed('notations')
+      .flatMap((notations) => notations.childrenNamed('articulations'))
+      .flatMap((articulations) => articulations.childrenOfType(MElement))
+      .map((articulation) => articulation.tag);
+  }
+
+  /** `<stem>` direction (splits two voices on one stave; `none`/`double` are real values too); null when absent. */
+  get stem(): 'up' | 'down' | 'double' | 'none' | null {
+    const direction = this.child('stem')?.text;
+    return direction === 'up' || direction === 'down' || direction === 'double' || direction === 'none'
+      ? direction
+      : null;
+  }
+
+  /**
+   * The `<time-modification>` tuplet ratio (`actual-notes` : `normal-notes`, e.g.
+   * 3:2 for a triplet), or null when this note isn't time-modified.
+   */
+  get timeModification(): { actual: number; normal: number } | null {
+    const node = this.child('time-modification');
+    const actual = node?.child('actual-notes')?.text;
+    const normal = node?.child('normal-notes')?.text;
+    if (actual == null || normal == null) {
+      return null;
+    }
+    return { actual: Number(actual), normal: Number(normal) };
+  }
+
   /** The `<lyric>` verses attached to this note, in document order (one per verse). */
   get lyrics(): Lyric[] {
     return this.childrenOfType(Lyric);

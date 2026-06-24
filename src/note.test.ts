@@ -51,6 +51,31 @@ describe('Note', () => {
     expect(rest?.pitch).toBeNull();
   });
 
+  it('reads articulations, stem, and time-modification (absent → [] / null)', () => {
+    const marked = `<score-partwise><part id="P1"><measure number="1">
+      <note>
+        <pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>eighth</type>
+        <stem>up</stem>
+        <time-modification><actual-notes>3</actual-notes><normal-notes>2</normal-notes></time-modification>
+        <notations><articulations><staccato/><accent/></articulations></notations>
+      </note>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure></part></score-partwise>`;
+    const [fancy, plain] = new MDOMParser().parseFromString(marked).score.getPart('P1')!.getMeasure('1')!.notes;
+    expect(fancy!.articulations).toEqual(['staccato', 'accent']);
+    expect(fancy!.stem).toBe('up');
+    expect(fancy!.timeModification).toEqual({ actual: 3, normal: 2 });
+    expect(plain!.articulations).toEqual([]);
+    expect(plain!.stem).toBeNull();
+    const noneStem = `<score-partwise><part id="P1"><measure number="1">
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type><stem>none</stem></note>
+    </measure></part></score-partwise>`;
+    expect(new MDOMParser().parseFromString(noneStem).score.getPart('P1')!.getMeasure('1')!.notes[0]!.stem).toBe(
+      'none'
+    );
+    expect(plain!.timeModification).toBeNull();
+  });
+
   it('counts augmentation dots, 0 when none', () => {
     const dotted = `<score-partwise><part id="P1"><measure number="1">
       <note><pitch><step>C</step><octave>4</octave></pitch><duration>7</duration><type>quarter</type><dot/><dot/></note>
