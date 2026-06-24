@@ -2,6 +2,7 @@ import { MElement } from './m-node';
 import { Part } from './part';
 import { appendValue } from './measure';
 import { Scaling } from './scaling';
+import { SystemLayout } from './system-layout';
 
 /** The `<score-partwise>` root. Holds the parts and the part-list metadata. */
 export class Score extends MElement {
@@ -29,6 +30,33 @@ export class Score extends MElement {
     const millimeters = scaling?.child('millimeters')?.text;
     const tenths = scaling?.child('tenths')?.text;
     return millimeters != null && tenths != null ? new Scaling(Number(millimeters), Number(tenths)) : Scaling.default;
+  }
+
+  /**
+   * The `<defaults><system-layout>`: the score-wide default system spacing and
+   * indents. Null when unset. Per-system overrides live on a measure's `<print>`.
+   */
+  get systemLayout(): SystemLayout | null {
+    return this.child('defaults')?.childrenOfType(SystemLayout)[0] ?? null;
+  }
+
+  /** Get or create the `<defaults><system-layout>` (both created if absent), keeping `<defaults>` order. */
+  getOrCreateSystemLayout(): SystemLayout {
+    const existing = this.systemLayout;
+    if (existing) {
+      return existing;
+    }
+    let defaults = this.child('defaults');
+    if (!defaults) {
+      defaults = new MElement('defaults');
+      this.append(defaults);
+    }
+    const layout = new SystemLayout();
+    // <defaults> is a sequence; system-layout precedes these.
+    const after = new Set(['staff-layout', 'appearance', 'music-font', 'word-font', 'lyric-font', 'lyric-language']);
+    const ref = defaults.children.find((node) => node instanceof MElement && after.has(node.tag)) ?? null;
+    defaults.insertBefore(layout, ref);
+    return layout;
   }
 
   /** `<movement-title>`, falling back to `<work><work-title>`. */

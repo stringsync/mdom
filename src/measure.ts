@@ -11,6 +11,7 @@ import { Direction } from './direction';
 import { Barline } from './barline';
 import { Frame } from './frame';
 import { LineDetail } from './line-detail';
+import { Print } from './print';
 import { attributesBackFrom, appliesToStaff } from './signature';
 
 /** A `<measure>`. Holds notes, directions, and `<attributes>` (signatures). */
@@ -146,6 +147,25 @@ export class Measure extends MElement {
   /** The fretboard/chord diagrams (`<frame>`) carried by this measure's `<harmony>` elements. */
   get frames(): Frame[] {
     return this.childrenNamed('harmony').flatMap((harmony) => harmony.childrenOfType(Frame));
+  }
+
+  /** The leading `<print>` (break flags and per-system layout for the system starting here), or null. */
+  get print(): Print | null {
+    return this.childrenOfType(Print)[0] ?? null;
+  }
+
+  /**
+   * Get or create the measure's leading `<print>`, positioned first (before
+   * `<attributes>` and notes). Set `newSystem`/`newPage` on it to force a break.
+   */
+  getOrCreatePrint(): Print {
+    const existing = this.print;
+    if (existing) {
+      return existing;
+    }
+    const print = new Print();
+    this.insertBefore(print, this.children[0] ?? null);
+    return print;
   }
 
   /**

@@ -24,6 +24,8 @@ import { OctaveShift } from './octave-shift';
 import { Direction } from './direction';
 import { Frame } from './frame';
 import { LineDetail } from './line-detail';
+import { Print } from './print';
+import { SystemLayout } from './system-layout';
 import type { XmlNode } from './xml';
 
 /** Tag -> typed node. Unlisted tags become a plain MElement and still round-trip. */
@@ -50,6 +52,8 @@ const REGISTRY: Record<string, new () => MElement> = {
   direction: Direction,
   frame: Frame,
   'line-detail': LineDetail,
+  print: Print,
+  'system-layout': SystemLayout,
 };
 
 /** Parses a MusicXML string into an {@link MDocument} tree of typed nodes. */
