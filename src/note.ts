@@ -92,6 +92,11 @@ export class Note extends MElement {
     return this.child('type')?.text ?? null;
   }
 
+  /** Augmentation `<dot>` count (0 when none); the read side of {@link setDuration}'s `dots`. */
+  get dots(): number {
+    return this.childrenNamed('dot').length;
+  }
+
   /** The staff this note is on; '1' when omitted (single-staff parts). */
   get staff(): string {
     return this.child('staff')?.text ?? '1';

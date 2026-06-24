@@ -6,6 +6,7 @@ import { Key } from './key';
 import { Time } from './time';
 import { Voice } from './voice';
 import { Chord, groupChords } from './chord';
+import { groupBeams } from './beam';
 import { Direction } from './direction';
 import { Barline } from './barline';
 import { Frame } from './frame';
@@ -119,6 +120,11 @@ export class Measure extends MElement {
   /** Notes grouped into chords: `<chord/>` runs collapsed, single notes 1-member. */
   get chords(): Chord[] {
     return groupChords(this.notes);
+  }
+
+  /** Beamed runs: each `<beam>` group as its ordered notes; unbeamed notes excluded. */
+  get beams(): Note[][] {
+    return groupBeams(this.notes);
   }
 
   /** `<measure-style><multiple-rest>` count, when this measure begins a multi-rest. */

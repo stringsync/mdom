@@ -2,6 +2,37 @@ import { MElement, required } from './m-node';
 import { Note } from './note';
 import { resolveMembers, resolvePartner, noteMarkers, type SpannerSpec } from './spanner';
 
+/**
+ * Collapse the per-note `<beam>` markers in `notes` into beamed runs — the same
+ * fold {@link groupChords} does for `<chord/>`, but keyed on the level-1
+ * begin/continue/end value. Each returned run is the ordered notes under one
+ * beam, ready to map straight to a renderer's beam group. Unbeamed notes yield no
+ * run; chord members are transparent (the beam is notated on the chord's lead),
+ * so a run spanning a chord stays intact and carries only lead notes.
+ */
+export function groupBeams(notes: Note[]): Note[][] {
+  const groups: Note[][] = [];
+  let current: Note[] | null = null;
+  for (const note of notes) {
+    if (note.isChordMember) {
+      continue;
+    }
+    const value = note.beams.find((beam) => beam.number === '1')?.beamValue;
+    if (value === 'begin') {
+      current = [note];
+      groups.push(current);
+    } else if (current && (value === 'continue' || value === 'end')) {
+      current.push(note);
+      if (value === 'end') {
+        current = null;
+      }
+    } else {
+      current = null;
+    }
+  }
+  return groups;
+}
+
 export type BeamValue = 'begin' | 'continue' | 'end' | 'forward hook' | 'backward hook';
 
 /**

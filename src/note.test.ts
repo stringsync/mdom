@@ -50,4 +50,14 @@ describe('Note', () => {
     expect(rest?.isRest).toBe(true);
     expect(rest?.pitch).toBeNull();
   });
+
+  it('counts augmentation dots, 0 when none', () => {
+    const dotted = `<score-partwise><part id="P1"><measure number="1">
+      <note><pitch><step>C</step><octave>4</octave></pitch><duration>7</duration><type>quarter</type><dot/><dot/></note>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
+    </measure></part></score-partwise>`;
+    const [doubleDotted, plain] = new MDOMParser().parseFromString(dotted).score.getPart('P1')!.getMeasure('1')!.notes;
+    expect(doubleDotted!.dots).toBe(2);
+    expect(plain!.dots).toBe(0);
+  });
 });
