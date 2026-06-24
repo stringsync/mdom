@@ -9,9 +9,20 @@ export class MDocument {
     readonly doctype: string | null = null
   ) {}
 
-  /** A document with an empty {@link Score} root. */
+  /**
+   * An empty `<score-partwise>` scaffold carrying the XML declaration, doctype,
+   * and `version` so serialization produces a real MusicXML file. Add at least
+   * one part with a measure (e.g. `doc.score.addPart().addMeasure()`) to reach a
+   * DTD-valid document — `<score-partwise>` requires `part-list` plus `part+`.
+   */
   static empty(): MDocument {
-    return new MDocument(new Score());
+    const score = new Score();
+    score.setAttribute('version', '4.0');
+    return new MDocument(
+      score,
+      { version: '1.0', encoding: 'UTF-8' },
+      'score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd"'
+    );
   }
 
   /** The root as a {@link Score}. Throws when the root is something else. */
