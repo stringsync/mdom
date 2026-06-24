@@ -1,4 +1,4 @@
-import { MElement } from './m-node';
+import type { MElement } from './m-node';
 import { Part } from './part';
 import type { Note } from './note';
 import type { Direction } from './direction';

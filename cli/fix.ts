@@ -2,15 +2,11 @@
 import chalk from 'chalk';
 
 export async function fix(opts: { check: boolean }): Promise<void> {
-  const failures = new Array<string>();
+  const failures: string[] = [];
 
-  // lint with --fix first so the formatter gets the final pass over any
-  // autofixes eslint applies (e.g. braces added by the `curly` rule).
-  if (!lint(opts.check)) {
-    failures.push('lint');
-  }
-  if (!format(opts.check)) {
-    failures.push('format');
+  // biome formats and lints in one pass.
+  if (!check(opts.check)) {
+    failures.push('check');
   }
   if (!typecheck()) {
     failures.push('typecheck');
@@ -21,20 +17,13 @@ export async function fix(opts: { check: boolean }): Promise<void> {
   }
 }
 
-function format(check: boolean): boolean {
-  const args = ['prettier', '.', '--log-level=warn', check ? '--check' : '--write'];
-  const ok = exec('bunx', args);
-  console.log(`format: ${ok ? chalk.green('success') : chalk.red('failed')}`);
-  return ok;
-}
-
-function lint(check: boolean): boolean {
-  const args = ['eslint', '.'];
-  if (!check) {
-    args.push('--fix');
+function check(checkOnly: boolean): boolean {
+  const args = ['biome', 'check', '.'];
+  if (!checkOnly) {
+    args.push('--write', '--unsafe');
   }
   const ok = exec('bunx', args);
-  console.log(`lint: ${ok ? chalk.green('success') : chalk.red('failed')}`);
+  console.log(`check: ${ok ? chalk.green('success') : chalk.red('failed')}`);
   return ok;
 }
 

@@ -1,6 +1,6 @@
 import { js2xml } from 'xml-js';
-import { MDocument } from './m-document';
-import { MElement, MText, MCData, type MNode } from './m-node';
+import type { MDocument } from './m-document';
+import { type MElement, MText, MCData, type MNode } from './m-node';
 import type { XmlNode } from './xml';
 
 /** Serializes an {@link MDocument} back to a MusicXML string. */

@@ -5,7 +5,7 @@ import { Clef } from './clef';
 import { Key } from './key';
 import { Time } from './time';
 import { Voice } from './voice';
-import { Chord, groupChords } from './chord';
+import { type Chord, groupChords } from './chord';
 import { groupBeams } from './beam';
 import { Direction } from './direction';
 import { Barline } from './barline';

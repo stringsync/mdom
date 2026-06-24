@@ -72,7 +72,7 @@ export async function release(type: string) {
   }
 
   pkg.version = next;
-  await Bun.write(path, JSON.stringify(pkg, null, 2) + '\n');
+  await Bun.write(path, `${JSON.stringify(pkg, null, 2)}\n`);
 
   // build before any git mutation so a compile failure aborts the release cleanly
   build();

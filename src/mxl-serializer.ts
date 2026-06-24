@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import { MDocument } from './m-document';
+import type { MDocument } from './m-document';
 import { MusicXMLSerializer } from './music-xml-serializer';
 
 const SCORE_PATH = 'score.musicxml';
