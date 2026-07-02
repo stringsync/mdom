@@ -70,7 +70,10 @@ See [e2e](./e2e) for worked examples.
 ## Development
 
 ```sh
-bun link    # install the mdom cli
+profile=~/.${SHELL##*/}rc # ~/.zshrc, ~/.bashrc, etc.
+echo "export PATH=\"$PWD/bin:\$PATH\"" >> "$profile"
+source "$profile"
+
 mdom test   # run the test suite
 mdom fix    # typecheck, format, lint
 ```
