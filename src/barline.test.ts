@@ -36,4 +36,20 @@ describe('Barline', () => {
     expect(measure.barlines.map((barline) => barline.location)).toEqual(['left', 'right']);
     expect(measure.barlines.map((barline) => barline.repeat)).toEqual(['forward', 'backward']);
   });
+
+  it('reads a volta ending, keeping its number a raw list string, null when absent', () => {
+    const [voltaStart] = measureWith(`<barline location="left"><ending number="1,2" type="start"/></barline>`).barlines;
+    expect(voltaStart!.ending).toEqual({ type: 'start', number: '1,2' });
+    const [plain] = measureWith(`<barline location="right"><repeat direction="backward"/></barline>`).barlines;
+    expect(plain!.ending).toBeNull();
+  });
+
+  it('reads the repeat times count as a number, null without a times attribute', () => {
+    const [thrice] = measureWith(
+      `<barline location="right"><repeat direction="backward" times="3"/></barline>`
+    ).barlines;
+    expect(thrice!.repeatTimes).toBe(3);
+    const [untimed] = measureWith(`<barline location="right"><repeat direction="backward"/></barline>`).barlines;
+    expect(untimed!.repeatTimes).toBeNull();
+  });
 });

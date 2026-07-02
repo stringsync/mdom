@@ -45,4 +45,17 @@ describe('pedal — a direction-attached spanner that pairs start↔stop', () =>
     expect(start.measureBeat).toBe(0); // at the downbeat
     expect(stop.measureBeat).toBe(2); // after two quarter notes
   });
+
+  it('reads the line="yes" bracket-style flag, false by default', () => {
+    const bracketed = new MDOMParser()
+      .parseFromString(
+        `<score-partwise><part id="P1"><measure number="1">
+        <direction><direction-type><pedal type="start" number="1" line="yes"/></direction-type></direction>
+      </measure></part></score-partwise>`
+      )
+      .score.getPart('P1')!
+      .getMeasure('1')!.directions[0]!.pedals[0]!;
+    expect(bracketed.line).toBe(true);
+    expect(start.line).toBe(false); // the SAMPLE pedal has no line attribute
+  });
 });

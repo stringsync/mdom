@@ -59,4 +59,21 @@ export class Part extends MElement {
     }
     return 1;
   }
+
+  /**
+   * The `<part-symbol>` connector joining a multi-staff part's staves (first
+   * declaration in any measure's attributes); null when never declared. It is
+   * effectively a per-part constant, so it lives here rather than per-measure.
+   */
+  get partSymbol(): 'none' | 'line' | 'bracket' | 'brace' | 'square' | null {
+    for (const measure of this.measures) {
+      for (const attrs of measure.childrenNamed('attributes')) {
+        const symbol = attrs.child('part-symbol')?.text;
+        if (symbol != null) {
+          return symbol as 'none' | 'line' | 'bracket' | 'brace' | 'square';
+        }
+      }
+    }
+    return null;
+  }
 }

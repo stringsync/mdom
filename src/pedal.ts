@@ -25,6 +25,11 @@ export class Pedal extends MElement {
     return required(this.closest(Direction), '<direction> ancestor of <pedal>');
   }
 
+  /** The `line="yes"` attribute: a bracket-style pedal line vs. the default `Ped…*` signs. */
+  get line(): boolean {
+    return this.getAttribute('line') === 'yes';
+  }
+
   /** The marker at the far end (same number), or null. */
   get partner(): Pedal | null {
     return resolvePartner(this, this.spec());

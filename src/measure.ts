@@ -9,7 +9,8 @@ import { type Chord, groupChords } from './chord';
 import { groupBeams } from './beam';
 import { Direction } from './direction';
 import { Barline } from './barline';
-import { Frame } from './frame';
+import type { Frame } from './frame';
+import { Harmony } from './harmony';
 import { LineDetail } from './line-detail';
 import { Print } from './print';
 import { attributesBackFrom, appliesToStaff } from './signature';
@@ -144,9 +145,14 @@ export class Measure extends MElement {
     return this.childrenOfType(Barline);
   }
 
+  /** The measure's `<harmony>` chord symbols, in document order. */
+  get harmonies(): Harmony[] {
+    return this.childrenOfType(Harmony);
+  }
+
   /** The fretboard/chord diagrams (`<frame>`) carried by this measure's `<harmony>` elements. */
   get frames(): Frame[] {
-    return this.childrenNamed('harmony').flatMap((harmony) => harmony.childrenOfType(Frame));
+    return this.harmonies.flatMap((harmony) => (harmony.frame ? [harmony.frame] : []));
   }
 
   /** The leading `<print>` (break flags and per-system layout for the system starting here), or null. */

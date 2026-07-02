@@ -22,7 +22,12 @@ import { Wedge } from './wedge';
 import { Pedal } from './pedal';
 import { OctaveShift } from './octave-shift';
 import { Direction } from './direction';
-import { Frame } from './frame';
+import { Frame, FrameNote } from './frame';
+import { Harmony } from './harmony';
+import { HammerOn } from './hammer-on';
+import { PullOff } from './pull-off';
+import { Slide } from './slide';
+import { Glissando } from './glissando';
 import { LineDetail } from './line-detail';
 import { Print } from './print';
 import { SystemLayout } from './system-layout';
@@ -51,6 +56,12 @@ const REGISTRY: Record<string, new () => MElement> = {
   'octave-shift': OctaveShift,
   direction: Direction,
   frame: Frame,
+  'frame-note': FrameNote,
+  harmony: Harmony,
+  'hammer-on': HammerOn,
+  'pull-off': PullOff,
+  slide: Slide,
+  glissando: Glissando,
   'line-detail': LineDetail,
   print: Print,
   'system-layout': SystemLayout,

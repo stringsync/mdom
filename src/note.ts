@@ -12,11 +12,18 @@ import { Tie } from './tie';
 import { Beam } from './beam';
 import { Tuplet } from './tuplet';
 import { WavyLine } from './wavy-line';
+import { HammerOn } from './hammer-on';
+import { PullOff } from './pull-off';
+import { Slide } from './slide';
+import { Glissando } from './glissando';
 import { attributesBackFrom, divisionsBackFrom, appliesToStaff } from './signature';
 import { onsetOf, repairTimelineAfter } from './timeline';
 
 /** MusicXML note-type values, coarsest to finest. */
 export type NoteType = 'whole' | 'half' | 'quarter' | 'eighth' | '16th' | '32nd' | '64th' | '128th';
+
+/** MusicXML notehead-value enum: the glyph drawn for a note's head. */
+export type NoteheadValue = 'normal' | 'x' | 'diamond' | 'slash' | 'triangle' | 'cross' | 'circle-x' | 'none';
 
 /** A musical duration: a note type, optional dots, and an optional onset. */
 export interface DurationSpec {
@@ -231,6 +238,26 @@ export class Note extends MElement {
       .flatMap((ornaments) => ornaments.childrenOfType(WavyLine));
   }
 
+  /** `<hammer-on>` markers in `<notations><technical>`; each pairs via partner(). */
+  get hammerOns(): HammerOn[] {
+    return this.technicalMarkers(HammerOn);
+  }
+
+  /** `<pull-off>` markers in `<notations><technical>`; each pairs via partner(). */
+  get pullOffs(): PullOff[] {
+    return this.technicalMarkers(PullOff);
+  }
+
+  /** `<slide>` markers directly in `<notations>`; each pairs via partner() (crosses measures). */
+  get slides(): Slide[] {
+    return this.notationsMarkers(Slide);
+  }
+
+  /** `<glissando>` markers directly in `<notations>`; each pairs via partner() (crosses measures). */
+  get glissandos(): Glissando[] {
+    return this.notationsMarkers(Glissando);
+  }
+
   /**
    * Articulation marking names in `<notations><articulations>` (staccato, accent,
    * tenuto, …), in document order — the child tags, mirroring {@link slurs}/{@link ties}.
@@ -240,6 +267,77 @@ export class Note extends MElement {
       .flatMap((notations) => notations.childrenNamed('articulations'))
       .flatMap((articulations) => articulations.childrenOfType(MElement))
       .map((articulation) => articulation.tag);
+  }
+
+  /**
+   * The `<notehead>` glyph, or null when the note draws the default head.
+   * `parentheses` is the `parentheses="yes"` attribute (a ghost note).
+   */
+  get notehead(): { value: NoteheadValue; parentheses: boolean } | null {
+    const notehead = this.child('notehead');
+    if (!notehead) {
+      return null;
+    }
+    return {
+      value: (notehead.text ?? 'normal') as NoteheadValue,
+      parentheses: notehead.getAttribute('parentheses') === 'yes',
+    };
+  }
+
+  /**
+   * The `<notations><fermata>` type: 'upright' (the default when the element is
+   * present without a `type`) or 'inverted'; null when there is no fermata.
+   */
+  get fermata(): 'upright' | 'inverted' | null {
+    const fermata = this.notationsChild('fermata');
+    if (!fermata) {
+      return null;
+    }
+    return fermata.getAttribute('type') === 'inverted' ? 'inverted' : 'upright';
+  }
+
+  /**
+   * The `<notations><arpeggiate>` roll: outer null = no element; inner
+   * `direction: null` = an undirected roll (element present, no `direction`
+   * attribute) — a distinct rendering, so the two nulls stay separate.
+   */
+  get arpeggiate(): { direction: 'up' | 'down' | null } | null {
+    const arpeggiate = this.notationsChild('arpeggiate');
+    if (!arpeggiate) {
+      return null;
+    }
+    const direction = arpeggiate.getAttribute('direction');
+    return { direction: direction === 'up' || direction === 'down' ? direction : null };
+  }
+
+  /** Whether this is a slashed grace note (`<grace slash="yes"/>`, an acciaccatura). */
+  get graceSlash(): boolean {
+    return this.child('grace')?.getAttribute('slash') === 'yes';
+  }
+
+  /** Whether this note carries `<notations><technical><harmonic>`. */
+  get isHarmonic(): boolean {
+    return this.technicalChild('harmonic') !== null;
+  }
+
+  /**
+   * The `<notations><technical><bend>`: `semitones` from `<bend-alter>` (2 = whole
+   * step), `release` = presence of a `<release/>` child. Null when there is no bend.
+   */
+  get bend(): { semitones: number; release: boolean } | null {
+    const bend = this.technicalChild('bend');
+    if (!bend) {
+      return null;
+    }
+    return {
+      semitones: Number(bend.child('bend-alter')?.text ?? 0),
+      release: bend.child('release') !== null,
+    };
+  }
+
+  /** Text of each `<notations><technical><other-technical>` (free text like `P.M.`), document order. */
+  get otherTechnical(): string[] {
+    return this.technicalChildrenNamed('other-technical').map((node) => node.text ?? '');
   }
 
   /** `<stem>` direction (splits two voices on one stave; `none`/`double` are real values too); null when absent. */
@@ -446,17 +544,33 @@ export class Note extends MElement {
     return notations;
   }
 
+  /** First direct `<tag>` child across this note's `<notations>` blocks, or null. */
+  private notationsChild(tag: string): MElement | null {
+    return this.childrenNamed('notations').flatMap((notations) => notations.childrenNamed(tag))[0] ?? null;
+  }
+
+  /** Typed markers directly under this note's `<notations>` (e.g. slides, glissandos). */
+  private notationsMarkers<T extends MElement>(type: new () => T): T[] {
+    return this.childrenNamed('notations').flatMap((notations) => notations.childrenOfType(type));
+  }
+
   /** First `<tag>` inside this note's `<notations><technical>`, or null. */
   private technicalChild(tag: string): MElement | null {
-    for (const notations of this.childrenNamed('notations')) {
-      for (const technical of notations.childrenNamed('technical')) {
-        const found = technical.child(tag);
-        if (found) {
-          return found;
-        }
-      }
-    }
-    return null;
+    return this.technicalChildrenNamed(tag)[0] ?? null;
+  }
+
+  /** Every `<tag>` inside this note's `<notations><technical>` blocks, document order. */
+  private technicalChildrenNamed(tag: string): MElement[] {
+    return this.childrenNamed('notations')
+      .flatMap((notations) => notations.childrenNamed('technical'))
+      .flatMap((technical) => technical.childrenNamed(tag));
+  }
+
+  /** Typed markers inside this note's `<notations><technical>` (e.g. hammer-ons, pull-offs). */
+  private technicalMarkers<T extends MElement>(type: new () => T): T[] {
+    return this.childrenNamed('notations')
+      .flatMap((notations) => notations.childrenNamed('technical'))
+      .flatMap((technical) => technical.childrenOfType(type));
   }
 
   /** Get or create this note's `<notations><technical>` child. */
@@ -524,6 +638,27 @@ export function durationDivisions(spec: DurationSpec, divisions: number): number
     );
   }
   return total;
+}
+
+/**
+ * The nearest non-`<chord/>`-member {@link Note} sibling of `element` in the same
+ * measure, walking document order (`step` = 1 forward, -1 backward). Directions
+ * and harmonies sit between notes and bind to a neighbor — a pedal start to the
+ * note that follows, a chord symbol to the note it sits above.
+ */
+export function adjacentNote(element: MElement, step: 1 | -1): Note | null {
+  const measure = element.closest(Measure);
+  if (!measure) {
+    return null;
+  }
+  const siblings = measure.children;
+  for (let index = siblings.indexOf(element) + step; index >= 0 && index < siblings.length; index += step) {
+    const node = siblings[index];
+    if (node instanceof Note && !node.isChordMember) {
+      return node;
+    }
+  }
+  return null;
 }
 
 /** Build a `<pitch>` from a {@link PitchSpec}. */
