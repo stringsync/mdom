@@ -6,9 +6,10 @@ import type { Measure } from './measure';
  * `<attributes>` in effect, nearest first: scan backward from `fromIndex`
  * (exclusive) within `measure`, then through earlier measures of the part. This
  * one backward walk is the entire carry-forward — first match wins. A Note passes
- * its own index (so mid-measure changes count); a Measure passes its child count
- * ("at the start of this measure", which still includes its own leading
- * `<attributes>`). The same helper answers clef/key/time/divisions/staves.
+ * its own index (so mid-measure changes count); a Measure passes the index of its
+ * first note ("at the start of this measure": its own leading `<attributes>`
+ * count, a mid-measure change does not). The same helper answers
+ * clef/key/time/divisions/staves.
  */
 export function attributesBackFrom(measure: Measure, fromIndex: number): MElement[] {
   const result: MElement[] = [];

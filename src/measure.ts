@@ -129,9 +129,18 @@ export class Measure extends MElement {
     return groupBeams(this.notes);
   }
 
-  /** `<measure-style><multiple-rest>` count, when this measure begins a multi-rest. */
-  get multiRestCount(): number | null {
-    const count = this.attributeBack((attrs) => attrs.child('measure-style')?.child('multiple-rest'));
+  /**
+   * `<measure-style><multiple-rest>` count for `staff` (default '1'), when this
+   * measure begins a multi-rest; null otherwise. Deliberately not a carry-forward
+   * query: `<multiple-rest>` carries its own extent in its text and is never
+   * restated or stopped, so only this measure's own `<attributes>` are read.
+   */
+  getMultiRestCount(staff = '1'): number | null {
+    const count = this.childrenNamed('attributes')
+      .flatMap((attrs) => attrs.childrenNamed('measure-style'))
+      .filter((style) => appliesToStaff(style, staff))
+      .map((style) => style.child('multiple-rest'))
+      .find((node) => node != null);
     return count?.text == null ? null : Number(count.text);
   }
 
