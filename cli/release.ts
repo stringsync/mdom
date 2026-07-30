@@ -1,6 +1,7 @@
 // release validates, bumps the version, builds, commits, tags, and publishes via bun
 import chalk from 'chalk';
 import { build } from './build.ts';
+import { fix } from './fix.ts';
 import { run } from './util.ts';
 
 const TYPES = ['patch', 'minor', 'major'] as const;
@@ -57,8 +58,15 @@ export async function release(type: string) {
   }
   // ponytail: bun publish reuses npm's registry auth and bun has no whoami; npm whoami is the only preflight
   if (Bun.spawnSync(['npm', 'whoami'], { stdout: 'ignore', stderr: 'ignore' }).exitCode !== 0) {
-    throw new Error('not logged in to npm — run `npm login` before releasing');
+    run('npm', ['login']);
   }
+  // gh release create runs last; check auth up front so we don't fail after publishing
+  if (Bun.spawnSync(['gh', 'auth', 'status'], { stdout: 'ignore', stderr: 'ignore' }).exitCode !== 0) {
+    run('gh', ['auth', 'login']);
+  }
+
+  // lint/format/typecheck gate before mutating package.json so failures abort cleanly
+  await fix({ check: true });
 
   const path = new URL('../package.json', import.meta.url).pathname;
   const pkg = await Bun.file(path).json();
@@ -82,6 +90,8 @@ export async function release(type: string) {
   run('git', ['push', 'origin', `v${next}`]);
   run('bun', ['publish', '--access', 'public']);
   run('git', ['push', 'origin', 'master']);
+  // --generate-notes derives notes from merged PRs/commits since the previous tag
+  run('gh', ['release', 'create', `v${next}`, '--generate-notes']);
 
   console.log(chalk.green(`published ${next}`));
 }
