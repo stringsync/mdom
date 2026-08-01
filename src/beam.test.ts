@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { MDOMParser } from './m-dom-parser';
 import { groupBeamRuns, groupBeams } from './beam';
+import * as barrel from '../index';
 
 // A beamed group of three eighth notes (C D E), beamed at level 1 with the
 // canonical begin/continue/end run. The middle and last notes carry a second
@@ -138,5 +139,13 @@ describe('groupBeamRuns — an <end> does not close the run', () => {
   it('closes the run at the unbeamed quarter that follows', () => {
     expect(measure.beams.map((notes) => notes.length)).toEqual([5]);
     expect(groupBeamRuns([])).toEqual([]);
+  });
+
+  // The fold is per-VOICE for a renderer, so it has to be reachable off an
+  // arbitrary Note[] — not only measure-scoped. Identity, so the two can't drift.
+  it('is exported from the barrel as the same fold measure.beamRuns() delegates to', () => {
+    expect(barrel.groupBeamRuns).toBe(groupBeamRuns);
+    expect(barrel.groupBeams).toBe(groupBeams);
+    expect(groupBeamRuns(measure.notes)).toEqual(measure.beamRuns());
   });
 });

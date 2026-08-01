@@ -30,6 +30,7 @@ import { Score } from './score';
 import { Slide } from './slide';
 import { Slur } from './slur';
 import { Sound } from './sound';
+import { StaffDetails } from './staff-details';
 import { StaffTuning } from './staff-tuning';
 import { SystemLayout } from './system-layout';
 import { Technical, TECHNICAL_TAGS } from './technical';
@@ -89,6 +90,7 @@ function tags(): Record<string, ElementCtor> {
     sound: Sound,
     'figured-bass': FiguredBass,
     figure: Figure,
+    'staff-details': StaffDetails,
     'staff-tuning': StaffTuning,
     frame: Frame,
     'frame-note': FrameNote,

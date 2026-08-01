@@ -16,6 +16,7 @@ import { LineDetail } from './line-detail';
 import { Print } from './print';
 import { cloneElement } from './registry';
 import { Sound } from './sound';
+import { StaffDetails } from './staff-details';
 import { StaffTuning } from './staff-tuning';
 import { attributesBackFrom, appliesToStaff, divisionsBackFrom } from './signature';
 import { contentEnd } from './timeline';
@@ -108,6 +109,19 @@ export class Measure extends MElement {
         .find((node) => node != null)
     );
     return lines?.text == null ? 5 : Number(lines.text);
+  }
+
+  /**
+   * The `<staff-details>` block in effect for `staff` (default '1'), carry-forward
+   * like {@link getClef}; null when none applies. Everything on it reads as
+   * DECLARED — use this when absence has to stay distinguishable from a default,
+   * e.g. "did the document actually state `<staff-lines>`?", which
+   * {@link getStaveLines} answers 5 to either way.
+   */
+  getStaffDetails(staff = '1'): StaffDetails | null {
+    return this.attributeBack((attrs) =>
+      attrs.childrenOfType(StaffDetails).find((details) => appliesToStaff(details, staff))
+    );
   }
 
   /**

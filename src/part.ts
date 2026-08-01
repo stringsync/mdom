@@ -17,6 +17,11 @@ export class Part extends MElement {
     return required(this.getAttribute('id'), 'id on <part>');
   }
 
+  /** The score this part belongs to. An attached part always has one. */
+  get score(): Score {
+    return required(this.closest(Score), '<score-partwise> ancestor of <part>');
+  }
+
   /** The part's measures. */
   get measures(): Measure[] {
     return this.childrenOfType(Measure);

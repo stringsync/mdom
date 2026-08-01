@@ -50,4 +50,10 @@ describe('Part', () => {
       .score.getPart('P1')!;
     expect(without.partSymbol).toBeNull();
   });
+
+  it('points back at its score, and throws when detached', () => {
+    const score = new MDOMParser().parseFromString(`<score-partwise><part id="P1"/></score-partwise>`).score;
+    expect(score.getPart('P1')!.score).toBe(score);
+    expect(() => new Part().score).toThrow('<score-partwise> ancestor of <part>');
+  });
 });
