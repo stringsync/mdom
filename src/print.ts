@@ -12,6 +12,24 @@ export class Print extends MElement {
     super('print');
   }
 
+  /**
+   * `new-system` as MusicXML writes it: 'yes', 'no', or null when the attribute
+   * is absent. The three are distinct instructions — `"no"` is a positive
+   * statement ("the document laid this line out; this measure stays on its
+   * line"), which silence is not. {@link newSystem} collapses it to a boolean for
+   * the common "does a break start here" question.
+   */
+  get systemBreak(): 'yes' | 'no' | null {
+    const value = this.getAttribute('new-system');
+    return value === 'yes' || value === 'no' ? value : null;
+  }
+
+  /** `new-page`, with the same three states as {@link systemBreak}. */
+  get pageBreak(): 'yes' | 'no' | null {
+    const value = this.getAttribute('new-page');
+    return value === 'yes' || value === 'no' ? value : null;
+  }
+
   /** Whether this measure starts a new system (`new-system="yes"`). */
   get newSystem(): boolean {
     return this.getAttribute('new-system') === 'yes';

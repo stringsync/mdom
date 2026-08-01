@@ -42,4 +42,43 @@ export class Key extends MElement {
     const tonics = this.mode === 'minor' ? MINOR_TONICS : MAJOR_TONICS;
     return tonics[fifths + 7] ?? null;
   }
+
+  /**
+   * The `<key-step>`/`<key-alter>` alterations of a non-traditional key, in the
+   * order given — NOT circle-of-fifths order, which is the whole point of the
+   * form. Empty for an ordinary `<fifths>` key.
+   *
+   * MusicXML writes these as interleaved sibling runs read positionally: a
+   * `<key-step>` opens an alteration, and the `<key-alter>` and (optional)
+   * `<key-accidental>` that TRAIL it belong to it. Only the trailing rule is
+   * right — pairing by count breaks the moment one alteration carries an
+   * accidental and another doesn't. `<key-octave number="n">` indexes the nth
+   * alteration, 1-based.
+   */
+  get alterations(): Array<{ step: string; alter: number; accidental: string | null; octave: number | null }> {
+    const alterations: Array<{ step: string; alter: number; accidental: string | null; octave: number | null }> = [];
+    const octaves = new Map<number, number>();
+    for (const child of this.children) {
+      if (!(child instanceof MElement)) {
+        continue;
+      }
+      const current = alterations[alterations.length - 1];
+      if (child.tag === 'key-step') {
+        alterations.push({ step: child.text ?? '', alter: 0, accidental: null, octave: null });
+      } else if (child.tag === 'key-alter' && current) {
+        current.alter = Number(child.text ?? 0);
+      } else if (child.tag === 'key-accidental' && current) {
+        current.accidental = child.text ?? '';
+      } else if (child.tag === 'key-octave' && child.text != null) {
+        octaves.set(Number(child.getAttribute('number') ?? 0), Number(child.text));
+      }
+    }
+    for (const [index, octave] of octaves) {
+      const alteration = alterations[index - 1];
+      if (alteration) {
+        alteration.octave = octave;
+      }
+    }
+    return alterations;
+  }
 }

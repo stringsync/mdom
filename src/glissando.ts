@@ -1,5 +1,6 @@
 import { MElement, required } from './m-node';
 import { Note } from './note';
+import { Part } from './part';
 import { resolveMembers, resolvePartner, noteMarkers, type SpannerSpec } from './spanner';
 
 export type GlissandoType = 'start' | 'stop';
@@ -25,9 +26,19 @@ export class Glissando extends MElement {
     return required(this.getAttribute('type'), 'type on <glissando>') as GlissandoType;
   }
 
+  /** `line-type` (solid/dashed/dotted/wavy) — the stroke to draw; null when unstated. */
+  get lineType(): string | null {
+    return this.getAttribute('line-type');
+  }
+
   /** The note this marker hangs off of. An attached marker always has one. */
   get note(): Note {
     return required(this.closest(Note), '<note> ancestor of <glissando>');
+  }
+
+  /** The part this marker belongs to. An attached marker always has one. */
+  get part(): Part {
+    return required(this.closest(Part), '<part> ancestor of <glissando>');
   }
 
   /** The marker at the far end (same number), scanning the part in document order. */
@@ -38,6 +49,11 @@ export class Glissando extends MElement {
   /** All markers in this spanner (start..stop), not just the far end. */
   get members(): Glissando[] {
     return resolveMembers(this, this.spec());
+  }
+
+  /** Onset of this marker's note within its measure, in beats. */
+  get measureBeat(): number | null {
+    return this.note.measureBeat;
   }
 
   private spec(): SpannerSpec<Glissando> {

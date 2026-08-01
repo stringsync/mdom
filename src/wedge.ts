@@ -1,5 +1,6 @@
 import { MElement, required } from './m-node';
 import { Direction } from './direction';
+import { Measure } from './measure';
 import { resolveMembers, resolvePartner, directionMarkers, type SpannerSpec } from './spanner';
 
 export type WedgeType = 'crescendo' | 'diminuendo' | 'stop' | 'continue';
@@ -30,6 +31,11 @@ export class Wedge extends MElement {
    */
   get direction(): Direction {
     return required(this.closest(Direction), '<direction> ancestor of <wedge>');
+  }
+
+  /** The measure this marker sits in. An attached marker always has one. */
+  get measure(): Measure {
+    return required(this.closest(Measure), '<measure> ancestor of <wedge>');
   }
 
   /** The marker at the far end (same number), or null. */

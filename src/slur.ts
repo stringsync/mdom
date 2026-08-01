@@ -1,5 +1,6 @@
 import { MElement, required } from './m-node';
 import { Note } from './note';
+import { Part } from './part';
 import { resolveMembers, resolvePartner, noteMarkers, type SpannerSpec } from './spanner';
 
 export type SlurType = 'start' | 'stop' | 'continue';
@@ -33,16 +34,27 @@ export class Slur extends MElement {
     return this.getAttribute('placement');
   }
 
+  /** `line-type` (solid/dashed/dotted/wavy) — the stroke to draw; null when unstated. */
+  get lineType(): string | null {
+    return this.getAttribute('line-type');
+  }
+
   /** The note this marker hangs off of. An attached marker always has one. */
   get note(): Note {
     return required(this.closest(Note), '<note> ancestor of <slur>');
   }
 
+  /** The part this marker belongs to. An attached marker always has one. */
+  get part(): Part {
+    return required(this.closest(Part), '<part> ancestor of <slur>');
+  }
+
   /**
-   * The marker at the other end, found by scanning the part in document order for
-   * the nearest matching start/stop with the same `number`. Reused numbers
-   * resolve correctly: the first stop after a start is its match, because a
-   * number can't reopen until it closes. Spans measures (and systems) for free.
+   * The marker at the other end, resolved across the part in ONSET order (see
+   * {@link resolvePartner}), preferring an open start in the same voice and
+   * falling back to the oldest one. Document order is not enough: a `<backup>`
+   * writes a later voice's notes after an earlier voice's, so a cross-stave slur's
+   * stop can sit before its start in the file. Spans measures and systems freely.
    */
   get partner(): Slur | null {
     return resolvePartner(this, this.spec());
@@ -51,6 +63,11 @@ export class Slur extends MElement {
   /** All markers in this spanner (start..stop), not just the far end. */
   get members(): Slur[] {
     return resolveMembers(this, this.spec());
+  }
+
+  /** Onset of this marker's note within its measure, in beats. */
+  get measureBeat(): number | null {
+    return this.note.measureBeat;
   }
 
   private spec(): SpannerSpec<Slur> {

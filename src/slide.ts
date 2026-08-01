@@ -1,5 +1,6 @@
 import { MElement, required } from './m-node';
 import { Note } from './note';
+import { Part } from './part';
 import { resolveMembers, resolvePartner, noteMarkers, type SpannerSpec } from './spanner';
 
 export type SlideType = 'start' | 'stop';
@@ -27,9 +28,19 @@ export class Slide extends MElement {
     return required(this.getAttribute('type'), 'type on <slide>') as SlideType;
   }
 
+  /** `line-type` (solid/dashed/dotted/wavy) — the stroke to draw; null when unstated. */
+  get lineType(): string | null {
+    return this.getAttribute('line-type');
+  }
+
   /** The note this marker hangs off of. An attached marker always has one. */
   get note(): Note {
     return required(this.closest(Note), '<note> ancestor of <slide>');
+  }
+
+  /** The part this marker belongs to. An attached marker always has one. */
+  get part(): Part {
+    return required(this.closest(Part), '<part> ancestor of <slide>');
   }
 
   /** The marker at the far end (same number), scanning the part in document order. */
@@ -40,6 +51,11 @@ export class Slide extends MElement {
   /** All markers in this spanner (start..stop), not just the far end. */
   get members(): Slide[] {
     return resolveMembers(this, this.spec());
+  }
+
+  /** Onset of this marker's note within its measure, in beats. */
+  get measureBeat(): number | null {
+    return this.note.measureBeat;
   }
 
   private spec(): SpannerSpec<Slide> {

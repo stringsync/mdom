@@ -1,4 +1,5 @@
 import { MElement } from './m-node';
+import { colorOf } from './print-style';
 
 /** How a syllable joins its neighbours: a whole word, or one piece of one. */
 export type Syllabic = 'single' | 'begin' | 'end' | 'middle';
@@ -33,8 +34,29 @@ export class Lyric extends MElement {
     return (this.child('syllabic')?.text ?? null) as Syllabic | null;
   }
 
+  /**
+   * The syllable's runs in document order, so a consumer can render the elision
+   * separators {@link syllable} joins away. An empty `<elision/>` leaves the
+   * symbol to the renderer (a space is the conventional pick); one carrying text
+   * (an undertie, an underscore) uses that.
+   */
+  get runs(): Array<{ kind: 'text' | 'elision'; text: string }> {
+    const runs: Array<{ kind: 'text' | 'elision'; text: string }> = [];
+    for (const child of this.children) {
+      if (child instanceof MElement && (child.tag === 'text' || child.tag === 'elision')) {
+        runs.push({ kind: child.tag, text: child.text ?? '' });
+      }
+    }
+    return runs;
+  }
+
   /** Whether a melisma `<extend>` line trails this syllable. */
   get extend(): boolean {
     return this.child('extend') !== null;
+  }
+
+  /** The normalized `color`; null when unset. */
+  get color(): string | null {
+    return colorOf(this);
   }
 }

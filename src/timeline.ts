@@ -10,6 +10,18 @@ import type { Measure } from './measure';
  * measure. Callers divide by the divisions in effect to get quarter-note beats.
  */
 export function onsetOf(measure: Measure, target: MElement): number | null {
+  return onsetsIn(measure).get(target) ?? null;
+}
+
+/**
+ * Every element child's onset within `measure`, in divisions, from a single fold
+ * — the whole timeline in one pass. {@link onsetOf} is a lookup into it; readers
+ * that need many onsets at once (ordering a measure's spanner markers by when
+ * they sound) fold once instead of once per element. `<backup>`/`<forward>` move
+ * the cursor and get no onset of their own.
+ */
+export function onsetsIn(measure: Measure): Map<MElement, number> {
+  const onsets = new Map<MElement, number>();
   let cursor = 0; // divisions elapsed from the measure start
   let chordOnset = 0; // onset of the current chord's first note
   for (const node of measure.children) {
@@ -25,19 +37,43 @@ export function onsetOf(measure: Measure, target: MElement): number | null {
       // sit at the cursor — neither advances it.
       const isChord = node.child('chord') !== null;
       const isGrace = node.child('grace') !== null;
-      const onset = isChord ? chordOnset : cursor;
-      if (node === target) {
-        return onset;
-      }
+      onsets.set(node, isChord ? chordOnset : cursor);
       if (!isChord && !isGrace) {
         chordOnset = cursor;
         cursor += node.duration ?? 0;
       }
-    } else if (node === target) {
-      return cursor;
+    } else {
+      onsets.set(node, cursor);
     }
   }
-  return null;
+  return onsets;
+}
+
+/**
+ * Divisions elapsed at the end of the measure's content: the furthest the fold
+ * reaches, across every voice. Not the same as {@link writeCursor}, which is
+ * where the cursor *finishes* — a measure ending with a `<backup>` leaves that
+ * behind the content. Callers divide by divisions in effect to get beats.
+ */
+export function contentEnd(measure: Measure): number {
+  let cursor = 0;
+  let end = 0;
+  for (const node of measure.children) {
+    if (!(node instanceof MElement)) {
+      continue;
+    }
+    if (node.tag === 'backup') {
+      cursor -= Number(node.child('duration')?.text ?? 0);
+    } else if (node.tag === 'forward') {
+      cursor += Number(node.child('duration')?.text ?? 0);
+    } else if (node instanceof Note && node.child('chord') === null && node.child('grace') === null) {
+      cursor += node.duration ?? 0;
+    } else {
+      continue;
+    }
+    end = Math.max(end, cursor);
+  }
+  return end;
 }
 
 /**

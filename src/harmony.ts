@@ -1,6 +1,8 @@
-import { MElement } from './m-node';
+import { MElement, required } from './m-node';
 import { Frame } from './frame';
+import { Measure } from './measure';
 import { type Note, adjacentNote } from './note';
+import { placementOf } from './print-style';
 
 /**
  * The MusicXML kind-value enum: the harmonic quality printed for a chord symbol.
@@ -94,6 +96,16 @@ export class Harmony extends MElement {
    */
   get nextNote(): Note | null {
     return adjacentNote(this, 1);
+  }
+
+  /** `placement`; null when unstated. */
+  get placement(): 'above' | 'below' | null {
+    return placementOf(this);
+  }
+
+  /** The measure this harmony sits in. An attached harmony always has one. */
+  get measure(): Measure {
+    return required(this.closest(Measure), '<measure> ancestor of <harmony>');
   }
 }
 

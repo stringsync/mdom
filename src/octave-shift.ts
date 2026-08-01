@@ -1,5 +1,6 @@
 import { MElement, required } from './m-node';
 import { Direction } from './direction';
+import { Measure } from './measure';
 import { resolveMembers, resolvePartner, directionMarkers, type SpannerSpec } from './spanner';
 
 export type OctaveShiftType = 'up' | 'down' | 'stop' | 'continue';
@@ -31,6 +32,16 @@ export class OctaveShift extends MElement {
   /** The `<direction>` this marker hangs off of. An attached marker always has one. */
   get direction(): Direction {
     return required(this.closest(Direction), '<direction> ancestor of <octave-shift>');
+  }
+
+  /** The measure this marker sits in. An attached marker always has one. */
+  get measure(): Measure {
+    return required(this.closest(Measure), '<measure> ancestor of <octave-shift>');
+  }
+
+  /** `line-type` (solid/dashed/dotted/wavy) — the stroke to draw; null when unstated. */
+  get lineType(): string | null {
+    return this.getAttribute('line-type');
   }
 
   /** The marker at the far end (same number), or null. */

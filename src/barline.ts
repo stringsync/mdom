@@ -1,4 +1,8 @@
 import { MElement } from './m-node';
+import { Measure } from './measure';
+import { colorOf } from './print-style';
+import { divisionsBackFrom } from './signature';
+import { onsetOf } from './timeline';
 
 /**
  * A `<barline>` in a measure: its bar style (final, double, dotted, ...) and any
@@ -49,5 +53,29 @@ export class Barline extends MElement {
   get repeatTimes(): number | null {
     const times = this.child('repeat')?.getAttribute('times');
     return times == null ? null : Number(times);
+  }
+
+  /**
+   * Onset within the measure, in beats — where this barline sits in the
+   * backup/forward fold. Meaningful for `location="middle"`, a divider written
+   * between two notes (a double bar or dotted divider mid-bar); the edges are 0
+   * and the measure's end beat.
+   */
+  get measureBeat(): number | null {
+    const measure = this.closest(Measure);
+    if (!measure) {
+      return null;
+    }
+    const divisions = divisionsBackFrom(measure, measure.children.indexOf(this));
+    const onset = onsetOf(measure, this);
+    if (divisions == null || onset == null) {
+      return null;
+    }
+    return onset / divisions;
+  }
+
+  /** The normalized `color`; null when unset. */
+  get color(): string | null {
+    return colorOf(this);
   }
 }

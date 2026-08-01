@@ -115,7 +115,7 @@ describe('note — notation and technical reader getters', () => {
   const [fancy, grace, plain] = new MDOMParser().parseFromString(MARKED).score.getPart('P1')!.getMeasure('1')!.notes;
 
   it('reads the notehead glyph and its ghost-note parentheses, null when absent', () => {
-    expect(fancy!.notehead).toEqual({ value: 'x', parentheses: true });
+    expect(fancy!.notehead).toEqual({ value: 'x', parentheses: true, filled: null, color: null });
     expect(plain!.notehead).toBeNull();
   });
 

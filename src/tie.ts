@@ -1,5 +1,6 @@
 import { MElement, required } from './m-node';
 import { Note } from './note';
+import { Part } from './part';
 import { resolveMembers, resolvePartner, removeSpan, noteMarkers, type SpannerSpec } from './spanner';
 
 export type TieType = 'start' | 'stop' | 'continue' | 'let-ring';
@@ -24,12 +25,22 @@ export class Tie extends MElement {
     return required(this.getAttribute('type'), 'type on <tied>') as TieType;
   }
 
+  /** `line-type` (solid/dashed/dotted/wavy) — the stroke to draw; null when unstated. */
+  get lineType(): string | null {
+    return this.getAttribute('line-type');
+  }
+
   /** The note this marker hangs off of. An attached marker always has one. */
   get note(): Note {
     return required(this.closest(Note), '<note> ancestor of <tied>');
   }
 
-  /** The marker at the other end (same number), scanning the part in document order. */
+  /** The part this marker belongs to. An attached marker always has one. */
+  get part(): Part {
+    return required(this.closest(Part), '<part> ancestor of <tied>');
+  }
+
+  /** The marker at the other end (same number), resolved across the part in onset order. */
   get partner(): Tie | null {
     return resolvePartner(this, this.spec());
   }

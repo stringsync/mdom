@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { MDocument } from './m-document';
 import { MDOMParser } from './m-dom-parser';
 import { Note } from './note';
 import type { Measure } from './measure';
@@ -101,5 +102,67 @@ describe('onset fold — backup/forward/chord/grace', () => {
 
   it('returns null for a note outside any measure', () => {
     expect(new Note().measureBeat).toBeNull();
+  });
+});
+
+// <forward> is the other half of the fold and much rarer than <backup>: it skips
+// the cursor ahead, leaving a gap no note fills. A measure that ends on a
+// <backup> also proves why the content end is a MAXIMUM, not the final cursor.
+const GAPS = `<score-partwise><part id="P1"><measure number="1">
+  <attributes><divisions>4</divisions></attributes>
+  <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice></note>
+  <forward><duration>4</duration></forward>
+  <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice></note>
+  <backup><duration>12</duration></backup>
+  <note><pitch><step>C</step><octave>3</octave></pitch><duration>4</duration><voice>2</voice></note>
+  <backup><duration>4</duration></backup>
+</measure></part></score-partwise>`;
+
+describe('timeline — forward gaps and the content end', () => {
+  const measure = new MDOMParser().parseFromString(GAPS).score.getPart('P1')!.getMeasure('1')!;
+
+  it('skips the cursor past a <forward>, leaving the gap unfilled', () => {
+    expect(measure.notes.map((note) => note.measureBeat)).toEqual([0, 2, 0]);
+  });
+
+  it('measures content out to the furthest point reached, not the final cursor', () => {
+    // The measure ends on a <backup> that rewinds to beat 0; the content still
+    // runs to beat 3, which is the width a renderer has to reserve.
+    expect(measure.endBeat).toBe(3);
+  });
+});
+
+describe('timeline — repairs that have nothing to move', () => {
+  const build = () => {
+    const part = MDocument.empty().score.addPart({ id: 'P1' });
+    const voice = part.addMeasure().getOrCreateVoice('1');
+    voice.addNote({ step: 'C', octave: 4, type: 'quarter' });
+    voice.addNote({ step: 'D', octave: 4, type: 'quarter' });
+    return { part, voice };
+  };
+
+  it('is a no-op when the duration does not actually change', () => {
+    const { voice } = build();
+    const before = voice.notes.map((note) => note.measureBeat);
+    voice.notes[0]!.setDuration({ type: 'quarter' });
+    expect(voice.notes.map((note) => note.measureBeat)).toEqual(before);
+  });
+
+  it('ripples the rest of the voice when there is no sibling voice to anchor', () => {
+    const { voice } = build();
+    voice.notes[0]!.setDuration({ type: 'half' });
+    expect(voice.notes.map((note) => note.measureBeat)).toEqual([0, 2]);
+  });
+
+  it('changes only the notation for a grace note, which carries no duration', () => {
+    const { voice } = build();
+    const grace = voice.notes[1]!;
+    grace.convertToGrace();
+    expect(grace.isGrace).toBe(true);
+    expect(grace.duration).toBeNull();
+    grace.setDuration({ type: '16th', dots: 1 });
+    expect(grace.type).toBe('16th');
+    expect(grace.dots).toBe(1);
+    expect(grace.duration).toBeNull();
   });
 });

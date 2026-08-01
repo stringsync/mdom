@@ -25,4 +25,34 @@ describe('MXLSerializer', () => {
     const empty = await new JSZip().generateAsync({ type: 'blob' });
     expect(new MDOMParser().parseFromBlob(empty)).rejects.toThrow('no META-INF/container.xml');
   });
+
+  // The container is a pointer file; each way it can dangle gets its own message,
+  // because "the .mxl is broken" is useless to whoever has to fix the file.
+  const archiveWith = async (container: string, entries: Record<string, string> = {}): Promise<Blob> => {
+    const zip = new JSZip();
+    zip.file('META-INF/container.xml', container);
+    for (const [name, content] of Object.entries(entries)) {
+      zip.file(name, content);
+    }
+    return zip.generateAsync({ type: 'blob' });
+  };
+
+  it('throws when the container names no rootfile', async () => {
+    const blob = await archiveWith('<container><rootfiles/></container>');
+    expect(new MDOMParser().parseFromBlob(blob)).rejects.toThrow('container.xml has no <rootfile>');
+  });
+
+  it('throws when the rootfile it names is not in the archive', async () => {
+    const blob = await archiveWith('<container><rootfiles><rootfile full-path="score.xml"/></rootfiles></container>');
+    expect(new MDOMParser().parseFromBlob(blob)).rejects.toThrow('missing its rootfile: score.xml');
+  });
+
+  it('follows the container to a rootfile nested anywhere in the archive', async () => {
+    const blob = await archiveWith(
+      '<container><rootfiles><rootfile full-path="nested/dir/score.xml"/></rootfiles></container>',
+      { 'nested/dir/score.xml': '<score-partwise><part id="P1"><measure number="1"/></part></score-partwise>' }
+    );
+    const parsed = await new MDOMParser().parseFromBlob(blob);
+    expect(parsed.score.getPart('P1')?.measures).toHaveLength(1);
+  });
 });

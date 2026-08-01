@@ -1,4 +1,5 @@
 import { MElement, required } from './m-node';
+import { colorOf } from './print-style';
 
 /**
  * An `<accidental>`: the *printed* accidental glyph on a note (sharp, flat,
@@ -29,5 +30,18 @@ export class Accidental extends MElement {
   /** Whether it's drawn in brackets, which adds width. */
   get bracket(): boolean {
     return this.getAttribute('bracket') === 'yes';
+  }
+
+  /**
+   * Whether this is an editorial accidental — `editorial="yes"`. It prints the
+   * same as {@link bracket}: an addition by the editor, not the composer.
+   */
+  get editorial(): boolean {
+    return this.getAttribute('editorial') === 'yes';
+  }
+
+  /** The normalized `color`; null when unset. */
+  get color(): string | null {
+    return colorOf(this);
   }
 }

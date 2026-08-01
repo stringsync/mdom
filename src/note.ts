@@ -16,6 +16,9 @@ import { HammerOn } from './hammer-on';
 import { PullOff } from './pull-off';
 import { Slide } from './slide';
 import { Glissando } from './glissando';
+import { Ornament } from './ornament';
+import { Technical } from './technical';
+import { colorOf } from './print-style';
 import { attributesBackFrom, divisionsBackFrom, appliesToStaff } from './signature';
 import { onsetOf, repairTimelineAfter } from './timeline';
 
@@ -271,16 +274,27 @@ export class Note extends MElement {
 
   /**
    * The `<notehead>` glyph, or null when the note draws the default head.
-   * `parentheses` is the `parentheses="yes"` attribute (a ghost note).
+   * `parentheses` is the `parentheses="yes"` attribute (a ghost note). `filled`
+   * is the tri-state `filled` attribute: null means unstated, so the duration
+   * decides — an explicit `filled="no"` on a quarter draws an OPEN head (a ghost
+   * or ringing note), which is not the same as saying nothing.
    */
-  get notehead(): { value: NoteheadValue; parentheses: boolean } | null {
+  get notehead(): {
+    value: NoteheadValue;
+    parentheses: boolean;
+    filled: boolean | null;
+    color: string | null;
+  } | null {
     const notehead = this.child('notehead');
     if (!notehead) {
       return null;
     }
+    const filled = notehead.getAttribute('filled');
     return {
       value: (notehead.text ?? 'normal') as NoteheadValue,
       parentheses: notehead.getAttribute('parentheses') === 'yes',
+      filled: filled == null ? null : filled === 'yes',
+      color: colorOf(notehead),
     };
   }
 
@@ -315,6 +329,94 @@ export class Note extends MElement {
     return this.child('grace')?.getAttribute('slash') === 'yes';
   }
 
+  /**
+   * `<notations><non-arpeggiate>`: the bracket marking a chord to be struck
+   * together, the opposite of {@link arpeggiate}. `type="bottom"` sits on the
+   * lowest member it covers and `type="top"` on the highest, with nothing on the
+   * members between; null when this note carries neither. A half-marked chord
+   * (only one end present — exporters emit these) reports what is there, and the
+   * consumer decides how to bracket out to the chord edge.
+   */
+  get nonArpeggiate(): 'top' | 'bottom' | null {
+    const type = this.notationsChild('non-arpeggiate')?.getAttribute('type');
+    return type === 'top' || type === 'bottom' ? type : null;
+  }
+
+  /**
+   * `<unpitched><display-step>/<display-octave>`: the staff POSITION of an
+   * unpitched (percussion) note — which line or space to draw the glyph on, not a
+   * pitch. A kick, a snare, and a hi-hat read as three different rows under one
+   * percussion clef entirely through this. Null when the note is pitched or
+   * carries no pair.
+   */
+  get unpitched(): { step: string; octave: number } | null {
+    return displayPosition(this.child('unpitched'));
+  }
+
+  /**
+   * The same `<display-step>`/`<display-octave>` pair on a `<rest>` — pinning a
+   * rest to a chosen line instead of the default centered one, standard in
+   * multi-voice writing. Null when the rest carries none.
+   */
+  get restPosition(): { step: string; octave: number } | null {
+    return displayPosition(this.child('rest'));
+  }
+
+  /**
+   * Every child across this note's `<notations><ornaments>` blocks, in document
+   * order — trills, turns, mordents, tremolos, and the `<accidental-mark>`s, so a
+   * consumer can attach each mark to the ornament it follows (a turn's pair reads
+   * one above and one below). `<wavy-line>` is a spanner and stays on
+   * {@link wavyLines}.
+   */
+  get ornaments(): Ornament[] {
+    return this.childrenNamed('notations')
+      .flatMap((notations) => notations.childrenNamed('ornaments'))
+      .flatMap((ornaments) => ornaments.childrenOfType(Ornament));
+  }
+
+  /**
+   * Every child across this note's `<notations><technical>` blocks, document
+   * order: fingerings, plucks, bowings, open strings, and the rest. The common
+   * tablature reads — {@link string}, {@link fret}, {@link bend},
+   * {@link isHarmonic} — stay on this class; `<hammer-on>`/`<pull-off>` are
+   * spanners and stay on {@link hammerOns}/{@link pullOffs}.
+   */
+  get technicals(): Technical[] {
+    return this.childrenNamed('notations')
+      .flatMap((notations) => notations.childrenNamed('technical'))
+      .flatMap((technical) => technical.childrenOfType(Technical));
+  }
+
+  /**
+   * The grace notes ornamenting this note, in play order: the run of `<grace/>`
+   * notes immediately preceding it in its measure. Grace notes steal no timeline
+   * time, so they never surface as an onset of their own and can't be reached
+   * through a {@link Cursor}. Empty for most notes.
+   */
+  get gracesBefore(): Note[] {
+    const measure = this.closest(Measure);
+    if (!measure) {
+      return [];
+    }
+    const notes = measure.notes;
+    const graces: Note[] = [];
+    for (let index = notes.indexOf(this) - 1; index >= 0 && notes[index]!.isGrace; index--) {
+      graces.unshift(notes[index]!);
+    }
+    return graces;
+  }
+
+  /** The measure this note sits in. A note attached to a tree always has one. */
+  get measure(): Measure {
+    return required(this.closest(Measure), '<measure> ancestor of <note>');
+  }
+
+  /** The part this note belongs to. A note attached to a tree always has one. */
+  get part(): Part {
+    return required(this.closest(Part), '<part> ancestor of <note>');
+  }
+
   /** Whether this note carries `<notations><technical><harmonic>`. */
   get isHarmonic(): boolean {
     return this.technicalChild('harmonic') !== null;
@@ -346,6 +448,30 @@ export class Note extends MElement {
     return direction === 'up' || direction === 'down' || direction === 'double' || direction === 'none'
       ? direction
       : null;
+  }
+
+  /** The normalized `color` of the `<stem>`; null when unset or when there is no stem. */
+  get stemColor(): string | null {
+    return colorOf(this.child('stem'));
+  }
+
+  /**
+   * The normalized `color` of the note itself — the default for everything it
+   * draws, which the `<notehead>`, `<stem>`, `<beam>`, and `<lyric>` colors
+   * override individually. Null when unset.
+   */
+  get color(): string | null {
+    return colorOf(this);
+  }
+
+  /**
+   * Whether this note is drawn at all. `print-object="no"` holds the note's tick
+   * so the other voices stay aligned but prints nothing — exporters lean on it
+   * heavily for spacer notes, so drawing them puts noteheads on the page that
+   * shouldn't be there.
+   */
+  get printObject(): boolean {
+    return this.getAttribute('print-object') !== 'no';
   }
 
   /**
@@ -659,6 +785,19 @@ export function adjacentNote(element: MElement, step: 1 | -1): Note | null {
     }
   }
   return null;
+}
+
+/**
+ * The `<display-step>`/`<display-octave>` pair inside a `<rest>` or `<unpitched>`
+ * — a staff position, not a pitch. Null when the element or either half is absent.
+ */
+function displayPosition(element: MElement | null): { step: string; octave: number } | null {
+  const step = element?.child('display-step')?.text;
+  const octave = element?.child('display-octave')?.text;
+  if (step == null || octave == null) {
+    return null;
+  }
+  return { step, octave: Number(octave) };
 }
 
 /** Build a `<pitch>` from a {@link PitchSpec}. */

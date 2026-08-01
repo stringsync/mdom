@@ -1,6 +1,7 @@
 import { MElement, required } from './m-node';
 import { Measure } from './measure';
 import { Score } from './score';
+import type { StaffTuning } from './staff-tuning';
 
 /** A `<part>`: a sequence of measures, keyed to a `<score-part>` by id. */
 export class Part extends MElement {
@@ -42,6 +43,38 @@ export class Part extends MElement {
     measure.setAttribute('number', opts?.number ?? String(this.measures.length + 1));
     this.append(measure);
     return measure;
+  }
+
+  /**
+   * Insert a new `<measure>` at `index` (appending when `index` is the measure
+   * count). Numbering is the caller's to set — a non-musical spacer measure
+   * legitimately wants none, so unlike {@link addMeasure} this assigns one only
+   * when asked. Pair it with {@link Measure.copySignaturesFrom} when the new
+   * measure lands before the declarations it needs.
+   */
+  insertMeasureAt(index: number, opts?: { number?: string }): Measure {
+    const measure = new Measure();
+    if (opts?.number != null) {
+      measure.setAttribute('number', opts.number);
+    }
+    this.insertBefore(measure, this.measures[index] ?? null);
+    return measure;
+  }
+
+  /**
+   * The `<staff-tuning>` declarations for `staff` (default '1'): the first
+   * `<staff-details>` anywhere in the part that carries them. Tuning is
+   * effectively a per-part constant, like {@link partSymbol} — use
+   * {@link Measure.getStaffTunings} when a mid-score retuning matters.
+   */
+  getStaffTunings(staff = '1'): StaffTuning[] {
+    for (const measure of this.measures) {
+      const tunings = measure.getStaffTunings(staff);
+      if (tunings.length > 0) {
+        return tunings;
+      }
+    }
+    return [];
   }
 
   /**

@@ -10,6 +10,7 @@ import {
 } from './note';
 import { Chord, groupChords } from './chord';
 import { attributesOf, appendValue, type Measure } from './measure';
+import type { Part } from './part';
 import { onsetOf, writeCursor } from './timeline';
 import { divisionsBackFrom } from './signature';
 
@@ -34,6 +35,11 @@ export class Voice {
   /** This voice's notes, in document order. */
   get notes(): Note[] {
     return this.measure.notes.filter((note) => note.voice === this.id);
+  }
+
+  /** The part this voice's measure belongs to. */
+  get part(): Part {
+    return this.measure.part;
   }
 
   /** This voice's notes grouped into chords. */

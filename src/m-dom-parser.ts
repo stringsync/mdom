@@ -1,71 +1,9 @@
 import { xml2js } from 'xml-js';
 import JSZip from 'jszip';
 import { MDocument } from './m-document';
-import { MElement, MText, MCData } from './m-node';
-import { Clef } from './clef';
-import { Measure } from './measure';
-import { Note } from './note';
-import { Part } from './part';
-import { Pitch } from './pitch';
-import { Accidental } from './accidental';
-import { Lyric } from './lyric';
-import { Barline } from './barline';
-import { Score } from './score';
-import { Slur } from './slur';
-import { Key } from './key';
-import { Time } from './time';
-import { Tie } from './tie';
-import { Beam } from './beam';
-import { Tuplet } from './tuplet';
-import { WavyLine } from './wavy-line';
-import { Wedge } from './wedge';
-import { Pedal } from './pedal';
-import { OctaveShift } from './octave-shift';
-import { Direction } from './direction';
-import { Frame, FrameNote } from './frame';
-import { Harmony } from './harmony';
-import { HammerOn } from './hammer-on';
-import { PullOff } from './pull-off';
-import { Slide } from './slide';
-import { Glissando } from './glissando';
-import { LineDetail } from './line-detail';
-import { Print } from './print';
-import { SystemLayout } from './system-layout';
+import { type MElement, MText, MCData } from './m-node';
+import { elementFor } from './registry';
 import type { XmlNode } from './xml';
-
-/** Tag -> typed node. Unlisted tags become a plain MElement and still round-trip. */
-const REGISTRY: Record<string, new () => MElement> = {
-  'score-partwise': Score,
-  part: Part,
-  measure: Measure,
-  note: Note,
-  pitch: Pitch,
-  accidental: Accidental,
-  lyric: Lyric,
-  barline: Barline,
-  clef: Clef,
-  slur: Slur,
-  key: Key,
-  time: Time,
-  tied: Tie,
-  beam: Beam,
-  tuplet: Tuplet,
-  'wavy-line': WavyLine,
-  wedge: Wedge,
-  pedal: Pedal,
-  'octave-shift': OctaveShift,
-  direction: Direction,
-  frame: Frame,
-  'frame-note': FrameNote,
-  harmony: Harmony,
-  'hammer-on': HammerOn,
-  'pull-off': PullOff,
-  slide: Slide,
-  glissando: Glissando,
-  'line-detail': LineDetail,
-  print: Print,
-  'system-layout': SystemLayout,
-};
 
 /** Parses a MusicXML string into an {@link MDocument} tree of typed nodes. */
 export class MDOMParser {
@@ -125,9 +63,7 @@ function findRootfilePath(node: XmlNode): string | undefined {
 
 /** Build a typed (or plain) element tree from an xml-js node, recursively. */
 function build(node: XmlNode): MElement {
-  const name = node.name ?? '';
-  const Cls = REGISTRY[name];
-  const el = Cls ? new Cls() : new MElement(name);
+  const el = elementFor(node.name ?? '');
 
   for (const [key, value] of Object.entries(node.attributes ?? {})) {
     el.setAttribute(key, value);

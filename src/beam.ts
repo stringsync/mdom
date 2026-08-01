@@ -1,36 +1,69 @@
 import { MElement, required } from './m-node';
 import { Note } from './note';
+import { Part } from './part';
+import { colorOf } from './print-style';
 import { resolveMembers, resolvePartner, noteMarkers, type SpannerSpec } from './spanner';
+
+/**
+ * One beamed run: the notes under a single primary beam, plus where its
+ * secondary beams break. `breaksAfter` holds indexes into `notes` — a sub-beam
+ * split falls between `notes[index]` and `notes[index + 1]`.
+ */
+export interface BeamRun {
+  notes: Note[];
+  breaksAfter: number[];
+}
 
 /**
  * Collapse the per-note `<beam>` markers in `notes` into beamed runs — the same
  * fold {@link groupChords} does for `<chord/>`, but keyed on the level-1
- * begin/continue/end value. Each returned run is the ordered notes under one
- * beam, ready to map straight to a renderer's beam group. Unbeamed notes yield no
- * run; chord members are transparent (the beam is notated on the chord's lead),
- * so a run spanning a chord stays intact and carries only lead notes.
+ * begin/continue/end value. Chord members are transparent (the beam is notated on
+ * the chord's lead), so a run spanning a chord stays intact and carries only lead
+ * notes; so are rests carrying no beam markers, which sit under a beam without
+ * breaking it.
+ *
+ * A level-1 `end` does NOT close the run — only a new `begin`, or a note that
+ * isn't beamed at all, does. Guitar Pro writes a triplet-of-16ths + 2-16ths beat
+ * as `begin, continue, end, continue, end`: one continuous primary beam with a
+ * sub-beam split in the middle. Closing at the first `end` would leave the
+ * trailing notes flagged. Those splits come back as {@link BeamRun.breaksAfter}:
+ * a secondary-level `end` that isn't the run's last note.
  */
-export function groupBeams(notes: Note[]): Note[][] {
-  const groups: Note[][] = [];
-  let current: Note[] | null = null;
+export function groupBeamRuns(notes: Note[]): BeamRun[] {
+  const runs: BeamRun[] = [];
+  let current: BeamRun | null = null;
   for (const note of notes) {
     if (note.isChordMember) {
       continue;
     }
-    const value = note.beams.find((beam) => beam.number === '1')?.beamValue;
+    // Raw text reads so the fold tolerates a malformed valueless marker.
+    const beams = note.beams;
+    const value = beams.find((beam) => beam.number === '1')?.text ?? null;
     if (value === 'begin') {
-      current = [note];
-      groups.push(current);
-    } else if (current && (value === 'continue' || value === 'end')) {
-      current.push(note);
-      if (value === 'end') {
-        current = null;
-      }
+      current = { notes: [note], breaksAfter: [] };
+      runs.push(current);
+    } else if (value !== null) {
+      current?.notes.push(note); // continue / end / a hook, all of them joiners
+    } else if (beams.length === 0 && note.isRest) {
+      continue; // a rest can sit under a beam
     } else {
       current = null;
+      continue;
+    }
+    if (current && beams.some((beam) => beam.number !== '1' && beam.text === 'end')) {
+      current.breaksAfter.push(current.notes.length - 1);
     }
   }
-  return groups;
+  for (const run of runs) {
+    // A secondary end on the LAST note is where the whole beam stops, not a split.
+    run.breaksAfter = run.breaksAfter.filter((index) => index < run.notes.length - 1);
+  }
+  return runs;
+}
+
+/** The notes of each beamed run — {@link groupBeamRuns} without the break positions. */
+export function groupBeams(notes: Note[]): Note[][] {
+  return groupBeamRuns(notes).map((run) => run.notes);
 }
 
 export type BeamValue = 'begin' | 'continue' | 'end' | 'forward hook' | 'backward hook';
@@ -58,6 +91,16 @@ export class Beam extends MElement {
   /** The note this marker hangs off of. An attached marker always has one. */
   get note(): Note {
     return required(this.closest(Note), '<note> ancestor of <beam>');
+  }
+
+  /** The part this marker belongs to. An attached marker always has one. */
+  get part(): Part {
+    return required(this.closest(Part), '<part> ancestor of <beam>');
+  }
+
+  /** The normalized `color`; null when unset. */
+  get color(): string | null {
+    return colorOf(this);
   }
 
   /** The marker at the far end (same number), or null. */

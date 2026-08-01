@@ -1,6 +1,7 @@
 import { MElement } from './m-node';
 import { Part } from './part';
 import { appendValue } from './measure';
+import { type PartGroupSpan, partGroupsOf } from './part-group';
 import { Scaling } from './scaling';
 import { SystemLayout } from './system-layout';
 
@@ -18,6 +19,17 @@ export class Score extends MElement {
   /** The part with this id, or null. */
   getPart(id: string): Part | null {
     return this.parts.find((part) => part.id === id) ?? null;
+  }
+
+  /**
+   * The `<part-group>` spans — the braces and brackets drawn across parts —
+   * outermost first. The markers in `<part-list>` are flat, interleaved with the
+   * `<score-part>` entries and paired by `number`, so each span's members are
+   * resolved by counting parts between its start and stop. Groups that never
+   * close, or that cover no part, are dropped.
+   */
+  get partGroups(): PartGroupSpan[] {
+    return partGroupsOf(this);
   }
 
   /**

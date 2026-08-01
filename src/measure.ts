@@ -1,4 +1,4 @@
-import { MElement, MText, required } from './m-node';
+import { MElement, MText, type MNode, required } from './m-node';
 import { Note } from './note';
 import { Part } from './part';
 import { Clef } from './clef';
@@ -6,14 +6,19 @@ import { Key } from './key';
 import { Time } from './time';
 import { Voice } from './voice';
 import { type Chord, groupChords } from './chord';
-import { groupBeams } from './beam';
+import { type BeamRun, groupBeamRuns, groupBeams } from './beam';
 import { Direction } from './direction';
 import { Barline } from './barline';
+import { FiguredBass } from './figured-bass';
 import type { Frame } from './frame';
 import { Harmony } from './harmony';
 import { LineDetail } from './line-detail';
 import { Print } from './print';
-import { attributesBackFrom, appliesToStaff } from './signature';
+import { cloneElement } from './registry';
+import { Sound } from './sound';
+import { StaffTuning } from './staff-tuning';
+import { attributesBackFrom, appliesToStaff, divisionsBackFrom } from './signature';
+import { contentEnd } from './timeline';
 
 /** A `<measure>`. Holds notes, directions, and `<attributes>` (signatures). */
 export class Measure extends MElement {
@@ -28,6 +33,21 @@ export class Measure extends MElement {
    */
   get number(): string {
     return required(this.getAttribute('number'), 'number on <measure>');
+  }
+
+  /**
+   * Whether this is an `implicit="yes"` measure: a pickup bar, or the back half
+   * of a measure split across a system break. It is short *by declaration*, not
+   * underfull by accident — a layout engine that misses this pads a pickup out to
+   * a full bar's width.
+   */
+  get isImplicit(): boolean {
+    return this.getAttribute('implicit') === 'yes';
+  }
+
+  /** The part this measure belongs to. An attached measure always has one. */
+  get part(): Part {
+    return required(this.closest(Part), '<part> ancestor of <measure>');
   }
 
   /** The `width` attribute in tenths (a layout hint); null when unset. */
@@ -104,6 +124,79 @@ export class Measure extends MElement {
     );
   }
 
+  /**
+   * The `<staff-tuning>` declarations in effect for `staff` (default '1'): the
+   * string tunings from the nearest `<staff-details>`, which is what identifies a
+   * tablature staff. Empty when that block declares none. Carry-forward, like
+   * {@link getClef}.
+   */
+  getStaffTunings(staff = '1'): StaffTuning[] {
+    return (
+      this.attributeBack((attrs) => {
+        const details = attrs.childrenNamed('staff-details').find((node) => appliesToStaff(node, staff));
+        const tunings = details?.childrenOfType(StaffTuning);
+        return tunings && tunings.length > 0 ? tunings : undefined;
+      }) ?? []
+    );
+  }
+
+  /**
+   * Mid-measure `<clef>` changes for `staff` (default '1'), in order: the beat
+   * each lands on and the clef itself. MusicXML writes one as an `<attributes>`
+   * block sitting between two notes.
+   *
+   * The measure's *leading* `<attributes>` is excluded — that's the measure's own
+   * signature block, drawn with the stave (see {@link getClef}). A change's beat
+   * comes from the NEXT note's own {@link Note.measureBeat}, not from a running
+   * sum of what precedes it, because `measureBeat` already rewinds a `<backup>`:
+   * that's how a grand staff writes its lower staff's clef (upper notes, backup,
+   * `<attributes><clef number="2">`, lower notes), and the block belongs at beat 0
+   * rather than at the measure's end. A block trailing the LAST note lands on
+   * {@link endBeat} and engraves as the courtesy clef before the barline.
+   */
+  clefChanges(staff = '1'): Array<{ beat: number; clef: Clef }> {
+    const children = this.children;
+    const firstNote = this.notes[0];
+    if (!firstNote) {
+      return []; // no notes: every <attributes> here is the measure's own signature
+    }
+    const changes: Array<{ beat: number; clef: Clef }> = [];
+    for (let index = children.indexOf(firstNote); index < children.length; index++) {
+      const node = children[index];
+      if (!(node instanceof MElement) || node.tag !== 'attributes') {
+        continue;
+      }
+      const clefs = node.childrenOfType(Clef).filter((clef) => clef.staff === staff);
+      if (clefs.length === 0) {
+        continue;
+      }
+      const beat = nextNoteFrom(children, index + 1)?.measureBeat ?? this.endBeat;
+      for (const clef of clefs) {
+        changes.push({ beat, clef });
+      }
+    }
+    return changes;
+  }
+
+  /**
+   * The clef in effect at the END of this measure for `staff` (default '1'): its
+   * last mid-measure change if it has one, else the clef it opened with. What the
+   * next measure compares against to decide whether to reprint.
+   */
+  clefAtEnd(staff = '1'): Clef | null {
+    return this.clefChanges(staff).at(-1)?.clef ?? this.getClef(staff);
+  }
+
+  /**
+   * The beat this measure's content runs out to: the latest onset + duration
+   * across every voice, in quarter-note beats. 0 when the measure is empty or no
+   * `<divisions>` has been declared.
+   */
+  get endBeat(): number {
+    const divisions = divisionsBackFrom(this, this.children.length);
+    return divisions == null || divisions === 0 ? 0 : contentEnd(this) / divisions;
+  }
+
   /** Notes grouped by `<voice>`, in the order each voice first appears. */
   get voices(): Voice[] {
     const order: string[] = [];
@@ -127,6 +220,15 @@ export class Measure extends MElement {
   /** Beamed runs: each `<beam>` group as its ordered notes; unbeamed notes excluded. */
   get beams(): Note[][] {
     return groupBeams(this.notes);
+  }
+
+  /**
+   * Beamed runs with their secondary-beam break positions — {@link beams} plus
+   * the sub-beam splits a renderer needs to draw a run like a triplet-of-16ths
+   * followed by two 16ths under one primary beam. See {@link groupBeamRuns}.
+   */
+  beamRuns(): BeamRun[] {
+    return groupBeamRuns(this.notes);
   }
 
   /**
@@ -157,6 +259,22 @@ export class Measure extends MElement {
   /** The measure's `<harmony>` chord symbols, in document order. */
   get harmonies(): Harmony[] {
     return this.childrenOfType(Harmony);
+  }
+
+  /** The measure's `<figured-bass>` stacks (continuo numerals), in document order. */
+  get figuredBasses(): FiguredBass[] {
+    return this.childrenOfType(FiguredBass);
+  }
+
+  /**
+   * Every `<sound>` that applies to this measure: the ones inside its
+   * `<direction>`s in document order, then the measure's own standalone
+   * `<sound>` children. MusicXML allows both spellings with the same meaning, so
+   * merging them here is the whole point — a consumer looks in one place.
+   */
+  get sounds(): Sound[] {
+    const fromDirections = this.directions.flatMap((direction) => (direction.sound ? [direction.sound] : []));
+    return [...fromDirections, ...this.childrenOfType(Sound)];
   }
 
   /** The fretboard/chord diagrams (`<frame>`) carried by this measure's `<harmony>` elements. */
@@ -237,6 +355,36 @@ export class Measure extends MElement {
     return key;
   }
 
+  /**
+   * Copy into this measure the signatures in effect at the start of `source` —
+   * clef, key, time, divisions and the rest of the carried set — for every staff
+   * of the part. Idempotent, and never overwrites what this measure already
+   * declares.
+   *
+   * Mid-score this is redundant, since signatures carry forward through an empty
+   * measure on their own. It matters for a measure inserted BEFORE every
+   * declaration (see {@link Part.insertMeasureAt}), which would otherwise render
+   * as a bare, clefless stave.
+   */
+  copySignaturesFrom(source: Measure): void {
+    carrySignaturesInto(this, source);
+  }
+
+  /**
+   * Write into this measure's leading `<attributes>` every carried attribute that
+   * was in effect just before it — the signatures earlier measures established.
+   * Never overwrites what this measure already declares. Creates and positions
+   * the `<attributes>` block (before the first note) and keeps its children in
+   * schema order.
+   *
+   * This is what makes a measure renderable in isolation: the operation a slice,
+   * an excerpt, or a single-measure preview needs before dropping what came
+   * before it.
+   */
+  materializeSignatures(): void {
+    carrySignaturesInto(this, this);
+  }
+
   /** Upsert the `<time>` in this measure's `<attributes>`. */
   setTime(spec: { beats: number; beatType: number; symbol?: string }): Time {
     const attrs = attributesOf(this);
@@ -292,4 +440,176 @@ export function appendValue(parent: MElement, tag: string, text: string): MEleme
   element.append(new MText(text));
   parent.append(element);
   return element;
+}
+
+/** The first `<note>` at or after `from` in `children`, or null. */
+function nextNoteFrom(children: readonly MNode[], from: number): Note | null {
+  for (let index = from; index < children.length; index++) {
+    const node = children[index];
+    if (node instanceof Note) {
+      return node;
+    }
+  }
+  return null;
+}
+
+/**
+ * The `<attributes>` children that carry forward past their own measure. Anything
+ * outside this set (a `<footnote>`, an `<instruments>`) belongs only to the
+ * measure that wrote it.
+ */
+const CARRIED = new Set([
+  'divisions',
+  'key',
+  'time',
+  'clef',
+  'staves',
+  'staff-details',
+  'transpose',
+  'part-symbol',
+  'measure-style',
+]);
+
+/** The carried attributes that are score-wide rather than per-staff. */
+const GLOBAL = new Set(['divisions', 'staves', 'part-symbol']);
+
+/** The `<attributes>` content model, in schema order. */
+const ATTRIBUTE_ORDER = [
+  'footnote',
+  'level',
+  'divisions',
+  'key',
+  'time',
+  'staves',
+  'part-symbol',
+  'instruments',
+  'clef',
+  'staff-details',
+  'transpose',
+  'for-part',
+  'directive',
+  'measure-style',
+];
+
+/**
+ * The staves a carried `<attributes>` child applies to. A numberless key, time,
+ * staff-details or transpose applies to EVERY staff — so nothing further back in
+ * that tag can still apply. Clefs are the exception: one matches a single staff
+ * exactly, and a numberless clef is staff 1's.
+ */
+function staffTargets(element: MElement, staves: string[]): string[] {
+  const number = element.getAttribute('number');
+  if (element.tag === 'clef') {
+    return [number ?? '1'];
+  }
+  return number == null ? staves : [number];
+}
+
+/** This measure's `<attributes>` blocks that precede its first note. */
+function leadingAttributes(measure: Measure): MElement[] {
+  const firstNote = measure.notes[0];
+  const limit = firstNote ? measure.children.indexOf(firstNote) : measure.children.length;
+  const blocks: MElement[] = [];
+  for (let index = 0; index < limit; index++) {
+    const node = measure.children[index];
+    if (node instanceof MElement && node.tag === 'attributes') {
+      blocks.push(node);
+    }
+  }
+  return blocks;
+}
+
+/**
+ * Write the signatures in effect at the start of `source` into `target`'s leading
+ * `<attributes>`. The backward walk is the same one every carry-forward query
+ * uses; the bookkeeping here is which staves each tag has already been answered
+ * for, so a nearer declaration always wins and a numberless one closes out its
+ * tag entirely. What `target` already declares is claimed first, so this never
+ * overwrites — and is idempotent.
+ */
+function carrySignaturesInto(target: Measure, source: Measure): void {
+  const staveCount = Math.max(source.staveCount, target.staveCount);
+  const staves = Array.from({ length: staveCount }, (_, index) => String(index + 1));
+  const satisfied = new Map<string, Set<string>>();
+
+  const claim = (element: MElement): boolean => {
+    if (!CARRIED.has(element.tag)) {
+      return false;
+    }
+    let taken = satisfied.get(element.tag);
+    if (!taken) {
+      taken = new Set<string>();
+      satisfied.set(element.tag, taken);
+    }
+    if (GLOBAL.has(element.tag)) {
+      if (taken.size > 0) {
+        return false;
+      }
+      taken.add('*');
+      return true;
+    }
+    const wanted = staffTargets(element, staves);
+    if (wanted.every((staff) => taken!.has(staff))) {
+      return false;
+    }
+    for (const staff of wanted) {
+      taken.add(staff);
+    }
+    return true;
+  };
+
+  const existing = leadingAttributes(target);
+  for (const attrs of existing) {
+    for (const child of attrs.childrenOfType(MElement)) {
+      claim(child);
+    }
+  }
+
+  const firstNote = source.notes[0];
+  const fromIndex = firstNote ? source.children.indexOf(firstNote) : source.children.length;
+  const carried: MElement[] = [];
+  for (const attrs of attributesBackFrom(source, fromIndex)) {
+    for (const child of attrs.childrenOfType(MElement)) {
+      if (claim(child)) {
+        carried.push(child);
+      }
+    }
+  }
+  if (carried.length === 0) {
+    return;
+  }
+
+  let block = existing[0];
+  if (!block) {
+    block = new MElement('attributes');
+    target.insertBefore(block, target.notes[0] ?? null);
+  }
+  for (const element of carried) {
+    block.append(cloneElement(element));
+  }
+  sortAttributeChildren(block);
+}
+
+/**
+ * Reorder an `<attributes>` block's children into schema order (and by staff
+ * within a tag), so a block assembled from several measures still validates.
+ * Re-appending in order rewrites the child list, since `append` detaches first.
+ */
+function sortAttributeChildren(block: MElement): void {
+  const ranked = [...block.children].map((node, index) => {
+    const element = node instanceof MElement ? node : null;
+    const tagRank = element ? ATTRIBUTE_ORDER.indexOf(element.tag) : -1;
+    return {
+      node,
+      tagRank: tagRank < 0 ? ATTRIBUTE_ORDER.length : tagRank,
+      staffRank: Number(element?.getAttribute('number') ?? 0),
+      index,
+    };
+  });
+  ranked.sort(
+    (left, right) => left.tagRank - right.tagRank || left.staffRank - right.staffRank || left.index - right.index
+  );
+  for (const { node } of ranked) {
+    block.append(node);
+  }
 }
