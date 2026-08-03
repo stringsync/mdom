@@ -61,12 +61,9 @@ function voiceOf(marker: MElement): string | null {
  * — or with none at all, and it runs on for bars. The sort is stable, so markers
  * sounding together keep document order.
  */
-function onsetOrdered<T extends MElement>(markers: T[]): T[] {
-  if (markers.length < 2) {
-    return markers;
-  }
+function onsetOrdered<T extends MElement>(markers: T[]): { order: T[]; keys: Map<T, OnsetKey> } {
   const folds = new Map<Measure, { index: number; onsets: Map<MElement, number> }>();
-  const keys = new Map<T, { measure: number; onset: number }>();
+  const keys = new Map<T, OnsetKey>();
   for (const marker of markers) {
     const measure = marker.closest(Measure);
     if (!measure) {
@@ -80,11 +77,24 @@ function onsetOrdered<T extends MElement>(markers: T[]): T[] {
     }
     keys.set(marker, { measure: fold.index, onset: fold.onsets.get(anchorIn(marker, measure)) ?? 0 });
   }
-  return [...markers].sort((left, right) => {
+  const order = [...markers].sort((left, right) => {
     const leftKey = keys.get(left)!;
     const rightKey = keys.get(right)!;
     return leftKey.measure - rightKey.measure || leftKey.onset - rightKey.onset;
   });
+  return { order, keys };
+}
+
+/** Where a marker sounds: measure index first, then divisions within it. */
+interface OnsetKey {
+  measure: number;
+  onset: number;
+}
+
+function soundsLater(candidate: OnsetKey, incumbent: OnsetKey): boolean {
+  return candidate.measure !== incumbent.measure
+    ? candidate.measure > incumbent.measure
+    : candidate.onset > incumbent.onset;
 }
 
 /**
@@ -92,11 +102,16 @@ function onsetOrdered<T extends MElement>(markers: T[]): T[] {
  *
  * A closer takes the open start with the SAME VOICE when there is one: two voices
  * running in parallel each keep their own arc even when their spans are different
- * lengths, which no purely positional rule gets right. Otherwise it takes the
- * OLDEST open start — that's a chord, whose members open together (so voice can't
- * separate them) and whose first start belongs with the first stop.
+ * lengths, which no purely positional rule gets right. Among the remaining
+ * candidates it takes the one at the MOST RECENT ONSET, and the oldest of those
+ * sounding together. Recency because a start that reopens a number while it is
+ * still open supersedes the stale one — an exporter that emits a start with no
+ * stop anywhere (Guitar Pro does) would otherwise leave it open forever, eating
+ * every later closer and dragging spans across the rest of the part. Oldest-first
+ * within one onset because that's a chord, whose members open together (so voice
+ * can't separate them) and whose first start belongs with the first stop.
  *
- * Both tie-breaks are needed because exporters break the "a number can't reopen
+ * All three rules are needed because exporters break the "a number can't reopen
  * before it closes" rule constantly: a divisi stave's two voices, or a chord's
  * members, all slurring under number 1.
  *
@@ -105,7 +120,7 @@ function onsetOrdered<T extends MElement>(markers: T[]): T[] {
  * but it needs an edit epoch to invalidate against: the tree is mutable.
  */
 function pairingOf<T extends MElement>(spec: SpannerSpec<T>): { order: T[]; partners: Map<T, T> } {
-  const order = onsetOrdered(spec.siblings);
+  const { order, keys } = onsetOrdered(spec.siblings);
   const partners = new Map<T, T>();
   const open = new Map<string, T[]>();
 
@@ -123,15 +138,36 @@ function pairingOf<T extends MElement>(spec: SpannerSpec<T>): { order: T[]; part
       if (!starts || starts.length === 0) {
         continue;
       }
-      const voice = voiceOf(marker);
-      const sameVoice = voice == null ? -1 : starts.findIndex((start) => voiceOf(start) === voice);
-      const opener = starts.splice(sameVoice < 0 ? 0 : sameVoice, 1)[0]!;
+      const opener = starts.splice(openerFor(marker, starts, keys), 1)[0]!;
       partners.set(opener, marker);
       partners.set(marker, opener);
     }
   }
 
   return { order, partners };
+}
+
+/**
+ * Index in `starts` of the opener `closer` claims: same voice beats a different
+ * one, then a later onset beats an earlier one, and a tie keeps the earliest
+ * still-open start (see {@link pairingOf}). `starts` is already in onset order.
+ */
+function openerFor<T extends MElement>(closer: T, starts: T[], keys: Map<T, OnsetKey>): number {
+  const voice = voiceOf(closer);
+  const matchesVoice = (start: T): boolean => voice != null && voiceOf(start) === voice;
+  let best = 0;
+  for (let index = 1; index < starts.length; index++) {
+    const candidate = starts[index]!;
+    const incumbent = starts[best]!;
+    if (matchesVoice(candidate) !== matchesVoice(incumbent)) {
+      if (matchesVoice(candidate)) {
+        best = index;
+      }
+    } else if (soundsLater(keys.get(candidate)!, keys.get(incumbent)!)) {
+      best = index;
+    }
+  }
+  return best;
 }
 
 /**
