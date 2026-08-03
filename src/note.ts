@@ -196,9 +196,18 @@ export class Note extends MElement {
     return duration / divisions;
   }
 
-  /** The `<voice>` this note belongs to; '1' when omitted, matching {@link staff}. */
+  /**
+   * The `<voice>` this note belongs to; '1' when omitted, matching {@link staff}.
+   * A `<chord/>` member stacks on the note it follows and so shares its voice —
+   * exporters routinely leave `<voice>` off chord members, and bucketing those
+   * into '1' both invents a voice and collapses the orphaned run into one chord.
+   */
   get voice(): string {
-    return this.child('voice')?.text ?? '1';
+    const own = this.child('voice')?.text;
+    if (own != null) {
+      return own;
+    }
+    return this.isChordMember ? (adjacentNote(this, -1)?.voice ?? '1') : '1';
   }
 
   /** Whether this note carries `<chord/>` (stacks on the previous note's onset). */
