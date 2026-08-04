@@ -24,6 +24,14 @@ describe('MElement — positional mutation', () => {
     expect(parent.childrenOfType(MElement).map((child) => child.tag)).toEqual(['pitch', 'grace', 'duration']);
   });
 
+  it('leaves an existing earlier sibling where it is', () => {
+    // Reordering in place: detaching `first` shifts `second` down one, so an index
+    // read before the detach would drop `first` past it — a silent swap.
+    const { parent, first, second } = build();
+    parent.insertBefore(first, second);
+    expect(parent.childrenOfType(MElement).map((child) => child.tag)).toEqual(['pitch', 'duration']);
+  });
+
   it('appends when the reference is null', () => {
     const { parent } = build();
     parent.insertBefore(new MElement('staff'), null);

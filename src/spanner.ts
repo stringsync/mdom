@@ -148,18 +148,38 @@ function pairingOf<T extends MElement>(spec: SpannerSpec<T>): { order: T[]; part
 }
 
 /**
- * Index in `starts` of the opener `closer` claims: same voice beats a different
- * one, then a later onset beats an earlier one, and a tie keeps the earliest
- * still-open start (see {@link pairingOf}). `starts` is already in onset order.
+ * Index in `starts` of the opener `closer` claims: an opener sounding elsewhere
+ * beats one sounding with the closer, then same voice beats a different one, then
+ * a later onset beats an earlier one, and a tie keeps the earliest still-open
+ * start (see {@link pairingOf}). `starts` is already in onset order.
+ *
+ * The first rule is what keeps a chain-middle note honest. Guitar Pro and Finale
+ * write the note that ends one slur and begins the next start-BEFORE-stop, so the
+ * new start is already on the stack when the stop is processed, and the recency
+ * rule would hand the stop its own note's start: a zero-length span, with the real
+ * opener stranded and reaching past the note to the following stop. A span never
+ * begins and ends at the same instant, so a same-onset opener is not a candidate
+ * — unless it's the only kind on the stack, which is the acciaccatura case (a
+ * `<grace/>` sits at the cursor, so its start shares the onset of the main note
+ * its stop lands on) and does pair.
  */
 function openerFor<T extends MElement>(closer: T, starts: T[], keys: Map<T, OnsetKey>): number {
   const voice = voiceOf(closer);
   const matchesVoice = (start: T): boolean => voice != null && voiceOf(start) === voice;
+  const closerKey = keys.get(closer)!;
+  const soundsWithCloser = (start: T): boolean => {
+    const key = keys.get(start)!;
+    return key.measure === closerKey.measure && key.onset === closerKey.onset;
+  };
   let best = 0;
   for (let index = 1; index < starts.length; index++) {
     const candidate = starts[index]!;
     const incumbent = starts[best]!;
-    if (matchesVoice(candidate) !== matchesVoice(incumbent)) {
+    if (soundsWithCloser(candidate) !== soundsWithCloser(incumbent)) {
+      if (soundsWithCloser(incumbent)) {
+        best = index;
+      }
+    } else if (matchesVoice(candidate) !== matchesVoice(incumbent)) {
       if (matchesVoice(candidate)) {
         best = index;
       }

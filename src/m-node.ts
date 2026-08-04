@@ -124,13 +124,18 @@ export class MElement extends MNode {
       this.append(child);
       return;
     }
-    const index = this._children.indexOf(ref);
-    if (index < 0) {
+    if (!this._children.includes(ref)) {
       throw new Error('mdom: insertBefore reference is not a child');
     }
+    if (child === ref) {
+      return;
+    }
+    // Detaching first, then reading the index: when `child` is already an earlier
+    // sibling of `ref`, the removal shifts `ref` down one, and an index read before
+    // it lands the child past `ref` instead of before it.
     child.remove();
     child.parent = this;
-    this._children.splice(index, 0, child);
+    this._children.splice(this._children.indexOf(ref), 0, child);
   }
 
   /**
