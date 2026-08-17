@@ -6,6 +6,9 @@ out
 dist
 *.tgz
 
+# a release under way; the last artifact to land deletes it
+RELEASE
+
 # code coverage
 coverage
 *.lcov
