@@ -34,7 +34,11 @@ const SAMPLE = `<score-partwise><part id="P1"><measure number="1">
 
 const measure = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!.getMeasure('1')!;
 
-describe('key — non-traditional alterations, read positionally', () => {
+describe('the sibling runs MusicXML reads positionally', () => {
+  const lyric = measure.notes[0]!.lyrics[0]!;
+  const start = measure.notes[0]!.tuplets[0]!;
+  const stop = measure.notes[1]!.tuplets[0]!;
+
   it('pairs the nth step with the nth alter, accidental and key-octave', () => {
     expect(measure.getKey()!.alterations).toEqual([
       { step: 'F', alter: 1, accidental: null, octave: null },
@@ -47,12 +51,8 @@ describe('key — non-traditional alterations, read positionally', () => {
     expect(measure.getKey()!.alterations.map((alteration) => alteration.step)).toEqual(['F', 'B', 'E']);
     expect(measure.getKey()!.fifths).toBeNull(); // no <fifths>: this is the custom form
   });
-});
 
-describe('lyric — elision runs', () => {
-  const lyric = measure.notes[0]!.lyrics[0]!;
-
-  it('keeps the runs and their separators, which syllable joins away', () => {
+  it('keeps the lyric elision runs and their separators, which syllable joins away', () => {
     expect(lyric.runs).toEqual([
       { kind: 'text', text: 'de' },
       { kind: 'elision', text: '_' },
@@ -62,12 +62,8 @@ describe('lyric — elision runs', () => {
     ]);
     expect(lyric.syllable).toBe('deora');
   });
-});
 
-describe('tuplet — what is PRINTED, which can differ from the ratio', () => {
-  const [start, stop] = [measure.notes[0]!.tuplets[0]!, measure.notes[1]!.tuplets[0]!];
-
-  it('reads the display attributes, keeping unstated as null', () => {
+  it('reads the tuplet display attributes, keeping unstated as null', () => {
     expect(start.placement).toBe('above');
     expect(start.bracket).toBe(false);
     expect(start.showNumber).toBe('both');
@@ -83,13 +79,11 @@ describe('tuplet — what is PRINTED, which can differ from the ratio', () => {
     expect(stop.actual).toBeNull(); // fall back to timeModification
   });
 
-  it('reaches its part without touching .closest', () => {
+  it("reaches the tuplet's part without touching .closest", () => {
     expect(start.part.id).toBe('P1');
   });
-});
 
-describe('barline — a middle divider placed by the timeline fold', () => {
-  it('reads the beat it lands on', () => {
+  it('places a middle barline on the beat the fold reaches', () => {
     expect(measure.barlines[0]!.location).toBe('middle');
     expect(measure.barlines[0]!.measureBeat).toBe(2); // after two quarter notes
   });

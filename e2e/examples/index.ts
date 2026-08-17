@@ -1,3 +1,7 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { MDOMParser, type Score } from '../../index';
+
 // A curated cross-exporter corpus: one (small) real-world file per distinct source
 // software, plus a few hand-built fault-tolerance fixtures. The axis that matters for
 // fault tolerance is the *exporter* — what wrote the file — not the musical content, so
@@ -58,3 +62,8 @@ export const MALFORMED = {
   /** Non-numeric `<divisions>`/`<duration>` content the parser must tolerate. */
   PARTIALLY_INVALID: EXAMPLES.PARTIALLY_INVALID,
 } as const;
+
+/** Read one example off disk and parse it, the way every real-world test starts. */
+export function loadScore(file: string): Score {
+  return new MDOMParser().parseFromString(fs.readFileSync(path.join(__dirname, file), 'utf-8')).score;
+}
