@@ -25,22 +25,20 @@ describe('Scaling', () => {
   it('defaults to a 7mm staff height', () => {
     expect(Scaling.default.toMillimeters(40)).toBe(7);
   });
-});
 
-describe('Score scaling', () => {
-  it('reads <defaults><scaling>', () => {
+  it('comes off the score’s <defaults><scaling>', () => {
     const score = new Score();
     const defaults = new MElement('defaults');
-    const scaling = new MElement('scaling');
-    appendValue(scaling, 'millimeters', '7.0');
-    appendValue(scaling, 'tenths', '40');
-    defaults.append(scaling);
+    const scalingElement = new MElement('scaling');
+    appendValue(scalingElement, 'millimeters', '7.0');
+    appendValue(scalingElement, 'tenths', '40');
+    defaults.append(scalingElement);
     score.append(defaults);
     expect(score.scaling.millimeters).toBe(7);
     expect(score.scaling.tenths).toBe(40);
   });
 
-  it('falls back to the default when scaling is absent', () => {
+  it('falls back to the default when the score states none', () => {
     expect(new Score().scaling).toBe(Scaling.default);
   });
 });

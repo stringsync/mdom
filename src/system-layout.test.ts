@@ -19,7 +19,7 @@ function tags(element: MElement): string[] {
   return element.children.map((node) => (node instanceof MElement ? node.tag : '#text'));
 }
 
-describe('SystemLayout reads', () => {
+describe('SystemLayout', () => {
   it('reads margins and distances from <defaults>', () => {
     const score = parse(`
       <score-partwise>
@@ -57,9 +57,7 @@ describe('SystemLayout reads', () => {
     expect(print?.newPage).toBe(false);
     expect(print?.systemLayout?.systemDistance).toBe(150);
   });
-});
 
-describe('SystemLayout writes', () => {
   it('builds nested margins and distances in schema order', () => {
     const layout = new SystemLayout();
     // Deliberately out of order; setters must still emit the canonical sequence.

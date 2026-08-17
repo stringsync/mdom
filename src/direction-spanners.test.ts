@@ -31,41 +31,38 @@ const SAMPLE = `<score-partwise><part id="P1">
   </measure>
 </part></score-partwise>`;
 
-describe('direction — the printable direction-type children', () => {
+describe('bracket and dashes — direction spanners paired across measures', () => {
   const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
-  const [dynamic, marks] = part.getMeasure('1')!.directions;
+  const opening = part.getMeasure('1')!.directions[1]!;
   const closing = part.getMeasure('2')!.directions[0]!;
 
-  it('names each dynamic by its tag, and <other-dynamics> by its text', () => {
-    expect(dynamic!.dynamics[0]!.marks).toEqual(['sfz', 'p', 'fp-ish']);
-    expect(dynamic!.dynamics[0]!.placement).toBe('below');
-    expect(marks!.dynamics).toEqual([]);
+  it('pairs a bracket start with its stop a measure later', () => {
+    const start = opening.brackets[0]!;
+    expect(start.bracketType).toBe('start');
+    expect(start.lineEnd).toBe('down');
+    expect(start.lineType).toBe('dashed');
+    expect(start.partner).toBe(closing.brackets[0]!);
+    expect(start.members).toHaveLength(2);
+    expect(start.measureBeat).toBe(0);
+    expect(start.direction).toBe(opening);
   });
 
-  it('reads the staff a direction prints over, defaulting to 1 like a note', () => {
-    expect(dynamic!.staff).toBe('2');
-    expect(marks!.staff).toBe('1');
-    expect(marks!.placement).toBe('above');
-    expect(closing.placement).toBeNull();
+  it('defaults a missing line-end to none, and leaves line-type unstated as null', () => {
+    expect(closing.brackets[0]!.lineEnd).toBe('none');
+    expect(closing.brackets[0]!.lineType).toBeNull();
   });
 
-  it('reads the rehearsal mark and its enclosure', () => {
-    expect(marks!.rehearsals[0]!.text).toBe('A');
-    expect(marks!.rehearsals[0]!.enclosure).toBe('circle');
+  it('pairs dashes the same way', () => {
+    const start = opening.dashes[0]!;
+    expect(start.dashesType).toBe('start');
+    expect(start.partner).toBe(closing.dashes[0]!);
+    expect(start.number).toBe('1');
   });
 
-  it('reads words with their font attributes and normalized color', () => {
-    const words = marks!.wordsElements[0]!;
-    expect(words.text).toBe('cresc.');
-    expect(words.fontStyle).toBe('italic');
-    expect(words.fontWeight).toBe('bold');
-    expect(words.color).toBe('#00FF00'); // #AARRGGBB, alpha first, dropped
-    expect(marks!.words).toEqual(['cresc.']);
-  });
-
-  it('lists the segno/coda landmarks a D.S. jumps to', () => {
-    expect(marks!.navigations).toEqual(['segno']);
-    expect(closing.navigations).toEqual(['coda']);
-    expect(dynamic!.navigations).toEqual([]);
+  it('binds both ends to the note that follows the direction', () => {
+    // A bracket's stop marks where the passage ends, and MusicXML writes it
+    // before the last note it covers — so both ends read nextNote.
+    expect(opening.nextNote?.pitch?.step).toBe('C');
+    expect(closing.nextNote?.pitch?.step).toBe('D');
   });
 });
