@@ -37,4 +37,8 @@ describe('Voice reader — filtering and grouping', () => {
     expect(chords[0]!.notes.map((note) => note.pitch?.step)).toEqual(['C', 'E', 'G']);
     expect(chords[0]!.lead.pitch?.step).toBe('C');
   });
+
+  it('reaches the part it belongs to through its measure', () => {
+    expect(measure.getOrCreateVoice('1').part).toBe(measure.part);
+  });
 });
