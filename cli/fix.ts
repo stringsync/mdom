@@ -4,7 +4,6 @@ import chalk from 'chalk';
 export async function fix(opts: { check: boolean }): Promise<void> {
   const failures: string[] = [];
 
-  // biome formats and lints in one pass.
   if (!check(opts.check)) {
     failures.push('check');
   }

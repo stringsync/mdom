@@ -14,10 +14,11 @@ function tenths(text: string | null | undefined): number | null {
  * starts there. System *breaks* live on `<print>` (`new-system`/`new-page`), not
  * here. Setters keep the schema's child order so the result stays valid.
  *
- * `<system-dividers>` (the marks drawn between systems) isn't modeled yet — it
- * still round-trips as a plain child; add getters if a score needs to read it.
+ * `<system-dividers>` (the marks drawn between systems) has no getters; it is
+ * still preserved verbatim, so a round trip keeps whatever the file said.
  */
 export class SystemLayout extends MElement {
+  // ponytail: add <system-dividers> getters when a score actually needs to read them.
   constructor() {
     super('system-layout');
   }

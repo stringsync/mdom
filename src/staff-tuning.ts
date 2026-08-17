@@ -1,6 +1,6 @@
 import { MElement, required } from './m-node';
 
-/** Semitones above C for each step name. */
+/** Indexed rather than computed: the gaps between E-F and B-C have no formula. */
 const STEP_SEMITONES: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 
 /**
