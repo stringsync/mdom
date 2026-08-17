@@ -1,7 +1,7 @@
 // A curated cross-exporter corpus: one (small) real-world file per distinct source
 // software, plus a few hand-built fault-tolerance fixtures. The axis that matters for
 // fault tolerance is the *exporter* — what wrote the file — not the musical content, so
-// the suites below are grouped by `<identification><encoding><software>`. See
+// the corpus below is grouped by `<identification><encoding><software>`. See
 // compatibility.test.ts for the round-trip idempotence invariant this corpus exists to
 // prove. Trimmed from the full ~250-file set; add a file only when it exercises a
 // dialect the current corpus doesn't.
@@ -47,32 +47,6 @@ export const EXAMPLES = {
   INVALID_ROOT: 'invalid_root.xml',
   MOSTLY_INVALID: 'mostly_invalid.xml',
   PARTIALLY_INVALID: 'partially_invalid.xml',
-} as const;
-
-/** Valid files grouped by the exporter that wrote them. */
-export const EXAMPLE_SUITES = {
-  FINALE: [EXAMPLES.CHOPIN_PRELUDE, EXAMPLES.DRUM_TUPLET_BEAMS_MEASURE],
-  DOLET: [EXAMPLES.ACTOR_PRELUDE_SAMPLE],
-  GUITAR_PRO: [EXAMPLES.WANNA_SKIP_CLASS],
-  MUSESCORE: [EXAMPLES.ACCIDENTALS, EXAMPLES.OCTAVE_SHIFT_SIMPLE_PIANO],
-  SIBELIUS: [EXAMPLES.COMPOSER_ONE_LINE, EXAMPLES['LILYPOND_99A-SIBELIUS5-IGNOREBEAMING']],
-  DORICO: [EXAMPLES.SORTED_NOTES_CHORD_VEXFLOW_KEYS_ORDER],
-  NOTEFLIGHT: [EXAMPLES.STAVE_REPETITIONS_CODA_ETC],
-  IREAL: [EXAMPLES.REHEARSAL_MARKS_BOLIVIA],
-  GUITAR_TAB_CREATOR: [EXAMPLES.TABLATURE_BENDS],
-  LILYPOND: [
-    EXAMPLES['LILYPOND_03C-RHYTHM-DIVISIONCHANGE'],
-    EXAMPLES['LILYPOND_11H-TIMESIGNATURES-SENZAMISURA'],
-    EXAMPLES['LILYPOND_13D-KEYSIGNATURES-MICROTONES'],
-    EXAMPLES['LILYPOND_33E-SPANNERS-OCTAVESHIFTS-INVALIDSIZE'],
-    EXAMPLES['LILYPOND_45F-REPEATS-INVALIDENDINGS'],
-    EXAMPLES['LILYPOND_46F-INCOMPLETEMEASURES'],
-    EXAMPLES['LILYPOND_43C-MULTISTAFF-DIFFERENTKEYSAFTERBACKUP'],
-    EXAMPLES['LILYPOND_24D-AFTERGRACE'],
-    EXAMPLES['LILYPOND_61J-LYRICS-ELISIONS'],
-    EXAMPLES['LILYPOND_41H-TOOMANYPARTS'],
-  ],
-  W3C: [EXAMPLES.HELLO_WORLD, EXAMPLES.NOTE_VARIATIONS, EXAMPLES.CONCERT_SCORE_AND_FOR_PART],
 } as const;
 
 /** Hand-built fixtures that probe how the parser handles broken/empty input. */
