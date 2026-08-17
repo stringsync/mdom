@@ -3,7 +3,7 @@ import { MDOMParser } from './m-dom-parser';
 
 // hammer-on/pull-off live in <notations><technical>; slide/glissando sit directly
 // in <notations>. All four are note-attached spanners reusing the same pairing
-// engine (resolvePartner/resolveMembers) already exercised by slur/tie/pedal, so
+// engine (Spanner.partnerOf/membersOf) already exercised by slur/tie/pedal, so
 // these tests just confirm the per-class wiring: start↔stop pairs, collected off
 // the note, and — for slide — that a pair crosses a barline.
 const SAMPLE = `<score-partwise><part id="P1">

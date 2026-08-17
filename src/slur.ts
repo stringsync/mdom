@@ -1,7 +1,7 @@
 import { MElement, required } from './m-node';
 import { Note } from './note';
 import { Part } from './part';
-import { resolveMembers, resolvePartner, noteMarkers, type SpannerSpec } from './spanner';
+import { Spanner, noteMarkers, type SpannerSpec } from './spanner';
 
 export type SlurType = 'start' | 'stop' | 'continue';
 
@@ -51,18 +51,18 @@ export class Slur extends MElement {
 
   /**
    * The marker at the other end, resolved across the part in ONSET order (see
-   * {@link resolvePartner}), preferring an open start in the same voice and
+   * {@link Spanner.partnerOf}), preferring an open start in the same voice and
    * falling back to the oldest one. Document order is not enough: a `<backup>`
    * writes a later voice's notes after an earlier voice's, so a cross-stave slur's
    * stop can sit before its start in the file. Spans measures and systems freely.
    */
   get partner(): Slur | null {
-    return resolvePartner(this, this.spec());
+    return new Spanner(this.spec()).partnerOf(this);
   }
 
   /** All markers in this spanner (start..stop), not just the far end. */
   get members(): Slur[] {
-    return resolveMembers(this, this.spec());
+    return new Spanner(this.spec()).membersOf(this);
   }
 
   /** Onset of this marker's note within its measure, in beats. */

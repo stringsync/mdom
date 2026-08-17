@@ -1,6 +1,6 @@
 import { MElement, required } from './m-node';
 import { Note } from './note';
-import { resolveMembers, resolvePartner, noteMarkers, type SpannerSpec } from './spanner';
+import { Spanner, noteMarkers, type SpannerSpec } from './spanner';
 
 export type WavyLineType = 'start' | 'stop' | 'continue';
 
@@ -30,12 +30,12 @@ export class WavyLine extends MElement {
 
   /** The marker at the far end (same number), or null. */
   get partner(): WavyLine | null {
-    return resolvePartner(this, this.spec());
+    return new Spanner(this.spec()).partnerOf(this);
   }
 
   /** All markers in this spanner (start..stop), not just the far end. */
   get members(): WavyLine[] {
-    return resolveMembers(this, this.spec());
+    return new Spanner(this.spec()).membersOf(this);
   }
 
   /** Onset of this marker's note within its measure, in beats. */

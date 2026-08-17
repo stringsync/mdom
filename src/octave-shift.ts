@@ -1,7 +1,7 @@
 import { MElement, required } from './m-node';
 import { Direction } from './direction';
 import { Measure } from './measure';
-import { resolveMembers, resolvePartner, directionMarkers, type SpannerSpec } from './spanner';
+import { Spanner, directionMarkers, type SpannerSpec } from './spanner';
 
 export type OctaveShiftType = 'up' | 'down' | 'stop' | 'continue';
 
@@ -46,12 +46,12 @@ export class OctaveShift extends MElement {
 
   /** The marker at the far end (same number), or null. */
   get partner(): OctaveShift | null {
-    return resolvePartner(this, this.spec());
+    return new Spanner(this.spec()).partnerOf(this);
   }
 
   /** All markers in this spanner (start..stop), not just the far end. */
   get members(): OctaveShift[] {
-    return resolveMembers(this, this.spec());
+    return new Spanner(this.spec()).membersOf(this);
   }
 
   /** Onset of this marker's direction within its measure, in beats. */

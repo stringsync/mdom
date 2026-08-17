@@ -2,7 +2,7 @@ import { MElement, required } from './m-node';
 import { Note, type NoteType } from './note';
 import { Part } from './part';
 import { placementOf } from './print-style';
-import { resolveMembers, resolvePartner, noteMarkers, type SpannerSpec } from './spanner';
+import { Spanner, noteMarkers, type SpannerSpec } from './spanner';
 
 export type TupletType = 'start' | 'stop';
 
@@ -98,12 +98,12 @@ export class Tuplet extends MElement {
 
   /** The marker at the far end (same number), or null. */
   get partner(): Tuplet | null {
-    return resolvePartner(this, this.spec());
+    return new Spanner(this.spec()).partnerOf(this);
   }
 
   /** All markers in this spanner (start..stop), not just the far end. */
   get members(): Tuplet[] {
-    return resolveMembers(this, this.spec());
+    return new Spanner(this.spec()).membersOf(this);
   }
 
   /** Onset of this marker's note within its measure, in beats. */

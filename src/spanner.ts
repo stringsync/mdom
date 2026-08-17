@@ -191,59 +191,71 @@ function openerFor<T extends MElement>(closer: T, starts: T[], keys: Map<T, Onse
 }
 
 /**
- * The marker at the far end: the start this stop closes, or the stop that closes
- * this start, paired in onset order (see {@link pairingOf}). Spans cross measures
- * — and systems, and `<backup>`s — for free.
+ * The pairing engine for one spanner type: hand it the type's {@link SpannerSpec}
+ * and ask it about any marker of that type. Every marker class keeps one behind a
+ * private `spanner()` accessor and delegates its `partner` / `members` / `unlink`
+ * to it.
  */
-export function resolvePartner<T extends MElement>(marker: T, spec: SpannerSpec<T>): T | null {
-  if (!spec.siblings.includes(marker)) {
+export class Spanner<T extends MElement> {
+  constructor(private readonly spec: SpannerSpec<T>) {}
+
+  /**
+   * The marker at the far end: the start this stop closes, or the stop that closes
+   * this start, paired in onset order (see {@link pairingOf}). Spans cross measures
+   * — and systems, and `<backup>`s — for free.
+   */
+  partnerOf(marker: T): T | null {
+    if (!this.spec.siblings.includes(marker)) {
+      return null;
+    }
+    return pairingOf(this.spec).partners.get(marker) ?? null;
+  }
+
+  /**
+   * Every marker in the span (opener..closer inclusive) sharing this number — the
+   * whole run, not just the far end. A 3-note beam returns begin/continue/end.
+   */
+  membersOf(marker: T): T[] {
+    const { order, partners } = pairingOf(this.spec);
+    const self = order.indexOf(marker);
+    if (self < 0) {
+      return [marker];
+    }
+    const number = numberOf(marker);
+    // A `continue` is neither end of the pairing, so it looks back for the start it
+    // belongs to; a `stop` already knows its opener.
+    const opener = this.spec.isOpen(marker)
+      ? marker
+      : (partners.get(marker) ?? this.earlierOpener(order, self, number));
+    if (!opener) {
+      return [marker];
+    }
+    const start = order.indexOf(opener);
+    const closer = partners.get(opener);
+    const end = closer ? order.indexOf(closer) : start;
+    return order.slice(start, end + 1).filter((candidate) => numberOf(candidate) === number);
+  }
+
+  /**
+   * Remove a span outright: detach `marker` and its partner (if any), so neither end
+   * is left dangling. An opener with no closer — a let-ring tie, say — drops itself.
+   */
+  removeSpan(marker: T): void {
+    const partner = this.partnerOf(marker);
+    marker.remove();
+    partner?.remove();
+  }
+
+  /** The nearest opener with this number before `self` in onset order, or null. */
+  private earlierOpener(order: T[], self: number, number: string): T | null {
+    for (let index = self - 1; index >= 0; index--) {
+      const candidate = order[index]!;
+      if (numberOf(candidate) === number && this.spec.isOpen(candidate)) {
+        return candidate;
+      }
+    }
     return null;
   }
-  return pairingOf(spec).partners.get(marker) ?? null;
-}
-
-/**
- * Every marker in the span (opener..closer inclusive) sharing this number — the
- * whole run, not just the far end. A 3-note beam returns begin/continue/end.
- */
-export function resolveMembers<T extends MElement>(marker: T, spec: SpannerSpec<T>): T[] {
-  const { order, partners } = pairingOf(spec);
-  const self = order.indexOf(marker);
-  if (self < 0) {
-    return [marker];
-  }
-  const number = numberOf(marker);
-  // A `continue` is neither end of the pairing, so it looks back for the start it
-  // belongs to; a `stop` already knows its opener.
-  const opener = spec.isOpen(marker) ? marker : (partners.get(marker) ?? earlierOpener(order, self, number, spec));
-  if (!opener) {
-    return [marker];
-  }
-  const start = order.indexOf(opener);
-  const closer = partners.get(opener);
-  const end = closer ? order.indexOf(closer) : start;
-  return order.slice(start, end + 1).filter((candidate) => numberOf(candidate) === number);
-}
-
-/** The nearest opener with this number before `self` in onset order, or null. */
-function earlierOpener<T extends MElement>(order: T[], self: number, number: string, spec: SpannerSpec<T>): T | null {
-  for (let index = self - 1; index >= 0; index--) {
-    const candidate = order[index]!;
-    if (numberOf(candidate) === number && spec.isOpen(candidate)) {
-      return candidate;
-    }
-  }
-  return null;
-}
-
-/**
- * Remove a span outright: detach `marker` and its partner (if any), so neither end
- * is left dangling. An opener with no closer — a let-ring tie, say — drops itself.
- */
-export function removeSpan<T extends MElement>(marker: T, spec: SpannerSpec<T>): void {
-  const partner = resolvePartner(marker, spec);
-  marker.remove();
-  partner?.remove();
 }
 
 /** All markers of one note-attached spanner type across the part, document order. */

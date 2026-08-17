@@ -105,11 +105,10 @@ export function writeCursor(measure: Measure): number {
  * shift it by `delta` (a `<backup>` reaches further back, a `<forward>` less far)
  * so the next voice still starts where it did. A same-voice mover (a mid-voice
  * gap) is left to ride along, exactly matching the single-voice ripple.
- *
- * ponytail: repairs the first separator after the edit, which is all the standard
- * one-`<backup>`-per-voice layout needs; pathological interleavings aren't fixed.
  */
 export function repairTimelineAfter(measure: Measure, edited: Note, delta: number): void {
+  // ponytail: repairs the first separator after the edit, which is all the standard
+  // one-`<backup>`-per-voice layout needs; pathological interleavings aren't fixed.
   if (delta === 0) {
     return;
   }
