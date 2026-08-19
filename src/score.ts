@@ -92,6 +92,11 @@ export class Score extends MElement {
   /**
    * Create a `<part>`, registering its `<score-part>`/`<part-name>` in the
    * `<part-list>` (created if absent). The id is generated when omitted.
+   *
+   * `<part-name>` is written either way, because the schema requires one on every
+   * `<score-part>` — an unnamed part gets an EMPTY element, which prints nothing
+   * and still reads back as {@link Part.label} null, so "no name" stays
+   * distinguishable from a name that happens to be blank.
    */
   addPart(opts?: { id?: string; name?: string }): Part {
     const id = opts?.id ?? `P${this.parts.length + 1}`;
@@ -103,7 +108,9 @@ export class Score extends MElement {
     }
     const scorePart = new MElement('score-part');
     scorePart.setAttribute('id', id);
-    if (opts?.name != null) {
+    if (opts?.name == null) {
+      scorePart.append(new MElement('part-name'));
+    } else {
       appendValue(scorePart, 'part-name', opts.name);
     }
     partList.append(scorePart);
