@@ -1,32 +1,32 @@
 {
-  "name": "@stringsync/mdom",
-  "version": "0.2.4",
-  "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "bin": {
-    "mdom": "cli/index.ts"
-  },
-  "files": [
-    "dist"
-  ],
-  "devDependencies": {
-    "@biomejs/biome": "^2.5.1",
-    "@types/bun": "latest",
-    "chalk": "^5.6.2",
-    "commander": "^14.0.3",
-    "typescript": "^5",
-    "webappwiz": "0.0.2"
-  },
-  "dependencies": {
-    "jszip": "^3.10.1",
-    "xml-js": "^1.6.11"
-  }
+	"name": "@stringsync/mdom",
+	"version": "0.2.5",
+	"type": "module",
+	"main": "./dist/index.js",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"bin": {
+		"mdom": "cli/index.ts"
+	},
+	"files": [
+		"dist"
+	],
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.1",
+		"@types/bun": "latest",
+		"chalk": "^5.6.2",
+		"commander": "^14.0.3",
+		"typescript": "^5",
+		"webappwiz": "0.0.2"
+	},
+	"dependencies": {
+		"jszip": "^3.10.1",
+		"xml-js": "^1.6.11"
+	}
 }
