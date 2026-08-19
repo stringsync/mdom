@@ -1,4 +1,4 @@
-import { MElement, type MNode } from './m-node';
+import { MElement, MText, type MNode } from './m-node';
 import { Note } from './note';
 import type { Measure } from './measure';
 
@@ -95,6 +95,24 @@ export function writeCursor(measure: Measure): number {
     }
   }
   return cursor;
+}
+
+/**
+ * Move the write cursor to `target` divisions by appending a `<backup>` or
+ * `<forward>`, so the next thing appended sits there. A no-op when the cursor is
+ * already at `target`. The one place mdom writes a mover: a note landing on an
+ * onset and a mid-measure `<attributes>` reach their beat the same way.
+ */
+export function alignCursor(measure: Measure, target: number): void {
+  const delta = target - writeCursor(measure);
+  if (delta === 0) {
+    return;
+  }
+  const mover = new MElement(delta > 0 ? 'forward' : 'backup');
+  const duration = new MElement('duration');
+  duration.append(new MText(String(Math.abs(delta))));
+  mover.append(duration);
+  measure.append(mover);
 }
 
 /**

@@ -9,9 +9,9 @@ import {
   type PitchSpec,
 } from './note';
 import { Chord, groupChords } from './chord';
-import { attributesOf, appendValue, type Measure } from './measure';
+import { appendValue, type Measure } from './measure';
 import type { Part } from './part';
-import { onsetOf, writeCursor } from './timeline';
+import { alignCursor, onsetOf } from './timeline';
 import { divisionsBackFrom } from './signature';
 
 // The note vocabulary and duration math live in note.ts (Voice builds on Note);
@@ -85,22 +85,8 @@ export class Voice {
     const divisions = this.divisions();
     const duration = durationDivisions(spec, divisions);
     const target = spec.onset != null ? spec.onset * divisions : voiceEnd(this.measure, this.id);
-    this.align(target);
+    alignCursor(this.measure, target);
     return duration;
-  }
-
-  /**
-   * Insert a `<backup>` or `<forward>` so the next appended note sounds at
-   * `target` (in divisions). Nothing when the cursor is already there.
-   */
-  private align(target: number): void {
-    const delta = target - writeCursor(this.measure);
-    if (delta === 0) {
-      return;
-    }
-    const mover = new MElement(delta > 0 ? 'forward' : 'backup');
-    appendValue(mover, 'duration', String(Math.abs(delta)));
-    this.measure.append(mover);
   }
 
   /**
@@ -135,7 +121,7 @@ export class Voice {
     if (existing != null) {
       return existing;
     }
-    appendValue(attributesOf(this.measure), 'divisions', String(WRITE_DIVISIONS));
+    this.measure.setDivisions(WRITE_DIVISIONS);
     return WRITE_DIVISIONS;
   }
 }

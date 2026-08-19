@@ -19,7 +19,7 @@ import { Sound } from './sound';
 import { StaffDetails } from './staff-details';
 import { StaffTuning } from './staff-tuning';
 import { attributesBackFrom, appliesToStaff, divisionsBackFrom } from './signature';
-import { contentEnd } from './timeline';
+import { alignCursor, contentEnd, onsetsIn } from './timeline';
 
 /** A `<measure>`. Holds notes, directions, and `<attributes>` (signatures). */
 export class Measure extends MElement {
@@ -324,11 +324,14 @@ export class Measure extends MElement {
   }
 
   /**
-   * Upsert the `<clef>` in this measure's `<attributes>` (created and positioned
-   * first if absent). The caller never assembles `<attributes>` by hand.
+   * Upsert the `<clef>` in this measure's `<attributes>`. Without `onset` this is
+   * the measure's leading block — "the measure opens on this clef" — created and
+   * positioned before the first note if absent; with `onset` it is a mid-measure
+   * change at that beat, the thing {@link clefChanges} reads back. The caller
+   * never assembles `<attributes>` by hand.
    */
-  setClef(spec: { sign: string; line?: number; octaveChange?: number; staff?: string }): Clef {
-    const attrs = attributesOf(this);
+  setClef(spec: { sign: string; line?: number; octaveChange?: number; staff?: string; onset?: number }): Clef {
+    const attrs = this.getOrCreateAttributes(spec);
     const staff = spec.staff ?? '1';
     attrs
       .childrenOfType(Clef)
@@ -345,13 +348,12 @@ export class Measure extends MElement {
     if (spec.octaveChange != null) {
       appendValue(clef, 'clef-octave-change', String(spec.octaveChange));
     }
-    attrs.append(clef);
-    return clef;
+    return placeInAttributes(attrs, clef);
   }
 
-  /** Upsert the `<key>` in this measure's `<attributes>`. */
-  setKey(spec: { fifths: number; mode?: string; staff?: string }): Key {
-    const attrs = attributesOf(this);
+  /** Upsert the `<key>` in this measure's `<attributes>`; `onset` as in {@link setClef}. */
+  setKey(spec: { fifths: number; mode?: string; staff?: string; onset?: number }): Key {
+    const attrs = this.getOrCreateAttributes(spec);
     const number = spec.staff ?? null;
     attrs
       .childrenOfType(Key)
@@ -365,8 +367,7 @@ export class Measure extends MElement {
     if (spec.mode != null) {
       appendValue(key, 'mode', spec.mode);
     }
-    attrs.append(key);
-    return key;
+    return placeInAttributes(attrs, key);
   }
 
   /**
@@ -399,9 +400,9 @@ export class Measure extends MElement {
     carrySignaturesInto(this, this);
   }
 
-  /** Upsert the `<time>` in this measure's `<attributes>`. */
-  setTime(spec: { beats: number; beatType: number; symbol?: string }): Time {
-    const attrs = attributesOf(this);
+  /** Upsert the `<time>` in this measure's `<attributes>`; `onset` as in {@link setClef}. */
+  setTime(spec: { beats: number; beatType: number; symbol?: string; onset?: number }): Time {
+    const attrs = this.getOrCreateAttributes(spec);
     attrs.childrenOfType(Time)[0]?.remove();
     const time = new Time();
     if (spec.symbol != null) {
@@ -409,8 +410,70 @@ export class Measure extends MElement {
     }
     appendValue(time, 'beats', String(spec.beats));
     appendValue(time, 'beat-type', String(spec.beatType));
-    attrs.append(time);
-    return time;
+    return placeInAttributes(attrs, time);
+  }
+
+  /**
+   * Upsert `<divisions>`: the ticks per quarter note every `<duration>` in the
+   * part is counted in. Global rather than per-staff, and it carries forward, so
+   * one declaration in the first measure covers the score — which is what
+   * {@link Voice.addNote} writes for you when nothing has declared it yet.
+   */
+  setDivisions(value: number): MElement {
+    const attrs = this.getOrCreateAttributes();
+    attrs.child('divisions')?.remove();
+    return placeInAttributes(attrs, valueElement('divisions', String(value)));
+  }
+
+  /**
+   * Upsert `<staves>`: how many staves this part is drawn on (2 for a grand
+   * staff). Without it a `getOrCreateVoice('1', { staff: '2' })` labels its notes
+   * for a staff nobody declared, and {@link staveCount} still reads 1. Global,
+   * and carried forward like {@link setDivisions}.
+   */
+  setStaveCount(count: number): MElement {
+    const attrs = this.getOrCreateAttributes();
+    attrs.child('staves')?.remove();
+    return placeInAttributes(attrs, valueElement('staves', String(count)));
+  }
+
+  /**
+   * Get or create an `<attributes>` block to write into — the escape hatch behind
+   * {@link setClef} and friends, for the corners they don't cover (a
+   * `<transpose>`, a `<measure-style>`).
+   *
+   * Without `onset` this is the measure's LEADING block, positioned before the
+   * first note: the signature drawn with the stave. With `onset` (in quarter-note
+   * beats) it is a mid-measure change at that beat, the `<attributes>` MusicXML
+   * writes between two notes — `<backup>`/`<forward>` are laid down to reach the
+   * beat, exactly as adding a note there would. The distinction is the caller's
+   * to state, so "the measure opens in this key" can't silently become "the key
+   * changes here" just because a note was added first.
+   *
+   * Children land in schema order however they arrive, so a block written this
+   * way still validates.
+   */
+  getOrCreateAttributes(opts?: { onset?: number }): MElement {
+    if (opts?.onset == null) {
+      return attributesOf(this);
+    }
+    const divisions = required(
+      divisionsBackFrom(this, this.children.length),
+      'divisions to place <attributes> at an onset'
+    );
+    const target = opts.onset * divisions;
+    const onsets = onsetsIn(this);
+    const leading = leadingAttributes(this);
+    const existing = this
+      .childrenNamed('attributes')
+      .find((block) => !leading.includes(block) && onsets.get(block) === target);
+    if (existing) {
+      return existing;
+    }
+    alignCursor(this, target);
+    const attrs = new MElement('attributes');
+    this.append(attrs);
+    return attrs;
   }
 
   /**
@@ -434,24 +497,43 @@ export class Measure extends MElement {
 }
 
 /**
- * Get or create this measure's `<attributes>` block. Appended (so it lands first
- * when the measure is still empty, which is how scores are built — signatures
- * before notes); a later mid-measure change would need explicit positioning.
+ * Get or create this measure's LEADING `<attributes>` block — the signature drawn
+ * with the stave. Positioned before the first note, so it stays the leading block
+ * on a measure that already has notes rather than becoming a mid-measure change;
+ * {@link Measure.getOrCreateAttributes} is how a caller asks for one of those.
  */
 export function attributesOf(measure: Measure): MElement {
-  const existing = measure.childrenNamed('attributes')[0];
+  const existing = leadingAttributes(measure)[0];
   if (existing) {
     return existing;
   }
   const attrs = new MElement('attributes');
-  measure.append(attrs);
+  measure.insertBefore(attrs, measure.notes[0] ?? null);
   return attrs;
+}
+
+/**
+ * Add `child` to an `<attributes>` block and restore schema order. Every
+ * `<attributes>` writer goes through here: the block is a fixed sequence, so an
+ * append that happens to be in order for one call order is invalid for the next
+ * — which is how `<divisions>` written after the signatures ended up last.
+ */
+function placeInAttributes<T extends MElement>(attrs: MElement, child: T): T {
+  attrs.append(child);
+  sortAttributeChildren(attrs);
+  return child;
+}
+
+/** A leaf `<tag>text</tag>` element, detached. */
+function valueElement(tag: string, text: string): MElement {
+  const element = new MElement(tag);
+  element.append(new MText(text));
+  return element;
 }
 
 /** Append a leaf `<tag>text</tag>` child to `parent`. */
 export function appendValue(parent: MElement, tag: string, text: string): MElement {
-  const element = new MElement(tag);
-  element.append(new MText(text));
+  const element = valueElement(tag, text);
   parent.append(element);
   return element;
 }
