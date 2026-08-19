@@ -328,8 +328,9 @@ export class Measure extends MElement {
 
   /**
    * Add a `<barline>`: a repeat, a volta bracket, or a bar style at one edge of
-   * the measure. A `location: 'left'` barline is positioned first and the rest
-   * last, matching the edge each one draws on.
+   * the measure. A `location: 'left'` barline is positioned ahead of everything;
+   * every other location appends, so add the right barline once the measure's
+   * content is in — that is where the edge it draws is.
    */
   addBarline(spec: BarlineSpec): Barline {
     const barline = buildBarline(spec);

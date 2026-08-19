@@ -50,11 +50,47 @@ note2.convertToRest(); // silence, keep the beat
 note2.remove(); // delete, onsets close the gap
 ```
 
+Signatures and notation are written the same way — mdom assembles `<attributes>`
+and keeps it in schema order, so a document built this way validates against the
+MusicXML XSD:
+
+```ts
+const measure = MDocument.empty().score.addPart({ id: 'P1', name: 'Piano' }).addMeasure();
+
+measure.setStaveCount(2); // a grand staff
+measure.setKey({ fifths: -3, mode: 'minor' });
+measure.setTime({ beats: 4, beatType: 4 });
+measure.setClef({ sign: 'G', line: 2, staff: '1' });
+measure.setClef({ sign: 'F', line: 4, staff: '2' });
+
+measure.addDirection({ metronome: { beatUnit: 'quarter', dots: 1, perMinute: 120 }, tempo: 180 });
+measure.addHarmony({ root: { step: 'E', alter: -1 }, kind: 'major-seventh' });
+
+const note = measure.getOrCreateVoice('1').addNote({ step: 'C', octave: 4, type: 'quarter' });
+note.addArticulation('staccato');
+
+measure.addBarline({ barStyle: 'light-heavy', repeat: { direction: 'backward' } }); // the right edge, so: last
+
+measure.setClef({ sign: 'C', line: 3, onset: 1 }); // a change at beat 1, not the measure's own signature
+```
+
+Every setter without an `onset` writes the measure's *leading* `<attributes>` —
+the signature drawn with the stave — however many notes are already there. Pass
+`onset` (in quarter-note beats) to write a mid-measure change instead;
+`measure.getOrCreateAttributes({ onset })` is the escape hatch for whatever the
+setters don't cover.
+
 ## Typed elements
 
 Every printable part of a score has a typed node, so a consumer never walks raw
-tags. `MElement`'s generic axes (`child`, `childrenNamed`, `closest`) still exist
-— they're mdom's internals, not the way to reach anything.
+tags. `MElement`'s generic read axes (`child`, `childrenNamed`, `closest`) still
+exist — they're mdom's internals, not the way to reach anything.
+
+Its mutation API (`append`, `insertBefore`, `replaceChild`, `setText`,
+`setAttribute`) is a different matter: that is the escape hatch for the corners
+no writer covers yet, and MusicXML mdom doesn't model round-trips through it
+verbatim. Reach for it with `measure.getOrCreateAttributes()` for a
+`<transpose>`, say, and open an issue — a missing writer is a gap, not a design.
 
 | | |
 | --- | --- |
