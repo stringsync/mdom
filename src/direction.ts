@@ -2,7 +2,7 @@ import { MElement, required } from './m-node';
 import { Bracket } from './bracket';
 import { Dashes } from './dashes';
 import { Dynamics } from './dynamics';
-import { Measure } from './measure';
+import { appendValue, Measure } from './measure';
 import { Metronome } from './metronome';
 import { Wedge } from './wedge';
 import { Pedal } from './pedal';
@@ -14,6 +14,42 @@ import { Sound } from './sound';
 import { Words } from './words';
 import { onsetOf } from './timeline';
 import { divisionsBackFrom } from './signature';
+
+/** A `<metronome>` to write: the beat unit (with its trailing dots) and its rate. */
+export interface MetronomeSpec {
+  beatUnit: NoteType;
+  dots?: number;
+  /** `<per-minute>`; a string because MusicXML allows "ca. 120". */
+  perMinute: string | number;
+  parentheses?: boolean;
+}
+
+/** A `<words>` to write: the text, and the font it is measured and drawn in. */
+export interface WordsSpec {
+  text: string;
+  fontStyle?: string;
+  fontWeight?: string;
+}
+
+/**
+ * A `<direction>` to write. At least one printable — words, dynamics or a
+ * metronome — is required, since that is what a `<direction-type>` holds; each
+ * gets its own block, in the order listed here. `tempo` adds the silent
+ * `<sound tempo>` that makes the mark actually play back.
+ */
+export interface DirectionSpec {
+  metronome?: MetronomeSpec;
+  words?: string | WordsSpec;
+  /**
+   * Dynamic marking names. MusicXML names these by TAG (`<dynamics><sfz/>`), so
+   * a name is written through as a tag — spell it the way MusicXML does.
+   */
+  dynamics?: string | string[];
+  /** The `<sound>` `tempo` attribute, in quarter notes per minute. */
+  tempo?: number;
+  placement?: 'above' | 'below';
+  staff?: string;
+}
 
 /**
  * A `<direction>`: an instruction attached to a point in the timeline, with no
@@ -181,4 +217,70 @@ export class Direction extends MElement {
   private directionTypeElements(): MElement[] {
     return this.childrenNamed('direction-type').flatMap((directionType) => directionType.childrenOfType(MElement));
   }
+}
+
+/** Build a detached `<direction>` from a spec, children in schema order. */
+export function buildDirection(spec: DirectionSpec): Direction {
+  const direction = new Direction();
+  if (spec.placement != null) {
+    direction.setAttribute('placement', spec.placement);
+  }
+  if (spec.metronome) {
+    directionType(direction).append(buildMetronome(spec.metronome));
+  }
+  if (spec.words != null) {
+    const words = typeof spec.words === 'string' ? { text: spec.words } : spec.words;
+    const element = new Words();
+    element.setText(words.text);
+    if (words.fontStyle != null) {
+      element.setAttribute('font-style', words.fontStyle);
+    }
+    if (words.fontWeight != null) {
+      element.setAttribute('font-weight', words.fontWeight);
+    }
+    directionType(direction).append(element);
+  }
+  if (spec.dynamics != null) {
+    const dynamics = new Dynamics();
+    for (const mark of typeof spec.dynamics === 'string' ? [spec.dynamics] : spec.dynamics) {
+      dynamics.append(new MElement(mark));
+    }
+    directionType(direction).append(dynamics);
+  }
+  if (direction.children.length === 0) {
+    throw new Error('mdom: a <direction> needs at least one of metronome, words or dynamics');
+  }
+  if (spec.staff != null) {
+    appendValue(direction, 'staff', spec.staff);
+  }
+  if (spec.tempo != null) {
+    const sound = new Sound();
+    sound.setAttribute('tempo', String(spec.tempo));
+    direction.append(sound);
+  }
+  return direction;
+}
+
+/** Append a fresh `<direction-type>` — one per printable, which is how they print side by side. */
+function directionType(direction: Direction): MElement {
+  const block = new MElement('direction-type');
+  direction.append(block);
+  return block;
+}
+
+/**
+ * Build a `<metronome>` in the `<beat-unit>` form. The dots TRAIL the unit they
+ * modify, which is the whole reason {@link Metronome.beatUnits} reads positionally.
+ */
+function buildMetronome(spec: MetronomeSpec): Metronome {
+  const metronome = new Metronome();
+  if (spec.parentheses) {
+    metronome.setAttribute('parentheses', 'yes');
+  }
+  appendValue(metronome, 'beat-unit', spec.beatUnit);
+  for (let dot = 0; dot < (spec.dots ?? 0); dot++) {
+    metronome.append(new MElement('beat-unit-dot'));
+  }
+  appendValue(metronome, 'per-minute', String(spec.perMinute));
+  return metronome;
 }

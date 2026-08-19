@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { MDocument } from './m-document';
 import { MElement } from './m-node';
-import { Measure } from './measure';
+import type { Measure } from './measure';
 import { schemaErrors } from './music-xml-schema';
 
 /** A one-part document plus its first measure, the shape every case here builds on. */

@@ -7,11 +7,11 @@ import { Time } from './time';
 import { Voice } from './voice';
 import { type Chord, groupChords } from './chord';
 import { type BeamRun, groupBeamRuns, groupBeams } from './beam';
-import { Direction } from './direction';
-import { Barline } from './barline';
+import { buildDirection, Direction, type DirectionSpec } from './direction';
+import { Barline, buildBarline, type BarlineSpec } from './barline';
 import { FiguredBass } from './figured-bass';
 import type { Frame } from './frame';
-import { Harmony } from './harmony';
+import { buildHarmony, Harmony, type HarmonySpec } from './harmony';
 import { LineDetail } from './line-detail';
 import { Print } from './print';
 import { cloneElement } from './registry';
@@ -316,6 +316,46 @@ export class Measure extends MElement {
   }
 
   /**
+   * Append a `<harmony>` chord symbol at the write cursor — the point after
+   * everything currently in the measure, so a symbol added before its notes sits
+   * above them, which is how {@link Harmony.nextNote} binds the two.
+   */
+  addHarmony(spec: HarmonySpec): Harmony {
+    const harmony = buildHarmony(spec);
+    this.append(harmony);
+    return harmony;
+  }
+
+  /**
+   * Add a `<barline>`: a repeat, a volta bracket, or a bar style at one edge of
+   * the measure. A `location: 'left'` barline is positioned first and the rest
+   * last, matching the edge each one draws on.
+   */
+  addBarline(spec: BarlineSpec): Barline {
+    const barline = buildBarline(spec);
+    if (spec.location === 'left') {
+      // Ahead of everything, but behind any left barline already there, so two
+      // of them keep the order they were written in.
+      const after = this.children.find((node) => !(node instanceof Barline)) ?? null;
+      this.insertBefore(barline, after);
+    } else {
+      this.append(barline);
+    }
+    return barline;
+  }
+
+  /**
+   * Append a `<direction>` at the write cursor: a tempo mark, an expression, a
+   * dynamic. Add it before the notes it applies to — a direction carries no
+   * `<duration>`, so it sounds wherever the cursor stands.
+   */
+  addDirection(spec: DirectionSpec): Direction {
+    const direction = buildDirection(spec);
+    this.append(direction);
+    return direction;
+  }
+
+  /**
    * Get or create the reader/writer for a `<voice>`; remembers the staff so notes
    * added through it are positioned and labeled correctly.
    */
@@ -464,9 +504,9 @@ export class Measure extends MElement {
     const target = opts.onset * divisions;
     const onsets = onsetsIn(this);
     const leading = leadingAttributes(this);
-    const existing = this
-      .childrenNamed('attributes')
-      .find((block) => !leading.includes(block) && onsets.get(block) === target);
+    const existing = this.childrenNamed('attributes').find(
+      (block) => !leading.includes(block) && onsets.get(block) === target
+    );
     if (existing) {
       return existing;
     }

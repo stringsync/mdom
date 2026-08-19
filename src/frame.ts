@@ -1,3 +1,4 @@
+import { appendValue } from './measure';
 import { MElement, required } from './m-node';
 
 /**
@@ -25,6 +26,23 @@ export class FrameNote extends MElement {
     const type = this.child('barre')?.getAttribute('type');
     return type === 'start' || type === 'stop' ? type : null;
   }
+}
+
+/** A `<frame-note>` to write: one string stopped at a fret, optionally under a barre. */
+export interface FrameNoteSpec {
+  string: number;
+  fret: number;
+  barre?: 'start' | 'stop';
+}
+
+/** A `<frame>` to write: the box, and the dots in it. */
+export interface FrameSpec {
+  /** `<frame-strings>`; 6 (guitar) when omitted, matching {@link Frame.strings}. */
+  strings?: number;
+  /** `<frame-frets>`; 4 when omitted, matching {@link Frame.frets}. */
+  frets?: number;
+  firstFret?: number;
+  notes: FrameNoteSpec[];
 }
 
 /**
@@ -63,6 +81,24 @@ export class Frame extends MElement {
     return this.childrenOfType(FrameNote);
   }
 
+  /**
+   * Append a `<frame-note>` dot. Frames are written strings-first, so this lands
+   * after the `<frame-strings>`/`<frame-frets>`/`<first-fret>` header wherever it
+   * is called — which is the order the schema wants.
+   */
+  addFrameNote(spec: FrameNoteSpec): FrameNote {
+    const note = new FrameNote();
+    appendValue(note, 'string', String(spec.string));
+    appendValue(note, 'fret', String(spec.fret));
+    if (spec.barre != null) {
+      const barre = new MElement('barre');
+      barre.setAttribute('type', spec.barre);
+      note.append(barre);
+    }
+    this.append(note);
+    return note;
+  }
+
   /** The `width` attribute in tenths; null when unset. */
   get width(): number | null {
     const width = this.getAttribute('width');
@@ -82,4 +118,18 @@ export class Frame extends MElement {
   set height(tenths: number) {
     this.setAttribute('height', String(tenths));
   }
+}
+
+/** Build a detached `<frame>` from a spec, header first then its dots. */
+export function buildFrame(spec: FrameSpec): Frame {
+  const frame = new Frame();
+  appendValue(frame, 'frame-strings', String(spec.strings ?? 6));
+  appendValue(frame, 'frame-frets', String(spec.frets ?? 4));
+  if (spec.firstFret != null) {
+    appendValue(frame, 'first-fret', String(spec.firstFret));
+  }
+  for (const note of spec.notes) {
+    frame.addFrameNote(note);
+  }
+  return frame;
 }

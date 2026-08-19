@@ -515,6 +515,18 @@ export class Note extends MElement {
   }
 
   /**
+   * Add an articulation mark (staccato, accent, tenuto, …), creating
+   * `<notations><articulations>` as needed. MusicXML names the mark by its TAG,
+   * so `name` is written through as one — the write side of {@link articulations},
+   * spelled the way MusicXML spells it.
+   */
+  addArticulation(name: string): MElement {
+    const mark = new MElement(name);
+    this.articulationsBlock().append(mark);
+    return mark;
+  }
+
+  /**
    * Slur this note to `other`: mdom picks an unused slur number and adds the
    * paired `<slur start>`/`<slur stop>` markers (creating `<notations>` as needed).
    */
@@ -677,6 +689,18 @@ export class Note extends MElement {
     const notations = new MElement('notations');
     this.append(notations);
     return notations;
+  }
+
+  /** Get or create this note's `<notations><articulations>` child. */
+  private articulationsBlock(): MElement {
+    const notations = this.notations();
+    const existing = notations.childrenNamed('articulations')[0];
+    if (existing) {
+      return existing;
+    }
+    const articulations = new MElement('articulations');
+    notations.append(articulations);
+    return articulations;
   }
 
   /** First direct `<tag>` child across this note's `<notations>` blocks, or null. */

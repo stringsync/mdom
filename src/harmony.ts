@@ -1,6 +1,6 @@
 import { MElement, required } from './m-node';
-import { Frame } from './frame';
-import { Measure } from './measure';
+import { buildFrame, Frame, type FrameSpec } from './frame';
+import { appendValue, Measure } from './measure';
 import { type Note, adjacentNote } from './note';
 import { placementOf } from './print-style';
 
@@ -54,6 +54,28 @@ export interface HarmonyStep {
   alter: number | null;
 }
 
+/** A `<root>`/`<bass>` to write. `alter` is omitted rather than 0 when there is none. */
+export interface HarmonyStepSpec {
+  step: string;
+  alter?: number;
+}
+
+/** A `<harmony>` to write: the chord symbol, and optionally the diagram under it. */
+export interface HarmonySpec {
+  root: HarmonyStepSpec;
+  /**
+   * `<kind>`. The bare enum value prints the renderer's default suffix; pass
+   * `text` to override what is printed (`'maj7'` for a `major-seventh`).
+   */
+  kind: HarmonyKindValue | { value: HarmonyKindValue; text?: string };
+  bass?: HarmonyStepSpec;
+  frame?: FrameSpec;
+  placement?: 'above' | 'below';
+}
+
+/** `<harmony>` children that follow `<frame>`, so a later {@link Harmony.setFrame} inserts ahead of them. */
+const AFTER_FRAME = new Set(['offset', 'footnote', 'level', 'staff']);
+
 /**
  * A `<harmony>`: a chord symbol (and optionally a fretboard {@link Frame}) that
  * sits above a note. Its fields — root, kind, bass — round-trip as plain child
@@ -91,6 +113,18 @@ export class Harmony extends MElement {
   }
 
   /**
+   * Upsert the fretboard diagram (`<frame>`), positioned after the chord symbol's
+   * own children and before the `<offset>`/`<staff>` tail.
+   */
+  setFrame(spec: FrameSpec): Frame {
+    this.frame?.remove();
+    const frame = buildFrame(spec);
+    const tail = this.childrenOfType(MElement).find((child) => AFTER_FRAME.has(child.tag)) ?? null;
+    this.insertBefore(frame, tail);
+    return frame;
+  }
+
+  /**
    * The nearest non-`<chord/>`-member note after this harmony in its measure —
    * the note the chord symbol sits above. Same semantics as {@link Direction.nextNote}.
    */
@@ -117,4 +151,35 @@ function readStep(parent: MElement | null, stepTag: string, alterTag: string): H
   }
   const alter = parent!.child(alterTag)?.text;
   return { step, alter: alter == null ? null : Number(alter) };
+}
+
+/** Build a detached `<harmony>` from a spec, children in schema order. */
+export function buildHarmony(spec: HarmonySpec): Harmony {
+  const harmony = new Harmony();
+  if (spec.placement != null) {
+    harmony.setAttribute('placement', spec.placement);
+  }
+  harmony.append(buildStep('root', spec.root));
+  const kind = typeof spec.kind === 'string' ? { value: spec.kind, text: undefined } : spec.kind;
+  const kindElement = appendValue(harmony, 'kind', kind.value);
+  if (kind.text != null) {
+    kindElement.setAttribute('text', kind.text);
+  }
+  if (spec.bass) {
+    harmony.append(buildStep('bass', spec.bass));
+  }
+  if (spec.frame) {
+    harmony.setFrame(spec.frame);
+  }
+  return harmony;
+}
+
+/** Build a `<root>`/`<bass>` block: `<root-step>` plus `<root-alter>` when stated. */
+function buildStep(tag: 'root' | 'bass', spec: HarmonyStepSpec): MElement {
+  const element = new MElement(tag);
+  appendValue(element, `${tag}-step`, spec.step);
+  if (spec.alter != null) {
+    appendValue(element, `${tag}-alter`, String(spec.alter));
+  }
+  return element;
 }

@@ -1,8 +1,22 @@
 import { MElement } from './m-node';
-import { Measure } from './measure';
+import { appendValue, Measure } from './measure';
 import { colorOf } from './print-style';
 import { divisionsBackFrom } from './signature';
 import { onsetOf } from './timeline';
+
+/** A `<barline>` to write: the bar style, and any repeat or volta on it. */
+export interface BarlineSpec {
+  /** Which edge; 'right' (the MusicXML default) when omitted. */
+  location?: 'left' | 'right' | 'middle';
+  /** `<bar-style>` (light-heavy, heavy-light, light-light, dotted, ...). */
+  barStyle?: string;
+  repeat?: { direction: 'forward' | 'backward'; times?: number };
+  /**
+   * The volta bracket. `number` is MusicXML's raw list/range spelling (`'1'`,
+   * `'1,2'`); `text` is what is printed above it, defaulting to `number`.
+   */
+  ending?: { type: 'start' | 'stop' | 'discontinue'; number: string; text?: string };
+}
 
 /**
  * A `<barline>` in a measure: its bar style (final, double, dotted, ...) and any
@@ -78,4 +92,31 @@ export class Barline extends MElement {
   get color(): string | null {
     return colorOf(this);
   }
+}
+
+/** Build a detached `<barline>` from a spec, children in schema order. */
+export function buildBarline(spec: BarlineSpec): Barline {
+  const barline = new Barline();
+  if (spec.location != null) {
+    barline.setAttribute('location', spec.location);
+  }
+  if (spec.barStyle != null) {
+    appendValue(barline, 'bar-style', spec.barStyle);
+  }
+  if (spec.ending) {
+    // <ending> prints its own text content; MusicXML repeats the number there,
+    // so defaulting to it is what a caller passing just `number` means.
+    const ending = appendValue(barline, 'ending', spec.ending.text ?? spec.ending.number);
+    ending.setAttribute('number', spec.ending.number);
+    ending.setAttribute('type', spec.ending.type);
+  }
+  if (spec.repeat) {
+    const repeat = new MElement('repeat');
+    repeat.setAttribute('direction', spec.repeat.direction);
+    if (spec.repeat.times != null) {
+      repeat.setAttribute('times', String(spec.repeat.times));
+    }
+    barline.append(repeat);
+  }
+  return barline;
 }
