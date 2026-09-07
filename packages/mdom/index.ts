@@ -37,6 +37,7 @@ export { LineDetail } from './line-detail';
 export { Lyric } from './lyric';
 export { MDocument } from './m-document';
 export { MDOMParser } from './m-dom-parser';
+export type { MHistory, MHistoryChange } from './m-history';
 export { MElement, MNode, MText } from './m-node';
 export { Measure } from './measure';
 export { Metronome, MetronomeNote } from './metronome';

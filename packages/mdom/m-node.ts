@@ -1,3 +1,5 @@
+import { MMutation } from './m-mutation';
+
 type Ctor<T> = new (...args: never[]) => T;
 
 /**
@@ -15,7 +17,18 @@ export function required<T>(value: T | null | undefined, what: string): T {
 
 /** Base node in the document tree: either an {@link MText} or an {@link MElement}. */
 export abstract class MNode {
-	parent: MElement | null = null;
+	private _parent: MElement | null = null;
+
+	/** The containing element, maintained by the structural mutation methods. */
+	get parent(): MElement | null {
+		return this._parent;
+	}
+
+	protected reparent(child: MNode, parent: MElement | null): void {
+		MMutation.set(child, 'parent', child._parent, parent, (value) => {
+			child._parent = value;
+		});
+	}
 
 	/** Detach this node from its parent, if any. */
 	remove(): void {
@@ -25,8 +38,17 @@ export abstract class MNode {
 
 /** A text node — the leaf content held by value elements. */
 export class MText extends MNode {
-	constructor(public value: string) {
+	constructor(private _value: string) {
 		super();
+	}
+
+	get value(): string {
+		return this._value;
+	}
+	set value(value: string) {
+		MMutation.set(this, 'value', this._value, value, (next) => {
+			this._value = next;
+		});
 	}
 }
 
@@ -36,15 +58,24 @@ export class MText extends MNode {
  * doesn't feed the `text` accessor, which reads ordinary value elements.
  */
 export class MCData extends MNode {
-	constructor(public value: string) {
+	constructor(private _value: string) {
 		super();
+	}
+
+	get value(): string {
+		return this._value;
+	}
+	set value(value: string) {
+		MMutation.set(this, 'value', this._value, value, (next) => {
+			this._value = next;
+		});
 	}
 }
 
 /** An element: a tag with attributes, child nodes, and the tree-query axes. */
 export class MElement extends MNode {
 	private attrs: Record<string, string> = {};
-	private _children: MNode[] = [];
+	private _children: readonly MNode[] = Object.freeze([]);
 
 	constructor(readonly tag: string) {
 		super();
@@ -92,65 +123,115 @@ export class MElement extends MNode {
 
 	/** Set an attribute. */
 	setAttribute(name: string, value: string): void {
-		this.attrs[name] = value;
+		const entries = Object.entries(this.attrs);
+		const index = entries.findIndex(([key]) => key === name);
+		if (index < 0) {
+			entries.push([name, value]);
+		} else {
+			entries[index] = [name, value];
+		}
+		this.setAttributes(entries);
 	}
 
-	/**
-	 * The only way to add to the tree. Detaches the child from any old parent
-	 * first, so links stay consistent — there is no second way to mutate.
-	 */
+	/** Remove an attribute, if present. */
+	removeAttribute(name: string): void {
+		this.setAttributes(
+			Object.entries(this.attrs).filter(([key]) => key !== name),
+		);
+	}
+
+	private setAttributes(entries: [string, string][]): void {
+		// Flat pairs compare by value, including order, without serializing XML.
+		MMutation.set(
+			this,
+			'attributes',
+			Object.entries(this.attrs).flat(),
+			entries.flat(),
+			(value) => {
+				const attrs: [string, string][] = [];
+				for (let i = 0; i < value.length; i += 2) {
+					attrs.push([
+						required(value[i], 'attribute name'),
+						required(value[i + 1], 'attribute value'),
+					]);
+				}
+				this.attrs = Object.fromEntries(attrs);
+			},
+		);
+	}
+
+	/** Append a child, detaching it from its previous parent. */
 	append(child: MNode): void {
-		child.remove();
-		child.parent = this;
-		this._children.push(child);
+		this.insertBefore(child, null);
 	}
 
 	/** Remove a direct child, clearing its parent link. */
 	removeChild(child: MNode): void {
-		const i = this._children.indexOf(child);
-		if (i >= 0) {
-			this._children.splice(i, 1);
-			child.parent = null;
+		MMutation.assertWritable(this);
+		if (this._children.includes(child)) {
+			this.setChildren(this._children.filter((node) => node !== child));
+			this.reparent(child, null);
 		}
 	}
 
-	/**
-	 * Insert `child` directly before `ref`, or append when `ref` is null. Detaches
-	 * `child` from any old parent first, like {@link append} — the positional way
-	 * to add (e.g. a `<grace/>` ahead of everything, or a `<dot>` after `<type>`).
-	 */
+	/** Insert a child before a reference, or append when the reference is null. */
 	insertBefore(child: MNode, ref: MNode | null): void {
-		if (ref === null) {
-			this.append(child);
-			return;
-		}
-		if (!this._children.includes(ref)) {
+		if (ref !== null && !this._children.includes(ref)) {
 			throw new Error('mdom: insertBefore reference is not a child');
 		}
+		this.prepareChild(child);
 		if (child === ref) {
 			return;
 		}
-		// Detaching first, then reading the index: when `child` is already an earlier
-		// sibling of `ref`, the removal shifts `ref` down one, and an index read before
-		// it lands the child past `ref` instead of before it.
 		child.remove();
-		child.parent = this;
-		this._children.splice(this._children.indexOf(ref), 0, child);
+		const children = [...this._children];
+		children.splice(
+			ref === null ? children.length : children.indexOf(ref),
+			0,
+			child,
+		);
+		this.setChildren(children);
+		this.reparent(child, this);
 	}
 
-	/**
-	 * Swap a direct child for `replacement`, in place — same position, so an edit
-	 * keeps the note's child ordering (`<pitch>` for a `<rest>`, say).
-	 */
+	/** Replace a direct child, preserving the position among remaining siblings. */
 	replaceChild(child: MNode, replacement: MNode): void {
-		const index = this._children.indexOf(child);
-		if (index < 0) {
+		if (!this._children.includes(child)) {
 			throw new Error('mdom: replaceChild target is not a child');
 		}
+		this.prepareChild(replacement);
+		if (child === replacement) {
+			return;
+		}
 		replacement.remove();
-		child.parent = null;
-		replacement.parent = this;
-		this._children[index] = replacement;
+		const children = [...this._children];
+		children[children.indexOf(child)] = replacement;
+		this.setChildren(children);
+		this.reparent(child, null);
+		this.reparent(replacement, this);
+	}
+
+	private setChildren(children: readonly MNode[]): void {
+		MMutation.set(
+			this,
+			'children',
+			this._children,
+			Object.freeze(children),
+			(value) => {
+				this._children = value;
+			},
+		);
+	}
+
+	private prepareChild(child: MNode): void {
+		let ancestor: MNode | null = this;
+		while (ancestor) {
+			if (ancestor === child) {
+				throw new Error('mdom: a node cannot contain itself');
+			}
+			ancestor = ancestor.parent;
+		}
+		MMutation.adopt(this, descendants(child));
 	}
 
 	/**
@@ -194,4 +275,16 @@ export class MElement extends MNode {
 			(k): k is MElement => k instanceof MElement && k.tag === tag,
 		);
 	}
+}
+
+/** Enumerate a subtree, including its root, for document ownership checks. */
+export function descendants(node: MNode): MNode[] {
+	const nodes = [node];
+	for (let i = 0; i < nodes.length; i++) {
+		const current = nodes[i];
+		if (current instanceof MElement) {
+			nodes.push(...current.children);
+		}
+	}
+	return nodes;
 }

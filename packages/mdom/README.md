@@ -147,6 +147,91 @@ the signature drawn with the stave — however many notes are already there. Pas
 `measure.getOrCreateAttributes({ onset })` is the escape hatch for whatever the
 setters don't cover.
 
+## Transactions and undo/redo
+
+Access `doc.history` to enable synchronous transactions for that document. Set up
+or parse the document first; earlier edits do not become undo steps.
+
+```ts
+const history = doc.history;
+const unlisten = history.events.on('change', ({ kind, label }) => {
+  render(doc); // one completed edit, undo, or redo
+  updateUndoButton(history.canUndo, history.undoLabel);
+  updateRedoButton(history.canRedo, history.redoLabel);
+});
+
+history.edit('Add staccato', () => {
+  first.addArticulation('staccato');
+  second.addArticulation('staccato');
+});
+history.undo();
+history.redo();
+unlisten(); // release this subscription when the editor unmounts
+```
+
+`edit(label, callback)` returns the callback's result. All mutations in the
+callback become one step, including structural edits, `setAttribute`,
+`removeAttribute`, `setText`, direct text/CDATA `value` assignments, and the
+indirect changes made by methods such as `setPitch`, `setDuration`, and
+`addSlur`. If the callback throws, every recorded mutation is restored and the
+same error is rethrown; both history stacks remain intact.
+
+Undo and redo restore field values and links on the original objects. They
+never serialize/reparse the document or run the callback again. Selected note
+references remain valid, and removed or replaced nodes are the exact objects
+reattached by undo. Newly inserted nodes are likewise reused by redo.
+
+`canUndo` and `canRedo` report availability; `undoLabel` and `redoLabel` are the
+next action's label, or `null`. `undo()` and `redo()` return `false` on empty
+history and emit nothing. Empty edits, same-value setters, and edits that put
+all values and node links back where they started preserve redo and create no
+step. Identity is part of the state: replacing a node with a different node
+counts as an edit even when their XML is identical. A new effective edit clears
+redo. Attribute ordering is preserved as well as values.
+
+The editing boundaries are deliberate:
+
+- **Outside transactions:** existing mutation APIs work freely until history is
+  enabled. Afterward, writes to that document require `history.edit` and throw
+  before changing it when called outside a transaction. There is no implicit
+  transaction or automatic history reset. Unattached builders remain freely
+  editable until first inserted; builders left unattached are excluded from
+  committed history.
+- **Detached nodes:** nodes retain document ownership after removal, rollback,
+  or undo. They still require a transaction, and effective edits to previously
+  owned detached nodes also create a step. This protects nodes retained by redo.
+  Newly built temporary subtrees inserted and removed in one transaction do not
+  themselves make that transaction effective.
+- **Nesting:** `edit`, `undo`, `redo`, and `dispose` cannot run inside an edit,
+  including through another document's history. They throw immediately. An
+  uncaught error rolls back the outer edit; catching it allows the outer edit
+  to continue, without an inner step or savepoint.
+- **Async callbacks:** native async functions are rejected before invocation.
+  Returning a promise or callable thenable rolls back the synchronous work and
+  throws. The TypeScript signature also rejects promise-returning callbacks.
+  Scheduled work cannot extend a transaction: later document writes outside
+  `edit` throw. JavaScript cannot cancel arbitrary scheduled work or undo
+  non-document side effects; keep callbacks synchronous and limited to edits.
+- **Document boundaries:** a node can belong to only one document. Moving owned
+  nodes into another document or an unowned tree, rewrapping an owned root, and
+  inserting document roots throw before detachment, even without history.
+  Ownership persists after removal. Build fresh nodes to copy across documents.
+  An active transaction also rejects writes to any other document.
+- **Notifications:** `events.on('change', listener)` receives `{ kind, label }`
+  once after each effective edit, undo, or redo, with updated history state.
+  Rollback and no-ops emit nothing. Mutation and history operations during
+  delivery throw. Listener exceptions propagate after the commit and may stop
+  later listeners; they do not roll back the committed document or history.
+- **Read-only structure:** use mutation methods for child links; `parent` has no
+  setter and `children` is a frozen array. XML declaration fields are frozen;
+  the declaration, doctype, root, and element tags are not editing APIs.
+
+History retains the nodes and field values needed by its steps. Call
+`history.dispose()` to release all steps and listeners without changing the
+current document or emitting a change. Disposal is idempotent; the same history
+remains enabled and usable for new transactions. mdom does not track selection,
+input, or rendering state.
+
 ## Typed elements
 
 Every printable part of a score has a typed node, so a consumer never walks raw

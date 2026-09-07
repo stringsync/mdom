@@ -1,13 +1,27 @@
-import type { MElement } from './m-node';
+import { MHistory } from './m-history';
+import { MMutation } from './m-mutation';
+import { descendants, type MElement } from './m-node';
 import { Score } from './score';
 
 /** A parsed document: the root element plus the XML declaration and doctype. */
 export class MDocument {
+	private _history: MHistory | null = null;
 	constructor(
 		readonly root: MElement,
-		readonly declaration: Record<string, string> | null = null,
+		readonly declaration: Readonly<Record<string, string>> | null = null,
 		readonly doctype: string | null = null,
-	) {}
+	) {
+		MMutation.register(root, descendants(root));
+		if (declaration) {
+			Object.freeze(declaration);
+		}
+	}
+
+	/** Enable transaction-only editing and access this document's undo/redo history. */
+	get history(): MHistory {
+		this._history ??= new MHistory(this.root);
+		return this._history;
+	}
 
 	/**
 	 * An empty `<score-partwise>` scaffold carrying the XML declaration, doctype,

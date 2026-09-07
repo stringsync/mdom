@@ -12,7 +12,7 @@
     },
     "packages/cli": {
       "name": "@mdom/cli",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "bin": {
         "mdom": "./index.ts",
       },
@@ -23,16 +23,17 @@
     },
     "packages/e2e": {
       "name": "@mdom/e2e",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@stringsync/mdom": "workspace:*",
       },
     },
     "packages/mdom": {
       "name": "@stringsync/mdom",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "jszip": "^3.10.1",
+        "webappwiz": "^0.0.14",
         "xml-js": "^1.6.11",
       },
     },
