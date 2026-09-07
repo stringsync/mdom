@@ -11,7 +11,7 @@ describe('GuitarProParser', () => {
   });
 
   it('reads pitches, rests and durations from an independent Guitar Pro file', async () => {
-    const doc = await parser.parseFromBlob(Bun.file(new URL('../fixtures/guitar-pro/notes.gp', import.meta.url)));
+    const doc = await parser.parseFromBlob(Bun.file(new URL('./fixtures/guitar-pro/notes.gp', import.meta.url)));
     const notes = doc.score.parts[0]!.measures[0]!.notes;
 
     expect(
@@ -36,7 +36,7 @@ describe('GuitarProParser', () => {
   });
 
   it('keeps string numbering, frets and tuning from an independent chord fixture', async () => {
-    const doc = await parser.parseFromBlob(Bun.file(new URL('../fixtures/guitar-pro/strings.gp', import.meta.url)));
+    const doc = await parser.parseFromBlob(Bun.file(new URL('./fixtures/guitar-pro/strings.gp', import.meta.url)));
     const measure = doc.score.parts[0]!.measures[0]!;
 
     expect(measure.notes.slice(0, 6).map((note) => [note.string, note.fret, note.measureBeat])).toEqual([
@@ -60,7 +60,7 @@ describe('GuitarProParser', () => {
   });
 
   it('keeps tuplet ratios and exact onsets from an independent fixture', async () => {
-    const doc = await parser.parseFromBlob(Bun.file(new URL('../fixtures/guitar-pro/tuplets.gp', import.meta.url)));
+    const doc = await parser.parseFromBlob(Bun.file(new URL('./fixtures/guitar-pro/tuplets.gp', import.meta.url)));
     const measure = doc.score.parts[0]!.measures[0]!;
 
     expect(measure.notes.map((note) => note.measureBeat)).toEqual([0, 2 / 3, 4 / 3, 2]);
@@ -74,7 +74,7 @@ describe('GuitarProParser', () => {
   });
 
   it('reads score metadata and multiple tracks', async () => {
-    const doc = await parser.parseFromBlob(Bun.file(new URL('../fixtures/guitar-pro/score-info.gp', import.meta.url)));
+    const doc = await parser.parseFromBlob(Bun.file(new URL('./fixtures/guitar-pro/score-info.gp', import.meta.url)));
 
     expect(doc.score.title).toBe('Title');
     expect(doc.score.parts.map((part) => part.label)).toEqual(['Track 1', 'Track 2']);
@@ -93,7 +93,7 @@ describe('GuitarProParser', () => {
 
   it('reads changing meters without flattening the denominator', async () => {
     const doc = await parser.parseFromBlob(
-      Bun.file(new URL('../fixtures/guitar-pro/time-signatures.gp', import.meta.url))
+      Bun.file(new URL('./fixtures/guitar-pro/time-signatures.gp', import.meta.url))
     );
 
     expect(
@@ -111,7 +111,7 @@ describe('GuitarProParser', () => {
 
   it('reads major and minor key changes', async () => {
     const doc = await parser.parseFromBlob(
-      Bun.file(new URL('../fixtures/guitar-pro/key-signatures.gp', import.meta.url))
+      Bun.file(new URL('./fixtures/guitar-pro/key-signatures.gp', import.meta.url))
     );
     const measures = doc.score.parts[0]!.measures;
 
@@ -130,7 +130,7 @@ describe('GuitarProParser', () => {
   });
 
   it('keeps pickup measures short', async () => {
-    const doc = await parser.parseFromBlob(Bun.file(new URL('../fixtures/guitar-pro/anacrusis.gp', import.meta.url)));
+    const doc = await parser.parseFromBlob(Bun.file(new URL('./fixtures/guitar-pro/anacrusis.gp', import.meta.url)));
 
     expect(doc.score.parts[0]!.measures.map((measure) => [measure.isImplicit, measure.endBeat])).toEqual([
       [true, 2],
@@ -139,7 +139,7 @@ describe('GuitarProParser', () => {
   });
 
   it('reads an empty GP8 bar as a full-measure rest', async () => {
-    const doc = await parser.parseFromBlob(Bun.file(new URL('../fixtures/guitar-pro/hide-tuning.gp', import.meta.url)));
+    const doc = await parser.parseFromBlob(Bun.file(new URL('./fixtures/guitar-pro/hide-tuning.gp', import.meta.url)));
 
     expect(doc.score.parts[0]!.label).toBe('Steel Guitar');
     expect(doc.score.parts[0]!.measures[0]!.notes).toHaveLength(1);
@@ -149,7 +149,7 @@ describe('GuitarProParser', () => {
 
   it('reads repeat counts from an independent fixture', async () => {
     const doc = await parser.parseFromBlob(
-      Bun.file(new URL('../fixtures/guitar-pro/repeat-close.gp', import.meta.url))
+      Bun.file(new URL('./fixtures/guitar-pro/repeat-close.gp', import.meta.url))
     );
 
     expect(
@@ -162,12 +162,12 @@ describe('GuitarProParser', () => {
 
   it('rejects techniques outside the supported subset', async () => {
     await expect(
-      parser.parseFromBlob(Bun.file(new URL('../fixtures/guitar-pro/grace.gp', import.meta.url)))
+      parser.parseFromBlob(Bun.file(new URL('./fixtures/guitar-pro/grace.gp', import.meta.url)))
     ).rejects.toThrow('note techniques');
   });
 
   it('retains grace timing when unsupported techniques are explicitly omitted', async () => {
-    const doc = await parser.parseFromBlob(Bun.file(new URL('../fixtures/guitar-pro/grace.gp', import.meta.url)), {
+    const doc = await parser.parseFromBlob(Bun.file(new URL('./fixtures/guitar-pro/grace.gp', import.meta.url)), {
       unsupported: 'omit',
     });
     const notes = doc.score.parts[0]!.measures[0]!.notes;

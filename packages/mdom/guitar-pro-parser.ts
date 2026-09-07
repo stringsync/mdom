@@ -19,7 +19,7 @@ export class GuitarProParser {
     }
     // Keep the notation codec out of the startup path for MusicXML-only consumers.
     const codec = await import('@coderline/alphatab');
-    const { GuitarProDocumentReader } = await import('./guitar-pro/guitar-pro-document-reader');
+    const { GuitarProDocumentReader } = await import('./guitar-pro-document-reader');
     const score = codec.importer.ScoreLoader.loadScoreFromBytes(bytes);
     return new GuitarProDocumentReader(codec, opts).read(score);
   }

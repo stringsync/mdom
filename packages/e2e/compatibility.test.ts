@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser, MusicXMLSerializer } from '../index';
+import { MDOMParser, MusicXMLSerializer } from '@stringsync/mdom';
 import { EXAMPLES } from './examples';
 
 // Cross-exporter compatibility, one real file per MusicXML dialect (Finale, Dolet,

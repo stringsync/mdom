@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from '../index';
+import { MDOMParser } from '@stringsync/mdom';
 
 // The interleaved sibling runs MusicXML reads positionally, all in one file:
 // a non-traditional key (<key-step>/<key-alter>/<key-accidental>, indexed by

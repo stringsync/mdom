@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser, type Note } from '../index';
+import { MDOMParser, type Note } from '@stringsync/mdom';
 
 // Piano (2 staves), D major (2 sharps), 3/4. m1 declares the full signature;
 // m2 has no <attributes>, so every signature query there is carried forward.

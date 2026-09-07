@@ -1,13 +1,13 @@
 import type { model } from '@coderline/alphatab';
-import { MDocument } from '../m-document';
-import { MElement } from '../m-node';
-import { appendValue, type Measure } from '../measure';
-import { Note, buildPitch } from '../note';
-import { StaffDetails } from '../staff-details';
-import { StaffTuning } from '../staff-tuning';
-import { Tie } from '../tie';
+import { MDocument } from './m-document';
+import { MElement } from './m-node';
+import { appendValue, type Measure } from './measure';
+import { Note, buildPitch } from './note';
+import { StaffDetails } from './staff-details';
+import { StaffTuning } from './staff-tuning';
+import { Tie } from './tie';
 import { GuitarProValues } from './guitar-pro-values';
-import type { GuitarProOptions } from '../guitar-pro-options';
+import type { GuitarProOptions } from './guitar-pro-options';
 
 export class GuitarProDocumentReader {
   private readonly values: GuitarProValues;

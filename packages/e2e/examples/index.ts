@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { MDOMParser, type Score } from '../../index';
+import { MDOMParser, type Score } from '@stringsync/mdom';
 
 // A curated cross-exporter corpus: one (small) real-world file per distinct source
 // software, plus a few hand-built fault-tolerance fixtures. The axis that matters for

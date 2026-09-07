@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 import JSZip from 'jszip';
-import { GuitarProParser, GuitarProSerializer, MDocument, MDOMParser } from '../index';
+import { GuitarProParser, GuitarProSerializer, MDocument, MDOMParser } from './index';
 
 describe('Guitar Pro archives', () => {
   let parser: GuitarProParser;

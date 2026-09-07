@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from '../index';
+import { MDOMParser } from '@stringsync/mdom';
 
 // A tie spanning m1→m2, and a crescendo hairpin spanning m1. The tie hangs off a
 // note; the wedge hangs off a <direction>. Both pair start/stop the same way —

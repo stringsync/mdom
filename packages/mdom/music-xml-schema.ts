@@ -1,7 +1,7 @@
 import { MusicXMLSerializer } from './music-xml-serializer';
 import type { MDocument } from './m-document';
 
-const SCHEMA = new URL('../schema/musicxml.xsd', import.meta.url).pathname;
+const SCHEMA = new URL('./schema/musicxml.xsd', import.meta.url).pathname;
 
 /**
  * Validate a document against the vendored MusicXML 4.0 XSD, returning

@@ -1,6 +1,6 @@
 import type { model } from '@coderline/alphatab';
-import type { PitchSpec } from '../note';
-import type { GuitarProOptions } from '../guitar-pro-options';
+import type { PitchSpec } from './note';
+import type { GuitarProOptions } from './guitar-pro-options';
 
 interface GuitarProRhythmOptions {
   dots?: number;

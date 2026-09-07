@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { MDOMParser } from './m-dom-parser';
 import { groupBeamRuns, groupBeams } from './beam';
-import * as barrel from '../index';
+import * as barrel from './index';
 
 // How Guitar Pro encodes a triplet-of-16ths + 2-16ths beat: the level-1 beam
 // reads begin, continue, end, continue, end — ONE continuous primary beam whose

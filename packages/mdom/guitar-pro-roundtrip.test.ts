@@ -83,7 +83,7 @@ describe('Guitar Pro round trips', () => {
   });
 
   it('keeps tuplet timing through an independent fixture round trip', async () => {
-    const source = await parser.parseFromBlob(Bun.file(new URL('../fixtures/guitar-pro/tuplets.gp', import.meta.url)));
+    const source = await parser.parseFromBlob(Bun.file(new URL('./fixtures/guitar-pro/tuplets.gp', import.meta.url)));
     const result = await parser.parseFromBlob(await serializer.serializeToBlob(source));
 
     expect(result.score.parts[0]!.measures[0]!.notes.map((note) => [note.measureBeat, note.beats])).toEqual([

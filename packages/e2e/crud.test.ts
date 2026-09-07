@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDocument, MDOMParser, MusicXMLSerializer } from '../index';
+import { MDocument, MDOMParser, MusicXMLSerializer } from '@stringsync/mdom';
 
 // One operation per test: arrange a little music, apply a single intent-level
 // edit, then read it back through the query layer. The caller works in musical

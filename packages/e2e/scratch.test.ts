@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDocument, MDOMParser, MusicXMLSerializer } from '../index';
+import { MDocument, MDOMParser, MusicXMLSerializer } from '@stringsync/mdom';
 
 // Authoring a score from nothing: parts, signatures, and the round-trip back out
 // to MusicXML. The per-note editing operations live in crud.test.ts.

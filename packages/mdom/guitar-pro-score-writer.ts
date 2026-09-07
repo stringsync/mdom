@@ -1,14 +1,14 @@
 import type { model } from '@coderline/alphatab';
-import type { MDocument } from '../m-document';
-import type { Measure } from '../measure';
-import { MElement } from '../m-node';
-import type { Part } from '../part';
-import type { Note } from '../note';
-import { Direction } from '../direction';
-import { onsetOf } from '../timeline';
-import { groupChords } from '../chord';
+import type { MDocument } from './m-document';
+import type { Measure } from './measure';
+import { MElement } from './m-node';
+import type { Part } from './part';
+import type { Note } from './note';
+import { Direction } from './direction';
+import { onsetOf } from './timeline';
+import { groupChords } from './chord';
 import { GuitarProValues } from './guitar-pro-values';
-import type { GuitarProOptions } from '../guitar-pro-options';
+import type { GuitarProOptions } from './guitar-pro-options';
 
 export class GuitarProScoreWriter {
   private readonly values: GuitarProValues;

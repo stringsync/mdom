@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDocument, Cursor } from '../index';
+import { MDocument, Cursor } from '@stringsync/mdom';
 
 // The keyboard side of editing. A transcriber arrows through the score, lands on
 // notes and empty slots, and edits whatever the caret is over. The caret is an

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { MDocument, Cursor } from '../index';
+import { MDocument, Cursor } from '@stringsync/mdom';
 
 /** A fresh voice holding four quarter notes C D E F in one measure. */
 function fourNotes() {
