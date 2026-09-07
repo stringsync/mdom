@@ -1,4 +1,5 @@
 import type { GuitarProOptions } from './guitar-pro-options';
+import { GuitarProPlayback } from './guitar-pro-playback';
 import type { MDocument } from './m-document';
 
 /** Exports core notation and tablature as a Guitar Pro 7/8 `.gp` archive. */
@@ -19,6 +20,8 @@ export class GuitarProSerializer {
 		const codec = await import('@coderline/alphatab');
 		const { GuitarProScoreWriter } = await import('./guitar-pro-score-writer');
 		const score = new GuitarProScoreWriter(codec, opts).write(document);
-		return new Uint8Array(new codec.exporter.Gp7Exporter().export(score));
+		return new GuitarProPlayback().configure(
+			new codec.exporter.Gp7Exporter().export(score),
+		);
 	}
 }

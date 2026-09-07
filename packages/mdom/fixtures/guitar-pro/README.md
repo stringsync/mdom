@@ -12,3 +12,9 @@ and round-trip tests cover the musical values across both conversions.
 
 `hide-tuning.gp` comes from the same commit's
 `packages/alphatab/test-data/guitarpro8` directory and covers a GP8 empty bar.
+
+`piano-playback.gpif` contains only the first track's AudioEngineState, Sounds,
+and Automations nodes from alphaTab's
+`packages/alphatab/test-data/guitarpro8/header-footer.gp` at the same pinned
+commit above. It provides an independent native GP8 piano playback reference;
+no score content is included. The accompanying alphaTab license also applies.

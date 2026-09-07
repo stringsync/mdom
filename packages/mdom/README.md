@@ -43,6 +43,12 @@ const output = await new GuitarProSerializer().serializeToBlob(doc);
 The alphaTab codec is loaded on demand and its version is pinned; no browser,
 audio player, network connection, or Guitar Pro installation is needed.
 
+Exports select Guitar Pro's built-in RSE engine and assign a standard soundbank
+for each instrument family, so playback does not require a MIDI output device.
+MIDI program/channel values are retained. Exact timbres, amplifier effects,
+and General MIDI sound variants are not preserved; variants use a neutral
+sound from the exported instrument family.
+
 The first supported subset includes:
 
 - Pitched parts, up to two staves per exported part, and four voices per staff.

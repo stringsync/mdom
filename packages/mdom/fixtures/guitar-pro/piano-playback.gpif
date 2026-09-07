@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Track>
+  <AudioEngineState>RSE</AudioEngineState>
+  <Sounds>
+    <Sound>
+      <Name>Acoustic Piano</Name>
+      <Label>Acoustic Piano</Label>
+      <Path>Orchestra/Keyboard/Acoustic Piano</Path>
+      <Role>Factory</Role>
+      <MIDI>
+        <LSB>0</LSB>
+        <MSB>0</MSB>
+        <Program>0</Program>
+      </MIDI>
+      <RSE>
+        <SoundbankPatch>German-APiano</SoundbankPatch>
+        <ElementsSettings>
+</ElementsSettings>
+        <Pickups>
+          <OverloudPosition>0</OverloudPosition>
+          <Volumes>1 1</Volumes>
+          <Tones>1 1</Tones>
+        </Pickups>
+        <EffectChain>
+          <Effect id="M08_GraphicEQ10Band">
+            <Parameters>1 0 0.75 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5</Parameters>
+          </Effect>
+        </EffectChain>
+      </RSE>
+    </Sound>
+  </Sounds>
+  <Automations>
+    <Automation>
+      <Type>Sound</Type>
+      <Linear>false</Linear>
+      <Bar>0</Bar>
+      <Position>0</Position>
+      <Visible>true</Visible>
+      <Value>Orchestra/Keyboard/Acoustic Piano;Acoustic Piano;Factory</Value>
+    </Automation>
+  </Automations>
+</Track>
