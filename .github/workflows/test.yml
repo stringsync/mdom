@@ -1,0 +1,24 @@
+# Premerge checks: format/lint/typecheck, then the test suite. The same two
+# commands arbor's preMerge gate runs, so a branch that lands locally passes here.
+name: test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  premerge:
+    name: run premerge code checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      # The writer tests validate their output against the vendored XSD by
+      # shelling out to xmllint, which the runner image does not carry.
+      - run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+      - run: bun install --frozen-lockfile
+      - run: echo "$PWD/bin" >> "$GITHUB_PATH"
+      - run: mdom fix --check
+      - run: mdom test
