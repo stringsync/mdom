@@ -1,4 +1,3 @@
-import type { model } from '@coderline/alphatab';
 import type { GuitarProOptions } from './guitar-pro-options';
 import type { PitchSpec } from './note';
 
@@ -23,7 +22,7 @@ export class GuitarProValues {
 		}
 	}
 
-	static readonly durations: Record<string, model.Duration> = {
+	static readonly durations: Record<string, number> = {
 		whole: 1,
 		half: 2,
 		quarter: 4,
@@ -34,7 +33,7 @@ export class GuitarProValues {
 		'128th': 128,
 	};
 
-	static noteType(duration: model.Duration): string {
+	static noteType(duration: number): string {
 		const type = Object.entries(GuitarProValues.durations).find(
 			([, value]) => value === duration,
 		)?.[0];
@@ -44,10 +43,7 @@ export class GuitarProValues {
 		return type;
 	}
 
-	static beats(
-		duration: model.Duration,
-		opts: GuitarProRhythmOptions = {},
-	): number {
+	static beats(duration: number, opts: GuitarProRhythmOptions = {}): number {
 		return (
 			((4 / duration) * (2 - 2 ** -(opts.dots ?? 0)) * (opts.normal ?? 1)) /
 			(opts.actual ?? 1)

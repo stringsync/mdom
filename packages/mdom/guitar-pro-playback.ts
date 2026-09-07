@@ -1,81 +1,222 @@
-import JSZip from 'jszip';
-import { MDOMParser } from './m-dom-parser';
-import { MElement, required } from './m-node';
-import { MusicXMLSerializer } from './music-xml-serializer';
+// SPDX-License-Identifier: MPL-2.0
+// GPIF instrument fields adapted from alphaTab’s GpifWriter. See THIRD_PARTY.md.
+// Copyright © 2025 Daniel Kuschny and Contributors.
+import { GuitarProXml as X } from './guitar-pro-xml';
+import type { MElement } from './m-node';
 
-/** Assigns built-in instrument sounds to exported Guitar Pro tracks. */
+/** Writes native instrument definitions and built-in RSE sounds directly to GPIF. */
 export class GuitarProPlayback {
-	async configure(bytes: Uint8Array): Promise<Uint8Array<ArrayBuffer>> {
-		// alphaTab 1.8.4 forces MIDI output and has no RSE export option.
-		const zip = await JSZip.loadAsync(bytes);
-		const file = required(zip.file('Content/score.gpif'), 'exported GPIF');
-		const document = new MDOMParser().parseFromString(
-			await file.async('string'),
-		);
-		const tracks = required(document.root.child('Tracks'), 'exported tracks');
-		for (const track of tracks.childrenNamed('Track')) {
-			this.configureTrack(track);
+	write(track: MElement, program: number, channel: number): void {
+		const [name, type, icon] = instruments[program]!;
+		const preset = presets[type]!;
+		X.add(track, 'IconId', icon);
+		const instrument = X.add(track, 'InstrumentSet');
+		X.add(instrument, 'Name', name);
+		X.add(instrument, 'Type', type);
+		X.add(instrument, 'LineCount', 5);
+		const element = X.add(X.add(instrument, 'Elements'), 'Element');
+		X.add(element, 'Name', 'Pitched');
+		X.add(element, 'Type', 'pitched');
+		X.add(element, 'SoundbankName', '');
+		const articulation = X.add(X.add(element, 'Articulations'), 'Articulation');
+		for (const [tag, value] of Object.entries({
+			Name: '',
+			StaffLine: '0',
+			Noteheads: 'noteheadBlack noteheadHalf noteheadWhole',
+			TechniquePlacement: 'outside',
+			TechniqueSymbol: '',
+			InputMidiNumbers: '',
+			OutputRSESound: '',
+			OutputMidiNumber: '0',
+		})) {
+			X.add(articulation, tag, value);
 		}
-		zip.file(
-			'Content/score.gpif',
-			new MusicXMLSerializer().serializeToString(document),
+		const transpose = X.add(track, 'Transpose');
+		X.add(transpose, 'Chromatic', 0);
+		X.add(transpose, 'Octave', 0);
+		const strip = X.add(X.add(track, 'RSE'), 'ChannelStrip', undefined, {
+			version: 'E56',
+		});
+		X.add(
+			strip,
+			'Parameters',
+			'0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 1 0.5 0.5 0.75 0.5 0.5 0.5',
 		);
-		return new Uint8Array(
-			await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' }),
-		);
-	}
-
-	private configureTrack(track: MElement): void {
-		const instrument = required(
-			track.child('InstrumentSet'),
-			'track instrument',
-		);
-		const type = required(instrument.child('Type')?.text, 'instrument type');
-		const preset = presets[type];
-		if (!preset) {
-			throw new Error(`No built-in Guitar Pro sound for instrument: ${type}`);
+		X.add(track, 'ForcedSound', -1);
+		const connection = X.add(track, 'MidiConnection');
+		X.add(connection, 'Port', 0);
+		X.add(connection, 'PrimaryChannel', channel);
+		X.add(connection, 'SecondaryChannel', channel);
+		X.add(connection, 'ForeOneChannelPerString', 'false');
+		X.add(track, 'PlaybackState', 'Default');
+		X.add(track, 'AudioEngineState', 'RSE');
+		const sound = X.add(X.add(track, 'Sounds'), 'Sound');
+		for (const [tag, value] of Object.entries({
+			Name: name,
+			Label: name,
+			Path: preset.path,
+			Role: 'User',
+		})) {
+			X.add(sound, tag, value);
 		}
-		const sounds = required(track.child('Sounds'), 'track sounds');
-		const sound = required(sounds.child('Sound'), 'initial track sound');
-		const name = required(instrument.child('Name')?.text, 'instrument name');
-		this.replace(sound, 'Name', name);
-		this.replace(sound, 'Label', name);
-		this.replace(sound, 'Path', preset.path);
-		this.replace(sound, 'Role', 'User');
-		const rse = new MElement('RSE');
-		this.replace(rse, 'SoundbankPatch', preset.patch);
-		rse.append(new MElement('ElementsSettings'));
-		const pickups = new MElement('Pickups');
-		this.replace(pickups, 'OverloudPosition', '0');
-		this.replace(pickups, 'Volumes', '1 1');
-		this.replace(pickups, 'Tones', '1 1');
-		rse.append(pickups);
-		rse.append(new MElement('EffectChain'));
-		sound.append(rse);
-		this.replace(track, 'AudioEngineState', 'RSE');
-		const automations = required(
-			track.child('Automations'),
-			'track automations',
-		);
-		for (const automation of automations.childrenNamed('Automation')) {
-			if (automation.child('Type')?.text === 'Sound') {
-				this.replace(automation, 'Value', `${preset.path};${name};User`);
-			}
-		}
-	}
-
-	private replace(parent: MElement, tag: string, value: string): void {
-		const element = parent.child(tag) ?? new MElement(tag);
-		// setText alone would leave alphaTab's old CDATA value in the element.
-		for (const child of [...element.children]) {
-			child.remove();
-		}
-		element.setText(value);
-		if (!element.parent) {
-			parent.append(element);
+		const midi = X.add(sound, 'MIDI');
+		X.add(midi, 'LSB', 0);
+		X.add(midi, 'MSB', 0);
+		X.add(midi, 'Program', program);
+		const rse = X.add(sound, 'RSE');
+		X.add(rse, 'SoundbankPatch', preset.patch);
+		X.add(rse, 'ElementsSettings');
+		const pickups = X.add(rse, 'Pickups');
+		X.add(pickups, 'OverloudPosition', 0);
+		X.add(pickups, 'Volumes', '1 1');
+		X.add(pickups, 'Tones', '1 1');
+		X.add(rse, 'EffectChain');
+		const automation = X.add(X.add(track, 'Automations'), 'Automation');
+		for (const [tag, value] of Object.entries({
+			Type: 'Sound',
+			Linear: 'false',
+			Bar: '0',
+			Position: '0',
+			Visible: 'true',
+			Value: `${preset.path};${name};User`,
+		})) {
+			X.add(automation, tag, value);
 		}
 	}
 }
+
+// General MIDI program -> native instrument name, type and icon. Adapted from
+// alphaTab 1.8.4 GpifSoundMapper, retaining the previous instrument assignments.
+const instruments = [
+	['Acoustic Piano', 'acousticPiano', 10],
+	['Acoustic Piano', 'acousticPiano', 10],
+	['Electric Piano', 'electricPiano', 10],
+	['Acoustic Piano', 'acousticPiano', 10],
+	['Electric Piano', 'electricPiano', 10],
+	['Electric Piano', 'electricPiano', 10],
+	['Harpsichord', 'harpsichord', 10],
+	['Harpsichord', 'harpsichord', 10],
+	['Celesta', 'celesta', 17],
+	['Vibraphone', 'vibraphone', 17],
+	['Vibraphone', 'vibraphone', 17],
+	['Vibraphone', 'vibraphone', 17],
+	['Xylophone', 'xylophone', 17],
+	['Xylophone', 'xylophone', 17],
+	['Vibraphone', 'vibraphone', 17],
+	['Banjo', 'banjo', 8],
+	['Electric Organ', 'electricOrgan', 10],
+	['Electric Organ', 'electricOrgan', 10],
+	['Electric Organ', 'electricOrgan', 10],
+	['Electric Organ', 'electricOrgan', 10],
+	['Electric Organ', 'electricOrgan', 10],
+	['Electric Organ', 'electricOrgan', 10],
+	['Recorder', 'recorder', 15],
+	['Electric Organ', 'electricOrgan', 10],
+	['Nylon Guitar', 'nylonGuitar', 23],
+	['Steel Guitar', 'steelGuitar', 1],
+	['Electric Guitar', 'electricGuitar', 1],
+	['Electric Guitar', 'electricGuitar', 4],
+	['Electric Guitar', 'electricGuitar', 4],
+	['Electric Guitar', 'electricGuitar', 4],
+	['Electric Guitar', 'electricGuitar', 1],
+	['Electric Guitar', 'electricGuitar', 1],
+	['Acoustic Bass', 'acousticBass', 5],
+	['Electric Bass', 'electricBass', 5],
+	['Electric Bass', 'electricBass', 5],
+	['Acoustic Bass', 'acousticBass', 5],
+	['Electric Bass', 'electricBass', 5],
+	['Electric Bass', 'electricBass', 5],
+	['Synth Bass', 'synthBass', 12],
+	['Synth Bass', 'synthBass', 12],
+	['Violin', 'violin', 11],
+	['Viola', 'viola', 11],
+	['Cello', 'cello', 11],
+	['Contrabass', 'contrabass', 11],
+	['Violin', 'violin', 11],
+	['Violin', 'violin', 11],
+	['Harp', 'harp', 10],
+	['Timpani', 'timpani', 20],
+	['Violin', 'violin', 11],
+	['Violin', 'violin', 11],
+	['Violin', 'violin', 11],
+	['Violin', 'violin', 11],
+	['Voice', 'voice', 16],
+	['Voice', 'voice', 16],
+	['Voice', 'voice', 16],
+	['Pad Synthesizer', 'padSynthesizer', 12],
+	['Trumpet', 'trumpet', 13],
+	['Trombone', 'trombone', 13],
+	['Tuba', 'tuba', 13],
+	['Trumpet', 'trumpet', 13],
+	['French Horn', 'frenchHorn', 13],
+	['Trumpet', 'trumpet', 13],
+	['Trumpet', 'trumpet', 13],
+	['Trumpet', 'trumpet', 13],
+	['Saxophone', 'saxophone', 14],
+	['Saxophone', 'saxophone', 14],
+	['Saxophone', 'saxophone', 14],
+	['Saxophone', 'saxophone', 14],
+	['Oboe', 'oboe', 14],
+	['English Horn', 'englishHorn', 14],
+	['Bassoon', 'bassoon', 14],
+	['Clarinet', 'clarinet', 14],
+	['Piccolo', 'piccolo', 14],
+	['Flute', 'flute', 15],
+	['Recorder', 'recorder', 15],
+	['Flute', 'flute', 15],
+	['Recorder', 'recorder', 15],
+	['Flute', 'flute', 15],
+	['Recorder', 'recorder', 15],
+	['Flute', 'flute', 15],
+	['Lead Synthesizer', 'leadSynthesizer', 12],
+	['Lead Synthesizer', 'leadSynthesizer', 12],
+	['Lead Synthesizer', 'leadSynthesizer', 12],
+	['Lead Synthesizer', 'leadSynthesizer', 12],
+	['Lead Synthesizer', 'leadSynthesizer', 12],
+	['Lead Synthesizer', 'leadSynthesizer', 12],
+	['Lead Synthesizer', 'leadSynthesizer', 12],
+	['Lead Synthesizer', 'leadSynthesizer', 12],
+	['Pad Synthesizer', 'padSynthesizer', 12],
+	['Pad Synthesizer', 'padSynthesizer', 12],
+	['Pad Synthesizer', 'padSynthesizer', 12],
+	['Pad Synthesizer', 'padSynthesizer', 12],
+	['Pad Synthesizer', 'padSynthesizer', 12],
+	['Pad Synthesizer', 'padSynthesizer', 12],
+	['Pad Synthesizer', 'padSynthesizer', 12],
+	['Pad Synthesizer', 'padSynthesizer', 12],
+	['Pad Synthesizer', 'padSynthesizer', 21],
+	['Pad Synthesizer', 'padSynthesizer', 21],
+	['Pad Synthesizer', 'padSynthesizer', 21],
+	['Pad Synthesizer', 'padSynthesizer', 21],
+	['Lead Synthesizer', 'leadSynthesizer', 21],
+	['Lead Synthesizer', 'leadSynthesizer', 21],
+	['Lead Synthesizer', 'leadSynthesizer', 21],
+	['Trumpet', 'trumpet', 21],
+	['Banjo', 'banjo', 4],
+	['Banjo', 'banjo', 8],
+	['Ukulele', 'ukulele', 7],
+	['Banjo', 'banjo', 8],
+	['Xylophone', 'xylophone', 17],
+	['Bassoon', 'bassoon', 14],
+	['Violin', 'violin', 11],
+	['Flute', 'flute', 15],
+	['Xylophone', 'xylophone', 17],
+	['Celesta', 'celesta', 19],
+	['Vibraphone', 'vibraphone', 17],
+	['Xylophone', 'xylophone', 19],
+	['Xylophone', 'xylophone', 20],
+	['Xylophone', 'xylophone', 20],
+	['Xylophone', 'xylophone', 20],
+	['Celesta', 'celesta', 19],
+	['Steel Guitar', 'steelGuitar', 21],
+	['Recorder', 'recorder', 21],
+	['Recorder', 'recorder', 21],
+	['Recorder', 'recorder', 21],
+	['Recorder', 'recorder', 21],
+	['Recorder', 'recorder', 21],
+	['Recorder', 'recorder', 21],
+	['Timpani', 'timpani', 21],
+] as const;
 
 interface Preset {
 	patch: string;

@@ -1,6 +1,10 @@
 import JSZip from 'jszip';
+import { GuitarProConfiguration } from './guitar-pro-configuration';
+import { GuitarProDocumentReader } from './guitar-pro-document-reader';
 import type { GuitarProOptions } from './guitar-pro-options';
+import { GuitarProXml } from './guitar-pro-xml';
 import type { MDocument } from './m-document';
+import { MDOMParser } from './m-dom-parser';
 
 /** Imports core notation and tablature from Guitar Pro 7/8 `.gp` archives. */
 export class GuitarProParser {
@@ -25,12 +29,17 @@ export class GuitarProParser {
 		if (!zip.file('Content/score.gpif')) {
 			throw new Error('Guitar Pro archive has no Content/score.gpif');
 		}
-		// Keep the notation codec out of the startup path for MusicXML-only consumers.
-		const codec = await import('@coderline/alphatab');
-		const { GuitarProDocumentReader } = await import(
-			'./guitar-pro-document-reader'
+		const root = new MDOMParser().parseFromString(
+			await zip.file('Content/score.gpif')!.async('string'),
+		).root;
+		const configuration = zip.file('Content/PartConfiguration');
+		const tablature = configuration
+			? new GuitarProConfiguration().readTablature(
+					await configuration.async('uint8array'),
+				)
+			: [];
+		return new GuitarProDocumentReader(new GuitarProXml(root), opts).read(
+			tablature,
 		);
-		const score = codec.importer.ScoreLoader.loadScoreFromBytes(bytes);
-		return new GuitarProDocumentReader(codec, opts).read(score);
 	}
 }

@@ -40,8 +40,10 @@ const output = await new GuitarProSerializer().serializeToBlob(doc);
 ```
 
 `parseFromBytes(Uint8Array)` and `serializeToBytes(doc)` are also asynchronous.
-The alphaTab codec is loaded on demand and its version is pinned; no browser,
-audio player, network connection, or Guitar Pro installation is needed.
+GPIF is read and written directly with mdom’s XML tree and the existing ZIP
+utilities. There is no alphaTab dependency, browser, audio player, network
+connection, or Guitar Pro installation required. Adapted format-handling files
+retain their MPL-2.0 notices; see [THIRD_PARTY.md](./THIRD_PARTY.md).
 
 Exports select Guitar Pro's built-in RSE engine and assign a standard soundbank
 for each instrument family, so playback does not require a MIDI output device.

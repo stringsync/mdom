@@ -2,7 +2,7 @@
 	"name": "@stringsync/mdom",
 	"version": "0.3.0",
 	"type": "module",
-	"license": "MIT",
+	"license": "MIT AND MPL-2.0",
 	"main": "./index.ts",
 	"module": "./index.ts",
 	"types": "./index.ts",
@@ -10,7 +10,6 @@
 		".": "./index.ts"
 	},
 	"dependencies": {
-		"@coderline/alphatab": "1.8.4",
 		"jszip": "^3.10.1",
 		"xml-js": "^1.6.11"
 	}
