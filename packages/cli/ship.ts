@@ -1,4 +1,4 @@
-// release carries a version out through webappwiz/ship: build, stamp, commit,
+// ship carries a version out through webappwiz/ship: build, stamp, commit,
 // tag, publish to npm, write the GitHub notes. ship owns that flow, including
 // the clean-tree and trunk-branch refusals and logging into npm/gh when nobody
 // is; what stays here is the part that is mdom's own policy.
@@ -11,7 +11,7 @@ function isBump(type: string): type is Bump {
 	return (TYPES as readonly string[]).includes(type);
 }
 
-export async function release(type: string) {
+export async function ship(type: string) {
 	// unrecognized <type> is rejected with a nonzero exit: ship types `bump` but
 	// never checks it, and a typo would otherwise ship a silent patch
 	if (!isBump(type)) {

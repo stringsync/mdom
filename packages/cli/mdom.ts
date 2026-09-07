@@ -3,8 +3,8 @@ import { t } from 'webappwiz/t';
 import { type Clock, SystemClock } from 'webappwiz/time';
 import { convert } from './convert';
 import { fix } from './fix';
-import { release } from './release';
 import type { ScoreFiles } from './score-files';
+import { ship } from './ship';
 import { test } from './test';
 
 /** Dependencies supplied when running the mdom command program. */
@@ -72,7 +72,7 @@ mdom
 	);
 
 mdom
-	.command('release')
+	.command('ship')
 	.description('bump the version, then commit, tag, and publish')
 	.arg('type', t.enum(['patch', 'minor', 'major'] as const))
-	.action((opts) => release(opts.type));
+	.action((opts) => ship(opts.type));

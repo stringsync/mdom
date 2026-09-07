@@ -196,8 +196,8 @@ describe('mdom command program', () => {
 		);
 	});
 
-	it('rejects invalid release types before any release work', async () => {
-		await mdom.run(deps, ['release', 'typo']);
+	it('rejects invalid ship types before any ship work', async () => {
+		await mdom.run(deps, ['ship', 'typo']);
 
 		expect(ps.getExitCode()).toBe(1);
 		expect(ps.getCalls()).toEqual([]);

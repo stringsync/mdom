@@ -67,10 +67,10 @@ development commands, and runs the program. Command tests supply filesystem,
 process and logging fakes; entrypoint tests also exercise real files and child
 processes. Run them with `mdom test packages/cli`.
 
-## Releasing
+## Shipping
 
 ```sh
-mdom release patch  # or minor, major
+mdom ship patch  # or minor, major
 ```
 
 `webappwiz/ship` owns the flow. It builds every public package into a `dist/`
