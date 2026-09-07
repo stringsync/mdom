@@ -2,6 +2,7 @@ import type { model } from '@coderline/alphatab';
 import { groupChords } from './chord';
 import { Direction } from './direction';
 import type { GuitarProOptions } from './guitar-pro-options';
+import { GuitarProPitchWriter } from './guitar-pro-pitch-writer';
 import { GuitarProValues } from './guitar-pro-values';
 import type { MDocument } from './m-document';
 import { MElement } from './m-node';
@@ -101,6 +102,7 @@ export class GuitarProScoreWriter {
 			}
 		}
 		score.finish(new this.codec.Settings());
+		new GuitarProPitchWriter().write(score);
 		return score;
 	}
 

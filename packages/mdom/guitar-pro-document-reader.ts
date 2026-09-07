@@ -198,7 +198,7 @@ export class GuitarProDocumentReader {
 			staff: staffId,
 		});
 		measure.setClef({ ...clef, staff: staffId });
-		if (measure.index === 0 && staff.tuning.length > 0) {
+		if (measure.index === 0 && staff.showTablature && staff.tuning.length > 0) {
 			const details = new StaffDetails();
 			details.setAttribute('number', staffId);
 			appendValue(details, 'staff-lines', String(staff.tuning.length));
@@ -359,7 +359,7 @@ export class GuitarProDocumentReader {
 		) {
 			this.values.unsupported('note techniques');
 		}
-		if (source.isStringed) {
+		if (source.isStringed && staff.showTablature) {
 			note.setStringFret({
 				string: staff.tuning.length - source.string + 1,
 				fret: source.fret,

@@ -66,6 +66,10 @@ preserved. Note pitches use sounding MIDI values; enharmonic spelling is
 normalized using the key, and voice/part identifiers are regenerated. A tuned
 staff carries both pitches and tablature positions on the same mdom notes.
 
+Notation-only staves use Guitar Pro's internal tuning/string/fret encoding for
+playback while tablature stays hidden. Import exposes string/fret positions and
+tuning as MusicXML tablature only for staves with tablature enabled in the file.
+
 Unsupported techniques and annotations, such as bends, harmonics, slides,
 lyrics, chord diagrams, and alternate endings, throw by default. To deliberately
 discard unsupported annotations, pass `{ unsupported: 'omit' }` as the last
