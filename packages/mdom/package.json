@@ -3,7 +3,6 @@
 	"version": "0.2.5",
 	"type": "module",
 	"license": "MIT",
-	"sideEffects": false,
 	"main": "./index.ts",
 	"module": "./index.ts",
 	"types": "./index.ts",
@@ -14,8 +13,5 @@
 		"@coderline/alphatab": "1.8.4",
 		"jszip": "^3.10.1",
 		"xml-js": "^1.6.11"
-	},
-	"peerDependencies": {
-		"typescript": "^5"
 	}
 }

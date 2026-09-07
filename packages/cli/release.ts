@@ -1,9 +1,8 @@
-// release carries a version out through webappwiz/ship: stamp, commit, tag,
-// publish to npm, write the GitHub notes. ship owns that flow, including the
-// clean-tree and trunk-branch refusals and logging into npm/gh when nobody is;
-// what stays here is the part that is mdom's own policy.
+// release carries a version out through webappwiz/ship: build, stamp, commit,
+// tag, publish to npm, write the GitHub notes. ship owns that flow, including
+// the clean-tree and trunk-branch refusals and logging into npm/gh when nobody
+// is; what stays here is the part that is mdom's own policy.
 import { type Bump, releases } from 'webappwiz/ship';
-import { build } from './build.ts';
 import { fix } from './fix.ts';
 
 const TYPES = ['patch', 'minor', 'major'] as const;
@@ -19,14 +18,15 @@ export async function release(type: string) {
     throw new Error(`unknown version bump "${type}" (expected ${TYPES.join(', ')})`);
   }
 
-  // the gates ship has no opinion about, run before it stamps anything: a
-  // failure here costs nothing, one after the tag is pushed costs a version.
-  // ponytail: built up front rather than as a `releases.build` bundle, so the
-  // confirm prompt comes after the wait; wire the Bundle in if that grates
+  // the one gate ship has no opinion about, run before it stamps anything: a
+  // failure here costs nothing, one after the tag is pushed costs a version
   await fix({ check: true });
-  build();
 
-  // dist/ is what ships (`files`), published from the package root, so nothing
-  // here stages a directory: npm, then the tag, then the notes about it
-  await releases.lockstep(releases.npm('@stringsync/mdom'), releases.git(), releases.github()).release({ bump: type });
+  // `releases.build()` is the compile: its BunBundle turns each public package
+  // into a dist/ of JavaScript and declarations and publishes from there, so
+  // the source never leaves the repository and no consumer needs a compiler.
+  // It runs before anything reaches npm, and clears what it left afterwards.
+  await releases
+    .lockstep(releases.build(), releases.npm('@stringsync/mdom'), releases.git(), releases.github())
+    .release({ bump: type });
 }
