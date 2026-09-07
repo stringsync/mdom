@@ -1,48 +1,38 @@
-// fix formats, lints, and typechecks the project
-import chalk from 'chalk';
+import { ConsoleLogger, color, type Logger } from 'webappwiz/log';
+import { NodePs, type Ps } from 'webappwiz/system';
 
-export async function fix(opts: { check: boolean }): Promise<void> {
+export interface FixOptions {
+	check: boolean;
+	log?: Logger;
+	ps?: Ps;
+}
+
+/** Formats, lints and typechecks the repository; throws if either check fails. */
+export async function fix(opts: FixOptions): Promise<void> {
+	const log = opts.log ?? new ConsoleLogger();
+	const ps = opts.ps ?? new NodePs();
 	const failures: string[] = [];
-
-	if (!check(opts.check)) {
+	const args = ['bunx', 'biome', 'check', '.'];
+	if (!opts.check) {
+		args.push('--write', '--unsafe');
+	}
+	log.info(`$ ${args.join(' ')}`);
+	const check = await ps.spawn(args);
+	log.info(
+		`check: ${check.exitCode === 0 ? color.green('success') : color.red('failed')}`,
+	);
+	if (check.exitCode !== 0) {
 		failures.push('check');
 	}
-	if (!typecheck()) {
+	log.info('$ bunx tsc --noEmit');
+	const types = await ps.spawn(['bunx', 'tsc', '--noEmit']);
+	log.info(
+		`typecheck: ${types.exitCode === 0 ? color.green('success') : color.red('failed')}`,
+	);
+	if (types.exitCode !== 0) {
 		failures.push('typecheck');
 	}
-
 	if (failures.length > 0) {
 		throw new Error(`fix failed: ${failures.join(', ')}`);
 	}
-}
-
-function check(checkOnly: boolean): boolean {
-	const args = ['biome', 'check', '.'];
-	if (!checkOnly) {
-		args.push('--write', '--unsafe');
-	}
-	const ok = exec('bunx', args);
-	console.log(`check: ${ok ? chalk.green('success') : chalk.red('failed')}`);
-	return ok;
-}
-
-function typecheck(): boolean {
-	const ok = exec('bunx', ['tsc', '--noEmit']);
-	console.log(
-		`typecheck: ${ok ? chalk.green('success') : chalk.red('failed')}`,
-	);
-	return ok;
-}
-
-function exec(command: string, args: string[]): boolean {
-	console.log(chalk.cyan(`$ ${[command, ...args].join(' ')}`));
-	const result = Bun.spawnSync([command, ...args], {
-		stdout: 'inherit',
-		stderr: 'inherit',
-		stdin: 'inherit',
-	});
-	if (result.signalCode) {
-		throw new Error(`${command} terminated with signal ${result.signalCode}`);
-	}
-	return result.exitCode === 0;
 }

@@ -1,10 +1,15 @@
-// test runs `bun test`, forwarding extra args and its exit code
-export async function test(args: string[] = []) {
-	const proc = Bun.spawn(['bun', 'test', ...args], {
-		stdout: 'inherit',
-		stderr: 'inherit',
-		stdin: 'inherit',
-	});
-	const code = await proc.exited;
-	process.exit(code);
+import { NodePs, type Ps } from 'webappwiz/system';
+
+export interface TestOptions {
+	args: string[];
+	ps?: Ps;
+}
+
+/** Runs the repository tests, forwarding arguments and a failing exit code. */
+export async function test(opts: TestOptions): Promise<void> {
+	const ps = opts.ps ?? new NodePs();
+	const { exitCode } = await ps.spawn(['bun', 'test', ...opts.args]);
+	if (exitCode !== 0) {
+		ps.exit(exitCode);
+	}
 }

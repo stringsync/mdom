@@ -8,8 +8,7 @@
 		"mdom": "./index.ts"
 	},
 	"dependencies": {
-		"chalk": "^5.6.2",
-		"commander": "^14.0.3",
-		"webappwiz": "0.0.14"
+		"webappwiz": "0.0.14",
+		"@stringsync/mdom": "workspace:*"
 	}
 }
