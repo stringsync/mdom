@@ -26,6 +26,7 @@
 		"webappwiz": "0.0.14"
 	},
 	"dependencies": {
+		"@coderline/alphatab": "1.8.4",
 		"jszip": "^3.10.1",
 		"xml-js": "^1.6.11"
 	}

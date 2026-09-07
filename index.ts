@@ -49,3 +49,6 @@ export { Wedge } from './src/wedge';
 export { MDOMParser } from './src/m-dom-parser';
 export { MusicXMLSerializer } from './src/music-xml-serializer';
 export { MXLSerializer } from './src/mxl-serializer';
+export { GuitarProParser } from './src/guitar-pro-parser';
+export { GuitarProSerializer } from './src/guitar-pro-serializer';
+export type { GuitarProOptions } from './src/guitar-pro-options';

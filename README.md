@@ -26,6 +26,61 @@ new MusicXMLSerializer().serializeToString(doc); // string
 await new MXLSerializer().serializeToBlob(doc); // .mxl Blob
 ```
 
+## Guitar Pro
+
+Import and export core notation and tablature in Guitar Pro 7/8 `.gp` archives:
+
+```ts
+import { GuitarProParser, GuitarProSerializer } from '@stringsync/mdom';
+
+const parser = new GuitarProParser();
+const doc = await parser.parseFromBlob(guitarProBlob);
+const output = await new GuitarProSerializer().serializeToBlob(doc);
+// Save output with a .gp extension.
+```
+
+`parseFromBytes(Uint8Array)` and `serializeToBytes(doc)` are also asynchronous.
+The alphaTab codec is loaded on demand and its version is pinned; no browser,
+audio player, network connection, or Guitar Pro installation is needed.
+
+The first supported subset includes:
+
+- Pitched parts, up to two staves per exported part, and four voices per staff.
+- Notes, rests, chords, whole through 128th durations, up to three dots,
+  tuplet ratios, grace notes, and ties across measures.
+- String/fret positions, open strings, nonstandard tuning, and a fixed capo.
+- Simple time signatures, major/minor keys, treble/bass/alto/tenor clefs,
+  pickups, repeats, and double barlines.
+- Title, composer, lyricist, artist, copyright, part names, MIDI program/channel,
+  tempo at measure boundaries, basic dynamics, text, staccato, and accents.
+
+This is a musical conversion, not a lossless file round trip. Layout, engraving,
+Guitar Pro application settings, and metadata outside the list above are not
+preserved. Note pitches use sounding MIDI values; enharmonic spelling is
+normalized using the key, and voice/part identifiers are regenerated. A tuned
+staff carries both pitches and tablature positions on the same mdom notes.
+
+Unsupported techniques and annotations, such as bends, harmonics, slides,
+lyrics, chord diagrams, and alternate endings, throw by default. To deliberately
+discard unsupported annotations, pass `{ unsupported: 'omit' }` as the last
+argument to either parser or serializer methods. Invalid core data still throws:
+for example, missing string assignments on a tuned staff, pitch/fret mismatches,
+inconsistent durations, or mismatched meters across parts. Percussion, older
+`.gp3`/`.gp4`/`.gp5`/`.gpx` input, and mid-score tuning changes are not supported.
+
+The tests use committed, independently produced GP7 and GP8 fixtures with
+[provenance and licensing](fixtures/guitar-pro/README.md), direct assertions on
+exported GPIF XML, musical round trips, and validation against the vendored
+MusicXML XSD. They follow `.wiz/rules`: one `describe` per file, state owned by
+each test or its `beforeEach`, no mocks, and no branches or loops in tests.
+
+```sh
+mdom test guitar-pro             # Guitar Pro behavior tests
+mdom test guitar-pro --coverage  # include Bun's coverage report
+mdom test                       # full project tests (requires xmllint)
+mdom fix                        # formatting, lint, and typecheck
+```
+
 ## CRUD
 
 ```ts
