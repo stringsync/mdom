@@ -18,44 +18,46 @@ const SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('pedal — a direction-attached spanner that pairs start↔stop', () => {
-  const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
-  const pedals = part.getMeasure('1')!.directions.flatMap((direction) => direction.pedals);
-  const start = pedals[0]!;
-  const stop = pedals[1]!;
+	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
+	const pedals = part
+		.getMeasure('1')!
+		.directions.flatMap((direction) => direction.pedals);
+	const start = pedals[0]!;
+	const stop = pedals[1]!;
 
-  it('reads pedalType, number, and the hosting direction off each marker', () => {
-    expect(start.pedalType).toBe('start');
-    expect(stop.pedalType).toBe('stop');
-    expect(start.number).toBe('1'); // pairing key, defaulting to '1'
-    expect(start.direction).not.toBeNull(); // hangs off a <direction>, not a note
-    expect(start.direction).not.toBe(stop.direction); // each marker has its own direction
-  });
+	it('reads pedalType, number, and the hosting direction off each marker', () => {
+		expect(start.pedalType).toBe('start');
+		expect(stop.pedalType).toBe('stop');
+		expect(start.number).toBe('1'); // pairing key, defaulting to '1'
+		expect(start.direction).not.toBeNull(); // hangs off a <direction>, not a note
+		expect(start.direction).not.toBe(stop.direction); // each marker has its own direction
+	});
 
-  it('pairs the opener with its closer in both directions', () => {
-    expect(start.partner).toBe(stop); // start finds the next matching stop
-    expect(stop.partner).toBe(start); // stop finds the previous matching start
-  });
+	it('pairs the opener with its closer in both directions', () => {
+		expect(start.partner).toBe(stop); // start finds the next matching stop
+		expect(stop.partner).toBe(start); // stop finds the previous matching start
+	});
 
-  it('lists both endpoints as members of the span (opener..closer inclusive)', () => {
-    expect(start.members).toEqual([start, stop]);
-    expect(stop.members).toEqual([start, stop]);
-  });
+	it('lists both endpoints as members of the span (opener..closer inclusive)', () => {
+		expect(start.members).toEqual([start, stop]);
+		expect(stop.members).toEqual([start, stop]);
+	});
 
-  it('locates each marker on the timeline via its direction (in beats)', () => {
-    expect(start.measureBeat).toBe(0); // at the downbeat
-    expect(stop.measureBeat).toBe(2); // after two quarter notes
-  });
+	it('locates each marker on the timeline via its direction (in beats)', () => {
+		expect(start.measureBeat).toBe(0); // at the downbeat
+		expect(stop.measureBeat).toBe(2); // after two quarter notes
+	});
 
-  it('reads the line="yes" bracket-style flag, false by default', () => {
-    const bracketed = new MDOMParser()
-      .parseFromString(
-        `<score-partwise><part id="P1"><measure number="1">
+	it('reads the line="yes" bracket-style flag, false by default', () => {
+		const bracketed = new MDOMParser()
+			.parseFromString(
+				`<score-partwise><part id="P1"><measure number="1">
         <direction><direction-type><pedal type="start" number="1" line="yes"/></direction-type></direction>
-      </measure></part></score-partwise>`
-      )
-      .score.getPart('P1')!
-      .getMeasure('1')!.directions[0]!.pedals[0]!;
-    expect(bracketed.line).toBe(true);
-    expect(start.line).toBe(false); // the SAMPLE pedal has no line attribute
-  });
+      </measure></part></score-partwise>`,
+			)
+			.score.getPart('P1')!
+			.getMeasure('1')!.directions[0]!.pedals[0]!;
+		expect(bracketed.line).toBe(true);
+		expect(start.line).toBe(false); // the SAMPLE pedal has no line attribute
+	});
 });

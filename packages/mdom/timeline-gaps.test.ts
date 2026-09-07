@@ -15,15 +15,18 @@ const GAPS = `<score-partwise><part id="P1"><measure number="1">
 </measure></part></score-partwise>`;
 
 describe('timeline — forward gaps and the content end', () => {
-  const measure = new MDOMParser().parseFromString(GAPS).score.getPart('P1')!.getMeasure('1')!;
+	const measure = new MDOMParser()
+		.parseFromString(GAPS)
+		.score.getPart('P1')!
+		.getMeasure('1')!;
 
-  it('skips the cursor past a <forward>, leaving the gap unfilled', () => {
-    expect(measure.notes.map((note) => note.measureBeat)).toEqual([0, 2, 0]);
-  });
+	it('skips the cursor past a <forward>, leaving the gap unfilled', () => {
+		expect(measure.notes.map((note) => note.measureBeat)).toEqual([0, 2, 0]);
+	});
 
-  it('measures content out to the furthest point reached, not the final cursor', () => {
-    // The measure ends on a <backup> that rewinds to beat 0; the content still
-    // runs to beat 3, which is the width a renderer has to reserve.
-    expect(measure.endBeat).toBe(3);
-  });
+	it('measures content out to the furthest point reached, not the final cursor', () => {
+		// The measure ends on a <backup> that rewinds to beat 0; the content still
+		// runs to beat 3, which is the width a renderer has to reserve.
+		expect(measure.endBeat).toBe(3);
+	});
 });

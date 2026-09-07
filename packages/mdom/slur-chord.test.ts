@@ -21,14 +21,22 @@ const CHORD = `<score-partwise><part id="P1"><measure number="1">
 </measure></part></score-partwise>`;
 
 describe('slur — a chord slurred entirely under number 1', () => {
-  const notes = new MDOMParser().parseFromString(CHORD).score.getPart('P1')!.getMeasure('1')!.notes;
+	const notes = new MDOMParser()
+		.parseFromString(CHORD)
+		.score.getPart('P1')!
+		.getMeasure('1')!.notes;
 
-  it('pairs each member with its counterpart: oldest open start wins', () => {
-    const pairs = notes.slice(0, 3).map((note) => [note.pitch!.step, note.slurs[0]!.partner?.note.pitch?.step]);
-    expect(pairs).toEqual([
-      ['C', 'C'],
-      ['E', 'E'],
-      ['G', 'G'],
-    ]);
-  });
+	it('pairs each member with its counterpart: oldest open start wins', () => {
+		const pairs = notes
+			.slice(0, 3)
+			.map((note) => [
+				note.pitch!.step,
+				note.slurs[0]!.partner?.note.pitch?.step,
+			]);
+		expect(pairs).toEqual([
+			['C', 'C'],
+			['E', 'E'],
+			['G', 'G'],
+		]);
+	});
 });

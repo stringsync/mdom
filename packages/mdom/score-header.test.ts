@@ -26,19 +26,22 @@ const HEADER = `<score-partwise>
 </score-partwise>`;
 
 describe('score header', () => {
-  const score = new MDOMParser().parseFromString(HEADER).score;
+	const score = new MDOMParser().parseFromString(HEADER).score;
 
-  it('reads the title, and each part its label and stave count', () => {
-    expect(score.title).toBe('Sonata');
-    expect(score.getPart('P1')!.label).toBe('Piano');
-    expect(score.getPart('P1')!.staveCount).toBe(2);
-  });
+	it('reads the title, and each part its label and stave count', () => {
+		expect(score.title).toBe('Sonata');
+		expect(score.getPart('P1')!.label).toBe('Piano');
+		expect(score.getPart('P1')!.staveCount).toBe(2);
+	});
 
-  it('lists every encoding <software>, in order', () => {
-    expect(score.software).toEqual(['Finale 2011 for Windows', 'Dolet 5.5 for Finale']);
-  });
+	it('lists every encoding <software>, in order', () => {
+		expect(score.software).toEqual([
+			'Finale 2011 for Windows',
+			'Dolet 5.5 for Finale',
+		]);
+	});
 
-  it('names no software when the file states none', () => {
-    expect(new Score().software).toEqual([]);
-  });
+	it('names no software when the file states none', () => {
+		expect(new Score().software).toEqual([]);
+	});
 });

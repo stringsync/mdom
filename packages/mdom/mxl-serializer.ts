@@ -14,14 +14,16 @@ const CONTAINER_XML = `<?xml version="1.0" encoding="UTF-8"?>
 
 /** Serializes an {@link MDocument} into a compressed `.mxl` archive. */
 export class MXLSerializer {
-  private readonly xml = new MusicXMLSerializer();
+	private readonly xml = new MusicXMLSerializer();
 
-  async serializeToBlob(doc: MDocument): Promise<Blob> {
-    const zip = new JSZip();
-    // mimetype must be first and uncompressed per the MXL spec.
-    zip.file('mimetype', 'application/vnd.recordare.musicxml', { compression: 'STORE' });
-    zip.file('META-INF/container.xml', CONTAINER_XML);
-    zip.file(SCORE_PATH, this.xml.serializeToString(doc));
-    return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-  }
+	async serializeToBlob(doc: MDocument): Promise<Blob> {
+		const zip = new JSZip();
+		// mimetype must be first and uncompressed per the MXL spec.
+		zip.file('mimetype', 'application/vnd.recordare.musicxml', {
+			compression: 'STORE',
+		});
+		zip.file('META-INF/container.xml', CONTAINER_XML);
+		zip.file(SCORE_PATH, this.xml.serializeToString(doc));
+		return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+	}
 }

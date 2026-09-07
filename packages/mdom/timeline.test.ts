@@ -20,26 +20,36 @@ const SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('timeline & grouping', () => {
-  const measure = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!.getMeasure('1')!;
+	const measure = new MDOMParser()
+		.parseFromString(SAMPLE)
+		.score.getPart('P1')!
+		.getMeasure('1')!;
 
-  it('groups notes by voice', () => {
-    const voices = measure.voices;
-    expect(voices.map((voice) => voice.id)).toEqual(['1', '2']);
-    expect(voices[1]!.notes.map((note) => note.pitch?.step)).toEqual(['C', 'G']);
-  });
+	it('groups notes by voice', () => {
+		const voices = measure.voices;
+		expect(voices.map((voice) => voice.id)).toEqual(['1', '2']);
+		expect(voices[1]!.notes.map((note) => note.pitch?.step)).toEqual([
+			'C',
+			'G',
+		]);
+	});
 
-  it('collapses a <chord/> run into one Chord and reads its onset', () => {
-    const triad = measure.chords[0]!;
-    expect(triad.lead.pitch?.step).toBe('C');
-    expect(triad.notes.map((note) => note.pitch?.step)).toEqual(['C', 'E', 'G']);
-    expect(triad.measureBeat).toBe(0);
-  });
+	it('collapses a <chord/> run into one Chord and reads its onset', () => {
+		const triad = measure.chords[0]!;
+		expect(triad.lead.pitch?.step).toBe('C');
+		expect(triad.notes.map((note) => note.pitch?.step)).toEqual([
+			'C',
+			'E',
+			'G',
+		]);
+		expect(triad.measureBeat).toBe(0);
+	});
 
-  it('reads duration in beats and chord membership off the note', () => {
-    const [firstNote, secondNote] = measure.notes;
-    expect(firstNote!.beats).toBe(1); // duration 4 / divisions 4
-    expect(firstNote!.isChordMember).toBe(false);
-    expect(secondNote!.isChordMember).toBe(true);
-    expect(firstNote!.voice).toBe('1');
-  });
+	it('reads duration in beats and chord membership off the note', () => {
+		const [firstNote, secondNote] = measure.notes;
+		expect(firstNote!.beats).toBe(1); // duration 4 / divisions 4
+		expect(firstNote!.isChordMember).toBe(false);
+		expect(secondNote!.isChordMember).toBe(true);
+		expect(firstNote!.voice).toBe('1');
+	});
 });

@@ -20,15 +20,20 @@ const DIVISI = `<score-partwise><part id="P1"><measure number="1">
 </measure></part></score-partwise>`;
 
 describe('slur — two voices sharing number 1', () => {
-  const notes = new MDOMParser().parseFromString(DIVISI).score.getPart('P1')!.getMeasure('1')!.notes;
-  const [upperStart, , upperStop, lowerStart, lowerStop] = notes;
+	const notes = new MDOMParser()
+		.parseFromString(DIVISI)
+		.score.getPart('P1')!
+		.getMeasure('1')!.notes;
+	const [upperStart, , upperStop, lowerStart, lowerStop] = notes;
 
-  it('keeps each voice on its own arc, even at different lengths', () => {
-    expect(upperStart!.slurs[0]!.partner).toBe(upperStop!.slurs[0]!);
-    expect(lowerStart!.slurs[0]!.partner).toBe(lowerStop!.slurs[0]!);
-  });
+	it('keeps each voice on its own arc, even at different lengths', () => {
+		expect(upperStart!.slurs[0]!.partner).toBe(upperStop!.slurs[0]!);
+		expect(lowerStart!.slurs[0]!.partner).toBe(lowerStop!.slurs[0]!);
+	});
 
-  it('walks the members of that voice own span', () => {
-    expect(lowerStart!.slurs[0]!.members.map((slur) => slur.note.pitch?.octave)).toEqual([4, 4]);
-  });
+	it('walks the members of that voice own span', () => {
+		expect(
+			lowerStart!.slurs[0]!.members.map((slur) => slur.note.pitch?.octave),
+		).toEqual([4, 4]);
+	});
 });

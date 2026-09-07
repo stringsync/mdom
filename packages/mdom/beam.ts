@@ -2,7 +2,7 @@ import { MElement, required } from './m-node';
 import { Note } from './note';
 import { Part } from './part';
 import { colorOf } from './print-style';
-import { Spanner, noteMarkers, type SpannerSpec } from './spanner';
+import { noteMarkers, Spanner, type SpannerSpec } from './spanner';
 
 /**
  * One beamed run: the notes under a single primary beam, plus where its
@@ -10,8 +10,8 @@ import { Spanner, noteMarkers, type SpannerSpec } from './spanner';
  * split falls between `notes[index]` and `notes[index + 1]`.
  */
 export interface BeamRun {
-  notes: Note[];
-  breaksAfter: number[];
+	notes: Note[];
+	breaksAfter: number[];
 }
 
 /**
@@ -30,43 +30,53 @@ export interface BeamRun {
  * a secondary-level `end` that isn't the run's last note.
  */
 export function groupBeamRuns(notes: Note[]): BeamRun[] {
-  const runs: BeamRun[] = [];
-  let current: BeamRun | null = null;
-  for (const note of notes) {
-    if (note.isChordMember) {
-      continue;
-    }
-    // Raw text reads so the fold tolerates a malformed valueless marker.
-    const beams = note.beams;
-    const value = beams.find((beam) => beam.number === '1')?.text ?? null;
-    if (value === 'begin') {
-      current = { notes: [note], breaksAfter: [] };
-      runs.push(current);
-    } else if (value !== null) {
-      current?.notes.push(note); // continue / end / a hook, all of them joiners
-    } else if (beams.length === 0 && note.isRest) {
-      continue; // a rest can sit under a beam
-    } else {
-      current = null;
-      continue;
-    }
-    if (current && beams.some((beam) => beam.number !== '1' && beam.text === 'end')) {
-      current.breaksAfter.push(current.notes.length - 1);
-    }
-  }
-  for (const run of runs) {
-    // A secondary end on the LAST note is where the whole beam stops, not a split.
-    run.breaksAfter = run.breaksAfter.filter((index) => index < run.notes.length - 1);
-  }
-  return runs;
+	const runs: BeamRun[] = [];
+	let current: BeamRun | null = null;
+	for (const note of notes) {
+		if (note.isChordMember) {
+			continue;
+		}
+		// Raw text reads so the fold tolerates a malformed valueless marker.
+		const beams = note.beams;
+		const value = beams.find((beam) => beam.number === '1')?.text ?? null;
+		if (value === 'begin') {
+			current = { notes: [note], breaksAfter: [] };
+			runs.push(current);
+		} else if (value !== null) {
+			current?.notes.push(note); // continue / end / a hook, all of them joiners
+		} else if (beams.length === 0 && note.isRest) {
+			continue; // a rest can sit under a beam
+		} else {
+			current = null;
+			continue;
+		}
+		if (
+			current &&
+			beams.some((beam) => beam.number !== '1' && beam.text === 'end')
+		) {
+			current.breaksAfter.push(current.notes.length - 1);
+		}
+	}
+	for (const run of runs) {
+		// A secondary end on the LAST note is where the whole beam stops, not a split.
+		run.breaksAfter = run.breaksAfter.filter(
+			(index) => index < run.notes.length - 1,
+		);
+	}
+	return runs;
 }
 
 /** The notes of each beamed run — {@link groupBeamRuns} without the break positions. */
 export function groupBeams(notes: Note[]): Note[][] {
-  return groupBeamRuns(notes).map((run) => run.notes);
+	return groupBeamRuns(notes).map((run) => run.notes);
 }
 
-export type BeamValue = 'begin' | 'continue' | 'end' | 'forward hook' | 'backward hook';
+export type BeamValue =
+	| 'begin'
+	| 'continue'
+	| 'end'
+	| 'forward hook'
+	| 'backward hook';
 
 /**
  * A `<beam>` directly under `<note>`. `number` is the beam level (1 = eighth-note
@@ -74,60 +84,60 @@ export type BeamValue = 'begin' | 'continue' | 'end' | 'forward hook' | 'backwar
  * value is element text, not an attribute.
  */
 export class Beam extends MElement {
-  constructor() {
-    super('beam');
-  }
+	constructor() {
+		super('beam');
+	}
 
-  /** Beam level; '1' when omitted. */
-  get number(): string {
-    return this.getAttribute('number') ?? '1';
-  }
+	/** Beam level; '1' when omitted. */
+	get number(): string {
+		return this.getAttribute('number') ?? '1';
+	}
 
-  /** The begin/continue/end value: required text on a `<beam>`, and drives pairing. */
-  get beamValue(): BeamValue {
-    return required(this.text, 'value of <beam>') as BeamValue;
-  }
+	/** The begin/continue/end value: required text on a `<beam>`, and drives pairing. */
+	get beamValue(): BeamValue {
+		return required(this.text, 'value of <beam>') as BeamValue;
+	}
 
-  /** The note this marker hangs off of. An attached marker always has one. */
-  get note(): Note {
-    return required(this.closest(Note), '<note> ancestor of <beam>');
-  }
+	/** The note this marker hangs off of. An attached marker always has one. */
+	get note(): Note {
+		return required(this.closest(Note), '<note> ancestor of <beam>');
+	}
 
-  /** The part this marker belongs to. An attached marker always has one. */
-  get part(): Part {
-    return required(this.closest(Part), '<part> ancestor of <beam>');
-  }
+	/** The part this marker belongs to. An attached marker always has one. */
+	get part(): Part {
+		return required(this.closest(Part), '<part> ancestor of <beam>');
+	}
 
-  /** The normalized `color`; null when unset. */
-  get color(): string | null {
-    return colorOf(this);
-  }
+	/** The normalized `color`; null when unset. */
+	get color(): string | null {
+		return colorOf(this);
+	}
 
-  /** The marker at the far end (same number), or null. */
-  get partner(): Beam | null {
-    return new Spanner(this.spec()).partnerOf(this);
-  }
+	/** The marker at the far end (same number), or null. */
+	get partner(): Beam | null {
+		return new Spanner(this.spec()).partnerOf(this);
+	}
 
-  /**
-   * Every marker in this spanner in order — begin, any continues, end.
-   * {@link partner} is just the far end; {@link members} is the whole span (e.g. a
-   * 3-note beam group).
-   */
-  get members(): Beam[] {
-    return new Spanner(this.spec()).membersOf(this);
-  }
+	/**
+	 * Every marker in this spanner in order — begin, any continues, end.
+	 * {@link partner} is just the far end; {@link members} is the whole span (e.g. a
+	 * 3-note beam group).
+	 */
+	get members(): Beam[] {
+		return new Spanner(this.spec()).membersOf(this);
+	}
 
-  /** Onset of this marker's note within its measure, in beats. */
-  get measureBeat(): number | null {
-    return this.note.measureBeat;
-  }
+	/** Onset of this marker's note within its measure, in beats. */
+	get measureBeat(): number | null {
+		return this.note.measureBeat;
+	}
 
-  private spec(): SpannerSpec<Beam> {
-    return {
-      siblings: noteMarkers(this, (note) => note.beams),
-      // Raw text reads so resolution tolerates a malformed valueless marker.
-      isOpen: (beam) => beam.text === 'begin',
-      isClose: (beam) => beam.text === 'end',
-    };
-  }
+	private spec(): SpannerSpec<Beam> {
+		return {
+			siblings: noteMarkers(this, (note) => note.beams),
+			// Raw text reads so resolution tolerates a malformed valueless marker.
+			isOpen: (beam) => beam.text === 'begin',
+			isClose: (beam) => beam.text === 'end',
+		};
+	}
 }

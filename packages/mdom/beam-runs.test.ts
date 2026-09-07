@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './m-dom-parser';
 import { groupBeamRuns, groupBeams } from './beam';
 import * as barrel from './index';
+import { MDOMParser } from './m-dom-parser';
 
 // How Guitar Pro encodes a triplet-of-16ths + 2-16ths beat: the level-1 beam
 // reads begin, continue, end, continue, end — ONE continuous primary beam whose
@@ -30,28 +30,37 @@ const SPLIT = `<score-partwise>
 </score-partwise>`;
 
 describe('groupBeamRuns — an <end> does not close the run', () => {
-  const measure = new MDOMParser().parseFromString(SPLIT).score.getPart('P1')!.getMeasure('1')!;
-  const [run, ...rest] = measure.beamRuns();
+	const measure = new MDOMParser()
+		.parseFromString(SPLIT)
+		.score.getPart('P1')!
+		.getMeasure('1')!;
+	const [run, ...rest] = measure.beamRuns();
 
-  it('keeps the whole begin..end..end span as one primary beam', () => {
-    expect(rest).toEqual([]);
-    expect(run!.notes.map((note) => note.pitch?.step)).toEqual(['C', 'D', 'E', 'F', 'G']);
-  });
+	it('keeps the whole begin..end..end span as one primary beam', () => {
+		expect(rest).toEqual([]);
+		expect(run!.notes.map((note) => note.pitch?.step)).toEqual([
+			'C',
+			'D',
+			'E',
+			'F',
+			'G',
+		]);
+	});
 
-  it('reports the secondary break inside the run, not the one that ends it', () => {
-    expect(run!.breaksAfter).toEqual([2]); // the sub-beam splits after E
-  });
+	it('reports the secondary break inside the run, not the one that ends it', () => {
+		expect(run!.breaksAfter).toEqual([2]); // the sub-beam splits after E
+	});
 
-  it('closes the run at the unbeamed quarter that follows', () => {
-    expect(measure.beams.map((notes) => notes.length)).toEqual([5]);
-    expect(groupBeamRuns([])).toEqual([]);
-  });
+	it('closes the run at the unbeamed quarter that follows', () => {
+		expect(measure.beams.map((notes) => notes.length)).toEqual([5]);
+		expect(groupBeamRuns([])).toEqual([]);
+	});
 
-  // The fold is per-VOICE for a renderer, so it has to be reachable off an
-  // arbitrary Note[] — not only measure-scoped. Identity, so the two can't drift.
-  it('is exported from the barrel as the same fold measure.beamRuns() delegates to', () => {
-    expect(barrel.groupBeamRuns).toBe(groupBeamRuns);
-    expect(barrel.groupBeams).toBe(groupBeams);
-    expect(groupBeamRuns(measure.notes)).toEqual(measure.beamRuns());
-  });
+	// The fold is per-VOICE for a renderer, so it has to be reachable off an
+	// arbitrary Note[] — not only measure-scoped. Identity, so the two can't drift.
+	it('is exported from the barrel as the same fold measure.beamRuns() delegates to', () => {
+		expect(barrel.groupBeamRuns).toBe(groupBeamRuns);
+		expect(barrel.groupBeams).toBe(groupBeams);
+		expect(groupBeamRuns(measure.notes)).toEqual(measure.beamRuns());
+	});
 });

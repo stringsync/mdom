@@ -15,20 +15,20 @@ const PICKUP = `<score-partwise><part id="P1">
 </part></score-partwise>`;
 
 describe('measure and time — the declared-shape flags', () => {
-  const part = new MDOMParser().parseFromString(PICKUP).score.getPart('P1')!;
-  const [pickup, full] = part.measures;
+	const part = new MDOMParser().parseFromString(PICKUP).score.getPart('P1')!;
+	const [pickup, full] = part.measures;
 
-  it('reads implicit="yes" as a pickup, not an underfull bar', () => {
-    expect(pickup!.isImplicit).toBe(true);
-    expect(full!.isImplicit).toBe(false);
-    expect(pickup!.endBeat).toBe(1); // genuinely short, and that is intended
-  });
+	it('reads implicit="yes" as a pickup, not an underfull bar', () => {
+		expect(pickup!.isImplicit).toBe(true);
+		expect(full!.isImplicit).toBe(false);
+		expect(pickup!.endBeat).toBe(1); // genuinely short, and that is intended
+	});
 
-  it('reads an unmetered <senza-misura> signature', () => {
-    expect(pickup!.getTime()!.isSenzaMisura).toBe(true);
-    expect(full!.getTime()!.isSenzaMisura).toBe(false);
-    expect(full!.getTime()!.symbol).toBe('cut');
-    expect(pickup!.getTime()!.symbol).toBeNull();
-    expect(pickup!.getTime()!.staff).toBe('1');
-  });
+	it('reads an unmetered <senza-misura> signature', () => {
+		expect(pickup!.getTime()!.isSenzaMisura).toBe(true);
+		expect(full!.getTime()!.isSenzaMisura).toBe(false);
+		expect(full!.getTime()!.symbol).toBe('cut');
+		expect(pickup!.getTime()!.symbol).toBeNull();
+		expect(pickup!.getTime()!.staff).toBe('1');
+	});
 });

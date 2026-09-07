@@ -11,59 +11,69 @@ import { MDOMParser, type Score } from '@stringsync/mdom';
 // dialect the current corpus doesn't.
 
 export const EXAMPLES = {
-  // Finale (Mac v27, Windows v25)
-  CHOPIN_PRELUDE: 'chopin_prelude.xml',
-  DRUM_TUPLET_BEAMS_MEASURE: 'drum_tuplet_beams_measure.xml',
-  // Finale 2011 for Windows + Dolet 5.5 (the reference MusicXML exporter)
-  ACTOR_PRELUDE_SAMPLE: 'actor_prelude_sample.xml',
-  // Guitar Pro
-  WANNA_SKIP_CLASS: 'wanna_skip_class.xml',
-  // MuseScore (v2, v3)
-  ACCIDENTALS: 'accidentals.xml',
-  OCTAVE_SHIFT_SIMPLE_PIANO: 'octave_shift_simple_piano.xml',
-  // Sibelius (v19, v5.1)
-  COMPOSER_ONE_LINE: 'composer_one_line.xml',
-  'LILYPOND_99A-SIBELIUS5-IGNOREBEAMING': 'lilypond_99a-Sibelius5-IgnoreBeaming.xml',
-  // Dorico
-  SORTED_NOTES_CHORD_VEXFLOW_KEYS_ORDER: 'sorted_notes_chord_vexflow_keys_order.xml',
-  // Noteflight
-  STAVE_REPETITIONS_CODA_ETC: 'stave_repetitions_coda_etc.xml',
-  // iReal Pro (@infojunkie/ireal-musicxml)
-  REHEARSAL_MARKS_BOLIVIA: 'rehearsal_marks_bolivia.xml',
-  // guitartabcreator.com
-  TABLATURE_BENDS: 'tablature_bends.xml',
-  // LilyPond — dialect and edge-case stress files (no <software> tag)
-  'LILYPOND_03C-RHYTHM-DIVISIONCHANGE': 'lilypond_03c-Rhythm-DivisionChange.xml',
-  'LILYPOND_11H-TIMESIGNATURES-SENZAMISURA': 'lilypond_11h-TimeSignatures-SenzaMisura.xml',
-  'LILYPOND_13D-KEYSIGNATURES-MICROTONES': 'lilypond_13d-KeySignatures-Microtones.xml',
-  'LILYPOND_33E-SPANNERS-OCTAVESHIFTS-INVALIDSIZE': 'lilypond_33e-Spanners-OctaveShifts-InvalidSize.xml',
-  'LILYPOND_45F-REPEATS-INVALIDENDINGS': 'lilypond_45f-Repeats-InvalidEndings.xml',
-  'LILYPOND_46F-INCOMPLETEMEASURES': 'lilypond_46f-IncompleteMeasures.xml',
-  'LILYPOND_43C-MULTISTAFF-DIFFERENTKEYSAFTERBACKUP': 'lilypond_43c-MultiStaff-DifferentKeysAfterBackup.xml',
-  'LILYPOND_24D-AFTERGRACE': 'lilypond_24d-AfterGrace.xml',
-  'LILYPOND_61J-LYRICS-ELISIONS': 'lilypond_61j-Lyrics-Elisions.xml',
-  'LILYPOND_41H-TOOMANYPARTS': 'lilypond_41h-TooManyParts.xml',
-  // W3C MusicXML sample / tutorial files (no <software> tag)
-  HELLO_WORLD: 'hello_world.xml',
-  NOTE_VARIATIONS: 'note_variations.xml',
-  CONCERT_SCORE_AND_FOR_PART: 'concert_score_and_for_part.xml',
-  // Hand-built fault-tolerance fixtures
-  INVALID_ROOT: 'invalid_root.xml',
-  MOSTLY_INVALID: 'mostly_invalid.xml',
-  PARTIALLY_INVALID: 'partially_invalid.xml',
+	// Finale (Mac v27, Windows v25)
+	CHOPIN_PRELUDE: 'chopin_prelude.xml',
+	DRUM_TUPLET_BEAMS_MEASURE: 'drum_tuplet_beams_measure.xml',
+	// Finale 2011 for Windows + Dolet 5.5 (the reference MusicXML exporter)
+	ACTOR_PRELUDE_SAMPLE: 'actor_prelude_sample.xml',
+	// Guitar Pro
+	WANNA_SKIP_CLASS: 'wanna_skip_class.xml',
+	// MuseScore (v2, v3)
+	ACCIDENTALS: 'accidentals.xml',
+	OCTAVE_SHIFT_SIMPLE_PIANO: 'octave_shift_simple_piano.xml',
+	// Sibelius (v19, v5.1)
+	COMPOSER_ONE_LINE: 'composer_one_line.xml',
+	'LILYPOND_99A-SIBELIUS5-IGNOREBEAMING':
+		'lilypond_99a-Sibelius5-IgnoreBeaming.xml',
+	// Dorico
+	SORTED_NOTES_CHORD_VEXFLOW_KEYS_ORDER:
+		'sorted_notes_chord_vexflow_keys_order.xml',
+	// Noteflight
+	STAVE_REPETITIONS_CODA_ETC: 'stave_repetitions_coda_etc.xml',
+	// iReal Pro (@infojunkie/ireal-musicxml)
+	REHEARSAL_MARKS_BOLIVIA: 'rehearsal_marks_bolivia.xml',
+	// guitartabcreator.com
+	TABLATURE_BENDS: 'tablature_bends.xml',
+	// LilyPond — dialect and edge-case stress files (no <software> tag)
+	'LILYPOND_03C-RHYTHM-DIVISIONCHANGE':
+		'lilypond_03c-Rhythm-DivisionChange.xml',
+	'LILYPOND_11H-TIMESIGNATURES-SENZAMISURA':
+		'lilypond_11h-TimeSignatures-SenzaMisura.xml',
+	'LILYPOND_13D-KEYSIGNATURES-MICROTONES':
+		'lilypond_13d-KeySignatures-Microtones.xml',
+	'LILYPOND_33E-SPANNERS-OCTAVESHIFTS-INVALIDSIZE':
+		'lilypond_33e-Spanners-OctaveShifts-InvalidSize.xml',
+	'LILYPOND_45F-REPEATS-INVALIDENDINGS':
+		'lilypond_45f-Repeats-InvalidEndings.xml',
+	'LILYPOND_46F-INCOMPLETEMEASURES': 'lilypond_46f-IncompleteMeasures.xml',
+	'LILYPOND_43C-MULTISTAFF-DIFFERENTKEYSAFTERBACKUP':
+		'lilypond_43c-MultiStaff-DifferentKeysAfterBackup.xml',
+	'LILYPOND_24D-AFTERGRACE': 'lilypond_24d-AfterGrace.xml',
+	'LILYPOND_61J-LYRICS-ELISIONS': 'lilypond_61j-Lyrics-Elisions.xml',
+	'LILYPOND_41H-TOOMANYPARTS': 'lilypond_41h-TooManyParts.xml',
+	// W3C MusicXML sample / tutorial files (no <software> tag)
+	HELLO_WORLD: 'hello_world.xml',
+	NOTE_VARIATIONS: 'note_variations.xml',
+	CONCERT_SCORE_AND_FOR_PART: 'concert_score_and_for_part.xml',
+	// Hand-built fault-tolerance fixtures
+	INVALID_ROOT: 'invalid_root.xml',
+	MOSTLY_INVALID: 'mostly_invalid.xml',
+	PARTIALLY_INVALID: 'partially_invalid.xml',
 } as const;
 
 /** Hand-built fixtures that probe how the parser handles broken/empty input. */
 export const MALFORMED = {
-  /** Mismatched root tags — not well-formed XML; parsing must throw. */
-  INVALID_ROOT: EXAMPLES.INVALID_ROOT,
-  /** Well-formed XML, but no parts — a valid-but-empty score. */
-  MOSTLY_INVALID: EXAMPLES.MOSTLY_INVALID,
-  /** Non-numeric `<divisions>`/`<duration>` content the parser must tolerate. */
-  PARTIALLY_INVALID: EXAMPLES.PARTIALLY_INVALID,
+	/** Mismatched root tags — not well-formed XML; parsing must throw. */
+	INVALID_ROOT: EXAMPLES.INVALID_ROOT,
+	/** Well-formed XML, but no parts — a valid-but-empty score. */
+	MOSTLY_INVALID: EXAMPLES.MOSTLY_INVALID,
+	/** Non-numeric `<divisions>`/`<duration>` content the parser must tolerate. */
+	PARTIALLY_INVALID: EXAMPLES.PARTIALLY_INVALID,
 } as const;
 
 /** Read one example off disk and parse it, the way every real-world test starts. */
 export function loadScore(file: string): Score {
-  return new MDOMParser().parseFromString(fs.readFileSync(path.join(__dirname, file), 'utf-8')).score;
+	return new MDOMParser().parseFromString(
+		fs.readFileSync(path.join(__dirname, file), 'utf-8'),
+	).score;
 }

@@ -32,40 +32,40 @@ const SAMPLE = `<score-partwise><part id="P1">
 </part></score-partwise>`;
 
 describe('direction — the printable direction-type children', () => {
-  const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
-  const [dynamic, marks] = part.getMeasure('1')!.directions;
-  const closing = part.getMeasure('2')!.directions[0]!;
+	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
+	const [dynamic, marks] = part.getMeasure('1')!.directions;
+	const closing = part.getMeasure('2')!.directions[0]!;
 
-  it('names each dynamic by its tag, and <other-dynamics> by its text', () => {
-    expect(dynamic!.dynamics[0]!.marks).toEqual(['sfz', 'p', 'fp-ish']);
-    expect(dynamic!.dynamics[0]!.placement).toBe('below');
-    expect(marks!.dynamics).toEqual([]);
-  });
+	it('names each dynamic by its tag, and <other-dynamics> by its text', () => {
+		expect(dynamic!.dynamics[0]!.marks).toEqual(['sfz', 'p', 'fp-ish']);
+		expect(dynamic!.dynamics[0]!.placement).toBe('below');
+		expect(marks!.dynamics).toEqual([]);
+	});
 
-  it('reads the staff a direction prints over, defaulting to 1 like a note', () => {
-    expect(dynamic!.staff).toBe('2');
-    expect(marks!.staff).toBe('1');
-    expect(marks!.placement).toBe('above');
-    expect(closing.placement).toBeNull();
-  });
+	it('reads the staff a direction prints over, defaulting to 1 like a note', () => {
+		expect(dynamic!.staff).toBe('2');
+		expect(marks!.staff).toBe('1');
+		expect(marks!.placement).toBe('above');
+		expect(closing.placement).toBeNull();
+	});
 
-  it('reads the rehearsal mark and its enclosure', () => {
-    expect(marks!.rehearsals[0]!.text).toBe('A');
-    expect(marks!.rehearsals[0]!.enclosure).toBe('circle');
-  });
+	it('reads the rehearsal mark and its enclosure', () => {
+		expect(marks!.rehearsals[0]!.text).toBe('A');
+		expect(marks!.rehearsals[0]!.enclosure).toBe('circle');
+	});
 
-  it('reads words with their font attributes and normalized color', () => {
-    const words = marks!.wordsElements[0]!;
-    expect(words.text).toBe('cresc.');
-    expect(words.fontStyle).toBe('italic');
-    expect(words.fontWeight).toBe('bold');
-    expect(words.color).toBe('#00FF00'); // #AARRGGBB, alpha first, dropped
-    expect(marks!.words).toEqual(['cresc.']);
-  });
+	it('reads words with their font attributes and normalized color', () => {
+		const words = marks!.wordsElements[0]!;
+		expect(words.text).toBe('cresc.');
+		expect(words.fontStyle).toBe('italic');
+		expect(words.fontWeight).toBe('bold');
+		expect(words.color).toBe('#00FF00'); // #AARRGGBB, alpha first, dropped
+		expect(marks!.words).toEqual(['cresc.']);
+	});
 
-  it('lists the segno/coda landmarks a D.S. jumps to', () => {
-    expect(marks!.navigations).toEqual(['segno']);
-    expect(closing.navigations).toEqual(['coda']);
-    expect(dynamic!.navigations).toEqual([]);
-  });
+	it('lists the segno/coda landmarks a D.S. jumps to', () => {
+		expect(marks!.navigations).toEqual(['segno']);
+		expect(closing.navigations).toEqual(['coda']);
+		expect(dynamic!.navigations).toEqual([]);
+	});
 });

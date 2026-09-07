@@ -25,22 +25,24 @@ const CROSS_STAVE = `<score-partwise><part id="P1">
 </part></score-partwise>`;
 
 describe('slur — paired in onset order, not document order', () => {
-  const part = new MDOMParser().parseFromString(CROSS_STAVE).score.getPart('P1')!;
-  const [upperC, upperD, lowerC] = part.getMeasure('1')!.notes;
-  const nextMeasureNote = part.getMeasure('2')!.notes[0]!;
+	const part = new MDOMParser()
+		.parseFromString(CROSS_STAVE)
+		.score.getPart('P1')!;
+	const [upperC, upperD, lowerC] = part.getMeasure('1')!.notes;
+	const nextMeasureNote = part.getMeasure('2')!.notes[0]!;
 
-  it('pairs a slur whose stop was written before its start across a <backup>', () => {
-    const start = lowerC!.slurs[0]!;
-    const stop = upperD!.slurs[0]!;
-    expect(start.slurType).toBe('start');
-    expect(start.partner).toBe(stop);
-    expect(stop.partner).toBe(start);
-  });
+	it('pairs a slur whose stop was written before its start across a <backup>', () => {
+		const start = lowerC!.slurs[0]!;
+		const stop = upperD!.slurs[0]!;
+		expect(start.slurType).toBe('start');
+		expect(start.partner).toBe(stop);
+		expect(stop.partner).toBe(start);
+	});
 
-  it('does not run the arc on to a later measure that also stops number 1', () => {
-    // The stray stop is orphaned, which is the honest answer — it is not the
-    // partner of the left hand's start.
-    expect(nextMeasureNote.slurs[0]!.partner).toBeNull();
-    expect(upperC!.slurs).toEqual([]);
-  });
+	it('does not run the arc on to a later measure that also stops number 1', () => {
+		// The stray stop is orphaned, which is the honest answer — it is not the
+		// partner of the left hand's start.
+		expect(nextMeasureNote.slurs[0]!.partner).toBeNull();
+		expect(upperC!.slurs).toEqual([]);
+	});
 });

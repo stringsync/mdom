@@ -20,25 +20,40 @@ const SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('Voice reader — filtering and grouping', () => {
-  const measure = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!.getMeasure('1')!;
+	const measure = new MDOMParser()
+		.parseFromString(SAMPLE)
+		.score.getPart('P1')!
+		.getMeasure('1')!;
 
-  it('notes reads only the notes carrying this <voice>', () => {
-    // `notes` is the live slice for one voice, ignoring the interleaved other one.
-    const firstVoice = measure.getOrCreateVoice('1');
-    const secondVoice = measure.getOrCreateVoice('2');
-    expect(firstVoice.notes.map((note) => note.pitch?.step)).toEqual(['C', 'E', 'G', 'D']);
-    expect(secondVoice.notes.map((note) => note.pitch?.step)).toEqual(['C', 'G']);
-  });
+	it('notes reads only the notes carrying this <voice>', () => {
+		// `notes` is the live slice for one voice, ignoring the interleaved other one.
+		const firstVoice = measure.getOrCreateVoice('1');
+		const secondVoice = measure.getOrCreateVoice('2');
+		expect(firstVoice.notes.map((note) => note.pitch?.step)).toEqual([
+			'C',
+			'E',
+			'G',
+			'D',
+		]);
+		expect(secondVoice.notes.map((note) => note.pitch?.step)).toEqual([
+			'C',
+			'G',
+		]);
+	});
 
-  it('chords() groups this voice’s <chord/> stacks into one Chord', () => {
-    // The triad's three notes collapse into a single Chord; the lone D stands alone.
-    const chords = measure.getOrCreateVoice('1').chords;
-    expect(chords.map((chord) => chord.notes.length)).toEqual([3, 1]);
-    expect(chords[0]!.notes.map((note) => note.pitch?.step)).toEqual(['C', 'E', 'G']);
-    expect(chords[0]!.lead.pitch?.step).toBe('C');
-  });
+	it('chords() groups this voice’s <chord/> stacks into one Chord', () => {
+		// The triad's three notes collapse into a single Chord; the lone D stands alone.
+		const chords = measure.getOrCreateVoice('1').chords;
+		expect(chords.map((chord) => chord.notes.length)).toEqual([3, 1]);
+		expect(chords[0]!.notes.map((note) => note.pitch?.step)).toEqual([
+			'C',
+			'E',
+			'G',
+		]);
+		expect(chords[0]!.lead.pitch?.step).toBe('C');
+	});
 
-  it('reaches the part it belongs to through its measure', () => {
-    expect(measure.getOrCreateVoice('1').part).toBe(measure.part);
-  });
+	it('reaches the part it belongs to through its measure', () => {
+		expect(measure.getOrCreateVoice('1').part).toBe(measure.part);
+	});
 });

@@ -1,5 +1,5 @@
-import { MusicXMLSerializer } from './music-xml-serializer';
 import type { MDocument } from './m-document';
+import { MusicXMLSerializer } from './music-xml-serializer';
 
 const SCHEMA = new URL('./schema/musicxml.xsd', import.meta.url).pathname;
 
@@ -13,14 +13,23 @@ const SCHEMA = new URL('./schema/musicxml.xsd', import.meta.url).pathname;
  * validation test that quietly passes when it never ran is worse than no test.
  */
 export function schemaErrors(doc: MDocument): string[] {
-  // The DOCTYPE would send xmllint to musicxml.org for the DTD; the XSD is the
-  // stricter of the two and is right here, so drop the line before validating.
-  const xml = new MusicXMLSerializer().serializeToString(doc).replace(/^<!DOCTYPE[^>]*>\n?/m, '');
-  const xmllint = Bun.spawnSync(['xmllint', '--noout', '--nonet', '--schema', SCHEMA, '-'], {
-    stdin: Buffer.from(xml),
-  });
-  return new TextDecoder()
-    .decode(xmllint.stderr)
-    .split('\n')
-    .filter((line) => line.includes('Schemas validity error') || line.includes('parser error'));
+	// The DOCTYPE would send xmllint to musicxml.org for the DTD; the XSD is the
+	// stricter of the two and is right here, so drop the line before validating.
+	const xml = new MusicXMLSerializer()
+		.serializeToString(doc)
+		.replace(/^<!DOCTYPE[^>]*>\n?/m, '');
+	const xmllint = Bun.spawnSync(
+		['xmllint', '--noout', '--nonet', '--schema', SCHEMA, '-'],
+		{
+			stdin: Buffer.from(xml),
+		},
+	);
+	return new TextDecoder()
+		.decode(xmllint.stderr)
+		.split('\n')
+		.filter(
+			(line) =>
+				line.includes('Schemas validity error') ||
+				line.includes('parser error'),
+		);
 }

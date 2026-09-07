@@ -26,40 +26,48 @@ const MARKED = `<score-partwise><part id="P1"><measure number="1">
 </measure></part></score-partwise>`;
 
 describe('note — notation and technical reader getters', () => {
-  const [fancy, grace, plain] = new MDOMParser().parseFromString(MARKED).score.getPart('P1')!.getMeasure('1')!.notes;
+	const [fancy, grace, plain] = new MDOMParser()
+		.parseFromString(MARKED)
+		.score.getPart('P1')!
+		.getMeasure('1')!.notes;
 
-  it('reads the notehead glyph and its ghost-note parentheses, null when absent', () => {
-    expect(fancy!.notehead).toEqual({ value: 'x', parentheses: true, filled: null, color: null });
-    expect(plain!.notehead).toBeNull();
-  });
+	it('reads the notehead glyph and its ghost-note parentheses, null when absent', () => {
+		expect(fancy!.notehead).toEqual({
+			value: 'x',
+			parentheses: true,
+			filled: null,
+			color: null,
+		});
+		expect(plain!.notehead).toBeNull();
+	});
 
-  it('reads the fermata type, defaulting a bare <fermata> to upright, null when absent', () => {
-    expect(fancy!.fermata).toBe('inverted');
-    expect(grace!.fermata).toBe('upright'); // present without a type
-    expect(plain!.fermata).toBeNull();
-  });
+	it('reads the fermata type, defaulting a bare <fermata> to upright, null when absent', () => {
+		expect(fancy!.fermata).toBe('inverted');
+		expect(grace!.fermata).toBe('upright'); // present without a type
+		expect(plain!.fermata).toBeNull();
+	});
 
-  it('keeps a directed roll distinct from an undirected one, both distinct from none', () => {
-    expect(fancy!.arpeggiate).toEqual({ direction: 'down' });
-    expect(grace!.arpeggiate).toEqual({ direction: null }); // present, no direction
-    expect(plain!.arpeggiate).toBeNull();
-  });
+	it('keeps a directed roll distinct from an undirected one, both distinct from none', () => {
+		expect(fancy!.arpeggiate).toEqual({ direction: 'down' });
+		expect(grace!.arpeggiate).toEqual({ direction: null }); // present, no direction
+		expect(plain!.arpeggiate).toBeNull();
+	});
 
-  it('flags a slashed grace note (acciaccatura) apart from a plain grace or non-grace', () => {
-    expect(grace!.graceSlash).toBe(true);
-    expect(plain!.graceSlash).toBe(false); // a plain <grace/>
-    expect(fancy!.graceSlash).toBe(false); // not a grace note at all
-  });
+	it('flags a slashed grace note (acciaccatura) apart from a plain grace or non-grace', () => {
+		expect(grace!.graceSlash).toBe(true);
+		expect(plain!.graceSlash).toBe(false); // a plain <grace/>
+		expect(fancy!.graceSlash).toBe(false); // not a grace note at all
+	});
 
-  it('detects a harmonic and reads a bend with its release, null when absent', () => {
-    expect(fancy!.isHarmonic).toBe(true);
-    expect(fancy!.bend).toEqual({ semitones: 2, release: true });
-    expect(plain!.isHarmonic).toBe(false);
-    expect(plain!.bend).toBeNull();
-  });
+	it('detects a harmonic and reads a bend with its release, null when absent', () => {
+		expect(fancy!.isHarmonic).toBe(true);
+		expect(fancy!.bend).toEqual({ semitones: 2, release: true });
+		expect(plain!.isHarmonic).toBe(false);
+		expect(plain!.bend).toBeNull();
+	});
 
-  it('lists every <other-technical> free-text child in document order', () => {
-    expect(fancy!.otherTechnical).toEqual(['P.M.', 'let ring']);
-    expect(plain!.otherTechnical).toEqual([]);
-  });
+	it('lists every <other-technical> free-text child in document order', () => {
+		expect(fancy!.otherTechnical).toEqual(['P.M.', 'let ring']);
+		expect(plain!.otherTechnical).toEqual([]);
+	});
 });

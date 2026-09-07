@@ -1,6 +1,6 @@
 import { MElement, required } from './m-node';
 import { Note } from './note';
-import { Spanner, noteMarkers, type SpannerSpec } from './spanner';
+import { noteMarkers, Spanner, type SpannerSpec } from './spanner';
 
 export type WavyLineType = 'start' | 'stop' | 'continue';
 
@@ -9,46 +9,49 @@ export type WavyLineType = 'start' | 'stop' | 'continue';
  * start/stop by `number` like every spanner.
  */
 export class WavyLine extends MElement {
-  constructor() {
-    super('wavy-line');
-  }
+	constructor() {
+		super('wavy-line');
+	}
 
-  /** Pairing key; '1' when omitted. */
-  get number(): string {
-    return this.getAttribute('number') ?? '1';
-  }
+	/** Pairing key; '1' when omitted. */
+	get number(): string {
+		return this.getAttribute('number') ?? '1';
+	}
 
-  /** `type`: required on a `<wavy-line>` and drives pairing. */
-  get wavyLineType(): WavyLineType {
-    return required(this.getAttribute('type'), 'type on <wavy-line>') as WavyLineType;
-  }
+	/** `type`: required on a `<wavy-line>` and drives pairing. */
+	get wavyLineType(): WavyLineType {
+		return required(
+			this.getAttribute('type'),
+			'type on <wavy-line>',
+		) as WavyLineType;
+	}
 
-  /** The note this marker hangs off of. An attached marker always has one. */
-  get note(): Note {
-    return required(this.closest(Note), '<note> ancestor of <wavy-line>');
-  }
+	/** The note this marker hangs off of. An attached marker always has one. */
+	get note(): Note {
+		return required(this.closest(Note), '<note> ancestor of <wavy-line>');
+	}
 
-  /** The marker at the far end (same number), or null. */
-  get partner(): WavyLine | null {
-    return new Spanner(this.spec()).partnerOf(this);
-  }
+	/** The marker at the far end (same number), or null. */
+	get partner(): WavyLine | null {
+		return new Spanner(this.spec()).partnerOf(this);
+	}
 
-  /** All markers in this spanner (start..stop), not just the far end. */
-  get members(): WavyLine[] {
-    return new Spanner(this.spec()).membersOf(this);
-  }
+	/** All markers in this spanner (start..stop), not just the far end. */
+	get members(): WavyLine[] {
+		return new Spanner(this.spec()).membersOf(this);
+	}
 
-  /** Onset of this marker's note within its measure, in beats. */
-  get measureBeat(): number | null {
-    return this.note.measureBeat;
-  }
+	/** Onset of this marker's note within its measure, in beats. */
+	get measureBeat(): number | null {
+		return this.note.measureBeat;
+	}
 
-  private spec(): SpannerSpec<WavyLine> {
-    return {
-      siblings: noteMarkers(this, (note) => note.wavyLines),
-      // Raw reads so resolution tolerates a malformed typeless marker.
-      isOpen: (wavyLine) => wavyLine.getAttribute('type') === 'start',
-      isClose: (wavyLine) => wavyLine.getAttribute('type') === 'stop',
-    };
-  }
+	private spec(): SpannerSpec<WavyLine> {
+		return {
+			siblings: noteMarkers(this, (note) => note.wavyLines),
+			// Raw reads so resolution tolerates a malformed typeless marker.
+			isOpen: (wavyLine) => wavyLine.getAttribute('type') === 'start',
+			isClose: (wavyLine) => wavyLine.getAttribute('type') === 'stop',
+		};
+	}
 }

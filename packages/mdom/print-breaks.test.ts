@@ -14,23 +14,25 @@ const BREAKS = `<score-partwise><part id="P1">
 </part></score-partwise>`;
 
 describe('print — the break flags as a tri-state', () => {
-  const part = new MDOMParser().parseFromString(BREAKS).score.getPart('P1')!;
-  const [breaking, staying, silent] = part.measures.map((measure) => measure.print!);
+	const part = new MDOMParser().parseFromString(BREAKS).score.getPart('P1')!;
+	const [breaking, staying, silent] = part.measures.map(
+		(measure) => measure.print!,
+	);
 
-  it('keeps yes, no and absent distinct', () => {
-    expect(breaking!.systemBreak).toBe('yes');
-    expect(staying!.systemBreak).toBe('no');
-    expect(silent!.systemBreak).toBeNull();
-  });
+	it('keeps yes, no and absent distinct', () => {
+		expect(breaking!.systemBreak).toBe('yes');
+		expect(staying!.systemBreak).toBe('no');
+		expect(silent!.systemBreak).toBeNull();
+	});
 
-  it('does the same for the page break', () => {
-    expect(breaking!.pageBreak).toBe('yes');
-    expect(staying!.pageBreak).toBeNull();
-  });
+	it('does the same for the page break', () => {
+		expect(breaking!.pageBreak).toBe('yes');
+		expect(staying!.pageBreak).toBeNull();
+	});
 
-  it('leaves the boolean accessors reading as before', () => {
-    expect(breaking!.newSystem).toBe(true);
-    expect(staying!.newSystem).toBe(false);
-    expect(silent!.newSystem).toBe(false);
-  });
+	it('leaves the boolean accessors reading as before', () => {
+		expect(breaking!.newSystem).toBe(true);
+		expect(staying!.newSystem).toBe(false);
+		expect(silent!.newSystem).toBe(false);
+	});
 });

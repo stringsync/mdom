@@ -1,6 +1,6 @@
 import { MElement, type MNode } from './m-node';
-import { Part } from './part';
 import type { Measure } from './measure';
+import { Part } from './part';
 
 /**
  * `<attributes>` in effect, nearest first: scan backward from `fromIndex`
@@ -11,40 +11,46 @@ import type { Measure } from './measure';
  * count, a mid-measure change does not). The same helper answers
  * clef/key/time/divisions/staves.
  */
-export function attributesBackFrom(measure: Measure, fromIndex: number): MElement[] {
-  const result: MElement[] = [];
+export function attributesBackFrom(
+	measure: Measure,
+	fromIndex: number,
+): MElement[] {
+	const result: MElement[] = [];
 
-  const children: readonly MNode[] = measure.children;
-  for (let index = fromIndex - 1; index >= 0; index--) {
-    const node = children[index];
-    if (node instanceof MElement && node.tag === 'attributes') {
-      result.push(node);
-    }
-  }
+	const children: readonly MNode[] = measure.children;
+	for (let index = fromIndex - 1; index >= 0; index--) {
+		const node = children[index];
+		if (node instanceof MElement && node.tag === 'attributes') {
+			result.push(node);
+		}
+	}
 
-  const part = measure.closest(Part);
-  if (part) {
-    const measures = part.measures;
-    for (let earlier = measures.indexOf(measure) - 1; earlier >= 0; earlier--) {
-      const attrs = measures[earlier]!.childrenNamed('attributes');
-      for (let index = attrs.length - 1; index >= 0; index--) {
-        result.push(attrs[index]!);
-      }
-    }
-  }
+	const part = measure.closest(Part);
+	if (part) {
+		const measures = part.measures;
+		for (let earlier = measures.indexOf(measure) - 1; earlier >= 0; earlier--) {
+			const attrs = measures[earlier]!.childrenNamed('attributes');
+			for (let index = attrs.length - 1; index >= 0; index--) {
+				result.push(attrs[index]!);
+			}
+		}
+	}
 
-  return result;
+	return result;
 }
 
 /** `<divisions>` in effect (global) at `fromIndex` within `measure`. */
-export function divisionsBackFrom(measure: Measure, fromIndex: number): number | null {
-  for (const attrs of attributesBackFrom(measure, fromIndex)) {
-    const value = attrs.child('divisions')?.text;
-    if (value != null) {
-      return Number(value);
-    }
-  }
-  return null;
+export function divisionsBackFrom(
+	measure: Measure,
+	fromIndex: number,
+): number | null {
+	for (const attrs of attributesBackFrom(measure, fromIndex)) {
+		const value = attrs.child('divisions')?.text;
+		if (value != null) {
+			return Number(value);
+		}
+	}
+	return null;
 }
 
 /**
@@ -54,6 +60,6 @@ export function divisionsBackFrom(measure: Measure, fromIndex: number): number |
  * all-staves.)
  */
 export function appliesToStaff(element: MElement, staff: string): boolean {
-  const number = element.getAttribute('number');
-  return number === null || number === staff;
+	const number = element.getAttribute('number');
+	return number === null || number === staff;
 }

@@ -34,36 +34,46 @@ const SAMPLE = `<score-partwise><part id="P1">
 </part></score-partwise>`;
 
 describe('tab spanners — hammer-on, pull-off, slide, glissando pair start↔stop', () => {
-  const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
-  const [first, second] = part.getMeasure('1')!.notes;
-  const third = part.getMeasure('2')!.notes[0]!;
+	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
+	const [first, second] = part.getMeasure('1')!.notes;
+	const third = part.getMeasure('2')!.notes[0]!;
 
-  it('collects each kind off its note, empty where absent', () => {
-    expect(first!.hammerOns.map((marker) => marker.hammerOnType)).toEqual(['start']);
-    expect(first!.pullOffs.map((marker) => marker.pullOffType)).toEqual(['start']);
-    expect(first!.slides).toEqual([]); // slide starts on the second note
-    expect(second!.slides.map((marker) => marker.slideType)).toEqual(['start']);
-    expect(second!.glissandos.map((marker) => marker.glissandoType)).toEqual(['start']);
-  });
+	it('collects each kind off its note, empty where absent', () => {
+		expect(first!.hammerOns.map((marker) => marker.hammerOnType)).toEqual([
+			'start',
+		]);
+		expect(first!.pullOffs.map((marker) => marker.pullOffType)).toEqual([
+			'start',
+		]);
+		expect(first!.slides).toEqual([]); // slide starts on the second note
+		expect(second!.slides.map((marker) => marker.slideType)).toEqual(['start']);
+		expect(second!.glissandos.map((marker) => marker.glissandoType)).toEqual([
+			'start',
+		]);
+	});
 
-  it('pairs hammer-on and pull-off across the two notes, keyed by number', () => {
-    const hammerStart = first!.hammerOns[0]!;
-    const pullStart = first!.pullOffs[0]!;
-    expect(hammerStart.partner).toBe(second!.hammerOns[0]!);
-    expect(pullStart.partner).toBe(second!.pullOffs[0]!);
-    expect(hammerStart.members).toEqual([hammerStart, second!.hammerOns[0]!]);
-  });
+	it('pairs hammer-on and pull-off across the two notes, keyed by number', () => {
+		const hammerStart = first!.hammerOns[0]!;
+		const pullStart = first!.pullOffs[0]!;
+		expect(hammerStart.partner).toBe(second!.hammerOns[0]!);
+		expect(pullStart.partner).toBe(second!.pullOffs[0]!);
+		expect(hammerStart.members).toEqual([hammerStart, second!.hammerOns[0]!]);
+	});
 
-  it('pairs a slide and a glissando across a barline', () => {
-    expect(second!.slides[0]!.partner).toBe(third.slides[0]!);
-    expect(second!.glissandos[0]!.partner).toBe(third.glissandos[0]!);
-  });
+	it('pairs a slide and a glissando across a barline', () => {
+		expect(second!.slides[0]!.partner).toBe(third.slides[0]!);
+		expect(second!.glissandos[0]!.partner).toBe(third.glissandos[0]!);
+	});
 
-  it('throws through the strict type getter on a marker missing its type', () => {
-    const doc = new MDOMParser().parseFromString(
-      `<score-partwise><part id="P1"><measure number="1"><note>
-        <notations><slide number="1"/></notations></note></measure></part></score-partwise>`
-    );
-    expect(() => doc.score.getPart('P1')!.getMeasure('1')!.notes[0]!.slides[0]!.slideType).toThrow('type on <slide>');
-  });
+	it('throws through the strict type getter on a marker missing its type', () => {
+		const doc = new MDOMParser().parseFromString(
+			`<score-partwise><part id="P1"><measure number="1"><note>
+        <notations><slide number="1"/></notations></note></measure></part></score-partwise>`,
+		);
+		expect(
+			() =>
+				doc.score.getPart('P1')!.getMeasure('1')!.notes[0]!.slides[0]!
+					.slideType,
+		).toThrow('type on <slide>');
+	});
 });

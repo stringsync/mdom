@@ -30,29 +30,33 @@ const SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('spanners — one partner() shape for every relationship', () => {
-  const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
+	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
 
-  it('pairs a note-attached tie across measures', () => {
-    const start = part.getMeasure('1')!.notes[0]!.ties[0]!;
-    expect(start.tieType).toBe('start');
-    expect(start.partner!.note!.pitch?.step).toBe('C'); // the m2 note
-  });
+	it('pairs a note-attached tie across measures', () => {
+		const start = part.getMeasure('1')!.notes[0]!.ties[0]!;
+		expect(start.tieType).toBe('start');
+		expect(start.partner!.note!.pitch?.step).toBe('C'); // the m2 note
+	});
 
-  it('pairs a direction-attached wedge by beat position, with no note', () => {
-    const cresc = part.getMeasure('1')!.directions.flatMap((direction) => direction.wedges)[0]!;
-    expect(cresc.wedgeType).toBe('crescendo');
-    const stop = cresc.partner!;
-    expect(stop.wedgeType).toBe('stop');
-    expect(cresc.measureBeat).toBe(0);
-    expect(stop.measureBeat).toBe(2); // after two quarter notes
-  });
+	it('pairs a direction-attached wedge by beat position, with no note', () => {
+		const cresc = part
+			.getMeasure('1')!
+			.directions.flatMap((direction) => direction.wedges)[0]!;
+		expect(cresc.wedgeType).toBe('crescendo');
+		const stop = cresc.partner!;
+		expect(stop.wedgeType).toBe('stop');
+		expect(cresc.measureBeat).toBe(0);
+		expect(stop.measureBeat).toBe(2); // after two quarter notes
+	});
 
-  it('walks every member of a multi-point spanner, not just the far end', () => {
-    // A 3-note beam group: begin -> continue -> end. partner() pairs the ends;
-    // members() returns the whole run, which a 2-member partner() can't express.
-    const beam = part.getMeasure('3')!.notes[0]!.beams[0]!;
-    expect(beam.beamValue).toBe('begin');
-    expect(beam.partner!.beamValue).toBe('end');
-    expect(beam.members.map((beamMember) => beamMember.note!.pitch?.step)).toEqual(['C', 'D', 'E']);
-  });
+	it('walks every member of a multi-point spanner, not just the far end', () => {
+		// A 3-note beam group: begin -> continue -> end. partner() pairs the ends;
+		// members() returns the whole run, which a 2-member partner() can't express.
+		const beam = part.getMeasure('3')!.notes[0]!.beams[0]!;
+		expect(beam.beamValue).toBe('begin');
+		expect(beam.partner!.beamValue).toBe('end');
+		expect(
+			beam.members.map((beamMember) => beamMember.note!.pitch?.step),
+		).toEqual(['C', 'D', 'E']);
+	});
 });

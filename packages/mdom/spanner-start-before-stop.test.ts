@@ -20,15 +20,17 @@ const START_BEFORE_STOP = `<score-partwise><part id="P1">
 </part></score-partwise>`;
 
 describe('spanner — a chain-middle note written start-before-stop', () => {
-  const part = new MDOMParser().parseFromString(START_BEFORE_STOP).score.getPart('P1')!;
-  const [noteC4, noteD4, noteE4] = part.getMeasure('1')!.notes;
-  const startOnD4 = noteD4!.slurs.find((slur) => slur.slurType === 'start')!;
-  const stopOnD4 = noteD4!.slurs.find((slur) => slur.slurType === 'stop')!;
+	const part = new MDOMParser()
+		.parseFromString(START_BEFORE_STOP)
+		.score.getPart('P1')!;
+	const [noteC4, noteD4, noteE4] = part.getMeasure('1')!.notes;
+	const startOnD4 = noteD4!.slurs.find((slur) => slur.slurType === 'start')!;
+	const stopOnD4 = noteD4!.slurs.find((slur) => slur.slurType === 'stop')!;
 
-  it('pairs each marker with its neighbor, never with the note it sits on', () => {
-    expect(noteC4!.slurs[0]!.partner).toBe(stopOnD4);
-    expect(stopOnD4.partner).toBe(noteC4!.slurs[0]!);
-    expect(startOnD4.partner).toBe(noteE4!.slurs[0]!);
-    expect(noteE4!.slurs[0]!.partner).toBe(startOnD4);
-  });
+	it('pairs each marker with its neighbor, never with the note it sits on', () => {
+		expect(noteC4!.slurs[0]!.partner).toBe(stopOnD4);
+		expect(stopOnD4.partner).toBe(noteC4!.slurs[0]!);
+		expect(startOnD4.partner).toBe(noteE4!.slurs[0]!);
+		expect(noteE4!.slurs[0]!.partner).toBe(startOnD4);
+	});
 });

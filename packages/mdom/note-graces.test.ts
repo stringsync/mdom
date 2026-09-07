@@ -12,21 +12,27 @@ const GRACES = `<score-partwise><part id="P1"><measure number="1">
 </measure></part></score-partwise>`;
 
 describe('note — the grace run before a note', () => {
-  const measure = new MDOMParser().parseFromString(GRACES).score.getPart('P1')!.getMeasure('1')!;
-  const [first, , , second] = measure.notes;
+	const measure = new MDOMParser()
+		.parseFromString(GRACES)
+		.score.getPart('P1')!
+		.getMeasure('1')!;
+	const [first, , , second] = measure.notes;
 
-  it('returns the run immediately preceding, in play order', () => {
-    expect(second!.gracesBefore.map((note) => note.pitch?.step)).toEqual(['B', 'A']);
-    expect(second!.gracesBefore[0]!.graceSlash).toBe(true);
-  });
+	it('returns the run immediately preceding, in play order', () => {
+		expect(second!.gracesBefore.map((note) => note.pitch?.step)).toEqual([
+			'B',
+			'A',
+		]);
+		expect(second!.gracesBefore[0]!.graceSlash).toBe(true);
+	});
 
-  it('is empty for a note with nothing graced onto it', () => {
-    expect(first!.gracesBefore).toEqual([]);
-  });
+	it('is empty for a note with nothing graced onto it', () => {
+		expect(first!.gracesBefore).toEqual([]);
+	});
 
-  it('reaches its measure and part without touching .parent', () => {
-    expect(first!.measure).toBe(measure);
-    expect(first!.part.id).toBe('P1');
-    expect(measure.part.id).toBe('P1');
-  });
+	it('reaches its measure and part without touching .parent', () => {
+		expect(first!.measure).toBe(measure);
+		expect(first!.part.id).toBe('P1');
+		expect(measure.part.id).toBe('P1');
+	});
 });

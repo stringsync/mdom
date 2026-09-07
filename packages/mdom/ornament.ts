@@ -8,39 +8,39 @@ import { placementOf } from './print-style';
  * it follows, which is why {@link Ornament} is read in document order.
  */
 export type OrnamentType =
-  | 'trill-mark'
-  | 'turn'
-  | 'delayed-turn'
-  | 'inverted-turn'
-  | 'delayed-inverted-turn'
-  | 'vertical-turn'
-  | 'inverted-vertical-turn'
-  | 'shake'
-  | 'mordent'
-  | 'inverted-mordent'
-  | 'schleifer'
-  | 'tremolo'
-  | 'haydn'
-  | 'accidental-mark'
-  | 'other-ornament';
+	| 'trill-mark'
+	| 'turn'
+	| 'delayed-turn'
+	| 'inverted-turn'
+	| 'delayed-inverted-turn'
+	| 'vertical-turn'
+	| 'inverted-vertical-turn'
+	| 'shake'
+	| 'mordent'
+	| 'inverted-mordent'
+	| 'schleifer'
+	| 'tremolo'
+	| 'haydn'
+	| 'accidental-mark'
+	| 'other-ornament';
 
 /** Every tag this class is registered for — the `<ornaments>` children. */
 export const ORNAMENT_TAGS: OrnamentType[] = [
-  'trill-mark',
-  'turn',
-  'delayed-turn',
-  'inverted-turn',
-  'delayed-inverted-turn',
-  'vertical-turn',
-  'inverted-vertical-turn',
-  'shake',
-  'mordent',
-  'inverted-mordent',
-  'schleifer',
-  'tremolo',
-  'haydn',
-  'accidental-mark',
-  'other-ornament',
+	'trill-mark',
+	'turn',
+	'delayed-turn',
+	'inverted-turn',
+	'delayed-inverted-turn',
+	'vertical-turn',
+	'inverted-vertical-turn',
+	'shake',
+	'mordent',
+	'inverted-mordent',
+	'schleifer',
+	'tremolo',
+	'haydn',
+	'accidental-mark',
+	'other-ornament',
 ];
 
 /**
@@ -59,32 +59,34 @@ export const ORNAMENT_TAGS: OrnamentType[] = [
  * matched.
  */
 export class Ornament extends MElement {
-  /** Which ornament this is — the element's own tag. */
-  get ornamentType(): OrnamentType {
-    return this.tag as OrnamentType;
-  }
+	/** Which ornament this is — the element's own tag. */
+	get ornamentType(): OrnamentType {
+		return this.tag as OrnamentType;
+	}
 
-  /** `placement`; null when unstated. */
-  get placement(): 'above' | 'below' | null {
-    return placementOf(this);
-  }
+	/** `placement`; null when unstated. */
+	get placement(): 'above' | 'below' | null {
+		return placementOf(this);
+	}
 
-  /** `<tremolo>` slash count (its text), when this is a tremolo; null otherwise. */
-  get tremoloMarks(): number | null {
-    if (this.tag !== 'tremolo') {
-      return null;
-    }
-    // The spec's default is 3 when the element is empty.
-    return this.text == null ? 3 : Number(this.text);
-  }
+	/** `<tremolo>` slash count (its text), when this is a tremolo; null otherwise. */
+	get tremoloMarks(): number | null {
+		if (this.tag !== 'tremolo') {
+			return null;
+		}
+		// The spec's default is 3 when the element is empty.
+		return this.text == null ? 3 : Number(this.text);
+	}
 
-  /** `<tremolo type>`: 'single' | 'start' | 'stop' | 'unmeasured'; 'single' when unstated. */
-  get tremoloType(): string | null {
-    return this.tag === 'tremolo' ? (this.getAttribute('type') ?? 'single') : null;
-  }
+	/** `<tremolo type>`: 'single' | 'start' | 'stop' | 'unmeasured'; 'single' when unstated. */
+	get tremoloType(): string | null {
+		return this.tag === 'tremolo'
+			? (this.getAttribute('type') ?? 'single')
+			: null;
+	}
 
-  /** An `<accidental-mark>`'s glyph name (its text); null otherwise. */
-  get accidentalMark(): string | null {
-    return this.tag === 'accidental-mark' ? this.text : null;
-  }
+	/** An `<accidental-mark>`'s glyph name (its text); null otherwise. */
+	get accidentalMark(): string | null {
+		return this.tag === 'accidental-mark' ? this.text : null;
+	}
 }

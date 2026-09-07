@@ -32,37 +32,37 @@ const SAMPLE = `<score-partwise><part id="P1">
 </part></score-partwise>`;
 
 describe('bracket and dashes — direction spanners paired across measures', () => {
-  const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
-  const opening = part.getMeasure('1')!.directions[1]!;
-  const closing = part.getMeasure('2')!.directions[0]!;
+	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
+	const opening = part.getMeasure('1')!.directions[1]!;
+	const closing = part.getMeasure('2')!.directions[0]!;
 
-  it('pairs a bracket start with its stop a measure later', () => {
-    const start = opening.brackets[0]!;
-    expect(start.bracketType).toBe('start');
-    expect(start.lineEnd).toBe('down');
-    expect(start.lineType).toBe('dashed');
-    expect(start.partner).toBe(closing.brackets[0]!);
-    expect(start.members).toHaveLength(2);
-    expect(start.measureBeat).toBe(0);
-    expect(start.direction).toBe(opening);
-  });
+	it('pairs a bracket start with its stop a measure later', () => {
+		const start = opening.brackets[0]!;
+		expect(start.bracketType).toBe('start');
+		expect(start.lineEnd).toBe('down');
+		expect(start.lineType).toBe('dashed');
+		expect(start.partner).toBe(closing.brackets[0]!);
+		expect(start.members).toHaveLength(2);
+		expect(start.measureBeat).toBe(0);
+		expect(start.direction).toBe(opening);
+	});
 
-  it('defaults a missing line-end to none, and leaves line-type unstated as null', () => {
-    expect(closing.brackets[0]!.lineEnd).toBe('none');
-    expect(closing.brackets[0]!.lineType).toBeNull();
-  });
+	it('defaults a missing line-end to none, and leaves line-type unstated as null', () => {
+		expect(closing.brackets[0]!.lineEnd).toBe('none');
+		expect(closing.brackets[0]!.lineType).toBeNull();
+	});
 
-  it('pairs dashes the same way', () => {
-    const start = opening.dashes[0]!;
-    expect(start.dashesType).toBe('start');
-    expect(start.partner).toBe(closing.dashes[0]!);
-    expect(start.number).toBe('1');
-  });
+	it('pairs dashes the same way', () => {
+		const start = opening.dashes[0]!;
+		expect(start.dashesType).toBe('start');
+		expect(start.partner).toBe(closing.dashes[0]!);
+		expect(start.number).toBe('1');
+	});
 
-  it('binds both ends to the note that follows the direction', () => {
-    // A bracket's stop marks where the passage ends, and MusicXML writes it
-    // before the last note it covers — so both ends read nextNote.
-    expect(opening.nextNote?.pitch?.step).toBe('C');
-    expect(closing.nextNote?.pitch?.step).toBe('D');
-  });
+	it('binds both ends to the note that follows the direction', () => {
+		// A bracket's stop marks where the passage ends, and MusicXML writes it
+		// before the last note it covers — so both ends read nextNote.
+		expect(opening.nextNote?.pitch?.step).toBe('C');
+		expect(closing.nextNote?.pitch?.step).toBe('D');
+	});
 });

@@ -7,26 +7,26 @@ import { MElement, required } from './m-node';
  * `scaling`).
  */
 export class LineDetail extends MElement {
-  constructor() {
-    super('line-detail');
-  }
+	constructor() {
+		super('line-detail');
+	}
 
-  /** The `line` attribute: which staff line (1 = bottom). Required by MusicXML. */
-  get line(): number {
-    return Number(required(this.getAttribute('line'), 'line on <line-detail>'));
-  }
+	/** The `line` attribute: which staff line (1 = bottom). Required by MusicXML. */
+	get line(): number {
+		return Number(required(this.getAttribute('line'), 'line on <line-detail>'));
+	}
 
-  set line(value: number) {
-    this.setAttribute('line', String(value));
-  }
+	set line(value: number) {
+		this.setAttribute('line', String(value));
+	}
 
-  /** The `width` attribute in tenths (line thickness); null when unset. */
-  get width(): number | null {
-    const width = this.getAttribute('width');
-    return width == null ? null : Number(width);
-  }
+	/** The `width` attribute in tenths (line thickness); null when unset. */
+	get width(): number | null {
+		const width = this.getAttribute('width');
+		return width == null ? null : Number(width);
+	}
 
-  set width(tenths: number) {
-    this.setAttribute('width', String(tenths));
-  }
+	set width(tenths: number) {
+		this.setAttribute('width', String(tenths));
+	}
 }

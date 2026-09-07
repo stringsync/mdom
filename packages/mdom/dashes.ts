@@ -1,7 +1,7 @@
-import { MElement, required } from './m-node';
 import { Direction } from './direction';
+import { MElement, required } from './m-node';
 import { Measure } from './measure';
-import { Spanner, directionMarkers, type SpannerSpec } from './spanner';
+import { directionMarkers, Spanner, type SpannerSpec } from './spanner';
 
 export type DashesType = 'start' | 'stop' | 'continue';
 
@@ -12,51 +12,57 @@ export type DashesType = 'start' | 'stop' | 'continue';
  * {@link Direction.nextNote}.
  */
 export class Dashes extends MElement {
-  constructor() {
-    super('dashes');
-  }
+	constructor() {
+		super('dashes');
+	}
 
-  /** Pairing key; '1' when omitted. */
-  get number(): string {
-    return this.getAttribute('number') ?? '1';
-  }
+	/** Pairing key; '1' when omitted. */
+	get number(): string {
+		return this.getAttribute('number') ?? '1';
+	}
 
-  /** `type`: required on a `<dashes>` and drives pairing. */
-  get dashesType(): DashesType {
-    return required(this.getAttribute('type'), 'type on <dashes>') as DashesType;
-  }
+	/** `type`: required on a `<dashes>` and drives pairing. */
+	get dashesType(): DashesType {
+		return required(
+			this.getAttribute('type'),
+			'type on <dashes>',
+		) as DashesType;
+	}
 
-  /** The `<direction>` this marker hangs off of. An attached marker always has one. */
-  get direction(): Direction {
-    return required(this.closest(Direction), '<direction> ancestor of <dashes>');
-  }
+	/** The `<direction>` this marker hangs off of. An attached marker always has one. */
+	get direction(): Direction {
+		return required(
+			this.closest(Direction),
+			'<direction> ancestor of <dashes>',
+		);
+	}
 
-  /** The measure this marker sits in. An attached marker always has one. */
-  get measure(): Measure {
-    return required(this.closest(Measure), '<measure> ancestor of <dashes>');
-  }
+	/** The measure this marker sits in. An attached marker always has one. */
+	get measure(): Measure {
+		return required(this.closest(Measure), '<measure> ancestor of <dashes>');
+	}
 
-  /** The marker at the far end (same number), or null. */
-  get partner(): Dashes | null {
-    return new Spanner(this.spec()).partnerOf(this);
-  }
+	/** The marker at the far end (same number), or null. */
+	get partner(): Dashes | null {
+		return new Spanner(this.spec()).partnerOf(this);
+	}
 
-  /** All markers in this spanner (start..stop), not just the far end. */
-  get members(): Dashes[] {
-    return new Spanner(this.spec()).membersOf(this);
-  }
+	/** All markers in this spanner (start..stop), not just the far end. */
+	get members(): Dashes[] {
+		return new Spanner(this.spec()).membersOf(this);
+	}
 
-  /** Onset of this marker's direction within its measure, in beats. */
-  get measureBeat(): number | null {
-    return this.direction.measureBeat;
-  }
+	/** Onset of this marker's direction within its measure, in beats. */
+	get measureBeat(): number | null {
+		return this.direction.measureBeat;
+	}
 
-  private spec(): SpannerSpec<Dashes> {
-    return {
-      siblings: directionMarkers(this, (direction) => direction.dashes),
-      // Raw reads so resolution tolerates a malformed typeless marker.
-      isOpen: (marker) => marker.getAttribute('type') === 'start',
-      isClose: (marker) => marker.getAttribute('type') === 'stop',
-    };
-  }
+	private spec(): SpannerSpec<Dashes> {
+		return {
+			siblings: directionMarkers(this, (direction) => direction.dashes),
+			// Raw reads so resolution tolerates a malformed typeless marker.
+			isOpen: (marker) => marker.getAttribute('type') === 'start',
+			isClose: (marker) => marker.getAttribute('type') === 'stop',
+		};
+	}
 }

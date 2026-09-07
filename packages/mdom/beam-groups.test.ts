@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './m-dom-parser';
 import { groupBeams } from './beam';
+import { MDOMParser } from './m-dom-parser';
 
 // Three runs to exercise the grouping fold: a plain begin/continue/end run, an
 // unbeamed quarter that must NOT become a group, and a run whose first note is a
@@ -22,18 +22,23 @@ const GROUPS = `<score-partwise>
 </score-partwise>`;
 
 describe('groupBeams — per-note markers folded into beamed runs', () => {
-  const measure = new MDOMParser().parseFromString(GROUPS).score.getPart('P1')!.getMeasure('1')!;
+	const measure = new MDOMParser()
+		.parseFromString(GROUPS)
+		.score.getPart('P1')!
+		.getMeasure('1')!;
 
-  it('collapses each begin..end run, drops unbeamed notes, and skips chord members', () => {
-    const steps = measure.beams.map((run) => run.map((note) => note.pitch?.step));
-    expect(steps).toEqual([
-      ['C', 'D', 'E'],
-      ['G', 'A'],
-    ]);
-  });
+	it('collapses each begin..end run, drops unbeamed notes, and skips chord members', () => {
+		const steps = measure.beams.map((run) =>
+			run.map((note) => note.pitch?.step),
+		);
+		expect(steps).toEqual([
+			['C', 'D', 'E'],
+			['G', 'A'],
+		]);
+	});
 
-  it('groupBeams is the primitive measure.beams delegates to', () => {
-    expect(groupBeams(measure.notes)).toEqual(measure.beams);
-    expect(groupBeams([])).toEqual([]);
-  });
+	it('groupBeams is the primitive measure.beams delegates to', () => {
+		expect(groupBeams(measure.notes)).toEqual(measure.beams);
+		expect(groupBeams([])).toEqual([]);
+	});
 });

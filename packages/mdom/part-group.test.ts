@@ -28,33 +28,41 @@ const SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('score — part-group spans resolved from the flat part-list', () => {
-  const score = new MDOMParser().parseFromString(SAMPLE).score;
-  const groups = score.partGroups;
+	const score = new MDOMParser().parseFromString(SAMPLE).score;
+	const groups = score.partGroups;
 
-  it('spans the parts between each start and its stop, outermost first', () => {
-    expect(groups.map((group) => [group.fromPartIndex, group.toPartIndex, group.depth])).toEqual([
-      [0, 3, 0],
-      [2, 3, 1],
-    ]);
-  });
+	it('spans the parts between each start and its stop, outermost first', () => {
+		expect(
+			groups.map((group) => [
+				group.fromPartIndex,
+				group.toPartIndex,
+				group.depth,
+			]),
+		).toEqual([
+			[0, 3, 0],
+			[2, 3, 1],
+		]);
+	});
 
-  it('reads the symbol, names and barline, keeping absence distinct', () => {
-    const [outer, inner] = groups;
-    expect(outer!.symbol).toBe('bracket');
-    expect(outer!.name).toBe('Strings');
-    expect(outer!.abbreviation).toBe('Str.');
-    expect(outer!.barline).toBe('yes');
-    expect(inner!.symbol).toBe('brace');
-    expect(inner!.name).toBeNull();
-    expect(inner!.barline).toBeNull(); // no default: absence is not "yes"
-  });
+	it('reads the symbol, names and barline, keeping absence distinct', () => {
+		const [outer, inner] = groups;
+		expect(outer!.symbol).toBe('bracket');
+		expect(outer!.name).toBe('Strings');
+		expect(outer!.abbreviation).toBe('Str.');
+		expect(outer!.barline).toBe('yes');
+		expect(inner!.symbol).toBe('brace');
+		expect(inner!.name).toBeNull();
+		expect(inner!.barline).toBeNull(); // no default: absence is not "yes"
+	});
 
-  it('drops a group whose stop never arrives', () => {
-    expect(groups).toHaveLength(2);
-  });
+	it('drops a group whose stop never arrives', () => {
+		expect(groups).toHaveLength(2);
+	});
 
-  it('is empty when there is no part-list', () => {
-    const bare = new MDOMParser().parseFromString('<score-partwise><part id="P1"/></score-partwise>').score;
-    expect(bare.partGroups).toEqual([]);
-  });
+	it('is empty when there is no part-list', () => {
+		const bare = new MDOMParser().parseFromString(
+			'<score-partwise><part id="P1"/></score-partwise>',
+		).score;
+		expect(bare.partGroups).toEqual([]);
+	});
 });

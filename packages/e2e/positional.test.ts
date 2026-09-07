@@ -32,59 +32,67 @@ const SAMPLE = `<score-partwise><part id="P1"><measure number="1">
   <note><pitch><step>E</step><octave>5</octave></pitch><duration>8</duration><voice>1</voice><type>half</type></note>
 </measure></part></score-partwise>`;
 
-const measure = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!.getMeasure('1')!;
+const measure = new MDOMParser()
+	.parseFromString(SAMPLE)
+	.score.getPart('P1')!
+	.getMeasure('1')!;
 
 describe('the sibling runs MusicXML reads positionally', () => {
-  const lyric = measure.notes[0]!.lyrics[0]!;
-  const start = measure.notes[0]!.tuplets[0]!;
-  const stop = measure.notes[1]!.tuplets[0]!;
+	const lyric = measure.notes[0]!.lyrics[0]!;
+	const start = measure.notes[0]!.tuplets[0]!;
+	const stop = measure.notes[1]!.tuplets[0]!;
 
-  it('pairs the nth step with the nth alter, accidental and key-octave', () => {
-    expect(measure.getKey()!.alterations).toEqual([
-      { step: 'F', alter: 1, accidental: null, octave: null },
-      { step: 'B', alter: -1, accidental: 'flat', octave: 3 },
-      { step: 'E', alter: 0, accidental: null, octave: null },
-    ]);
-  });
+	it('pairs the nth step with the nth alter, accidental and key-octave', () => {
+		expect(measure.getKey()!.alterations).toEqual([
+			{ step: 'F', alter: 1, accidental: null, octave: null },
+			{ step: 'B', alter: -1, accidental: 'flat', octave: 3 },
+			{ step: 'E', alter: 0, accidental: null, octave: null },
+		]);
+	});
 
-  it('keeps the order given, not circle-of-fifths order', () => {
-    expect(measure.getKey()!.alterations.map((alteration) => alteration.step)).toEqual(['F', 'B', 'E']);
-    expect(measure.getKey()!.fifths).toBeNull(); // no <fifths>: this is the custom form
-  });
+	it('keeps the order given, not circle-of-fifths order', () => {
+		expect(
+			measure.getKey()!.alterations.map((alteration) => alteration.step),
+		).toEqual(['F', 'B', 'E']);
+		expect(measure.getKey()!.fifths).toBeNull(); // no <fifths>: this is the custom form
+	});
 
-  it('keeps the lyric elision runs and their separators, which syllable joins away', () => {
-    expect(lyric.runs).toEqual([
-      { kind: 'text', text: 'de' },
-      { kind: 'elision', text: '_' },
-      { kind: 'text', text: 'o' },
-      { kind: 'elision', text: '' }, // empty: the symbol is the renderer's pick
-      { kind: 'text', text: 'ra' },
-    ]);
-    expect(lyric.syllable).toBe('deora');
-  });
+	it('keeps the lyric elision runs and their separators, which syllable joins away', () => {
+		expect(lyric.runs).toEqual([
+			{ kind: 'text', text: 'de' },
+			{ kind: 'elision', text: '_' },
+			{ kind: 'text', text: 'o' },
+			{ kind: 'elision', text: '' }, // empty: the symbol is the renderer's pick
+			{ kind: 'text', text: 'ra' },
+		]);
+		expect(lyric.syllable).toBe('deora');
+	});
 
-  it('reads the tuplet display attributes, keeping unstated as null', () => {
-    expect(start.placement).toBe('above');
-    expect(start.bracket).toBe(false);
-    expect(start.showNumber).toBe('both');
-    expect(start.showType).toBe('actual');
-    expect(stop.bracket).toBeNull(); // unstated: the renderer's own rule applies
-    expect(stop.showNumber).toBeNull();
-  });
+	it('reads the tuplet display attributes, keeping unstated as null', () => {
+		expect(start.placement).toBe('above');
+		expect(start.bracket).toBe(false);
+		expect(start.showNumber).toBe('both');
+		expect(start.showType).toBe('actual');
+		expect(stop.bracket).toBeNull(); // unstated: the renderer's own rule applies
+		expect(stop.showNumber).toBeNull();
+	});
 
-  it('reads the printed numbers separately from <time-modification>', () => {
-    expect(start.actual).toEqual({ number: 7, type: 'eighth', dots: 1 });
-    expect(start.normal).toEqual({ number: 5, type: 'eighth', dots: 0 });
-    expect(measure.notes[0]!.timeModification).toEqual({ actual: 3, normal: 2 });
-    expect(stop.actual).toBeNull(); // fall back to timeModification
-  });
+	it('reads the printed numbers separately from <time-modification>', () => {
+		expect(start.actual).toEqual({ number: 7, type: 'eighth', dots: 1 });
+		expect(start.normal).toEqual({ number: 5, type: 'eighth', dots: 0 });
+		expect(measure.notes[0]!.timeModification).toEqual({
+			actual: 3,
+			normal: 2,
+		});
+		expect(stop.actual).toBeNull(); // fall back to timeModification
+	});
 
-  it("reaches the tuplet's part without touching .closest", () => {
-    expect(start.part.id).toBe('P1');
-  });
+	it("reaches the tuplet's part without touching .closest", () => {
+		expect(start.part.id).toBe('P1');
+	});
 
-  it('places a middle barline on the beat the fold reaches', () => {
-    expect(measure.barlines[0]!.location).toBe('middle');
-    expect(measure.barlines[0]!.measureBeat).toBe(2); // after two quarter notes
-  });
+	it('places a middle barline on the beat the fold reaches', () => {
+		expect(measure.barlines[0]!.location).toBe('middle');
+		expect(measure.barlines[0]!.measureBeat).toBe(2); // after two quarter notes
+	});
 });

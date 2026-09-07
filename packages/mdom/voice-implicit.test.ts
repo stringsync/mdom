@@ -17,18 +17,23 @@ const IMPLICIT_VOICE = `<score-partwise>
 </score-partwise>`;
 
 describe('Voice reader — chord members inherit their lead’s voice', () => {
-  const measure = new MDOMParser().parseFromString(IMPLICIT_VOICE).score.getPart('P1')!.getMeasure('1')!;
+	const measure = new MDOMParser()
+		.parseFromString(IMPLICIT_VOICE)
+		.score.getPart('P1')!
+		.getMeasure('1')!;
 
-  it('does not invent a voice 1 for the <voice>-less chord members', () => {
-    expect(measure.voices.map((voice) => voice.id)).toEqual(['2']);
-  });
+	it('does not invent a voice 1 for the <voice>-less chord members', () => {
+		expect(measure.voices.map((voice) => voice.id)).toEqual(['2']);
+	});
 
-  it('keeps the two stacks separate, each at its lead’s onset', () => {
-    const chords = measure.getOrCreateVoice('2').chords;
-    expect(chords.map((chord) => chord.notes.map((note) => note.pitch?.step))).toEqual([
-      ['C', 'G'],
-      ['D', 'A'],
-    ]);
-    expect(chords.map((chord) => chord.measureBeat)).toEqual([0, 1]);
-  });
+	it('keeps the two stacks separate, each at its lead’s onset', () => {
+		const chords = measure.getOrCreateVoice('2').chords;
+		expect(
+			chords.map((chord) => chord.notes.map((note) => note.pitch?.step)),
+		).toEqual([
+			['C', 'G'],
+			['D', 'A'],
+		]);
+		expect(chords.map((chord) => chord.measureBeat)).toEqual([0, 1]);
+	});
 });

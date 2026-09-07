@@ -25,29 +25,29 @@ const SAMPLE = `<score-partwise><part id="P1">
 </part></score-partwise>`;
 
 describe('staff-tuning — the strings that identify a tablature staff', () => {
-  const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
-  const tunings = part.getStaffTunings('2');
+	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
+	const tunings = part.getStaffTunings('2');
 
-  it('finds the first declaration anywhere in the part', () => {
-    expect(tunings.map((tuning) => tuning.line)).toEqual([1, 2, 3, 4, 5, 6]);
-    expect(part.getStaffTunings('1')).toEqual([]);
-  });
+	it('finds the first declaration anywhere in the part', () => {
+		expect(tunings.map((tuning) => tuning.line)).toEqual([1, 2, 3, 4, 5, 6]);
+		expect(part.getStaffTunings('1')).toEqual([]);
+	});
 
-  it('reads step, octave and alter, defaulting alter to 0', () => {
-    expect(tunings[0]!.step).toBe('E');
-    expect(tunings[0]!.octave).toBe(2);
-    expect(tunings[0]!.alter).toBe(0);
-    expect(tunings[5]!.alter).toBe(-1);
-  });
+	it('reads step, octave and alter, defaulting alter to 0', () => {
+		expect(tunings[0]!.step).toBe('E');
+		expect(tunings[0]!.octave).toBe(2);
+		expect(tunings[0]!.alter).toBe(0);
+		expect(tunings[5]!.alter).toBe(-1);
+	});
 
-  it('computes the open string MIDI number, the scale tunings compare on', () => {
-    expect(tunings[0]!.midi).toBe(40); // E2
-    expect(tunings[1]!.midi).toBe(45); // A2
-    expect(tunings[5]!.midi).toBe(63); // Eb4
-  });
+	it('computes the open string MIDI number, the scale tunings compare on', () => {
+		expect(tunings[0]!.midi).toBe(40); // E2
+		expect(tunings[1]!.midi).toBe(45); // A2
+		expect(tunings[5]!.midi).toBe(63); // Eb4
+	});
 
-  it('carries forward to a later measure that declares nothing', () => {
-    expect(part.getMeasure('2')!.getStaffTunings('2')).toHaveLength(6);
-    expect(part.getMeasure('2')!.getStaffTunings()).toEqual([]); // staff 1 has none
-  });
+	it('carries forward to a later measure that declares nothing', () => {
+		expect(part.getMeasure('2')!.getStaffTunings('2')).toHaveLength(6);
+		expect(part.getMeasure('2')!.getStaffTunings()).toEqual([]); // staff 1 has none
+	});
 });

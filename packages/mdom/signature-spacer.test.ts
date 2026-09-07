@@ -28,32 +28,32 @@ const SCORE = `<score-partwise><part id="P1">
 </part></score-partwise>`;
 
 function parse(): Part {
-  return new MDOMParser().parseFromString(SCORE).score.getPart('P1')!;
+	return new MDOMParser().parseFromString(SCORE).score.getPart('P1')!;
 }
 
 describe('part — insertMeasureAt + copySignaturesFrom for a spacer measure', () => {
-  it('inserts at an index, leaving numbering to the caller', () => {
-    const part = parse();
-    const gap = part.insertMeasureAt(0);
+	it('inserts at an index, leaving numbering to the caller', () => {
+		const part = parse();
+		const gap = part.insertMeasureAt(0);
 
-    expect(part.measures[0]).toBe(gap);
-    expect(part.measures).toHaveLength(5);
-    expect(gap.getAttribute('number')).toBeNull();
-    expect(part.insertMeasureAt(5, { number: 'X' }).number).toBe('X');
-  });
+		expect(part.measures[0]).toBe(gap);
+		expect(part.measures).toHaveLength(5);
+		expect(gap.getAttribute('number')).toBeNull();
+		expect(part.insertMeasureAt(5, { number: 'X' }).number).toBe('X');
+	});
 
-  it('gives a gap inserted before every declaration a stave to draw', () => {
-    const part = parse();
-    const displaced = part.getMeasure('1')!;
-    const gap = part.insertMeasureAt(0);
-    // Nothing precedes the gap, so carry-forward alone leaves it bare.
-    expect(gap.getClef('1')).toBeNull();
+	it('gives a gap inserted before every declaration a stave to draw', () => {
+		const part = parse();
+		const displaced = part.getMeasure('1')!;
+		const gap = part.insertMeasureAt(0);
+		// Nothing precedes the gap, so carry-forward alone leaves it bare.
+		expect(gap.getClef('1')).toBeNull();
 
-    gap.copySignaturesFrom(displaced);
-    expect(gap.getClef('1')?.sign).toBe('G');
-    expect(gap.getClef('2')?.sign).toBe('F');
-    expect(gap.getKey()?.fifths).toBe(2);
-    expect(gap.getTime()?.beats).toBe('3');
-    expect(gap.staveCount).toBe(2);
-  });
+		gap.copySignaturesFrom(displaced);
+		expect(gap.getClef('1')?.sign).toBe('G');
+		expect(gap.getClef('2')?.sign).toBe('F');
+		expect(gap.getKey()?.fifths).toBe(2);
+		expect(gap.getTime()?.beats).toBe('3');
+		expect(gap.staveCount).toBe(2);
+	});
 });

@@ -34,114 +34,118 @@ const SAMPLE = `<score-partwise><part id="P1">
 </part></score-partwise>`;
 
 describe('note-attached spanners — one shape, six kinds', () => {
-  const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
-  const [opening, middle] = part.getMeasure('1')!.notes;
-  const closing = part.getMeasure('2')!.notes[0]!;
+	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
+	const [opening, middle] = part.getMeasure('1')!.notes;
+	const closing = part.getMeasure('2')!.notes[0]!;
 
-  it('pairs a slide in both directions, knowing its note and part', () => {
-    const start = opening!.slides[0]!;
-    const stop = closing.slides[0]!;
-    expect(start.partner).toBe(stop);
-    expect(stop.partner).toBe(start);
-    expect(start.number).toBe('1');
-    expect(start.note).toBe(opening!);
-    expect(stop.note).toBe(closing);
-    expect(start.part).toBe(part);
-    expect(start.measureBeat).toBe(0);
-    expect(stop.measureBeat).toBe(0);
-    expect(start.members).toEqual([start, stop]);
-  });
+	it('pairs a slide in both directions, knowing its note and part', () => {
+		const start = opening!.slides[0]!;
+		const stop = closing.slides[0]!;
+		expect(start.partner).toBe(stop);
+		expect(stop.partner).toBe(start);
+		expect(start.number).toBe('1');
+		expect(start.note).toBe(opening!);
+		expect(stop.note).toBe(closing);
+		expect(start.part).toBe(part);
+		expect(start.measureBeat).toBe(0);
+		expect(stop.measureBeat).toBe(0);
+		expect(start.members).toEqual([start, stop]);
+	});
 
-  it('pairs a glissando in both directions, knowing its note and part', () => {
-    const start = opening!.glissandos[0]!;
-    const stop = closing.glissandos[0]!;
-    expect(start.partner).toBe(stop);
-    expect(stop.partner).toBe(start);
-    expect(start.number).toBe('1');
-    expect(start.note).toBe(opening!);
-    expect(stop.note).toBe(closing);
-    expect(start.part).toBe(part);
-    expect(start.measureBeat).toBe(0);
-    expect(stop.measureBeat).toBe(0);
-    expect(start.members).toEqual([start, stop]);
-  });
+	it('pairs a glissando in both directions, knowing its note and part', () => {
+		const start = opening!.glissandos[0]!;
+		const stop = closing.glissandos[0]!;
+		expect(start.partner).toBe(stop);
+		expect(stop.partner).toBe(start);
+		expect(start.number).toBe('1');
+		expect(start.note).toBe(opening!);
+		expect(stop.note).toBe(closing);
+		expect(start.part).toBe(part);
+		expect(start.measureBeat).toBe(0);
+		expect(stop.measureBeat).toBe(0);
+		expect(start.members).toEqual([start, stop]);
+	});
 
-  it('pairs a tie in both directions, knowing its note and part', () => {
-    const start = opening!.ties[0]!;
-    const stop = closing.ties[0]!;
-    expect(start.partner).toBe(stop);
-    expect(stop.partner).toBe(start);
-    expect(start.number).toBe('1'); // no number attribute: MusicXML reads that as 1
-    expect(start.note).toBe(opening!);
-    expect(stop.note).toBe(closing);
-    expect(start.part).toBe(part);
-    expect(start.measureBeat).toBe(0);
-    expect(stop.measureBeat).toBe(0);
-    expect(start.members).toEqual([start, stop]);
-  });
+	it('pairs a tie in both directions, knowing its note and part', () => {
+		const start = opening!.ties[0]!;
+		const stop = closing.ties[0]!;
+		expect(start.partner).toBe(stop);
+		expect(stop.partner).toBe(start);
+		expect(start.number).toBe('1'); // no number attribute: MusicXML reads that as 1
+		expect(start.note).toBe(opening!);
+		expect(stop.note).toBe(closing);
+		expect(start.part).toBe(part);
+		expect(start.measureBeat).toBe(0);
+		expect(stop.measureBeat).toBe(0);
+		expect(start.members).toEqual([start, stop]);
+	});
 
-  it('pairs a slur in both directions, knowing its note and part', () => {
-    const start = opening!.slurs[0]!;
-    const stop = closing.slurs[0]!;
-    expect(start.partner).toBe(stop);
-    expect(stop.partner).toBe(start);
-    expect(start.number).toBe('1');
-    expect(start.note).toBe(opening!);
-    expect(stop.note).toBe(closing);
-    expect(start.part).toBe(part);
-    expect(start.measureBeat).toBe(0);
-    expect(stop.measureBeat).toBe(0);
-    expect(start.members).toEqual([start, stop]);
-  });
+	it('pairs a slur in both directions, knowing its note and part', () => {
+		const start = opening!.slurs[0]!;
+		const stop = closing.slurs[0]!;
+		expect(start.partner).toBe(stop);
+		expect(stop.partner).toBe(start);
+		expect(start.number).toBe('1');
+		expect(start.note).toBe(opening!);
+		expect(stop.note).toBe(closing);
+		expect(start.part).toBe(part);
+		expect(start.measureBeat).toBe(0);
+		expect(stop.measureBeat).toBe(0);
+		expect(start.members).toEqual([start, stop]);
+	});
 
-  it('pairs a hammer-on in both directions, knowing its note and part', () => {
-    const start = opening!.hammerOns[0]!;
-    const stop = closing.hammerOns[0]!;
-    expect(start.partner).toBe(stop);
-    expect(stop.partner).toBe(start);
-    expect(start.number).toBe('1');
-    expect(start.note).toBe(opening!);
-    expect(stop.note).toBe(closing);
-    expect(start.part).toBe(part);
-    expect(start.measureBeat).toBe(0);
-    expect(stop.measureBeat).toBe(0);
-    expect(start.members).toEqual([start, stop]);
-  });
+	it('pairs a hammer-on in both directions, knowing its note and part', () => {
+		const start = opening!.hammerOns[0]!;
+		const stop = closing.hammerOns[0]!;
+		expect(start.partner).toBe(stop);
+		expect(stop.partner).toBe(start);
+		expect(start.number).toBe('1');
+		expect(start.note).toBe(opening!);
+		expect(stop.note).toBe(closing);
+		expect(start.part).toBe(part);
+		expect(start.measureBeat).toBe(0);
+		expect(stop.measureBeat).toBe(0);
+		expect(start.members).toEqual([start, stop]);
+	});
 
-  it('pairs a pull-off in both directions, knowing its note and part', () => {
-    const start = opening!.pullOffs[0]!;
-    const stop = closing.pullOffs[0]!;
-    expect(start.partner).toBe(stop);
-    expect(stop.partner).toBe(start);
-    expect(start.number).toBe('1');
-    expect(start.note).toBe(opening!);
-    expect(stop.note).toBe(closing);
-    expect(start.part).toBe(part);
-    expect(start.measureBeat).toBe(0);
-    expect(stop.measureBeat).toBe(0);
-    expect(start.members).toEqual([start, stop]);
-  });
+	it('pairs a pull-off in both directions, knowing its note and part', () => {
+		const start = opening!.pullOffs[0]!;
+		const stop = closing.pullOffs[0]!;
+		expect(start.partner).toBe(stop);
+		expect(stop.partner).toBe(start);
+		expect(start.number).toBe('1');
+		expect(start.note).toBe(opening!);
+		expect(stop.note).toBe(closing);
+		expect(start.part).toBe(part);
+		expect(start.measureBeat).toBe(0);
+		expect(stop.measureBeat).toBe(0);
+		expect(start.members).toEqual([start, stop]);
+	});
 
-  it('reads the stroke instruction, null when unstated', () => {
-    expect(opening!.slides[0]!.lineType).toBe('solid');
-    expect(opening!.glissandos[0]!.lineType).toBe('wavy');
-    expect(opening!.ties[0]!.lineType).toBe('dotted');
-    expect(opening!.slurs[0]!.lineType).toBe('dashed');
-    expect(closing.slurs[0]!.lineType).toBeNull();
-    expect(opening!.slurs[0]!.placement).toBe('above');
-  });
+	it('reads the stroke instruction, null when unstated', () => {
+		expect(opening!.slides[0]!.lineType).toBe('solid');
+		expect(opening!.glissandos[0]!.lineType).toBe('wavy');
+		expect(opening!.ties[0]!.lineType).toBe('dotted');
+		expect(opening!.slurs[0]!.lineType).toBe('dashed');
+		expect(closing.slurs[0]!.lineType).toBeNull();
+		expect(opening!.slurs[0]!.placement).toBe('above');
+	});
 
-  it('walks a three-marker span through its continue', () => {
-    const wavy = opening!.wavyLines[0]!;
-    expect(wavy.members.map((marker) => marker.wavyLineType)).toEqual(['start', 'continue', 'stop']);
-    expect(middle!.wavyLines[0]!.members).toHaveLength(3); // any member yields the whole run
-    expect(wavy.partner).toBe(closing.wavyLines[0]!);
-    expect(wavy.measureBeat).toBe(0);
-    expect(closing.wavyLines[0]!.note).toBe(closing);
-  });
+	it('walks a three-marker span through its continue', () => {
+		const wavy = opening!.wavyLines[0]!;
+		expect(wavy.members.map((marker) => marker.wavyLineType)).toEqual([
+			'start',
+			'continue',
+			'stop',
+		]);
+		expect(middle!.wavyLines[0]!.members).toHaveLength(3); // any member yields the whole run
+		expect(wavy.partner).toBe(closing.wavyLines[0]!);
+		expect(wavy.measureBeat).toBe(0);
+		expect(closing.wavyLines[0]!.note).toBe(closing);
+	});
 
-  it('carries the text a technical marker prints', () => {
-    expect(opening!.hammerOns[0]!.text).toBe('H');
-    expect(opening!.pullOffs[0]!.text).toBe('P');
-  });
+	it('carries the text a technical marker prints', () => {
+		expect(opening!.hammerOns[0]!.text).toBe('H');
+		expect(opening!.pullOffs[0]!.text).toBe('P');
+	});
 });

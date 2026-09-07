@@ -1,7 +1,7 @@
-import { MElement, required } from './m-node';
 import { Direction } from './direction';
+import { MElement, required } from './m-node';
 import { Measure } from './measure';
-import { Spanner, directionMarkers, type SpannerSpec } from './spanner';
+import { directionMarkers, Spanner, type SpannerSpec } from './spanner';
 
 export type BracketType = 'start' | 'stop' | 'continue';
 
@@ -15,65 +15,73 @@ export type BracketType = 'start' | 'stop' | 'continue';
  * it before the last note it covers.
  */
 export class Bracket extends MElement {
-  constructor() {
-    super('bracket');
-  }
+	constructor() {
+		super('bracket');
+	}
 
-  /** Pairing key; '1' when omitted. */
-  get number(): string {
-    return this.getAttribute('number') ?? '1';
-  }
+	/** Pairing key; '1' when omitted. */
+	get number(): string {
+		return this.getAttribute('number') ?? '1';
+	}
 
-  /** `type`: required on a `<bracket>` and drives pairing. */
-  get bracketType(): BracketType {
-    return required(this.getAttribute('type'), 'type on <bracket>') as BracketType;
-  }
+	/** `type`: required on a `<bracket>` and drives pairing. */
+	get bracketType(): BracketType {
+		return required(
+			this.getAttribute('type'),
+			'type on <bracket>',
+		) as BracketType;
+	}
 
-  /**
-   * `line-end`: how this end terminates — a hook up, a hook down, an arrow, or
-   * nothing. Required by the spec; 'none' when a malformed marker omits it.
-   */
-  get lineEnd(): 'up' | 'down' | 'arrow' | 'none' {
-    const lineEnd = this.getAttribute('line-end');
-    return lineEnd === 'up' || lineEnd === 'down' || lineEnd === 'arrow' ? lineEnd : 'none';
-  }
+	/**
+	 * `line-end`: how this end terminates — a hook up, a hook down, an arrow, or
+	 * nothing. Required by the spec; 'none' when a malformed marker omits it.
+	 */
+	get lineEnd(): 'up' | 'down' | 'arrow' | 'none' {
+		const lineEnd = this.getAttribute('line-end');
+		return lineEnd === 'up' || lineEnd === 'down' || lineEnd === 'arrow'
+			? lineEnd
+			: 'none';
+	}
 
-  /** `line-type` (solid/dashed/dotted/wavy); null when unstated. */
-  get lineType(): string | null {
-    return this.getAttribute('line-type');
-  }
+	/** `line-type` (solid/dashed/dotted/wavy); null when unstated. */
+	get lineType(): string | null {
+		return this.getAttribute('line-type');
+	}
 
-  /** The `<direction>` this marker hangs off of. An attached marker always has one. */
-  get direction(): Direction {
-    return required(this.closest(Direction), '<direction> ancestor of <bracket>');
-  }
+	/** The `<direction>` this marker hangs off of. An attached marker always has one. */
+	get direction(): Direction {
+		return required(
+			this.closest(Direction),
+			'<direction> ancestor of <bracket>',
+		);
+	}
 
-  /** The measure this marker sits in. An attached marker always has one. */
-  get measure(): Measure {
-    return required(this.closest(Measure), '<measure> ancestor of <bracket>');
-  }
+	/** The measure this marker sits in. An attached marker always has one. */
+	get measure(): Measure {
+		return required(this.closest(Measure), '<measure> ancestor of <bracket>');
+	}
 
-  /** The marker at the far end (same number), or null. */
-  get partner(): Bracket | null {
-    return new Spanner(this.spec()).partnerOf(this);
-  }
+	/** The marker at the far end (same number), or null. */
+	get partner(): Bracket | null {
+		return new Spanner(this.spec()).partnerOf(this);
+	}
 
-  /** All markers in this spanner (start..stop), not just the far end. */
-  get members(): Bracket[] {
-    return new Spanner(this.spec()).membersOf(this);
-  }
+	/** All markers in this spanner (start..stop), not just the far end. */
+	get members(): Bracket[] {
+		return new Spanner(this.spec()).membersOf(this);
+	}
 
-  /** Onset of this marker's direction within its measure, in beats. */
-  get measureBeat(): number | null {
-    return this.direction.measureBeat;
-  }
+	/** Onset of this marker's direction within its measure, in beats. */
+	get measureBeat(): number | null {
+		return this.direction.measureBeat;
+	}
 
-  private spec(): SpannerSpec<Bracket> {
-    return {
-      siblings: directionMarkers(this, (direction) => direction.brackets),
-      // Raw reads so resolution tolerates a malformed typeless marker.
-      isOpen: (marker) => marker.getAttribute('type') === 'start',
-      isClose: (marker) => marker.getAttribute('type') === 'stop',
-    };
-  }
+	private spec(): SpannerSpec<Bracket> {
+		return {
+			siblings: directionMarkers(this, (direction) => direction.brackets),
+			// Raw reads so resolution tolerates a malformed typeless marker.
+			isOpen: (marker) => marker.getAttribute('type') === 'start',
+			isClose: (marker) => marker.getAttribute('type') === 'stop',
+		};
+	}
 }

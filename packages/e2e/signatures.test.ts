@@ -26,29 +26,30 @@ const SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('signature in effect — carry-forward queries', () => {
-  const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
-  const noteOf = (measure: string, index: number): Note => part.getMeasure(measure)!.notes[index]!;
+	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
+	const noteOf = (measure: string, index: number): Note =>
+		part.getMeasure(measure)!.notes[index]!;
 
-  it('reads key and time in effect, carried forward into a bare measure', () => {
-    const measure2 = part.getMeasure('2')!;
-    expect(measure2.getKey()!.fifths).toBe(2);
-    expect(measure2.getTime()!.beats).toBe('3');
-    expect(measure2.getTime()!.beatType).toBe('4');
-    // The same answer is reachable from a note in that measure.
-    expect(noteOf('2', 0).key!.fifths).toBe(2);
-    expect(noteOf('2', 0).time!.symbol).toBe('common');
-  });
+	it('reads key and time in effect, carried forward into a bare measure', () => {
+		const measure2 = part.getMeasure('2')!;
+		expect(measure2.getKey()!.fifths).toBe(2);
+		expect(measure2.getTime()!.beats).toBe('3');
+		expect(measure2.getTime()!.beatType).toBe('4');
+		// The same answer is reachable from a note in that measure.
+		expect(noteOf('2', 0).key!.fifths).toBe(2);
+		expect(noteOf('2', 0).time!.symbol).toBe('common');
+	});
 
-  it('selects the clef per staff, from the note or from the measure', () => {
-    expect(noteOf('1', 0).clef!.sign).toBe('G'); // staff 1
-    expect(noteOf('1', 1).clef!.sign).toBe('F'); // staff 2
-    expect(part.getMeasure('1')!.getClef('1')!.sign).toBe('G');
-    expect(part.getMeasure('1')!.getClef('2')!.sign).toBe('F');
-  });
+	it('selects the clef per staff, from the note or from the measure', () => {
+		expect(noteOf('1', 0).clef!.sign).toBe('G'); // staff 1
+		expect(noteOf('1', 1).clef!.sign).toBe('F'); // staff 2
+		expect(part.getMeasure('1')!.getClef('1')!.sign).toBe('G');
+		expect(part.getMeasure('1')!.getClef('2')!.sign).toBe('F');
+	});
 
-  it('reports stave count and per-staff line count, carried forward', () => {
-    const bassNote = noteOf('2', 1); // staff 2, in the bare measure
-    expect(bassNote.staveCount).toBe(2);
-    expect(bassNote.staveLines).toBe(5);
-  });
+	it('reports stave count and per-staff line count, carried forward', () => {
+		const bassNote = noteOf('2', 1); // staff 2, in the bare measure
+		expect(bassNote.staveCount).toBe(2);
+		expect(bassNote.staveLines).toBe(5);
+	});
 });

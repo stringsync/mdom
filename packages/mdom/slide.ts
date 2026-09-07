@@ -1,7 +1,7 @@
 import { MElement, required } from './m-node';
 import { Note } from './note';
 import { Part } from './part';
-import { Spanner, noteMarkers, type SpannerSpec } from './spanner';
+import { noteMarkers, Spanner, type SpannerSpec } from './spanner';
 
 export type SlideType = 'start' | 'stop';
 
@@ -14,56 +14,56 @@ export type SlideType = 'start' | 'stop';
  * alike, so the notational distinction survives the round-trip.
  */
 export class Slide extends MElement {
-  constructor() {
-    super('slide');
-  }
+	constructor() {
+		super('slide');
+	}
 
-  /** Pairing key; '1' when omitted. */
-  get number(): string {
-    return this.getAttribute('number') ?? '1';
-  }
+	/** Pairing key; '1' when omitted. */
+	get number(): string {
+		return this.getAttribute('number') ?? '1';
+	}
 
-  /** `type`: required on a `<slide>` and drives pairing. */
-  get slideType(): SlideType {
-    return required(this.getAttribute('type'), 'type on <slide>') as SlideType;
-  }
+	/** `type`: required on a `<slide>` and drives pairing. */
+	get slideType(): SlideType {
+		return required(this.getAttribute('type'), 'type on <slide>') as SlideType;
+	}
 
-  /** `line-type` (solid/dashed/dotted/wavy) — the stroke to draw; null when unstated. */
-  get lineType(): string | null {
-    return this.getAttribute('line-type');
-  }
+	/** `line-type` (solid/dashed/dotted/wavy) — the stroke to draw; null when unstated. */
+	get lineType(): string | null {
+		return this.getAttribute('line-type');
+	}
 
-  /** The note this marker hangs off of. An attached marker always has one. */
-  get note(): Note {
-    return required(this.closest(Note), '<note> ancestor of <slide>');
-  }
+	/** The note this marker hangs off of. An attached marker always has one. */
+	get note(): Note {
+		return required(this.closest(Note), '<note> ancestor of <slide>');
+	}
 
-  /** The part this marker belongs to. An attached marker always has one. */
-  get part(): Part {
-    return required(this.closest(Part), '<part> ancestor of <slide>');
-  }
+	/** The part this marker belongs to. An attached marker always has one. */
+	get part(): Part {
+		return required(this.closest(Part), '<part> ancestor of <slide>');
+	}
 
-  /** The marker at the far end (same number), scanning the part in document order. */
-  get partner(): Slide | null {
-    return new Spanner(this.spec()).partnerOf(this);
-  }
+	/** The marker at the far end (same number), scanning the part in document order. */
+	get partner(): Slide | null {
+		return new Spanner(this.spec()).partnerOf(this);
+	}
 
-  /** All markers in this spanner (start..stop), not just the far end. */
-  get members(): Slide[] {
-    return new Spanner(this.spec()).membersOf(this);
-  }
+	/** All markers in this spanner (start..stop), not just the far end. */
+	get members(): Slide[] {
+		return new Spanner(this.spec()).membersOf(this);
+	}
 
-  /** Onset of this marker's note within its measure, in beats. */
-  get measureBeat(): number | null {
-    return this.note.measureBeat;
-  }
+	/** Onset of this marker's note within its measure, in beats. */
+	get measureBeat(): number | null {
+		return this.note.measureBeat;
+	}
 
-  private spec(): SpannerSpec<Slide> {
-    return {
-      siblings: noteMarkers(this, (note) => note.slides),
-      // Raw reads so resolution tolerates a malformed typeless marker.
-      isOpen: (marker) => marker.getAttribute('type') === 'start',
-      isClose: (marker) => marker.getAttribute('type') === 'stop',
-    };
-  }
+	private spec(): SpannerSpec<Slide> {
+		return {
+			siblings: noteMarkers(this, (note) => note.slides),
+			// Raw reads so resolution tolerates a malformed typeless marker.
+			isOpen: (marker) => marker.getAttribute('type') === 'start',
+			isClose: (marker) => marker.getAttribute('type') === 'stop',
+		};
+	}
 }

@@ -15,10 +15,12 @@ const GRACE_SLUR = `<score-partwise><part id="P1">
 </part></score-partwise>`;
 
 describe('spanner — an acciaccatura slur', () => {
-  const part = new MDOMParser().parseFromString(GRACE_SLUR).score.getPart('P1')!;
-  const [grace, main] = part.getMeasure('1')!.notes;
+	const part = new MDOMParser()
+		.parseFromString(GRACE_SLUR)
+		.score.getPart('P1')!;
+	const [grace, main] = part.getMeasure('1')!.notes;
 
-  it('pairs the grace note to its main note despite the shared onset', () => {
-    expect(grace!.slurs[0]!.partner).toBe(main!.slurs[0]!);
-  });
+	it('pairs the grace note to its main note despite the shared onset', () => {
+		expect(grace!.slurs[0]!.partner).toBe(main!.slurs[0]!);
+	});
 });

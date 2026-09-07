@@ -24,26 +24,30 @@ const SAMPLE = `<score-partwise><part id="P1">
 </part></score-partwise>`;
 
 describe('sound — merged from the direction and the measure', () => {
-  const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
-  const [first, second] = part.measures;
+	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
+	const [first, second] = part.measures;
 
-  it('merges the directions sounds, then the measure own standalone child', () => {
-    expect(first!.sounds.map((sound) => sound.tempo)).toEqual([132, 90]);
-    expect(first!.directions[0]!.sound?.tempo).toBe(132);
-    expect(first!.directions[0]!.soundTempo).toBe(132); // the old accessor still works
-  });
+	it('merges the directions sounds, then the measure own standalone child', () => {
+		expect(first!.sounds.map((sound) => sound.tempo)).toEqual([132, 90]);
+		expect(first!.directions[0]!.sound?.tempo).toBe(132);
+		expect(first!.directions[0]!.soundTempo).toBe(132); // the old accessor still works
+	});
 
-  it('reads the playback dynamics, null when unset', () => {
-    expect(first!.sounds[0]!.dynamics).toBe(80);
-    expect(first!.sounds[1]!.dynamics).toBeNull();
-  });
+	it('reads the playback dynamics, null when unset', () => {
+		expect(first!.sounds[0]!.dynamics).toBe(80);
+		expect(first!.sounds[1]!.dynamics).toBeNull();
+	});
 
-  it('reads the swing ratio and the note value it divides', () => {
-    expect(first!.sounds[0]!.swing).toEqual({ first: 2, second: 1, unit: 0.5 });
-    expect(first!.sounds[1]!.swing).toBeNull(); // no <swing> at all
-  });
+	it('reads the swing ratio and the note value it divides', () => {
+		expect(first!.sounds[0]!.swing).toEqual({ first: 2, second: 1, unit: 0.5 });
+		expect(first!.sounds[1]!.swing).toBeNull(); // no <swing> at all
+	});
 
-  it('reads <straight/> as an even 1:1, so it cancels a carried swing', () => {
-    expect(second!.sounds[0]!.swing).toEqual({ first: 1, second: 1, unit: 0.25 });
-  });
+	it('reads <straight/> as an even 1:1, so it cancels a carried swing', () => {
+		expect(second!.sounds[0]!.swing).toEqual({
+			first: 1,
+			second: 1,
+			unit: 0.25,
+		});
+	});
 });

@@ -6,17 +6,17 @@ import type { Note } from './note';
  * Every timeline query (onset, duration) reads off the lead note.
  */
 export class Chord {
-  constructor(readonly notes: Note[]) {}
+	constructor(readonly notes: Note[]) {}
 
-  /** The first (non-`<chord/>`) note; carries the chord's onset and duration. */
-  get lead(): Note {
-    return this.notes[0]!;
-  }
+	/** The first (non-`<chord/>`) note; carries the chord's onset and duration. */
+	get lead(): Note {
+		return this.notes[0]!;
+	}
 
-  /** Onset within the measure, in beats (the lead note's measureBeat()). */
-  get measureBeat(): number | null {
-    return this.lead.measureBeat;
-  }
+	/** Onset within the measure, in beats (the lead note's measureBeat()). */
+	get measureBeat(): number | null {
+		return this.lead.measureBeat;
+	}
 }
 
 /**
@@ -25,13 +25,13 @@ export class Chord {
  * chords.
  */
 export function groupChords(notes: Note[]): Chord[] {
-  const groups: Note[][] = [];
-  for (const note of notes) {
-    if (note.isChordMember && groups.length > 0) {
-      groups[groups.length - 1]!.push(note);
-    } else {
-      groups.push([note]);
-    }
-  }
-  return groups.map((members) => new Chord(members));
+	const groups: Note[][] = [];
+	for (const note of notes) {
+		if (note.isChordMember && groups.length > 0) {
+			groups[groups.length - 1]!.push(note);
+		} else {
+			groups.push([note]);
+		}
+	}
+	return groups.map((members) => new Chord(members));
 }

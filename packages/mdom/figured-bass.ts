@@ -1,5 +1,5 @@
 import { MElement } from './m-node';
-import { type Note, adjacentNote } from './note';
+import { adjacentNote, type Note } from './note';
 import { placementOf } from './print-style';
 
 /**
@@ -7,29 +7,29 @@ import { placementOf } from './print-style';
  * before or after it (`#6`, `4+`), or an accidental on its own.
  */
 export class Figure extends MElement {
-  constructor() {
-    super('figure');
-  }
+	constructor() {
+		super('figure');
+	}
 
-  /** `<prefix>`: the accidental printed before the numeral (sharp/flat/natural/slash/…); null when none. */
-  get prefix(): string | null {
-    return this.child('prefix')?.text ?? null;
-  }
+	/** `<prefix>`: the accidental printed before the numeral (sharp/flat/natural/slash/…); null when none. */
+	get prefix(): string | null {
+		return this.child('prefix')?.text ?? null;
+	}
 
-  /** `<figure-number>`: the numeral itself, kept as a string; null when the figure is an accidental alone. */
-  get number(): string | null {
-    return this.child('figure-number')?.text ?? null;
-  }
+	/** `<figure-number>`: the numeral itself, kept as a string; null when the figure is an accidental alone. */
+	get number(): string | null {
+		return this.child('figure-number')?.text ?? null;
+	}
 
-  /** `<suffix>`: the accidental or stroke printed after the numeral; null when none. */
-  get suffix(): string | null {
-    return this.child('suffix')?.text ?? null;
-  }
+	/** `<suffix>`: the accidental or stroke printed after the numeral; null when none. */
+	get suffix(): string | null {
+		return this.child('suffix')?.text ?? null;
+	}
 
-  /** Whether an `<extend>` line trails this figure (it holds through the next bass notes). */
-  get extend(): boolean {
-    return this.child('extend') !== null;
-  }
+	/** Whether an `<extend>` line trails this figure (it holds through the next bass notes). */
+	get extend(): boolean {
+		return this.child('extend') !== null;
+	}
 }
 
 /**
@@ -38,30 +38,30 @@ export class Figure extends MElement {
  * decorates the same way — see {@link nextNote}.
  */
 export class FiguredBass extends MElement {
-  constructor() {
-    super('figured-bass');
-  }
+	constructor() {
+		super('figured-bass');
+	}
 
-  /** The stack, top figure first (document order). */
-  get figures(): Figure[] {
-    return this.childrenOfType(Figure);
-  }
+	/** The stack, top figure first (document order). */
+	get figures(): Figure[] {
+		return this.childrenOfType(Figure);
+	}
 
-  /** The `parentheses="yes"` attribute — the whole stack is printed in brackets. */
-  get parentheses(): boolean {
-    return this.getAttribute('parentheses') === 'yes';
-  }
+	/** The `parentheses="yes"` attribute — the whole stack is printed in brackets. */
+	get parentheses(): boolean {
+		return this.getAttribute('parentheses') === 'yes';
+	}
 
-  /** `placement`; null when unstated. */
-  get placement(): 'above' | 'below' | null {
-    return placementOf(this);
-  }
+	/** `placement`; null when unstated. */
+	get placement(): 'above' | 'below' | null {
+		return placementOf(this);
+	}
 
-  /**
-   * The note this stack sits under — the nearest non-`<chord/>` note after it,
-   * the same binding {@link Harmony.nextNote} uses.
-   */
-  get nextNote(): Note | null {
-    return adjacentNote(this, 1);
-  }
+	/**
+	 * The note this stack sits under — the nearest non-`<chord/>` note after it,
+	 * the same binding {@link Harmony.nextNote} uses.
+	 */
+	get nextNote(): Note | null {
+		return adjacentNote(this, 1);
+	}
 }

@@ -5,113 +5,118 @@ import type { StaffTuning } from './staff-tuning';
 
 /** A `<part>`: a sequence of measures, keyed to a `<score-part>` by id. */
 export class Part extends MElement {
-  constructor() {
-    super('part');
-  }
+	constructor() {
+		super('part');
+	}
 
-  /**
-   * The part's id (IDREF to its `<score-part>`). Always present in valid
-   * MusicXML, and addPart sets one; absence is a malformed document.
-   */
-  get id(): string {
-    return required(this.getAttribute('id'), 'id on <part>');
-  }
+	/**
+	 * The part's id (IDREF to its `<score-part>`). Always present in valid
+	 * MusicXML, and addPart sets one; absence is a malformed document.
+	 */
+	get id(): string {
+		return required(this.getAttribute('id'), 'id on <part>');
+	}
 
-  /** The score this part belongs to. An attached part always has one. */
-  get score(): Score {
-    return required(this.closest(Score), '<score-partwise> ancestor of <part>');
-  }
+	/** The score this part belongs to. An attached part always has one. */
+	get score(): Score {
+		return required(this.closest(Score), '<score-partwise> ancestor of <part>');
+	}
 
-  /** The part's measures. */
-  get measures(): Measure[] {
-    return this.childrenOfType(Measure);
-  }
+	/** The part's measures. */
+	get measures(): Measure[] {
+		return this.childrenOfType(Measure);
+	}
 
-  /** The measure with this `number`, or null. */
-  getMeasure(number: string): Measure | null {
-    return this.measures.find((measure) => measure.number === number) ?? null;
-  }
+	/** The measure with this `number`, or null. */
+	getMeasure(number: string): Measure | null {
+		return this.measures.find((measure) => measure.number === number) ?? null;
+	}
 
-  /**
-   * Display name, resolved from this part's `<score-part><part-name>` in the
-   * `<part-list>` (a sibling cross-reference, joined by this part's id).
-   */
-  get label(): string | null {
-    const partList = this.closest(Score)?.child('part-list');
-    const scorePart = partList?.childrenNamed('score-part').find((entry) => entry.getAttribute('id') === this.id);
-    return scorePart?.child('part-name')?.text ?? null;
-  }
+	/**
+	 * Display name, resolved from this part's `<score-part><part-name>` in the
+	 * `<part-list>` (a sibling cross-reference, joined by this part's id).
+	 */
+	get label(): string | null {
+		const partList = this.closest(Score)?.child('part-list');
+		const scorePart = partList
+			?.childrenNamed('score-part')
+			.find((entry) => entry.getAttribute('id') === this.id);
+		return scorePart?.child('part-name')?.text ?? null;
+	}
 
-  /** Append a `<measure>`, numbered after the last one when `number` is omitted. */
-  addMeasure(opts?: { number?: string }): Measure {
-    const measure = new Measure();
-    measure.setAttribute('number', opts?.number ?? String(this.measures.length + 1));
-    this.append(measure);
-    return measure;
-  }
+	/** Append a `<measure>`, numbered after the last one when `number` is omitted. */
+	addMeasure(opts?: { number?: string }): Measure {
+		const measure = new Measure();
+		measure.setAttribute(
+			'number',
+			opts?.number ?? String(this.measures.length + 1),
+		);
+		this.append(measure);
+		return measure;
+	}
 
-  /**
-   * Insert a new `<measure>` at `index` (appending when `index` is the measure
-   * count). Numbering is the caller's to set — a non-musical spacer measure
-   * legitimately wants none, so unlike {@link addMeasure} this assigns one only
-   * when asked. Pair it with {@link Measure.copySignaturesFrom} when the new
-   * measure lands before the declarations it needs.
-   */
-  insertMeasureAt(index: number, opts?: { number?: string }): Measure {
-    const measure = new Measure();
-    if (opts?.number != null) {
-      measure.setAttribute('number', opts.number);
-    }
-    this.insertBefore(measure, this.measures[index] ?? null);
-    return measure;
-  }
+	/**
+	 * Insert a new `<measure>` at `index` (appending when `index` is the measure
+	 * count). Numbering is the caller's to set — a non-musical spacer measure
+	 * legitimately wants none, so unlike {@link addMeasure} this assigns one only
+	 * when asked. Pair it with {@link Measure.copySignaturesFrom} when the new
+	 * measure lands before the declarations it needs.
+	 */
+	insertMeasureAt(index: number, opts?: { number?: string }): Measure {
+		const measure = new Measure();
+		if (opts?.number != null) {
+			measure.setAttribute('number', opts.number);
+		}
+		this.insertBefore(measure, this.measures[index] ?? null);
+		return measure;
+	}
 
-  /**
-   * The `<staff-tuning>` declarations for `staff` (default '1'): the first
-   * `<staff-details>` anywhere in the part that carries them. Tuning is
-   * effectively a per-part constant, like {@link partSymbol} — use
-   * {@link Measure.getStaffTunings} when a mid-score retuning matters.
-   */
-  getStaffTunings(staff = '1'): StaffTuning[] {
-    for (const measure of this.measures) {
-      const tunings = measure.getStaffTunings(staff);
-      if (tunings.length > 0) {
-        return tunings;
-      }
-    }
-    return [];
-  }
+	/**
+	 * The `<staff-tuning>` declarations for `staff` (default '1'): the first
+	 * `<staff-details>` anywhere in the part that carries them. Tuning is
+	 * effectively a per-part constant, like {@link partSymbol} — use
+	 * {@link Measure.getStaffTunings} when a mid-score retuning matters.
+	 */
+	getStaffTunings(staff = '1'): StaffTuning[] {
+		for (const measure of this.measures) {
+			const tunings = measure.getStaffTunings(staff);
+			if (tunings.length > 0) {
+				return tunings;
+			}
+		}
+		return [];
+	}
 
-  /**
-   * `<staves>` count (first declaration in any measure's attributes); 1 (single
-   * staff) when never declared.
-   */
-  get staveCount(): number {
-    for (const measure of this.measures) {
-      for (const attrs of measure.childrenNamed('attributes')) {
-        const staves = attrs.child('staves')?.text;
-        if (staves != null) {
-          return Number(staves);
-        }
-      }
-    }
-    return 1;
-  }
+	/**
+	 * `<staves>` count (first declaration in any measure's attributes); 1 (single
+	 * staff) when never declared.
+	 */
+	get staveCount(): number {
+		for (const measure of this.measures) {
+			for (const attrs of measure.childrenNamed('attributes')) {
+				const staves = attrs.child('staves')?.text;
+				if (staves != null) {
+					return Number(staves);
+				}
+			}
+		}
+		return 1;
+	}
 
-  /**
-   * The `<part-symbol>` connector joining a multi-staff part's staves (first
-   * declaration in any measure's attributes); null when never declared. It is
-   * effectively a per-part constant, so it lives here rather than per-measure.
-   */
-  get partSymbol(): 'none' | 'line' | 'bracket' | 'brace' | 'square' | null {
-    for (const measure of this.measures) {
-      for (const attrs of measure.childrenNamed('attributes')) {
-        const symbol = attrs.child('part-symbol')?.text;
-        if (symbol != null) {
-          return symbol as 'none' | 'line' | 'bracket' | 'brace' | 'square';
-        }
-      }
-    }
-    return null;
-  }
+	/**
+	 * The `<part-symbol>` connector joining a multi-staff part's staves (first
+	 * declaration in any measure's attributes); null when never declared. It is
+	 * effectively a per-part constant, so it lives here rather than per-measure.
+	 */
+	get partSymbol(): 'none' | 'line' | 'bracket' | 'brace' | 'square' | null {
+		for (const measure of this.measures) {
+			for (const attrs of measure.childrenNamed('attributes')) {
+				const symbol = attrs.child('part-symbol')?.text;
+				if (symbol != null) {
+					return symbol as 'none' | 'line' | 'bracket' | 'brace' | 'square';
+				}
+			}
+		}
+		return null;
+	}
 }

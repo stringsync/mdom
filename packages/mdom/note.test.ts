@@ -28,31 +28,33 @@ const SAMPLE = `<score-partwise>
 </score-partwise>`;
 
 describe('Note', () => {
-  const parser = new MDOMParser();
-  const notes = parser.parseFromString(SAMPLE).score?.getPart('P1')?.getMeasure('1')?.notes ?? [];
+	const parser = new MDOMParser();
+	const notes =
+		parser.parseFromString(SAMPLE).score?.getPart('P1')?.getMeasure('1')
+			?.notes ?? [];
 
-  it('lists every note in the measure', () => {
-    expect(notes.length).toBe(2);
-  });
+	it('lists every note in the measure', () => {
+		expect(notes.length).toBe(2);
+	});
 
-  it('reads a pitched note', () => {
-    const note = notes[0];
-    expect(note?.isRest).toBe(false);
-    expect(note?.pitch?.step).toBe('C');
-    expect(note?.pitch?.alter).toBe(1);
-    expect(note?.pitch?.octave).toBe(4);
-    expect(note?.duration).toBe(4);
-    expect(note?.type).toBe('quarter');
-  });
+	it('reads a pitched note', () => {
+		const note = notes[0];
+		expect(note?.isRest).toBe(false);
+		expect(note?.pitch?.step).toBe('C');
+		expect(note?.pitch?.alter).toBe(1);
+		expect(note?.pitch?.octave).toBe(4);
+		expect(note?.duration).toBe(4);
+		expect(note?.type).toBe('quarter');
+	});
 
-  it('reads a rest as a note with no pitch', () => {
-    const rest = notes[1];
-    expect(rest?.isRest).toBe(true);
-    expect(rest?.pitch).toBeNull();
-  });
+	it('reads a rest as a note with no pitch', () => {
+		const rest = notes[1];
+		expect(rest?.isRest).toBe(true);
+		expect(rest?.pitch).toBeNull();
+	});
 
-  it('reads articulations, stem, and time-modification (absent → [] / null)', () => {
-    const marked = `<score-partwise><part id="P1"><measure number="1">
+	it('reads articulations, stem, and time-modification (absent → [] / null)', () => {
+		const marked = `<score-partwise><part id="P1"><measure number="1">
       <note>
         <pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>eighth</type>
         <stem>up</stem>
@@ -61,28 +63,37 @@ describe('Note', () => {
       </note>
       <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
     </measure></part></score-partwise>`;
-    const [fancy, plain] = new MDOMParser().parseFromString(marked).score.getPart('P1')!.getMeasure('1')!.notes;
-    expect(fancy!.articulations).toEqual(['staccato', 'accent']);
-    expect(fancy!.stem).toBe('up');
-    expect(fancy!.timeModification).toEqual({ actual: 3, normal: 2 });
-    expect(plain!.articulations).toEqual([]);
-    expect(plain!.stem).toBeNull();
-    const noneStem = `<score-partwise><part id="P1"><measure number="1">
+		const [fancy, plain] = new MDOMParser()
+			.parseFromString(marked)
+			.score.getPart('P1')!
+			.getMeasure('1')!.notes;
+		expect(fancy!.articulations).toEqual(['staccato', 'accent']);
+		expect(fancy!.stem).toBe('up');
+		expect(fancy!.timeModification).toEqual({ actual: 3, normal: 2 });
+		expect(plain!.articulations).toEqual([]);
+		expect(plain!.stem).toBeNull();
+		const noneStem = `<score-partwise><part id="P1"><measure number="1">
       <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type><stem>none</stem></note>
     </measure></part></score-partwise>`;
-    expect(new MDOMParser().parseFromString(noneStem).score.getPart('P1')!.getMeasure('1')!.notes[0]!.stem).toBe(
-      'none'
-    );
-    expect(plain!.timeModification).toBeNull();
-  });
+		expect(
+			new MDOMParser()
+				.parseFromString(noneStem)
+				.score.getPart('P1')!
+				.getMeasure('1')!.notes[0]!.stem,
+		).toBe('none');
+		expect(plain!.timeModification).toBeNull();
+	});
 
-  it('counts augmentation dots, 0 when none', () => {
-    const dotted = `<score-partwise><part id="P1"><measure number="1">
+	it('counts augmentation dots, 0 when none', () => {
+		const dotted = `<score-partwise><part id="P1"><measure number="1">
       <note><pitch><step>C</step><octave>4</octave></pitch><duration>7</duration><type>quarter</type><dot/><dot/></note>
       <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><type>quarter</type></note>
     </measure></part></score-partwise>`;
-    const [doubleDotted, plain] = new MDOMParser().parseFromString(dotted).score.getPart('P1')!.getMeasure('1')!.notes;
-    expect(doubleDotted!.dots).toBe(2);
-    expect(plain!.dots).toBe(0);
-  });
+		const [doubleDotted, plain] = new MDOMParser()
+			.parseFromString(dotted)
+			.score.getPart('P1')!
+			.getMeasure('1')!.notes;
+		expect(doubleDotted!.dots).toBe(2);
+		expect(plain!.dots).toBe(0);
+	});
 });

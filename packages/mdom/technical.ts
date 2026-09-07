@@ -7,34 +7,34 @@ import { placementOf } from './print-style';
  * spanners with their own classes.
  */
 export const TECHNICAL_TAGS = [
-  'up-bow',
-  'down-bow',
-  'harmonic',
-  'open-string',
-  'thumb-position',
-  'fingering',
-  'pluck',
-  'double-tongue',
-  'triple-tongue',
-  'stopped',
-  'snap-pizzicato',
-  'fret',
-  'string',
-  'tap',
-  'heel',
-  'toe',
-  'fingernails',
-  'hole',
-  'arrow',
-  'handbell',
-  'brass-bend',
-  'flip',
-  'smear',
-  'golpe',
-  'half-muted',
-  'harmon-mute',
-  'bend',
-  'other-technical',
+	'up-bow',
+	'down-bow',
+	'harmonic',
+	'open-string',
+	'thumb-position',
+	'fingering',
+	'pluck',
+	'double-tongue',
+	'triple-tongue',
+	'stopped',
+	'snap-pizzicato',
+	'fret',
+	'string',
+	'tap',
+	'heel',
+	'toe',
+	'fingernails',
+	'hole',
+	'arrow',
+	'handbell',
+	'brass-bend',
+	'flip',
+	'smear',
+	'golpe',
+	'half-muted',
+	'harmon-mute',
+	'bend',
+	'other-technical',
 ];
 
 /**
@@ -50,23 +50,23 @@ export const TECHNICAL_TAGS = [
  * `MElement`'s tag-taking constructor: the registry passes the tag it matched.
  */
 export class Technical extends MElement {
-  /** Which mark this is — the element's own tag. */
-  get technicalType(): string {
-    return this.tag;
-  }
+	/** Which mark this is — the element's own tag. */
+	get technicalType(): string {
+		return this.tag;
+	}
 
-  /** `placement`; null when unstated. */
-  get placement(): 'above' | 'below' | null {
-    return placementOf(this);
-  }
+	/** `placement`; null when unstated. */
+	get placement(): 'above' | 'below' | null {
+		return placementOf(this);
+	}
 
-  /** `<fingering alternate="yes">` — a second option, printed "(2)". */
-  get alternate(): boolean {
-    return this.getAttribute('alternate') === 'yes';
-  }
+	/** `<fingering alternate="yes">` — a second option, printed "(2)". */
+	get alternate(): boolean {
+		return this.getAttribute('alternate') === 'yes';
+	}
 
-  /** `<fingering substitution="yes">` — change fingers while the key is held, printed "5-3". */
-  get substitution(): boolean {
-    return this.getAttribute('substitution') === 'yes';
-  }
+	/** `<fingering substitution="yes">` — change fingers while the key is held, printed "5-3". */
+	get substitution(): boolean {
+		return this.getAttribute('substitution') === 'yes';
+	}
 }

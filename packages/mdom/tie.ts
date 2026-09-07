@@ -1,7 +1,7 @@
 import { MElement, required } from './m-node';
 import { Note } from './note';
 import { Part } from './part';
-import { Spanner, noteMarkers, type SpannerSpec } from './spanner';
+import { noteMarkers, Spanner, type SpannerSpec } from './spanner';
 
 export type TieType = 'start' | 'stop' | 'continue' | 'let-ring';
 
@@ -11,64 +11,66 @@ export type TieType = 'start' | 'stop' | 'continue' | 'let-ring';
  * {@link partner}, the same shape every spanner uses.
  */
 export class Tie extends MElement {
-  constructor() {
-    super('tied');
-  }
+	constructor() {
+		super('tied');
+	}
 
-  /** Pairing key; '1' when omitted. */
-  get number(): string {
-    return this.getAttribute('number') ?? '1';
-  }
+	/** Pairing key; '1' when omitted. */
+	get number(): string {
+		return this.getAttribute('number') ?? '1';
+	}
 
-  /** `type`: required on a `<tied>` and drives pairing. */
-  get tieType(): TieType {
-    return required(this.getAttribute('type'), 'type on <tied>') as TieType;
-  }
+	/** `type`: required on a `<tied>` and drives pairing. */
+	get tieType(): TieType {
+		return required(this.getAttribute('type'), 'type on <tied>') as TieType;
+	}
 
-  /** `line-type` (solid/dashed/dotted/wavy) — the stroke to draw; null when unstated. */
-  get lineType(): string | null {
-    return this.getAttribute('line-type');
-  }
+	/** `line-type` (solid/dashed/dotted/wavy) — the stroke to draw; null when unstated. */
+	get lineType(): string | null {
+		return this.getAttribute('line-type');
+	}
 
-  /** The note this marker hangs off of. An attached marker always has one. */
-  get note(): Note {
-    return required(this.closest(Note), '<note> ancestor of <tied>');
-  }
+	/** The note this marker hangs off of. An attached marker always has one. */
+	get note(): Note {
+		return required(this.closest(Note), '<note> ancestor of <tied>');
+	}
 
-  /** The part this marker belongs to. An attached marker always has one. */
-  get part(): Part {
-    return required(this.closest(Part), '<part> ancestor of <tied>');
-  }
+	/** The part this marker belongs to. An attached marker always has one. */
+	get part(): Part {
+		return required(this.closest(Part), '<part> ancestor of <tied>');
+	}
 
-  /** The marker at the other end (same number), resolved across the part in onset order. */
-  get partner(): Tie | null {
-    return new Spanner(this.spec()).partnerOf(this);
-  }
+	/** The marker at the other end (same number), resolved across the part in onset order. */
+	get partner(): Tie | null {
+		return new Spanner(this.spec()).partnerOf(this);
+	}
 
-  /** All markers in this spanner (start..stop), not just the far end. */
-  get members(): Tie[] {
-    return new Spanner(this.spec()).membersOf(this);
-  }
+	/** All markers in this spanner (start..stop), not just the far end. */
+	get members(): Tie[] {
+		return new Spanner(this.spec()).membersOf(this);
+	}
 
-  /**
-   * Remove this tie: detach both ends (`<tied start>` and its `<tied stop>`) so the
-   * partner isn't orphaned. A let-ring tie, having no partner, just removes itself.
-   */
-  unlink(): void {
-    new Spanner(this.spec()).removeSpan(this);
-  }
+	/**
+	 * Remove this tie: detach both ends (`<tied start>` and its `<tied stop>`) so the
+	 * partner isn't orphaned. A let-ring tie, having no partner, just removes itself.
+	 */
+	unlink(): void {
+		new Spanner(this.spec()).removeSpan(this);
+	}
 
-  /** Onset of this end within its measure, in beats. */
-  get measureBeat(): number | null {
-    return this.note.measureBeat;
-  }
+	/** Onset of this end within its measure, in beats. */
+	get measureBeat(): number | null {
+		return this.note.measureBeat;
+	}
 
-  private spec(): SpannerSpec<Tie> {
-    return {
-      siblings: noteMarkers(this, (note) => note.ties),
-      // Raw reads so resolution tolerates a malformed typeless marker.
-      isOpen: (tie) => tie.getAttribute('type') === 'start' || tie.getAttribute('type') === 'let-ring',
-      isClose: (tie) => tie.getAttribute('type') === 'stop',
-    };
-  }
+	private spec(): SpannerSpec<Tie> {
+		return {
+			siblings: noteMarkers(this, (note) => note.ties),
+			// Raw reads so resolution tolerates a malformed typeless marker.
+			isOpen: (tie) =>
+				tie.getAttribute('type') === 'start' ||
+				tie.getAttribute('type') === 'let-ring',
+			isClose: (tie) => tie.getAttribute('type') === 'stop',
+		};
+	}
 }
