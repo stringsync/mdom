@@ -59,7 +59,11 @@ export class Dashes extends MElement {
 
 	private spec(): SpannerSpec<Dashes> {
 		return {
-			siblings: directionMarkers(this, (direction) => direction.dashes),
+			siblings: directionMarkers(
+				this,
+				(direction) => direction.dashes,
+				'dashes',
+			),
 			// Raw reads so resolution tolerates a malformed typeless marker.
 			isOpen: (marker) => marker.getAttribute('type') === 'start',
 			isClose: (marker) => marker.getAttribute('type') === 'stop',

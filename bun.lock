@@ -19,6 +19,7 @@
       "dependencies": {
         "@stringsync/mdom": "workspace:*",
         "webappwiz": "0.0.24",
+        "zod": "^4.4.3",
       },
     },
     "packages/e2e": {
@@ -146,5 +147,7 @@
     "webappwiz": ["webappwiz@0.0.24", "", { "dependencies": { "@standard-schema/spec": "^1.1.0" } }, "sha512-GVDCbKDGkO1/BLbaCJivsU/5PYga7odRvaxkHkkZDQ8UPnUQT+n2KjV9CE8eJrx87/CL/pCTGv1vphoIfzHY+w=="],
 
     "xml-js": ["xml-js@1.6.11", "", { "dependencies": { "sax": "^1.2.4" }, "bin": { "xml-js": "./bin/cli.js" } }, "sha512-7rVi2KMfwfWFl+GpPg6m80IVMWXLRjO+PxTq7V2CDhoGak0wzYzFgUY2m4XJ47OGdXd8eLE8EmwfAmdjw7lC1g=="],
+
+    "zod": ["zod@4.6.5", "", {}, "sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q=="],
   }
 }

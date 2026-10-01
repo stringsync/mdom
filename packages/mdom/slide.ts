@@ -60,7 +60,7 @@ export class Slide extends MElement {
 
 	private spec(): SpannerSpec<Slide> {
 		return {
-			siblings: noteMarkers(this, (note) => note.slides),
+			siblings: noteMarkers(this, (note) => note.slides, 'slides'),
 			// Raw reads so resolution tolerates a malformed typeless marker.
 			isOpen: (marker) => marker.getAttribute('type') === 'start',
 			isClose: (marker) => marker.getAttribute('type') === 'stop',

@@ -2,17 +2,20 @@ import type { Direction } from './direction';
 import type { MElement } from './m-node';
 import { Measure } from './measure';
 import type { Note } from './note';
-import { Part } from './part';
+import { measuresOf, Part } from './part';
+import { memo } from './read-cache';
 import { onsetsIn } from './timeline';
 
 /**
  * One spanner type's pairing rules: every marker of that type in the part (in
  * document order), plus how a marker's value classifies as an opener or closer.
+ * When `siblings` is a cached list from {@link noteMarkers} or
+ * {@link directionMarkers}, its pairing is cached alongside it.
  * The number that pairs start<->stop is read generically off the `number`
  * attribute, so the spec only has to say which values open and which close.
  */
 export interface SpannerSpec<T extends MElement> {
-	siblings: T[];
+	siblings: readonly T[];
 	isOpen(marker: T): boolean;
 	isClose(marker: T): boolean;
 }
@@ -62,7 +65,7 @@ function voiceOf(marker: MElement): string | null {
  * sounding together keep document order.
  */
 function onsetOrdered<T extends MElement>(
-	markers: T[],
+	markers: readonly T[],
 ): { order: T[]; keys: Map<T, OnsetKey> } {
 	const folds = new Map<
 		Measure,
@@ -123,13 +126,48 @@ function soundsLater(candidate: OnsetKey, incumbent: OnsetKey): boolean {
  * before it closes" rule constantly: a divisi stave's two voices, or a chord's
  * members, all slurring under number 1.
  *
- * ponytail: recomputed per query, like every other mdom read — the marker walk it
- * builds on is already O(part). Add a part-level cache if profiling asks for one,
- * but it needs an edit epoch to invalidate against: the tree is mutable.
+ * Cached against the frozen sibling list it pairs, which is itself cached until
+ * the next document change, so a renderer asking every marker for its partner
+ * pairs the part once.
  */
-function pairingOf<T extends MElement>(
-	spec: SpannerSpec<T>,
-): { order: T[]; partners: Map<T, T> } {
+function pairingOf<T extends MElement>(spec: SpannerSpec<T>): Pairing<T> {
+	// Object.isFrozen would do, but JSC answers it in O(length) for arrays.
+	if (!markerLists.has(spec.siblings)) {
+		return pairSiblings(spec);
+	}
+	let pairing = pairings.get(spec.siblings) as Pairing<T> | undefined;
+	if (!pairing) {
+		pairing = pairSiblings(spec);
+		pairings.set(spec.siblings, pairing);
+	}
+	return pairing;
+}
+
+/** Markers in onset order, each one's place in it, and each end's far end. */
+interface Pairing<T> {
+	order: readonly T[];
+	positions: ReadonlyMap<T, number>;
+	partners: ReadonlyMap<T, T>;
+}
+
+const pairings = new WeakMap<readonly MElement[], Pairing<MElement>>();
+
+/** Sibling lists cached by kind: fixed per kind, so safe to key a pairing on. */
+const markerLists = new WeakSet<readonly MElement[]>();
+
+function cachedMarkers<T extends MElement>(
+	part: Part,
+	key: string,
+	collect: () => T[],
+): readonly T[] {
+	return memo(part, key, () => {
+		const markers = Object.freeze(collect());
+		markerLists.add(markers);
+		return markers;
+	});
+}
+
+function pairSiblings<T extends MElement>(spec: SpannerSpec<T>): Pairing<T> {
 	const { order, keys } = onsetOrdered(spec.siblings);
 	const partners = new Map<T, T>();
 	const open = new Map<string, T[]>();
@@ -154,7 +192,8 @@ function pairingOf<T extends MElement>(
 		}
 	}
 
-	return { order, partners };
+	const positions = new Map(order.map((marker, index) => [marker, index]));
+	return { order, positions, partners };
 }
 
 /**
@@ -220,10 +259,8 @@ export class Spanner<T extends MElement> {
 	 * — and systems, and `<backup>`s — for free.
 	 */
 	partnerOf(marker: T): T | null {
-		if (!this.spec.siblings.includes(marker)) {
-			return null;
-		}
-		return pairingOf(this.spec).partners.get(marker) ?? null;
+		const { positions, partners } = pairingOf(this.spec);
+		return positions.has(marker) ? (partners.get(marker) ?? null) : null;
 	}
 
 	/**
@@ -231,8 +268,8 @@ export class Spanner<T extends MElement> {
 	 * whole run, not just the far end. A 3-note beam returns begin/continue/end.
 	 */
 	membersOf(marker: T): T[] {
-		const { order, partners } = pairingOf(this.spec);
-		const self = order.indexOf(marker);
+		const { order, positions, partners } = pairingOf(this.spec);
+		const self = positions.get(marker) ?? -1;
 		if (self < 0) {
 			return [marker];
 		}
@@ -245,9 +282,9 @@ export class Spanner<T extends MElement> {
 		if (!opener) {
 			return [marker];
 		}
-		const start = order.indexOf(opener);
+		const start = positions.get(opener) ?? -1;
 		const closer = partners.get(opener);
-		const end = closer ? order.indexOf(closer) : start;
+		const end = closer ? (positions.get(closer) ?? -1) : start;
 		return order
 			.slice(start, end + 1)
 			.filter((candidate) => numberOf(candidate) === number);
@@ -264,7 +301,11 @@ export class Spanner<T extends MElement> {
 	}
 
 	/** The nearest opener with this number before `self` in onset order, or null. */
-	private earlierOpener(order: T[], self: number, number: string): T | null {
+	private earlierOpener(
+		order: readonly T[],
+		self: number,
+		number: string,
+	): T | null {
 		for (let index = self - 1; index >= 0; index--) {
 			const candidate = order[index]!;
 			if (numberOf(candidate) === number && this.spec.isOpen(candidate)) {
@@ -275,26 +316,44 @@ export class Spanner<T extends MElement> {
 	}
 }
 
-/** All markers of one note-attached spanner type across the part, document order. */
+/**
+ * All markers of one note-attached spanner type across the part, document order.
+ * Naming the type with `kind` caches the list (frozen) until the next document
+ * change; `kind` must then identify `pick` exactly.
+ */
 export function noteMarkers<T extends MElement>(
 	marker: MElement,
 	pick: (note: Note) => T[],
-): T[] {
+	kind?: string,
+): readonly T[] {
 	const part = marker.closest(Part);
 	if (!part) {
 		return [];
 	}
-	return part.measures.flatMap((measure) => measure.notes).flatMap(pick);
+	const collect = (): T[] =>
+		measuresOf(part)
+			.flatMap((measure) => measure.notes)
+			.flatMap(pick);
+	return kind == null
+		? collect()
+		: cachedMarkers(part, `note-markers:${kind}`, collect);
 }
 
 /** The same, for direction-attached spanner types. */
 export function directionMarkers<T extends MElement>(
 	marker: MElement,
 	pick: (direction: Direction) => T[],
-): T[] {
+	kind?: string,
+): readonly T[] {
 	const part = marker.closest(Part);
 	if (!part) {
 		return [];
 	}
-	return part.measures.flatMap((measure) => measure.directions).flatMap(pick);
+	const collect = (): T[] =>
+		measuresOf(part)
+			.flatMap((measure) => measure.directions)
+			.flatMap(pick);
+	return kind == null
+		? collect()
+		: cachedMarkers(part, `direction-markers:${kind}`, collect);
 }

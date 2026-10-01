@@ -118,7 +118,7 @@ export class Tuplet extends MElement {
 
 	private spec(): SpannerSpec<Tuplet> {
 		return {
-			siblings: noteMarkers(this, (note) => note.tuplets),
+			siblings: noteMarkers(this, (note) => note.tuplets, 'tuplets'),
 			// Raw reads so resolution tolerates a malformed typeless marker.
 			isOpen: (tuplet) => tuplet.getAttribute('type') === 'start',
 			isClose: (tuplet) => tuplet.getAttribute('type') === 'stop',

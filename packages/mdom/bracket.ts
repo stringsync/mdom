@@ -78,7 +78,11 @@ export class Bracket extends MElement {
 
 	private spec(): SpannerSpec<Bracket> {
 		return {
-			siblings: directionMarkers(this, (direction) => direction.brackets),
+			siblings: directionMarkers(
+				this,
+				(direction) => direction.brackets,
+				'brackets',
+			),
 			// Raw reads so resolution tolerates a malformed typeless marker.
 			isOpen: (marker) => marker.getAttribute('type') === 'start',
 			isClose: (marker) => marker.getAttribute('type') === 'stop',

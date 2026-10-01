@@ -12,6 +12,7 @@ export class MMutation {
 	private static managed = new WeakSet<MNode>();
 	private static active: MMutation | null = null;
 	private static notifying = false;
+	private static changeCount = 0;
 	private changes = new Map<MNode, Map<string, Change>>();
 	private adopted = new Set<MNode>();
 
@@ -34,6 +35,14 @@ export class MMutation {
 			throw new Error('mdom: history requires a document root');
 		}
 		MMutation.managed.add(root);
+	}
+
+	/**
+	 * Bumped by every applied write, in any document, including history replays.
+	 * Read caches key on it: a cached answer is valid while the epoch is unchanged.
+	 */
+	static get epoch(): number {
+		return MMutation.changeCount;
 	}
 
 	static assertIdle(): void {
@@ -125,6 +134,7 @@ export class MMutation {
 			}
 		}
 		apply(after);
+		MMutation.changeCount++;
 	}
 
 	run<T>(operation: () => T): T {
@@ -186,6 +196,7 @@ export class MMutation {
 				change.apply(change[side]);
 			}
 		}
+		MMutation.changeCount++;
 	}
 }
 

@@ -53,7 +53,11 @@ export class Pedal extends MElement {
 
 	private spec(): SpannerSpec<Pedal> {
 		return {
-			siblings: directionMarkers(this, (direction) => direction.pedals),
+			siblings: directionMarkers(
+				this,
+				(direction) => direction.pedals,
+				'pedals',
+			),
 			// Raw reads so resolution tolerates a malformed typeless marker.
 			isOpen: (pedal) =>
 				pedal.getAttribute('type') === 'start' ||

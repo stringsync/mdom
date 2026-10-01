@@ -134,7 +134,7 @@ export class Beam extends MElement {
 
 	private spec(): SpannerSpec<Beam> {
 		return {
-			siblings: noteMarkers(this, (note) => note.beams),
+			siblings: noteMarkers(this, (note) => note.beams, 'beams'),
 			// Raw text reads so resolution tolerates a malformed valueless marker.
 			isOpen: (beam) => beam.text === 'begin',
 			isClose: (beam) => beam.text === 'end',

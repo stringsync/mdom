@@ -55,7 +55,7 @@ export class HammerOn extends MElement {
 
 	private spec(): SpannerSpec<HammerOn> {
 		return {
-			siblings: noteMarkers(this, (note) => note.hammerOns),
+			siblings: noteMarkers(this, (note) => note.hammerOns, 'hammerOns'),
 			// Raw reads so resolution tolerates a malformed typeless marker.
 			isOpen: (marker) => marker.getAttribute('type') === 'start',
 			isClose: (marker) => marker.getAttribute('type') === 'stop',

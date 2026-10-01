@@ -72,7 +72,7 @@ export class Slur extends MElement {
 
 	private spec(): SpannerSpec<Slur> {
 		return {
-			siblings: noteMarkers(this, (note) => note.slurs),
+			siblings: noteMarkers(this, (note) => note.slurs, 'slurs'),
 			// Raw reads so resolution tolerates a malformed typeless marker (skips it)
 			// rather than throwing through the strict `slurType` getter.
 			isOpen: (slur) => slur.getAttribute('type') === 'start',

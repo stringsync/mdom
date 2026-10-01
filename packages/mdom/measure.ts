@@ -10,11 +10,12 @@ import { Key } from './key';
 import { LineDetail } from './line-detail';
 import { MElement, type MNode, MText, required } from './m-node';
 import { Note } from './note';
-import { Part } from './part';
+import { measureIndexIn, Part } from './part';
 import { Print } from './print';
 import { cloneElement } from './registry';
 import {
 	appliesToStaff,
+	attributeBackFrom,
 	attributesBackFrom,
 	divisionsBackFrom,
 } from './signature';
@@ -75,7 +76,8 @@ export class Measure extends MElement {
 	 * {@link number}, which is the (free-form, possibly repeated) printed label.
 	 */
 	get index(): number {
-		return this.closest(Part)?.measures.indexOf(this) ?? -1;
+		const part = this.closest(Part);
+		return part ? measureIndexIn(part, this) : -1;
 	}
 
 	/**
@@ -84,21 +86,21 @@ export class Measure extends MElement {
 	 * staff exactly; a numberless key/time applies to every staff.
 	 */
 	getClef(staff = '1'): Clef | null {
-		return this.attributeBack((attrs) =>
+		return this.attributeBack(`clef:${staff}`, (attrs) =>
 			attrs.childrenOfType(Clef).find((clef) => clef.staff === staff),
 		);
 	}
 
 	/** The `<key>` in effect at the start of this measure for `staff`. */
 	getKey(staff = '1'): Key | null {
-		return this.attributeBack((attrs) =>
+		return this.attributeBack(`key:${staff}`, (attrs) =>
 			attrs.childrenOfType(Key).find((key) => appliesToStaff(key, staff)),
 		);
 	}
 
 	/** The `<time>` in effect at the start of this measure for `staff`. */
 	getTime(staff = '1'): Time | null {
-		return this.attributeBack((attrs) =>
+		return this.attributeBack(`time:${staff}`, (attrs) =>
 			attrs.childrenOfType(Time).find((time) => appliesToStaff(time, staff)),
 		);
 	}
@@ -106,6 +108,7 @@ export class Measure extends MElement {
 	/** `<staves>` count in effect (global); 1 when never declared. */
 	get staveCount(): number {
 		const staves = this.attributeBack(
+			'staves',
 			(attrs) => attrs.child('staves') ?? undefined,
 		);
 		return staves?.text == null ? 1 : Number(staves.text);
@@ -113,7 +116,7 @@ export class Measure extends MElement {
 
 	/** `<staff-lines>` in effect for `staff` (default '1'); 5 lines when unspecified. */
 	getStaveLines(staff = '1'): number {
-		const lines = this.attributeBack((attrs) =>
+		const lines = this.attributeBack(`staff-lines:${staff}`, (attrs) =>
 			attrs
 				.childrenNamed('staff-details')
 				.filter((details) => appliesToStaff(details, staff))
@@ -131,7 +134,7 @@ export class Measure extends MElement {
 	 * {@link getStaveLines} answers 5 to either way.
 	 */
 	getStaffDetails(staff = '1'): StaffDetails | null {
-		return this.attributeBack((attrs) =>
+		return this.attributeBack(`staff-details:${staff}`, (attrs) =>
 			attrs
 				.childrenOfType(StaffDetails)
 				.find((details) => appliesToStaff(details, staff)),
@@ -144,14 +147,14 @@ export class Measure extends MElement {
 	 * sets none, or when no `<staff-details>` applies.
 	 */
 	getLineDetails(staff = '1'): LineDetail[] {
-		return (
-			this.attributeBack((attrs) => {
+		return [
+			...(this.attributeBack(`line-details:${staff}`, (attrs) => {
 				const details = attrs
 					.childrenNamed('staff-details')
 					.find((node) => appliesToStaff(node, staff));
 				return details ? details.childrenOfType(LineDetail) : undefined;
-			}) ?? []
-		);
+			}) ?? []),
+		];
 	}
 
 	/**
@@ -161,15 +164,15 @@ export class Measure extends MElement {
 	 * {@link getClef}.
 	 */
 	getStaffTunings(staff = '1'): StaffTuning[] {
-		return (
-			this.attributeBack((attrs) => {
+		return [
+			...(this.attributeBack(`staff-tunings:${staff}`, (attrs) => {
 				const details = attrs
 					.childrenNamed('staff-details')
 					.find((node) => appliesToStaff(node, staff));
 				const tunings = details?.childrenOfType(StaffTuning);
 				return tunings && tunings.length > 0 ? tunings : undefined;
-			}) ?? []
-		);
+			}) ?? []),
+		];
 	}
 
 	/**
@@ -570,6 +573,7 @@ export class Measure extends MElement {
 	 * then earlier measures) for which `pick` matches — the carry-forward shape.
 	 */
 	private attributeBack<T>(
+		key: string,
 		pick: (attrs: MElement) => T | null | undefined,
 	): T | null {
 		// "At the start of this measure": scan from the first note, so the measure's
@@ -579,13 +583,7 @@ export class Measure extends MElement {
 		const fromIndex = firstNote
 			? this.children.indexOf(firstNote)
 			: this.children.length;
-		for (const attrs of attributesBackFrom(this, fromIndex)) {
-			const found = pick(attrs);
-			if (found != null) {
-				return found;
-			}
-		}
-		return null;
+		return attributeBackFrom(this, fromIndex, key, pick);
 	}
 }
 

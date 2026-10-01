@@ -1,5 +1,6 @@
 import { MElement, required } from './m-node';
 import { Measure } from './measure';
+import { memo } from './read-cache';
 import { Score } from './score';
 import type { StaffTuning } from './staff-tuning';
 
@@ -22,14 +23,19 @@ export class Part extends MElement {
 		return required(this.closest(Score), '<score-partwise> ancestor of <part>');
 	}
 
-	/** The part's measures. */
+	/**
+	 * The part's measures: a fresh copy of a list cached until the next document
+	 * change, so a hot loop should read it once rather than per measure.
+	 */
 	get measures(): Measure[] {
-		return this.childrenOfType(Measure);
+		return measuresOf(this).slice();
 	}
 
 	/** The measure with this `number`, or null. */
 	getMeasure(number: string): Measure | null {
-		return this.measures.find((measure) => measure.number === number) ?? null;
+		return (
+			measuresOf(this).find((measure) => measure.number === number) ?? null
+		);
 	}
 
 	/**
@@ -49,7 +55,7 @@ export class Part extends MElement {
 		const measure = new Measure();
 		measure.setAttribute(
 			'number',
-			opts?.number ?? String(this.measures.length + 1),
+			opts?.number ?? String(measuresOf(this).length + 1),
 		);
 		this.append(measure);
 		return measure;
@@ -67,7 +73,7 @@ export class Part extends MElement {
 		if (opts?.number != null) {
 			measure.setAttribute('number', opts.number);
 		}
-		this.insertBefore(measure, this.measures[index] ?? null);
+		this.insertBefore(measure, measuresOf(this)[index] ?? null);
 		return measure;
 	}
 
@@ -78,7 +84,7 @@ export class Part extends MElement {
 	 * {@link Measure.getStaffTunings} when a mid-score retuning matters.
 	 */
 	getStaffTunings(staff = '1'): StaffTuning[] {
-		for (const measure of this.measures) {
+		for (const measure of measuresOf(this)) {
 			const tunings = measure.getStaffTunings(staff);
 			if (tunings.length > 0) {
 				return tunings;
@@ -92,7 +98,7 @@ export class Part extends MElement {
 	 * staff) when never declared.
 	 */
 	get staveCount(): number {
-		for (const measure of this.measures) {
+		for (const measure of measuresOf(this)) {
 			for (const attrs of measure.childrenNamed('attributes')) {
 				const staves = attrs.child('staves')?.text;
 				if (staves != null) {
@@ -109,7 +115,7 @@ export class Part extends MElement {
 	 * effectively a per-part constant, so it lives here rather than per-measure.
 	 */
 	get partSymbol(): 'none' | 'line' | 'bracket' | 'brace' | 'square' | null {
-		for (const measure of this.measures) {
+		for (const measure of measuresOf(this)) {
 			for (const attrs of measure.childrenNamed('attributes')) {
 				const symbol = attrs.child('part-symbol')?.text;
 				if (symbol != null) {
@@ -119,4 +125,22 @@ export class Part extends MElement {
 		}
 		return null;
 	}
+}
+
+/** The part's measures, cached until the next document change. Never mutate it. */
+export function measuresOf(part: Part): readonly Measure[] {
+	return memo(part, 'measures', () =>
+		Object.freeze(part.childrenOfType(Measure)),
+	);
+}
+
+/** `measure`'s position among `part`'s measures; -1 when it isn't one of them. */
+export function measureIndexIn(part: Part, measure: Measure): number {
+	const indexes = memo(
+		part,
+		'measure-indexes',
+		() =>
+			new Map(measuresOf(part).map((each, index) => [each, index] as const)),
+	);
+	return indexes.get(measure) ?? -1;
 }

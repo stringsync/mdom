@@ -55,7 +55,11 @@ export class Wedge extends MElement {
 
 	private spec(): SpannerSpec<Wedge> {
 		return {
-			siblings: directionMarkers(this, (direction) => direction.wedges),
+			siblings: directionMarkers(
+				this,
+				(direction) => direction.wedges,
+				'wedges',
+			),
 			// Raw reads so resolution tolerates a malformed typeless marker.
 			isOpen: (wedge) =>
 				wedge.getAttribute('type') === 'crescendo' ||

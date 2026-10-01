@@ -1,6 +1,7 @@
 import { MElement, type MNode, MText } from './m-node';
 import type { Measure } from './measure';
 import { Note } from './note';
+import { memo } from './read-cache';
 
 /**
  * Onset of `target` within `measure`, in divisions (not beats): a single
@@ -10,7 +11,7 @@ import { Note } from './note';
  * measure. Callers divide by the divisions in effect to get quarter-note beats.
  */
 export function onsetOf(measure: Measure, target: MElement): number | null {
-	return onsetsIn(measure).get(target) ?? null;
+	return memo(measure, 'onsets', () => onsetsIn(measure)).get(target) ?? null;
 }
 
 /**

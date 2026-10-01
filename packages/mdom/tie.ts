@@ -65,7 +65,7 @@ export class Tie extends MElement {
 
 	private spec(): SpannerSpec<Tie> {
 		return {
-			siblings: noteMarkers(this, (note) => note.ties),
+			siblings: noteMarkers(this, (note) => note.ties, 'ties'),
 			// Raw reads so resolution tolerates a malformed typeless marker.
 			isOpen: (tie) =>
 				tie.getAttribute('type') === 'start' ||

@@ -61,7 +61,7 @@ export class Glissando extends MElement {
 
 	private spec(): SpannerSpec<Glissando> {
 		return {
-			siblings: noteMarkers(this, (note) => note.glissandos),
+			siblings: noteMarkers(this, (note) => note.glissandos, 'glissandos'),
 			// Raw reads so resolution tolerates a malformed typeless marker.
 			isOpen: (marker) => marker.getAttribute('type') === 'start',
 			isClose: (marker) => marker.getAttribute('type') === 'stop',

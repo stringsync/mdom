@@ -14,7 +14,7 @@ import { colorOf } from './print-style';
 import { PullOff } from './pull-off';
 import {
 	appliesToStaff,
-	attributesBackFrom,
+	attributeBackFrom,
 	divisionsBackFrom,
 } from './signature';
 import { Slide } from './slide';
@@ -139,37 +139,25 @@ export class Note extends MElement {
 	 * per-fragment threading. The same backward walk answers key/time/divisions.
 	 */
 	get clef(): Clef | null {
-		const measure = this.closest(Measure);
-		if (!measure) {
-			return null;
-		}
-		for (const attrs of attributesBackFrom(
-			measure,
-			measure.children.indexOf(this),
-		)) {
-			const clef = attrs
-				.childrenOfType(Clef)
-				.find((candidate) => candidate.staff === this.staff);
-			if (clef) {
-				return clef;
-			}
-		}
-		return null;
+		const staff = this.staff;
+		return this.attributeBack(`clef:${staff}`, (attrs) =>
+			attrs.childrenOfType(Clef).find((clef) => clef.staff === staff),
+		);
 	}
 
 	/** `<key>` in effect for this note's staff — same backward walk as {@link clef}. */
 	get key(): Key | null {
-		return this.attributeBack((attrs) =>
-			attrs.childrenOfType(Key).find((key) => appliesToStaff(key, this.staff)),
+		const staff = this.staff;
+		return this.attributeBack(`key:${staff}`, (attrs) =>
+			attrs.childrenOfType(Key).find((key) => appliesToStaff(key, staff)),
 		);
 	}
 
 	/** `<time>` in effect for this note's staff. */
 	get time(): Time | null {
-		return this.attributeBack((attrs) =>
-			attrs
-				.childrenOfType(Time)
-				.find((time) => appliesToStaff(time, this.staff)),
+		const staff = this.staff;
+		return this.attributeBack(`time:${staff}`, (attrs) =>
+			attrs.childrenOfType(Time).find((time) => appliesToStaff(time, staff)),
 		);
 	}
 
@@ -187,6 +175,7 @@ export class Note extends MElement {
 	/** `<staves>` count in effect (global, not per-staff); 1 when never declared. */
 	get staveCount(): number {
 		const found = this.attributeBack(
+			'staves',
 			(attrs) => attrs.child('staves') ?? undefined,
 		);
 		return found?.text == null ? 1 : Number(found.text);
@@ -197,10 +186,11 @@ export class Note extends MElement {
 	 * musical default) when never declared.
 	 */
 	get staveLines(): number {
-		const lines = this.attributeBack((attrs) =>
+		const staff = this.staff;
+		const lines = this.attributeBack(`staff-lines:${staff}`, (attrs) =>
 			attrs
 				.childrenNamed('staff-details')
-				.filter((details) => appliesToStaff(details, this.staff))
+				.filter((details) => appliesToStaff(details, staff))
 				.map((details) => details.child('staff-lines'))
 				.find((node) => node != null),
 		);
@@ -705,22 +695,13 @@ export class Note extends MElement {
 	 * returns a match — the shared shape of every carry-forward query.
 	 */
 	private attributeBack<T>(
+		key: string,
 		pick: (attrs: MElement) => T | null | undefined,
 	): T | null {
 		const measure = this.closest(Measure);
-		if (!measure) {
-			return null;
-		}
-		for (const attrs of attributesBackFrom(
-			measure,
-			measure.children.indexOf(this),
-		)) {
-			const found = pick(attrs);
-			if (found != null) {
-				return found;
-			}
-		}
-		return null;
+		return measure
+			? attributeBackFrom(measure, measure.children.indexOf(this), key, pick)
+			: null;
 	}
 
 	/**

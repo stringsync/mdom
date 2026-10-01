@@ -48,7 +48,7 @@ export class WavyLine extends MElement {
 
 	private spec(): SpannerSpec<WavyLine> {
 		return {
-			siblings: noteMarkers(this, (note) => note.wavyLines),
+			siblings: noteMarkers(this, (note) => note.wavyLines, 'wavyLines'),
 			// Raw reads so resolution tolerates a malformed typeless marker.
 			isOpen: (wavyLine) => wavyLine.getAttribute('type') === 'start',
 			isClose: (wavyLine) => wavyLine.getAttribute('type') === 'stop',

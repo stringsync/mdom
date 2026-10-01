@@ -70,7 +70,11 @@ export class OctaveShift extends MElement {
 
 	private spec(): SpannerSpec<OctaveShift> {
 		return {
-			siblings: directionMarkers(this, (direction) => direction.octaveShifts),
+			siblings: directionMarkers(
+				this,
+				(direction) => direction.octaveShifts,
+				'octaveShifts',
+			),
 			// Raw reads so resolution tolerates a malformed typeless marker.
 			isOpen: (shift) =>
 				shift.getAttribute('type') === 'up' ||
