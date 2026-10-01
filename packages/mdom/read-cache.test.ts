@@ -28,7 +28,7 @@ const XML = `<score-partwise version="4.0"><part id="P1">
 describe('read caches', () => {
 	let doc: MDocument;
 	let part: Part;
-	let measures: Measure[];
+	let measures: readonly Measure[];
 	let firstNotes: Note[];
 
 	const slurOf = (target: Note): Slur => required(target.slurs[0], 'slur');
@@ -150,11 +150,15 @@ describe('read caches', () => {
 			expect(measures[3]!.index).toBe(3);
 		});
 
-		it('hands out a copy of the measure list', () => {
+		it('shares one frozen measure list until the next change', () => {
 			const list = part.measures;
-			list.reverse();
-			list.pop();
-			expect(part.measures).toEqual(measures);
+			expect(part.measures).toBe(list);
+			expect(Object.isFrozen(list)).toBe(true);
+			expect(() => (list as Measure[]).pop()).toThrow(TypeError);
+			part.addMeasure();
+			expect(part.measures).not.toBe(list);
+			expect(part.measures).toHaveLength(5);
+			expect(list).toHaveLength(4);
 		});
 	});
 });

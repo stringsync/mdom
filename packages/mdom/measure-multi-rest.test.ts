@@ -33,7 +33,7 @@ const MULTI_REST = `<score-partwise>
 </score-partwise>`;
 
 describe('Measure.getMultiRestCount', () => {
-	const measuresOf = (xml: string): Measure[] =>
+	const measuresOf = (xml: string): readonly Measure[] =>
 		new MDOMParser().parseFromString(xml).score.getPart('P1')!.measures;
 	const measures = measuresOf(MULTI_REST);
 

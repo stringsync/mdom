@@ -24,11 +24,11 @@ export class Part extends MElement {
 	}
 
 	/**
-	 * The part's measures: a fresh copy of a list cached until the next document
-	 * change, so a hot loop should read it once rather than per measure.
+	 * The part's measures, frozen and shared until the next document change, so
+	 * indexing it per measure is O(1). Copy it before sorting or splicing.
 	 */
-	get measures(): Measure[] {
-		return measuresOf(this).slice();
+	get measures(): readonly Measure[] {
+		return measuresOf(this);
 	}
 
 	/** The measure with this `number`, or null. */
