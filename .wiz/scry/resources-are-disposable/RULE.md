@@ -3,9 +3,9 @@ name: resources-are-disposable
 description: Whatever holds a timer, listener, socket or handle implements Resource and releases it in dispose.
 files: "**/*.ts"
 level: error
-complexity: medium
+effort: medium
 recommended: true
-version: 0.0.14
+version: 0.0.24
 ---
 # Resources are disposable
 

@@ -3,9 +3,9 @@ name: comments-say-why-not-what
 description: A comment explains why the code is as it is, never what it plainly does.
 files: "**/*.ts"
 level: error
-complexity: medium
+effort: medium
 recommended: true
-version: 0.0.14
+version: 0.0.24
 ---
 # Comments say why, not what
 

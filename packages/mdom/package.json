@@ -11,7 +11,7 @@
 	},
 	"dependencies": {
 		"jszip": "^3.10.1",
-		"webappwiz": "^0.0.14",
+		"webappwiz": "0.0.24",
 		"xml-js": "^1.6.11"
 	}
 }

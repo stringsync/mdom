@@ -3,11 +3,11 @@ name: no-em-dashes
 description: No em dashes, and no en dashes between words, in code, comments or prose.
 files: "**/*.{ts,md}"
 level: error
-complexity: low
+effort: low
 recommended: true
-version: 0.0.14
+version: 0.0.24
 ---
-<!-- rule-ignore-file no-em-dashes: the Bad examples have to show one -->
+<!-- scry-ignore-file no-em-dashes: the Bad examples have to show one -->
 
 # No em dashes
 

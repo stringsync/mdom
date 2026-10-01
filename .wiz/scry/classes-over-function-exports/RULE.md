@@ -3,9 +3,9 @@ name: classes-over-function-exports
 description: A file's dependency-taking functions become one class that takes them once.
 files: "**/*.ts"
 level: error
-complexity: high
+effort: high
 recommended: true
-version: 0.0.14
+version: 0.0.24
 ---
 # Classes over function exports
 

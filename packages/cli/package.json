@@ -8,7 +8,7 @@
 		"mdom": "./index.ts"
 	},
 	"dependencies": {
-		"webappwiz": "0.0.14",
+		"webappwiz": "0.0.24",
 		"@stringsync/mdom": "workspace:*"
 	}
 }

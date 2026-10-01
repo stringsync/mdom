@@ -3,9 +3,9 @@ name: export-leads-the-file
 description: The export a file is named for sits on its first screen, with helpers below it.
 files: "**/*.ts"
 level: error
-complexity: low
+effort: low
 recommended: true
-version: 0.0.14
+version: 0.0.24
 ---
 # Export leads the file
 
