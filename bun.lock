@@ -12,29 +12,29 @@
     },
     "packages/cli": {
       "name": "@mdom/cli",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "bin": {
         "mdom": "./index.ts",
       },
       "dependencies": {
         "@stringsync/mdom": "workspace:*",
-        "webappwiz": "0.0.24",
+        "webappwiz": "0.0.29",
         "zod": "^4.4.3",
       },
     },
     "packages/e2e": {
       "name": "@mdom/e2e",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "dependencies": {
         "@stringsync/mdom": "workspace:*",
       },
     },
     "packages/mdom": {
       "name": "@stringsync/mdom",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "dependencies": {
         "jszip": "^3.10.1",
-        "webappwiz": "0.0.24",
+        "webappwiz": "0.0.29",
         "xml-js": "^1.6.11",
       },
     },
@@ -144,7 +144,7 @@
 
     "util-deprecate": ["util-deprecate@1.0.2", "", {}, "sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw=="],
 
-    "webappwiz": ["webappwiz@0.0.24", "", { "dependencies": { "@standard-schema/spec": "^1.1.0" } }, "sha512-GVDCbKDGkO1/BLbaCJivsU/5PYga7odRvaxkHkkZDQ8UPnUQT+n2KjV9CE8eJrx87/CL/pCTGv1vphoIfzHY+w=="],
+    "webappwiz": ["webappwiz@0.0.29", "", { "dependencies": { "@standard-schema/spec": "^1.1.0" } }, "sha512-vHdMoyRmlimFKmGz37sbD/aYPcmys955OXSdeE5+QM2KXX4caJlh+SfsaByp7G0zQfh/tT/g7QUzXUSh5hT66A=="],
 
     "xml-js": ["xml-js@1.6.11", "", { "dependencies": { "sax": "^1.2.4" }, "bin": { "xml-js": "./bin/cli.js" } }, "sha512-7rVi2KMfwfWFl+GpPg6m80IVMWXLRjO+PxTq7V2CDhoGak0wzYzFgUY2m4XJ47OGdXd8eLE8EmwfAmdjw7lC1g=="],
 
