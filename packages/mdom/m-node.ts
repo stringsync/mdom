@@ -1,4 +1,5 @@
 import { MMutation } from './m-mutation';
+import { assertXmlName } from './xml-syntax';
 
 type Ctor<T> = new (...args: never[]) => T;
 
@@ -77,8 +78,10 @@ export class MElement extends MNode {
 	private attrs: Record<string, string> = {};
 	private _children: readonly MNode[] = Object.freeze([]);
 
+	/** Throws if `tag` is not a valid XML name. */
 	constructor(readonly tag: string) {
 		super();
+		assertXmlName(tag, 'element');
 	}
 
 	/** This element's child nodes. */
@@ -121,8 +124,9 @@ export class MElement extends MNode {
 		return this.attrs[name] ?? null;
 	}
 
-	/** Set an attribute. */
+	/** Set an attribute. Throws if `name` is not a valid XML name. */
 	setAttribute(name: string, value: string): void {
+		assertXmlName(name, 'attribute');
 		const entries = Object.entries(this.attrs);
 		const index = entries.findIndex(([key]) => key === name);
 		if (index < 0) {

@@ -1,4 +1,8 @@
 export { Accidental } from './accidental';
+export {
+	type ArchiveOptions,
+	DEFAULT_MAX_UNCOMPRESSED_BYTES,
+} from './archive-reader';
 export { Barline, type BarlineSpec } from './barline';
 export {
 	Beam,

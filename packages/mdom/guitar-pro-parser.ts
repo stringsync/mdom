@@ -1,4 +1,4 @@
-import JSZip from 'jszip';
+import { ArchiveReader } from './archive-reader';
 import { GuitarProConfiguration } from './guitar-pro-configuration';
 import { GuitarProDocumentReader } from './guitar-pro-document-reader';
 import type { GuitarProOptions } from './guitar-pro-options';
@@ -15,7 +15,7 @@ export class GuitarProParser {
 		return this.parseFromBytes(new Uint8Array(await blob.arrayBuffer()), opts);
 	}
 
-	/** Throws for malformed archives, older Guitar Pro formats, or unsupported musical features. */
+	/** Throws for malformed archives, older Guitar Pro formats, unsupported musical features, or archives that inflate past `opts.maxUncompressedBytes`. */
 	async parseFromBytes(
 		bytes: Uint8Array,
 		opts: GuitarProOptions = {},
@@ -25,18 +25,15 @@ export class GuitarProParser {
 				'Expected a Guitar Pro 7/8 .gp ZIP archive; .gp3, .gp4, .gp5 and .gpx are not supported',
 			);
 		}
-		const zip = await JSZip.loadAsync(bytes);
-		if (!zip.file('Content/score.gpif')) {
+		const archive = await ArchiveReader.load(bytes, opts);
+		const gpif = await archive.text('Content/score.gpif');
+		if (gpif === null) {
 			throw new Error('Guitar Pro archive has no Content/score.gpif');
 		}
-		const root = new MDOMParser().parseFromString(
-			await zip.file('Content/score.gpif')!.async('string'),
-		).root;
-		const configuration = zip.file('Content/PartConfiguration');
+		const root = new MDOMParser().parseFromString(gpif).root;
+		const configuration = await archive.bytes('Content/PartConfiguration');
 		const tablature = configuration
-			? new GuitarProConfiguration().readTablature(
-					await configuration.async('uint8array'),
-				)
+			? new GuitarProConfiguration().readTablature(configuration)
 			: [];
 		return new GuitarProDocumentReader(new GuitarProXml(root), opts).read(
 			tablature,

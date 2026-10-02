@@ -2,15 +2,27 @@ import { MHistory } from './m-history';
 import { MMutation } from './m-mutation';
 import { descendants, type MElement } from './m-node';
 import { Score } from './score';
+import { assertXmlDeclaration, isSafeDoctype } from './xml-syntax';
 
 /** A parsed document: the root element plus the XML declaration and doctype. */
 export class MDocument {
 	private _history: MHistory | null = null;
+	/**
+	 * Throws if `declaration` holds anything but valid `version`, `encoding`,
+	 * and `standalone` values, or if `doctype` is not a plain external-ID
+	 * doctype body such as `score-partwise PUBLIC "id" "uri"`.
+	 */
 	constructor(
 		readonly root: MElement,
 		readonly declaration: Readonly<Record<string, string>> | null = null,
 		readonly doctype: string | null = null,
 	) {
+		if (declaration) {
+			assertXmlDeclaration(declaration);
+		}
+		if (doctype !== null && !isSafeDoctype(doctype)) {
+			throw new Error(`mdom: unsupported doctype: ${JSON.stringify(doctype)}`);
+		}
 		MMutation.register(root, descendants(root));
 		if (declaration) {
 			Object.freeze(declaration);

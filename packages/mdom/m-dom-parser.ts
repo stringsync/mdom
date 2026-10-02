@@ -1,9 +1,10 @@
-import JSZip from 'jszip';
 import { xml2js } from 'xml-js';
+import { type ArchiveOptions, ArchiveReader } from './archive-reader';
 import { MDocument } from './m-document';
 import { MCData, type MElement, MText } from './m-node';
 import { elementFor } from './registry';
 import type { XmlNode } from './xml';
+import { isSafeDoctype } from './xml-syntax';
 
 /** Parses a MusicXML string into an {@link MDocument} tree of typed nodes. */
 export class MDOMParser {
@@ -19,37 +20,42 @@ export class MDOMParser {
 		if (!root) {
 			throw new Error('MusicXML has no root element');
 		}
-		const doctype = top.find((n) => n.type === 'doctype');
+		const doctype = top.find((n) => n.type === 'doctype')?.doctype?.trim();
 		return new MDocument(
 			build(root),
 			tree.declaration?.attributes ?? null,
-			doctype?.doctype ?? null,
+			// An internal subset is dropped rather than rejected: mdom never
+			// applies one, so the document reads the same without it.
+			doctype && isSafeDoctype(doctype) ? doctype : null,
 		);
 	}
 
 	/**
 	 * Parses a compressed `.mxl` archive into an {@link MDocument}. Reads
 	 * `META-INF/container.xml`, follows its first `<rootfile>` to the MusicXML
-	 * entry, and parses that. Throws if the container or rootfile is missing.
+	 * entry, and parses that. Throws if the container or rootfile is missing, or
+	 * if the archive inflates past `opts.maxUncompressedBytes`.
 	 */
-	async parseFromBlob(blob: Blob): Promise<MDocument> {
-		const zip = await JSZip.loadAsync(await blob.arrayBuffer());
-		const containerFile = zip.file('META-INF/container.xml');
-		if (!containerFile) {
+	async parseFromBlob(
+		blob: Blob,
+		opts: ArchiveOptions = {},
+	): Promise<MDocument> {
+		const archive = await ArchiveReader.load(await blob.arrayBuffer(), opts);
+		const container = await archive.text('META-INF/container.xml');
+		if (container === null) {
 			throw new Error('MXL archive has no META-INF/container.xml');
 		}
-		const container = xml2js(await containerFile.async('string'), {
-			compact: false,
-		}) as unknown as XmlNode;
-		const fullPath = findRootfilePath(container);
+		const fullPath = findRootfilePath(
+			xml2js(container, { compact: false }) as unknown as XmlNode,
+		);
 		if (!fullPath) {
 			throw new Error('MXL container.xml has no <rootfile>');
 		}
-		const rootFile = zip.file(fullPath);
-		if (!rootFile) {
+		const score = await archive.text(fullPath);
+		if (score === null) {
 			throw new Error(`MXL archive is missing its rootfile: ${fullPath}`);
 		}
-		return this.parseFromString(await rootFile.async('string'));
+		return this.parseFromString(score);
 	}
 }
 
