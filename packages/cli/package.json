@@ -9,7 +9,7 @@
 	},
 	"dependencies": {
 		"@stringsync/mdom": "workspace:*",
-		"webappwiz": "0.0.29",
+		"webappwiz": "0.0.31",
 		"zod": "^4.4.3"
 	}
 }

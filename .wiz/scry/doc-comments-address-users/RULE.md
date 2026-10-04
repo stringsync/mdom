@@ -5,7 +5,7 @@ files: "**/*.ts"
 level: error
 effort: medium
 recommended: true
-version: 0.0.29
+version: 0.0.31
 ---
 # Doc comments address users
 

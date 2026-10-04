@@ -1,7 +1,7 @@
 ---
 name: arbor
-description: Use the @webappwiz/arbor CLI to land your work on trunk, or a base branch given as an argument, from an isolated git worktree without pull requests. Read this before making any code change in an arbor repository, since it decides where the work happens, and whenever you need to add, claim, merge, remove, list, show, locate, escalate, or defer a task, or add, pick up, or reorder a todo.
-version: 0.0.29
+description: Use the @webappwiz/arbor CLI to land your work on trunk, or a base branch given as an argument, from an isolated git worktree without pull requests. Read this before investigating anything that may lead to a code change in an arbor repository, since it decides where the work happens, and whenever you need to add, claim, merge, remove, list, show, locate, escalate, or defer a task, or add, pick up, or reorder a todo.
+version: 0.0.31
 ---
 
 # Using arbor
@@ -21,17 +21,23 @@ retry, another agent owns the tree.
 
 ## Workflow
 
-1. **Check for overlap.** List the files you expect to touch and compare with
-   `arbor list --files`. Some overlap is normal: work alongside and accept the
-   rebase, noting it in `ARBOR.md`. Only when conflicts would be hard to
-   resolve, `arbor wait <task>` for the other task to land first. If it is
-   doing the opposite of what you were asked, escalate instead.
-2. **Start.** `arbor add <task>`, or `arbor claim <task>` to resume one.
-   Read `arbor todo list` first and take up every open todo your work will
-   settle: `arbor add <task> --todo 3,5` (see Todos). Pass `--base <branch>` only when
-   invoked with a branch (`/arbor feature/auth`) or the user names one; never
-   guess a base from the checked-out branch.
-3. **Plan.** Fill in the `ARBOR.md` stub before touching code (see below).
+1. **Start before you look.** When a request may end in a code change,
+   `arbor add <task>` before reading any code, and investigate in its
+   worktree: the main tree changes under you as other tasks land, a worktree
+   does not. A question that only needs an answer stays in the main tree.
+   `arbor claim <task>` resumes a task instead. When the request is a todo,
+   take it now, `arbor add <task> --todo <id>`, so no other agent starts on
+   it. Pass `--base <branch>` only when invoked with a branch
+   (`/arbor feature/auth`) or the user names one; never guess a base from
+   the checked-out branch.
+2. **Plan.** Once you know what done means, fill in the `ARBOR.md` stub
+   before touching code (see below). Read `arbor todo list --open` and
+   `arbor todo take` every todo there your work will settle (see Todos).
+3. **Check for overlap.** Compare your `## Files` with `arbor list --files`.
+   Some overlap is normal: work alongside and accept the rebase, noting it
+   in `ARBOR.md`. Only when conflicts would be hard to resolve,
+   `arbor wait <task>` for the other task to land first. If it is doing the
+   opposite of what you were asked, escalate instead.
 4. **Work.** Commit with git as you go; arbor never commits for you. Defer
    anything outside your Goal with `arbor todo add "<subject>"` and move on.
    Ask about any call the request does not settle as you make it, and keep
@@ -43,6 +49,15 @@ retry, another agent owns the tree.
 
 A successful merge deletes the worktree and your working directory with it:
 `cd` to the main tree it prints before running anything else.
+
+**Clean up every task you start.** A task ends in a merge or a remove, never
+left behind. When investigating shows there is nothing to change, the work
+is moot, or it is better redone against current trunk, remove it:
+`arbor todo remove` each todo it holds that is done or moot, `arbor todo
+update` the rest with what you learned, then `cd "$(arbor path)"` to the
+main tree and `arbor remove <task>`, which puts its remaining todos back on
+the list. Report it as removed (see Reporting). A task escalated and waiting
+on the user is not done: leave it for `arbor claim`.
 
 `wait` ends on `removed` (landed or dropped: redo the overlap check),
 `escalated` (the other task needs the user: tell them you are blocked on
@@ -70,20 +85,59 @@ arbor todo add "Upload retries forever on a 413" 'The client retries on any 4xx 
 - [ ] tell the user the file is too big'
 ```
 
-- `arbor todo list` shows them in position order; `arbor todo show <id>`
-  prints one whole, detail and attached files included.
+- `arbor todo list` shows them in position order, `--open` only those no
+  task has taken, and `--tag <tag>` only those with a tag; `arbor todo show
+  <id>` prints one whole, detail and attached files included.
 - `arbor todo add "<subject>" ["<detail>"]` from your worktree records the
-  task it came up in. It goes to the bottom unless you pass `--position <n>`,
-  which only the user's priorities should decide. `--file a.png,b.log`
-  attaches files.
+  task it came up in. It goes to the bottom unless you pass `--position <n>`
+  (see Positions). `--file a.png,b.log` attaches files, `--tag uploads,merge`
+  tags it.
 - `arbor todo update <id> ["<detail>"] --subject "<subject>"` rewords one,
-  `--position <n>` moves it, `--file` and `--remove-file` change its files.
+  `--position <n>` moves it, `--file` and `--remove-file` change its files,
+  `--tag` and `--remove-tag` its tags.
+- `arbor todo tags` lists every tag in use, with how many todos have it.
 - `arbor todo take <id>` makes it part of your task; `arbor todo release <id>`
   puts it back; `arbor todo remove <id>` drops one that is done or moot.
 
+A tag names the area or goal a todo belongs to, so related todos group
+together and the `arbor dev` page can filter by it. A todo can
+have several tags, and a tag many todos:
+
+- Reuse before inventing: read `arbor todo tags` and take a tag from it
+  whenever one fits.
+- One lowercase word, like `uploads` or `merge`; when one word cannot say
+  it, join a few with hyphens, like `dark-mode`. arbor refuses anything else.
+- Name the part of the product or the goal the todos add up to, never the
+  kind of work (`bug`, `refactor`), a task, a person, a priority, or a status:
+  the subject, position, and taken-by already say those.
+- One or two tags a todo, or none when nothing groups it.
+- A todo that comes up in your task usually belongs with the todos your task
+  holds: give it their tags when it does.
+
+### Positions
+
+Only the user's priorities decide a position, so the bottom of the list is
+right unless the user says otherwise. Listen for how they say it when they
+ask for a todo:
+
+- "urgent", "next", "before anything else": `--position 1`.
+- "fast follow", "right after this", "soon": near the top, just below the
+  todos already there that are urgent. Read `arbor todo list` to find the
+  spot.
+- "deferred", "someday", "later", "nice to have", or nothing at all: the
+  bottom, the default.
+
+When the user asks to move a todo that already exists ("bump 12", "push the
+upload one down", "do 7 before 4"), `arbor todo update <id> --position <n>`.
+It moves the rest around it, and a position past the bottom puts it last.
+Read `arbor todo list` first to turn "before 4" or "to the top" into a
+number, and again after to check the order is the one asked for.
+
 `[ARBOR TODO #N]` in a message means todo N, copied from the `arbor dev`
-page: run `arbor todo show N` and treat it as the request. When your task
-covers it, take it with `arbor add <task> --todo N` or `arbor todo take N`.
+page: run `arbor todo show N` and treat it as the request. Take it before
+you investigate: `arbor add <task> --todo N`, or `arbor todo take N` from a
+task already under way. If `show` names another task that took it, tell the
+user rather than start on it.
 
 When something comes up that is not your Goal (a bug next door, a follow-up,
 a reply that widens the task), `arbor todo add` it from your worktree and keep
@@ -92,17 +146,43 @@ going. Do not grow the task.
 A task can hold any number of todos, and merging removes every one it holds.
 When an open todo turns out to be part of your work, `arbor todo take <id>`
 from your worktree and add it to your Goal. Before merging, read
-`arbor todo list` again: take any your change also settles, and for one you
-hold but only partly did, `arbor todo update <id>` with what is left, then
-`arbor todo release <id>`, so it stays on the list.
+`arbor todo list --open` again and take any your change also settles.
+For one you hold but only partly did, `arbor todo update <id>` with what is
+left, then `arbor todo release <id>`, so it stays on the list.
 
-After a merge, pick the next todo so the context this conversation built up
-gets used before it is gone: the open todo most relevant to the work you just
-did (the same files, feature, or problem; `arbor todo show` one to be sure),
-preferring one that came up in the task that just landed. Among equally
-relevant ones, and when none is related, take the lowest position. `merge`
-recommends the landed task's own todos first, then the lowest position. Name
-it in your report (see Reporting).
+Whenever a task ends, merged or removed, always find the next todo, so the
+context this conversation built up gets used before it is gone. Read
+`arbor todo list --open`, never picking one another task has taken, and take
+the todo most relevant to the work you just did (the same files, feature, or
+problem; `arbor todo show` one to be sure), preferring one that came up in
+the task that just ended, then one sharing a tag with the todos it held
+(`arbor todo list --open --tag <tag>`). Among equally relevant ones, and when
+none is related, take the lowest position, the top of the list. `merge`
+recommends the landed task's own todos first, then those sharing a tag with
+the todos it settled, then the lowest position; `remove` recommends nothing,
+so do this yourself. Propose it in your report (see Reporting), and after a
+merge, also propose the next one or two in the same order when they are as
+relevant, so the user can choose. One is enough when nothing else is
+related.
+
+### Proposing a todo
+
+Whenever you put a todo in front of the user in chat, whether one you suggest
+working on next or one you just added, write it the same way: a heading with
+its subject and id, then two sentences. The first says what the todo is; the
+second says why it matters now, such as what it shares with the work just
+done.
+
+```markdown
+### Upload retries forever on a 413 [#12]
+
+The client retries every 4xx in `src/upload.ts`, so an oversized file never
+fails. It touches the retry loop this task just rewrote.
+```
+
+Use the subject exactly as `arbor todo show` prints it, so the user can find
+it on the `arbor dev` page. The heading sits one level below the report's
+title.
 
 ## Handing out part of your task
 
@@ -136,6 +216,8 @@ right now. Before you continue with any work (after the user replies, after
 - check off each question you have acted on;
 - check off any that no longer applies, with why after `→`
   (`→ moot: the header was removed`), rather than deleting it;
+- retake each screenshot an open question shows once your work has changed
+  what it shows;
 - add each question you now need, numbered after the highest.
 
 Only then go on.
@@ -227,10 +309,19 @@ punctuation.
 
 One sentence on what changed.
 
-Next: todo <id>, <its subject>. Stale: todo <id> (remove?).
+Stale: todo <id> (remove?).
+
+### <subject> [#<id>]
+
+What the todo is. Why it is a good next step.
+
+### <subject> [#<id>]
+
+What the todo is. Why it is a good next step.
 ```
 
-Leave out the `Next` line when no todo is open.
+The proposed todos end a merge or remove report, the best one first, each in
+the format under Proposing a todo. Leave them out only when no todo is open.
 
 ```markdown
 ## ⚠️ Escalated <task>: waiting on your review of the todo board
@@ -248,14 +339,19 @@ One sentence on what changed.
 ```
 
 An escalation lists every open question as a markdown list numbered from 1,
-the questions left open from earlier reports first. Chat is the only place
+the questions left open from earlier reports first, and that list ends the
+report: anything else worth saying goes between the sentence and the list.
+Every question you need answered is an item in it, never a question asked in
+prose, so the user can answer each one by its number. Chat is the only place
 the user reads them, so each item carries everything needed to answer it.
 The item's line is the question's subject. Indented under
 it goes whatever the answer depends on: the body cut to a line or two,
 choices exactly as in `ARBOR.md` (`- (a) ...` or `- [a] ...`, so a reply of
 `2. b` names one), and each screenshot or file by its absolute path. Inline a
 screenshot as `![what](/abs/path.png)` when your harness shows images in
-chat; otherwise link it as `[what](/abs/path.png)`. A review's lines say what
+chat; otherwise link it as `[what](/abs/path.png)`. A screenshot shows the
+work as it is now: whenever you change what one shows, take it again before
+the next report, and point the question in `ARBOR.md` at it. A review's lines say what
 to look at and where. Leave an item bare when its
 subject says it all.
 
@@ -263,9 +359,15 @@ subject says it all.
 ## 🛑 Removed <task>: superseded by a fix on main
 
 One sentence on what the task set out to do.
+
+### <subject> [#<id>]
+
+What the todo is. Why it is a good next step.
 ```
 
-Anything else worth saying goes after the block, not instead of it.
+For a merge or a remove, anything else worth saying goes between the sentence
+and the proposed todos, not instead of them. An escalation's questions always
+come last.
 
 ## ARBOR.md
 
