@@ -43,11 +43,27 @@ export class Part extends MElement {
 	 * `<part-list>` (a sibling cross-reference, joined by this part's id).
 	 */
 	get label(): string | null {
-		const partList = this.closest(Score)?.child('part-list');
-		const scorePart = partList
-			?.childrenNamed('score-part')
-			.find((entry) => entry.getAttribute('id') === this.id);
-		return scorePart?.child('part-name')?.text ?? null;
+		return scorePartOf(this)?.child('part-name')?.text ?? null;
+	}
+
+	/**
+	 * MIDI program the part plays on, 1 to 128 as MusicXML numbers it (General
+	 * MIDI's 0-based program plus one), resolved like {@link label} from this
+	 * part's `<score-part><midi-instrument><midi-program>`. The first
+	 * `<midi-instrument>` wins when the part declares several. Null when there is
+	 * no `<score-part>`, `<midi-instrument>`, or `<midi-program>`, or its text is
+	 * not an integer from 1 to 128.
+	 */
+	get program(): number | null {
+		const text = scorePartOf(this)
+			?.child('midi-instrument')
+			?.child('midi-program')
+			?.text?.trim();
+		if (text == null || !/^\d+$/.test(text)) {
+			return null;
+		}
+		const program = Number(text);
+		return program >= 1 && program <= 128 ? program : null;
 	}
 
 	/** Append a `<measure>`, numbered after the last one when `number` is omitted. */
@@ -143,4 +159,15 @@ export function measureIndexIn(part: Part, measure: Measure): number {
 			new Map(measuresOf(part).map((each, index) => [each, index] as const)),
 	);
 	return indexes.get(measure) ?? -1;
+}
+
+/** `part`'s `<score-part>` in the `<part-list>`, joined by id; null when absent. */
+function scorePartOf(part: Part): MElement | null {
+	return (
+		part
+			.closest(Score)
+			?.child('part-list')
+			?.childrenNamed('score-part')
+			.find((entry) => entry.getAttribute('id') === part.id) ?? null
+	);
 }
