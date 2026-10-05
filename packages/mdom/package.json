@@ -1,6 +1,6 @@
 {
 	"name": "@stringsync/mdom",
-	"version": "0.6.0",
+	"version": "0.7.0",
 	"type": "module",
 	"license": "MIT AND MPL-2.0",
 	"main": "./index.ts",
