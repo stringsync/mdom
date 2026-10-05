@@ -372,6 +372,51 @@ export class Note extends MElement {
 	}
 
 	/**
+	 * `<grace steal-time-previous>`: the percent of the previous note's time this
+	 * grace steals for its playback (a before-the-beat grace), as written (e.g. 50).
+	 * Null when absent, not a finite number, or this isn't a grace note. Not clamped
+	 * to 0–100; the consumer clamps.
+	 */
+	get graceStealTimePrevious(): number | null {
+		return this.graceNumber('steal-time-previous');
+	}
+
+	/**
+	 * `<grace steal-time-following>`: the percent of the following note's time this
+	 * grace steals (an on-the-beat grace, as for appoggiaturas), as written. Null
+	 * when absent, not a finite number, or this isn't a grace note. Not clamped to
+	 * 0–100; the consumer clamps.
+	 */
+	get graceStealTimeFollowing(): number | null {
+		return this.graceNumber('steal-time-following');
+	}
+
+	/**
+	 * `<grace make-time>`: real time made for this grace rather than stolen, in
+	 * quarter-note beats (make-time / divisions, as {@link beats} reads
+	 * `<duration>`). Null when absent, not a finite number, no divisions are in
+	 * effect, or this isn't a grace note.
+	 */
+	get graceMakeTime(): number | null {
+		const makeTime = this.graceNumber('make-time');
+		const divisions = this.divisions;
+		if (makeTime == null || divisions == null) {
+			return null;
+		}
+		return makeTime / divisions;
+	}
+
+	/** A numeric `<grace>` attribute, leniently: null unless a finite number. */
+	private graceNumber(name: string): number | null {
+		const raw = this.child('grace')?.getAttribute(name);
+		if (raw == null || raw.trim() === '') {
+			return null;
+		}
+		const value = Number(raw);
+		return Number.isFinite(value) ? value : null;
+	}
+
+	/**
 	 * `<notations><non-arpeggiate>`: the bracket marking a chord to be struck
 	 * together, the opposite of {@link arpeggiate}. `type="bottom"` sits on the
 	 * lowest member it covers and `type="top"` on the highest, with nothing on the
