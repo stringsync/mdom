@@ -6,7 +6,7 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": ["**", "!dist", "!**/*.xml", "!**/*.musicxml"]
+		"includes": ["**", "!dist", "!**/*.xml", "!**/*.musicxml", "!.wiz/scry"]
 	},
 	"formatter": {
 		"enabled": true,
