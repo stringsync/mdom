@@ -1,5 +1,5 @@
 # Premerge checks: format/lint/typecheck, then the test suite. The same two
-# commands arbor's preMerge gate runs, so a branch that lands locally passes here.
+# commands splates' preMerge gate runs, so a branch that lands locally passes here.
 name: test
 
 on:

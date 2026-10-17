@@ -7,9 +7,9 @@ and everything else exists to build or check it:
 | `packages/cli`  | the `mdom` CLI below                                         |
 | `packages/e2e`  | end-to-end tests and the cross-exporter MusicXML corpus      |
 
-Make code changes with arbor by default: follow the `arbor` skill
-(`.claude/skills/arbor`) to work in an isolated worktree and land on `master`
-with `arbor merge`, unless told otherwise.
+Make code changes with splates by default: follow the `splates` skill
+(`.claude/skills/splates`) to work in an isolated worktree and land on `master`
+with `splates merge`, unless told otherwise.
 
 After making code changes:
 

@@ -1,10 +1,10 @@
-// arbor runs through `bunx @webappwiz/arbor`, so it is not a dependency here and
+// splates runs through `bunx @stringsync/splates`, so it is not a dependency here and
 // this file cannot import its `defineConfig`. That costs key-name checking on the
-// object below; arbor validates what it reads anyway.
+// object below; splates validates what it reads anyway.
 export default {
-	// Unset, arbor reads the trunk off `refs/remotes/origin/HEAD`, which says
+	// Unset, splates reads the trunk off `refs/remotes/origin/HEAD`, which says
 	// master here. Pinned anyway so a clone that never fetched that ref lands on
-	// master rather than on arbor's `main` fallback.
+	// master rather than on splates' `main` fallback.
 	trunk: 'master',
 	// A fresh worktree has no node_modules, and a rebase can bring in a
 	// dependency that the preMerge gate needs installed to run.
