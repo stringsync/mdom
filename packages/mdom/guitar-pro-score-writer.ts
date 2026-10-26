@@ -23,6 +23,29 @@ import type { Part } from './part';
 import { divisionsBackFrom } from './signature';
 import { onsetOf } from './timeline';
 
+/** One beat of a chord split at a harmony: where it starts and, when split, its note value. */
+interface BeatPiece {
+	onset: number;
+	type?: string;
+	dots?: number;
+	size?: number;
+}
+
+/** The longest ordinary note value, dotted up to three times, that fits in `beats`. */
+function noteValueWithin(
+	beats: number,
+): { type: string; dots: number; size: number } | null {
+	for (const [type, duration] of Object.entries(GuitarProValues.durations)) {
+		for (let dots = 3; dots >= 0; dots--) {
+			const size = GuitarProValues.beats(duration, { dots });
+			if (size <= beats + 1e-8) {
+				return { type, dots, size };
+			}
+		}
+	}
+	return null;
+}
+
 /** A tempo automation at a fraction of its bar; linear ramps to the next one. */
 interface TempoChange {
 	position: number;
@@ -700,51 +723,63 @@ export class GuitarProScoreWriter {
 						);
 					}
 					this.rests(beats, onset - cursor);
-					const beat = this.beat(lead);
-					beats.push(beat.getAttribute('id')!);
-					const notes: string[] = [];
-					for (const note of chord.notes) {
-						if (
-							note.beats !== lead.beats ||
-							note.isGrace !== lead.isGrace ||
-							note.type !== lead.type ||
-							note.dots !== lead.dots ||
-							JSON.stringify(note.timeModification) !==
-								JSON.stringify(lead.timeModification)
-						) {
-							throw new Error('Guitar Pro chord members must share a duration');
+					const pieces = this.pieces(lead, harmonies);
+					for (const [index, piece] of pieces.entries()) {
+						const beat = this.beat(lead, piece);
+						beats.push(beat.getAttribute('id')!);
+						const notes: string[] = [];
+						for (const note of chord.notes) {
+							if (
+								note.beats !== lead.beats ||
+								note.isGrace !== lead.isGrace ||
+								note.type !== lead.type ||
+								note.dots !== lead.dots ||
+								JSON.stringify(note.timeModification) !==
+									JSON.stringify(lead.timeModification)
+							) {
+								throw new Error(
+									'Guitar Pro chord members must share a duration',
+								);
+							}
+							if (!note.isRest) {
+								notes.push(
+									this.note(note, ctx, {
+										index,
+										count: pieces.length,
+									}).getAttribute('id')!,
+								);
+							} else if (chord.notes.length !== 1) {
+								throw new Error('Guitar Pro chords cannot contain rests');
+							}
 						}
-						if (!note.isRest) {
-							notes.push(this.note(note, ctx).getAttribute('id')!);
-						} else if (chord.notes.length !== 1) {
-							throw new Error('Guitar Pro chords cannot contain rests');
+						if (notes.length) {
+							X.add(beat, 'Notes', notes.join(' '));
 						}
-					}
-					if (notes.length) {
-						X.add(beat, 'Notes', notes.join(' '));
-					}
-					this.directions(beat, lead);
-					const harmony = harmonies.findIndex(
-						(h) => Math.abs((h.measureBeat ?? 0) - onset) < 1e-8,
-					);
-					if (harmony >= 0 && !lead.isGrace) {
-						const diagram = this.diagram(
-							harmonies.splice(harmony, 1)[0]!,
-							diagrams,
-							diagramItems,
-							tuning.length || 6,
+						if (index === 0) {
+							this.directions(beat, lead);
+							this.effects.write(beat, chord.notes, ottavas);
+							this.effects.writeFermata(
+								this.tables.get('MasterBars')!.childrenNamed('MasterBar')[
+									measure.index
+								]!,
+								chord.notes,
+							);
+						}
+						const harmony = harmonies.findIndex(
+							(h) => Math.abs((h.measureBeat ?? 0) - piece.onset) < 1e-8,
 						);
-						if (diagram != null) {
-							X.add(beat, 'Chord', diagram);
+						if (harmony >= 0 && !lead.isGrace) {
+							const diagram = this.diagram(
+								harmonies.splice(harmony, 1)[0]!,
+								diagrams,
+								diagramItems,
+								tuning.length || 6,
+							);
+							if (diagram != null) {
+								X.add(beat, 'Chord', diagram);
+							}
 						}
 					}
-					this.effects.write(beat, chord.notes, ottavas);
-					this.effects.writeFermata(
-						this.tables.get('MasterBars')!.childrenNamed('MasterBar')[
-							measure.index
-						]!,
-						chord.notes,
-					);
 					cursor = onset + (lead.isGrace ? 0 : lead.beats!);
 				}
 				if (!chords.length) {
@@ -754,7 +789,7 @@ export class GuitarProScoreWriter {
 			}
 			X.add(bar, 'Voices', voices.join(' '));
 			for (const _ of harmonies) {
-				this.values.unsupported('chord symbols between beats');
+				this.values.unsupported('several chord symbols on one beat');
 			}
 		}
 		if (diagramItems.children.length) {
@@ -809,7 +844,46 @@ export class GuitarProScoreWriter {
 		X.add(beat, 'ConcertPitchStemOrientation', 'Undefined');
 		return beat;
 	}
-	private beat(note: Note): MElement {
+	/**
+	 * The beats a chord is written as. A chord a harmony starts inside of is
+	 * split there into tied beats, since a diagram hangs on a beat; one that
+	 * cannot be split into ordinary note values stays whole.
+	 */
+	private pieces(lead: Note, harmonies: Harmony[]): BeatPiece[] {
+		const onset = lead.measureBeat!;
+		const whole: BeatPiece[] = [{ onset }];
+		if (lead.isGrace || lead.timeModification || lead.beats == null) {
+			return whole;
+		}
+		const end = onset + lead.beats;
+		const cuts = [
+			...new Set(
+				harmonies
+					.map((h) => h.measureBeat ?? 0)
+					.filter((at) => at > onset + 1e-8 && at < end - 1e-8),
+			),
+		].sort((first, second) => first - second);
+		if (!cuts.length) {
+			return whole;
+		}
+		const pieces: BeatPiece[] = [];
+		const bounds = [onset, ...cuts, end];
+		for (let index = 0; index < bounds.length - 1; index++) {
+			let at = bounds[index]!;
+			let remaining = bounds[index + 1]! - at;
+			while (remaining > 1e-8) {
+				const value = noteValueWithin(remaining);
+				if (!value) {
+					return whole;
+				}
+				pieces.push({ onset: at, ...value });
+				at += value.size;
+				remaining -= value.size;
+			}
+		}
+		return pieces;
+	}
+	private beat(note: Note, piece?: BeatPiece): MElement {
 		const fullRest =
 			note.isRest &&
 			(note.child('rest')?.getAttribute('measure') === 'yes' ||
@@ -849,13 +923,19 @@ export class GuitarProScoreWriter {
 				);
 			}
 		}
-		const beat = this.rhythmBeat(type, dots, ratio ?? undefined);
+		const beat = piece?.type
+			? this.rhythmBeat(piece.type, piece.dots!)
+			: this.rhythmBeat(type, dots, ratio ?? undefined);
 		if (note.isGrace) {
 			X.add(beat, 'GraceNotes', note.graceSlash ? 'BeforeBeat' : 'OnBeat');
 		}
 		return beat;
 	}
-	private note(source: Note, staff: StaffContext): MElement {
+	private note(
+		source: Note,
+		staff: StaffContext,
+		piece = { index: 0, count: 1 },
+	): MElement {
 		if (!source.pitch) {
 			throw new Error(
 				'Guitar Pro export requires pitched notes; percussion is not supported',
@@ -950,17 +1030,22 @@ export class GuitarProScoreWriter {
 			X.add(p, 'Octave', pitch.octave + 1);
 		}
 		X.add(node, 'InstrumentArticulation', 0);
-		const start = source.ties.some(
-			(t) => t.tieType === 'start' || t.tieType === 'continue',
-		);
-		const stop = source.ties.some(
-			(t) => t.tieType === 'stop' || t.tieType === 'continue',
-		);
+		const start =
+			piece.index < piece.count - 1 ||
+			source.ties.some(
+				(t) => t.tieType === 'start' || t.tieType === 'continue',
+			);
+		const stop =
+			piece.index > 0 ||
+			source.ties.some((t) => t.tieType === 'stop' || t.tieType === 'continue');
 		if (start || stop) {
 			X.add(node, 'Tie', undefined, {
 				origin: String(start),
 				destination: String(stop),
 			});
+		}
+		if (piece.index > 0) {
+			return node;
 		}
 		this.techniques(source, node);
 		const accent =

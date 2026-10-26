@@ -98,7 +98,7 @@ The first supported subset includes:
   when it differs from the usual suffix), and a `<frame>` with strings, frets,
   fingering, barres and the first fret. Export writes each distinct harmony
   once to the staff's diagram collection; one without a frame shows its name
-  only. Harmonies between beats, Roman numerals and polychords are unsupported.
+  only. A second chord symbol on one beat, Roman numerals and polychords are unsupported.
 - Beat effects: fermatas (short, medium and long as angled, normal and square;
   their playback length is not kept), brushes and arpeggios as `<arpeggiate>`
   (a down stroke strikes the low string first, so it rolls `up`; export writes

@@ -202,6 +202,31 @@ describe('Guitar Pro chord diagrams', () => {
 		expect(schemaErrors(back)).toEqual([]);
 	});
 
+	it('splits a held note at a chord symbol between beats into tied beats', async () => {
+		const doc = MDocument.empty();
+		const measure = doc.score.addPart({ name: 'Guitar' }).addMeasure();
+		measure.setTime({ beats: 4, beatType: 4 });
+		measure
+			.getOrCreateVoice('1')
+			.addNote({ step: 'C', octave: 4, type: 'whole' });
+		measure.addHarmony({ root: { step: 'C' }, kind: 'major', onset: 0 });
+		measure.addHarmony({ root: { step: 'G' }, kind: 'major', onset: 2.5 });
+		const omitted: string[] = [];
+		const gp = await new GuitarProSerializer().serializeToBytes(doc, {
+			unsupported: 'omit',
+			onUnsupported: (f) => omitted.push(f),
+		});
+		expect(omitted).toEqual([]);
+		const back = await new GuitarProParser().parseFromBytes(gp);
+		const restored = back.score.parts[0]!.measures[0]!;
+		expect(restored.harmonies.map((h) => h.measureBeat)).toEqual([0, 2.5]);
+		expect(restored.notes.map((n) => [n.measureBeat, n.beats])).toEqual([
+			[0, 2],
+			[2, 0.5],
+			[2.5, 1.5],
+		]);
+	});
+
 	it('reports harmonies it cannot place on a beat', async () => {
 		const doc = MDocument.empty();
 		const measure = doc.score.addPart({ name: 'Guitar' }).addMeasure();
@@ -209,7 +234,7 @@ describe('Guitar Pro chord diagrams', () => {
 		measure
 			.getOrCreateVoice('1')
 			.addNote({ step: 'C', octave: 4, type: 'whole' });
-		measure.addHarmony({ root: { step: 'G' }, kind: 'major', onset: 2 });
+		measure.addHarmony({ root: { step: 'G' }, kind: 'major', onset: 0.3 });
 		measure.addHarmony({ numeral: { root: 5 }, kind: 'major', onset: 0 });
 		await expect(
 			new GuitarProSerializer().serializeToBytes(doc),
@@ -221,7 +246,7 @@ describe('Guitar Pro chord diagrams', () => {
 		});
 		expect(omitted).toEqual([
 			'chord symbols without a single letter root',
-			'chord symbols between beats',
+			'several chord symbols on one beat',
 		]);
 	});
 });

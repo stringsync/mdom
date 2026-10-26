@@ -236,7 +236,7 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/71d-ChordsFrets-Multistaff.xml\` | ok |
 | \`lilypond/71e-TabStaves.xml\` | ok |
 | \`lilypond/71f-AllChordTypes.xml\` | ok |
-| \`lilypond/71g-MultipleChordnames.xml\` | omits \`chord symbols between beats\` |
+| \`lilypond/71g-MultipleChordnames.xml\` | omits \`several chord symbols on one beat\` |
 | \`lilypond/72a-TransposingInstruments.xml\` | omits \`different keys across staves or parts\` |
 | \`lilypond/72b-TransposingInstruments-Full.xml\` | omits \`different keys across staves or parts\`, \`octave clefs\` |
 | \`lilypond/72c-TransposingInstruments-Change.xml\` | error: Guitar Pro export needs one transposition per part, but this part changes it across measures or staves |
@@ -370,7 +370,6 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`<turn>\` | 1 |
 | \`<unstress>\` | 1 |
 | \`<vertical-turn>\` | 1 |
-| \`chord symbols between beats\` | 1 |
 | \`dynamic fffff\` | 1 |
 | \`dynamic ffffff\` | 1 |
 | \`dynamic ffz\` | 1 |
@@ -390,5 +389,6 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`key mode none\` | 1 |
 | \`key mode phrygian\` | 1 |
 | \`non-numeric or compound metronome marks\` | 1 |
+| \`several chord symbols on one beat\` | 1 |
 | \`tremolo of 4 marks\` | 1 |"
 `;
