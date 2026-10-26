@@ -16,6 +16,7 @@ interface Syllable {
  * keeps the word going), `+` sings several words on one beat, `_` is a space
  * inside a syllable, and a lone `-` skips a beat.
  */
+// biome-ignore lint/complexity/noStaticOnlyClass: a namespace for the lyric helpers
 export class GuitarProLyrics {
 	/** Split lyric text into the syllable each beat sings; null skips a beat. */
 	static split(text: string): (Syllable | null)[] {
