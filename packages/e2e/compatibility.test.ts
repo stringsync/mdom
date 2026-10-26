@@ -25,6 +25,8 @@ describe('cross-exporter round-trip idempotence', () => {
 		['Guitar Pro 8.1.5 guitar notation and tab', EXAMPLES.ALOOF_GP8],
 		['Sibelius 2023.6 with Dolet 8.3 tablature', EXAMPLES.SIBELIUS_2023_TAB],
 		['Dorico 4.2 notations', EXAMPLES.DORICO_4_NOTATIONS],
+		['MuseScore 4.5 tempo changes', EXAMPLES.MUSESCORE_4_TEMPO_CHANGE],
+		['Flat ukulele and bass tab with lyrics', EXAMPLES.FLAT_LA_CUCARACHA],
 	] as const) {
 		it(`holds for ${exporter}`, () => {
 			const xml = loadExample(file);

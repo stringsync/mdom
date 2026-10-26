@@ -50,4 +50,50 @@ describe('modern exporter dialects', () => {
 		expect(note.ties[0]!.partner).not.toBeNull();
 		expect(note.slurs[0]!.partner).not.toBeNull();
 	});
+
+	it('reads MuseScore 4 tempo marks on directions it limits to the top system', () => {
+		const score = loadScore(EXAMPLES.MUSESCORE_4_TEMPO_CHANGE);
+		const directions = score.parts[0]!.measures.flatMap(
+			(measure) => measure.directions,
+		);
+		expect(directions.map((direction) => direction.soundTempo)).toEqual([
+			120, 60,
+		]);
+		expect(
+			directions.map((direction) => direction.metronome?.perMinute),
+		).toEqual(['120', '60']);
+		// MusicXML 4.0's system attribute, which MuseScore 4 writes on tempo marks.
+		expect(
+			directions.map((direction) => direction.getAttribute('system')),
+		).toEqual(['only-top', 'only-top']);
+	});
+
+	it('reads Flat ukulele and bass tab, flute lyrics, and its separate tempo sound', () => {
+		const score = loadScore(EXAMPLES.FLAT_LA_CUCARACHA);
+		expect(score.parts).toHaveLength(3);
+		const [ukulele, flute, bass] = score.parts;
+		// Re-entrant ukulele tuning: string 4 is G4, above the C4 of string 3.
+		expect(ukulele!.getStaffTunings().map((tuning) => tuning.midi)).toEqual([
+			67, 60, 64, 69,
+		]);
+		expect(bass!.getStaffTunings().map((tuning) => tuning.midi)).toEqual([
+			28, 33, 38, 43,
+		]);
+		const fretted = ukulele!.measures
+			.flatMap((measure) => measure.notes)
+			.find((note) => note.fret !== null)!;
+		expect(fretted.string).toBe(3);
+		expect(fretted.fret).toBe(0);
+		expect(
+			flute!.measures
+				.flatMap((measure) => measure.notes)
+				.filter((note) => note.lyrics.length > 0),
+		).toHaveLength(35);
+		// Flat writes the metronome (half = 80) with no <sound>, then an empty
+		// <sound/> and the playback tempo in quarters as measure-level <sound>s.
+		const first = ukulele!.measures[0]!;
+		expect(first.directions[0]!.metronome?.perMinute).toBe('80');
+		expect(first.directions[0]!.sound).toBeNull();
+		expect(first.sounds.map((sound) => sound.tempo)).toEqual([null, 160]);
+	});
 });

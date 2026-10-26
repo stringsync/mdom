@@ -23,6 +23,8 @@ export const EXAMPLES = {
 	// Modern exporter originals; see exporter-provenance.md for sources and licenses.
 	SIBELIUS_2023_TAB: 'sibelius_2023_tab.musicxml',
 	DORICO_4_NOTATIONS: 'dorico_4_notations.musicxml',
+	MUSESCORE_4_TEMPO_CHANGE: 'musescore_4_tempo_change.musicxml',
+	FLAT_LA_CUCARACHA: 'flat_la_cucaracha.musicxml',
 	// MuseScore (v2, v3)
 	ACCIDENTALS: 'accidentals.xml',
 	OCTAVE_SHIFT_SIMPLE_PIANO: 'octave_shift_simple_piano.xml',
