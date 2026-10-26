@@ -476,6 +476,40 @@ describe('converting between concert and transposed pitch', () => {
 		expect(cNatural!.accidental!.value).toBe('natural');
 	});
 
+	it('moves chord symbols and non-traditional key accidentals with the notes', () => {
+		const doc = parse(`<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0">
+	<part-list><score-part id="P1"><part-name>Trumpet in B♭</part-name></score-part></part-list>
+	<part id="P1">
+		<measure number="1">
+			<attributes>
+				<divisions>1</divisions>
+				<key><key-step>F</key-step><key-alter>1</key-alter><key-accidental>sharp</key-accidental></key>
+				<clef><sign>G</sign><line>2</line></clef>
+				<transpose><diatonic>-1</diatonic><chromatic>-2</chromatic></transpose>
+			</attributes>
+			<harmony><root><root-step text="D">D</root-step></root><kind>dominant</kind><bass><bass-step>F</bass-step><bass-alter>1</bass-alter></bass></harmony>
+			<note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>whole</type></note>
+		</measure>
+	</part>
+</score-partwise>`);
+		doc.score.convertToConcertScore();
+		const measure = doc.score.getPart('P1')!.measures[0]!;
+		const harmony = measure.harmonies[0]!;
+		expect(harmony.root).toEqual({ step: 'C', alter: null, text: null });
+		expect(harmony.bass!.step).toBe('E');
+		expect(harmony.bass!.alter).toBe(0);
+		expect(measure.getKey()!.alterations[0]).toMatchObject({
+			step: 'E',
+			alter: 0,
+			accidental: 'natural',
+		});
+		expect(schemaErrors(doc)).toEqual([]);
+		doc.score.convertToTransposedScore();
+		expect(harmony.root!.step).toBe('D');
+		expect(harmony.bass).toMatchObject({ step: 'F', alter: 1 });
+	});
+
 	it('writes a concert score out as the transposed part its for-part declares', () => {
 		const doc = parse(CONCERT);
 		doc.score.convertToTransposedScore();

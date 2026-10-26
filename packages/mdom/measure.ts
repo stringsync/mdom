@@ -856,7 +856,7 @@ export function placeInAttributes<T extends MElement>(
 }
 
 /** A leaf `<tag>text</tag>` element, detached. */
-function valueElement(tag: string, text: string): MElement {
+export function valueElement(tag: string, text: string): MElement {
 	const element = new MElement(tag);
 	element.append(new MText(text));
 	return element;

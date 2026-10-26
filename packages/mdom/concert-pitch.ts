@@ -6,6 +6,7 @@ import {
 	type Measure,
 	placeInAttributes,
 	transposeChoiceBlock,
+	valueElement,
 } from './measure';
 import type { Note } from './note';
 import type { Part } from './part';
@@ -56,6 +57,17 @@ export function convertPartsToConcertPitch(parts: readonly Part[]): void {
 					edits.push(retune(note, pitchClassOf(transpose)));
 				}
 			}
+			for (const harmony of measure.harmonies) {
+				const transpose = attributeBackFrom(
+					measure,
+					measure.children.indexOf(harmony),
+					`transpose:${harmony.staff}`,
+					transposePick(harmony.staff),
+				);
+				if (transpose && shiftsPitchClass(transpose)) {
+					edits.push(...moveHarmony(harmony, pitchClassOf(transpose)));
+				}
+			}
 			for (const attrs of measure.childrenNamed('attributes')) {
 				for (const key of attrs.childrenOfType(Key)) {
 					const transpose = transposeAtPoint(measure, attrs, keyStaff(key));
@@ -94,6 +106,22 @@ export function convertPartsToTransposedPitch(parts: readonly Part[]): void {
 				);
 				if (note.pitch && forPart) {
 					edits.push(retune(note, inverse(intervalOf(forPart.partTranspose))));
+				}
+			}
+			for (const harmony of measure.harmonies) {
+				const forPart = attributeBackFrom(
+					measure,
+					measure.children.indexOf(harmony),
+					`for-part:${harmony.staff}`,
+					forPartPick(harmony.staff),
+				);
+				if (forPart) {
+					edits.push(
+						...moveHarmony(
+							harmony,
+							inverse(pitchClassOf(forPart.partTranspose)),
+						),
+					);
 				}
 			}
 			for (const attrs of measure.childrenNamed('attributes')) {
@@ -284,7 +312,7 @@ function retune(note: Note, interval: PitchInterval): Edit {
 function moveKey(key: Key, interval: PitchInterval): Edit {
 	const fifths = key.fifths;
 	if (fifths != null) {
-		const by = 7 * interval.chromatic - 12 * diatonicSteps(interval);
+		const by = fifthsShift(interval);
 		return () => key.child('fifths')!.setText(String(fifths + by));
 	}
 	const elements = key.childrenOfType(MElement);
@@ -300,9 +328,74 @@ function moveKey(key: Key, interval: PitchInterval): Edit {
 				const alter = elements[elements.indexOf(step) + 1];
 				if (alter?.tag === 'key-alter') {
 					alter.setText(String(to.alter));
+					const accidental = elements[elements.indexOf(alter) + 1];
+					const glyph = ACCIDENTALS[to.alter];
+					if (
+						accidental?.tag === 'key-accidental' &&
+						glyph &&
+						PLAIN_ACCIDENTALS.has(accidental.text ?? '')
+					) {
+						accidental.setText(glyph);
+					}
 				}
 			});
 	};
+}
+
+/** Circle-of-fifths steps `interval` moves a key by. */
+function fifthsShift(interval: PitchInterval): number {
+	return 7 * interval.chromatic - 12 * diatonicSteps(interval);
+}
+
+/**
+ * Move a `<harmony>`'s letter `<root>` and `<bass>` steps, and the key of a
+ * `<numeral>`, by `interval`. A step's `text` override is dropped, since it
+ * spelled the old letter; a numeral without its own key follows the key
+ * signature, which moves already.
+ */
+function moveHarmony(harmony: MElement, interval: PitchInterval): Edit[] {
+	const edits: Edit[] = [];
+	for (const [block, stepTag, alterTag] of [
+		['root', 'root-step', 'root-alter'],
+		['bass', 'bass-step', 'bass-alter'],
+	] as const) {
+		for (const element of harmony.childrenNamed(block)) {
+			const step = element.child(stepTag);
+			if (!step?.text) {
+				continue;
+			}
+			const alter = element.child(alterTag);
+			const to = transposePitch(
+				{
+					step: step.text,
+					alter: alter?.text != null ? Number(alter.text) : 0,
+					octave: 4,
+				},
+				interval,
+			);
+			edits.push(() => {
+				step.setText(to.step);
+				step.removeAttribute('text');
+				if (alter) {
+					alter.setText(String(to.alter));
+				} else if (to.alter !== 0) {
+					const created = valueElement(alterTag, String(to.alter));
+					element.insertBefore(
+						created,
+						element.children[element.children.indexOf(step) + 1] ?? null,
+					);
+				}
+			});
+		}
+	}
+	for (const numeral of harmony.childrenNamed('numeral')) {
+		const fifths = numeral.child('numeral-key')?.child('numeral-fifths');
+		if (fifths?.text != null) {
+			const moved = Number(fifths.text) + fifthsShift(interval);
+			edits.push(() => fifths.setText(String(moved)));
+		}
+	}
+	return edits;
 }
 
 /** Set the `<clef>` for `staff` at the point `attrs` opens, replacing one there. */
