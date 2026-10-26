@@ -1,7 +1,22 @@
 import { Direction } from './direction';
 import { MElement, required } from './m-node';
 import { Measure } from './measure';
+import {
+	colorOf,
+	type LineStyle,
+	type LineStyleSpec,
+	lineStyleOf,
+	numberOf,
+	type Position,
+	type PositionSpec,
+	positionOf,
+	setLineStyleOf,
+	setPositionOf,
+	setYesNo,
+	yesNoOf,
+} from './print-style';
 import { directionMarkers, Spanner, type SpannerSpec } from './spanner';
+import { setOrRemove } from './text-format';
 
 export type WedgeType = 'crescendo' | 'diminuendo' | 'stop' | 'continue';
 
@@ -23,6 +38,61 @@ export class Wedge extends MElement {
 	/** `type`: required on a `<wedge>` and drives pairing. */
 	get wedgeType(): WedgeType {
 		return required(this.getAttribute('type'), 'type on <wedge>') as WedgeType;
+	}
+
+	/**
+	 * `spread`: the distance between the hairpin's lines at this end, in tenths.
+	 * A crescendo usually states 0 at its start and its opening at its stop,
+	 * a diminuendo the reverse. Null when unstated, for the renderer to choose.
+	 */
+	get spread(): number | null {
+		return numberOf(this, 'spread');
+	}
+
+	/** Set `spread` in tenths, or remove it with null. */
+	setSpread(tenths: number | null): void {
+		setOrRemove(this, 'spread', tenths === null ? null : String(tenths));
+	}
+
+	/**
+	 * `niente`: whether a circle marks the closed end as dal niente or al
+	 * niente; false when unstated.
+	 */
+	get niente(): boolean {
+		return yesNoOf(this, 'niente', false);
+	}
+
+	/** Set `niente`, or remove it with null. */
+	setNiente(value: boolean | null): void {
+		setYesNo(this, 'niente', value);
+	}
+
+	/** The stroke: `line-type` and the dash and space lengths in tenths. */
+	get lineStyle(): LineStyle {
+		return lineStyleOf(this);
+	}
+
+	/** Replace the stroke attributes; omitted fields (or all, with null) are removed. */
+	setLineStyle(spec: LineStyleSpec | null): void {
+		setLineStyleOf(this, spec);
+	}
+
+	/**
+	 * Where this end of the hairpin sits, in tenths. Layout only: the onset
+	 * comes from {@link direction}, never from these.
+	 */
+	get position(): Position {
+		return positionOf(this);
+	}
+
+	/** Replace the position attributes; null removes them all. */
+	setPosition(spec: PositionSpec | null): void {
+		setPositionOf(this, spec);
+	}
+
+	/** The normalized `color`; null when unset. */
+	get color(): string | null {
+		return colorOf(this);
 	}
 
 	/**

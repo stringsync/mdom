@@ -1,5 +1,12 @@
 import { MElement } from './m-node';
-import { colorOf, placementOf } from './print-style';
+import {
+	colorOf,
+	type Position,
+	type PositionSpec,
+	placementOf,
+	positionOf,
+	setPositionOf,
+} from './print-style';
 
 /**
  * A `<dynamics>` under `<direction-type>`: one or more dynamic markings printed
@@ -29,5 +36,15 @@ export class Dynamics extends MElement {
 	/** The normalized `color`; null when unset. */
 	get color(): string | null {
 		return colorOf(this);
+	}
+
+	/** Where the mark sits, in tenths; each field null when the renderer places it. */
+	get position(): Position {
+		return positionOf(this);
+	}
+
+	/** Replace the position attributes; null removes them all. */
+	setPosition(spec: PositionSpec | null): void {
+		setPositionOf(this, spec);
 	}
 }

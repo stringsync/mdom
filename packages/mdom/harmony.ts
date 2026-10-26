@@ -2,7 +2,7 @@ import { buildFrame, Frame, type FrameSpec } from './frame';
 import { MElement, required } from './m-node';
 import { appendValue, Measure } from './measure';
 import { adjacentNote, type Note } from './note';
-import { placementOf } from './print-style';
+import { placementOf, setYesNo, yesNoOf } from './print-style';
 
 /**
  * The MusicXML kind-value enum: the harmonic quality printed for a chord symbol.
@@ -141,6 +141,16 @@ export class Harmony extends MElement {
 	/** `placement`; null when unstated. */
 	get placement(): 'above' | 'below' | null {
 		return placementOf(this);
+	}
+
+	/** Whether the chord symbol is drawn (`print-object`); true when unstated. */
+	get printObject(): boolean {
+		return yesNoOf(this, 'print-object', true);
+	}
+
+	/** Set `print-object`, or remove it with null to restore the default. */
+	setPrintObject(value: boolean | null): void {
+		setYesNo(this, 'print-object', value);
 	}
 
 	/** The measure this harmony sits in. An attached harmony always has one. */

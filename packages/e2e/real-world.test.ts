@@ -77,6 +77,29 @@ describe('Finale + Dolet — a 22-part orchestral score', () => {
 		).toBeGreaterThan(0);
 	});
 
+	it('reads the laid-out note, stem, slur and hairpin geometry in tenths', () => {
+		expect(
+			notes.filter((note) => note.position.defaultX !== null).length,
+		).toBeGreaterThan(1000);
+		const flute = score.getPart('P1')!;
+		const sixteenth = flute
+			.getMeasure('38')!
+			.notes.find((note) => note.slurs[0]?.bezier.x != null);
+		expect(sixteenth!.position.defaultX).toBe(151);
+		expect(sixteenth!.stemPosition!.defaultY).toBe(-27);
+		const slur = sixteenth!.slurs[0]!;
+		expect(slur.position).toMatchObject({ defaultX: 6, defaultY: 22 });
+		expect(slur.bezier).toMatchObject({ x: 9, y: 33, offset: null });
+		expect(slur.partner!.bezier).toMatchObject({ x: -26, y: 29 });
+
+		const wedges = flute
+			.getMeasure('16')!
+			.directions.flatMap((direction) => direction.wedges);
+		expect(wedges.map((wedge) => wedge.spread)).toEqual([0, 15]);
+		expect(wedges[0]!.position.defaultY).toBe(-58);
+		expect(wedges[1]!.partner).toBe(wedges[0]!);
+	});
+
 	it('reads per-note instrument assignments and the percussion MIDI keys', () => {
 		const cymbal = score.getPart('P15')!;
 		expect(cymbal.instruments.map((each) => each.name)).toEqual([

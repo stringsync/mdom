@@ -63,7 +63,7 @@ export { Measure } from './measure';
 export { Metronome, MetronomeNote } from './metronome';
 export { MusicXMLSerializer } from './music-xml-serializer';
 export { MXLSerializer } from './mxl-serializer';
-export { Note } from './note';
+export { Note, type SymbolSize } from './note';
 export { OctaveShift } from './octave-shift';
 export { Ornament, type OrnamentType } from './ornament';
 export {
@@ -82,6 +82,15 @@ export {
 	Print,
 	type SystemRelation,
 } from './print';
+export type {
+	Bezier,
+	BezierSpec,
+	LineStyle,
+	LineStyleSpec,
+	LineType,
+	Position,
+	PositionSpec,
+} from './print-style';
 export { PullOff } from './pull-off';
 export { Rehearsal } from './rehearsal';
 export { Scaling } from './scaling';

@@ -1,5 +1,11 @@
 import { MElement } from './m-node';
-import { colorOf } from './print-style';
+import {
+	colorOf,
+	type Position,
+	type PositionSpec,
+	positionOf,
+	setPositionOf,
+} from './print-style';
 import type { Score } from './score';
 import {
 	type Font,
@@ -81,6 +87,16 @@ export abstract class FormattedTextElement extends MElement {
 	/** The normalized `color`; null when unset. */
 	get color(): string | null {
 		return colorOf(this);
+	}
+
+	/** Where the text sits, in tenths; each field null when the renderer places it. */
+	get position(): Position {
+		return positionOf(this);
+	}
+
+	/** Replace the position attributes; null removes them all. */
+	setPosition(spec: PositionSpec | null): void {
+		setPositionOf(this, spec);
 	}
 }
 

@@ -1,5 +1,5 @@
 import { MElement } from './m-node';
-import { colorOf } from './print-style';
+import { colorOf, setYesNo, yesNoOf } from './print-style';
 import { Score } from './score';
 import {
 	type Font,
@@ -114,5 +114,15 @@ export class Lyric extends MElement {
 	/** The normalized `color`; null when unset. */
 	get color(): string | null {
 		return colorOf(this);
+	}
+
+	/** Whether the lyric is drawn (`print-object`); true when unstated. */
+	get printObject(): boolean {
+		return yesNoOf(this, 'print-object', true);
+	}
+
+	/** Set `print-object`, or remove it with null to restore the default. */
+	setPrintObject(value: boolean | null): void {
+		setYesNo(this, 'print-object', value);
 	}
 }

@@ -1,7 +1,26 @@
 import { MElement, required } from './m-node';
 import { Note } from './note';
 import { Part } from './part';
+import {
+	type Bezier,
+	type BezierSpec,
+	bezierOf,
+	colorOf,
+	type LineStyle,
+	type LineStyleSpec,
+	type LineType,
+	lineStyleOf,
+	lineTypeOf,
+	orientationOf,
+	type Position,
+	type PositionSpec,
+	positionOf,
+	setBezierOf,
+	setLineStyleOf,
+	setPositionOf,
+} from './print-style';
 import { noteMarkers, Spanner, type SpannerSpec } from './spanner';
+import { setOrRemove } from './text-format';
 
 export type SlurType = 'start' | 'stop' | 'continue';
 
@@ -35,8 +54,59 @@ export class Slur extends MElement {
 	}
 
 	/** `line-type` (solid/dashed/dotted/wavy) — the stroke to draw; null when unstated. */
-	get lineType(): string | null {
-		return this.getAttribute('line-type');
+	get lineType(): LineType | null {
+		return lineTypeOf(this);
+	}
+
+	/** The stroke: `line-type` and the dash and space lengths in tenths. */
+	get lineStyle(): LineStyle {
+		return lineStyleOf(this);
+	}
+
+	/** Replace the stroke attributes; omitted fields (or all, with null) are removed. */
+	setLineStyle(spec: LineStyleSpec | null): void {
+		setLineStyleOf(this, spec);
+	}
+
+	/** `orientation`: over (tips down) or under (tips up); null when unstated. */
+	get orientation(): 'over' | 'under' | null {
+		return orientationOf(this);
+	}
+
+	/** Set `orientation`, or remove it with null. */
+	setOrientation(value: 'over' | 'under' | null): void {
+		setOrRemove(this, 'orientation', value);
+	}
+
+	/**
+	 * Where this end of the curve sits, in tenths, as the exporter laid it out.
+	 * Layout only: it never moves {@link measureBeat}.
+	 */
+	get position(): Position {
+		return positionOf(this);
+	}
+
+	/** Replace the position attributes; null removes them all. */
+	setPosition(spec: PositionSpec | null): void {
+		setPositionOf(this, spec);
+	}
+
+	/**
+	 * The Bezier control point at this end of the curve (see {@link Bezier});
+	 * all null when the renderer is left to shape it.
+	 */
+	get bezier(): Bezier {
+		return bezierOf(this);
+	}
+
+	/** Replace the Bezier attributes; omitted fields (or all, with null) are removed. */
+	setBezier(spec: BezierSpec | null): void {
+		setBezierOf(this, spec);
+	}
+
+	/** The normalized `color`; null when unset. */
+	get color(): string | null {
+		return colorOf(this);
 	}
 
 	/** The note this marker hangs off of. An attached marker always has one. */

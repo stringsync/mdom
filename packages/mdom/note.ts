@@ -10,7 +10,15 @@ import { appendValue, Measure } from './measure';
 import { Ornament } from './ornament';
 import { Part } from './part';
 import { Pitch } from './pitch';
-import { colorOf } from './print-style';
+import {
+	colorOf,
+	type Position,
+	type PositionSpec,
+	positionOf,
+	setPositionOf,
+	setYesNo,
+	yesNoOf,
+} from './print-style';
 import { PullOff } from './pull-off';
 import {
 	appliesToStaff,
@@ -36,6 +44,13 @@ export type NoteType =
 	| '32nd'
 	| '64th'
 	| '128th';
+
+/**
+ * A MusicXML `symbol-size`: the drawn size of a note's `<type>`. MusicXML
+ * defaults it from the note: `cue` for a cue or grace note, `grace-cue` for
+ * one that is both, `full` otherwise.
+ */
+export type SymbolSize = 'full' | 'cue' | 'grace-cue' | 'large';
 
 /** MusicXML notehead-value enum: the glyph drawn for a note's head. */
 export type NoteheadValue =
@@ -568,6 +583,108 @@ export class Note extends MElement {
 	 */
 	get printObject(): boolean {
 		return this.getAttribute('print-object') !== 'no';
+	}
+
+	/** Set `print-object`: false hides the note but keeps its time. */
+	setPrintObject(value: boolean): void {
+		setYesNo(this, 'print-object', value);
+	}
+
+	/**
+	 * Whether the note's augmentation dots are drawn (`print-dot`). Unstated, it
+	 * follows {@link printObject}, as MusicXML says.
+	 */
+	get printDot(): boolean {
+		return yesNoOf(this, 'print-dot', this.printObject);
+	}
+
+	/** Set `print-dot`, or remove it with null so it follows {@link printObject}. */
+	setPrintDot(value: boolean | null): void {
+		setYesNo(this, 'print-dot', value);
+	}
+
+	/**
+	 * Whether the note's lyrics are drawn (`print-lyric`). Unstated, it follows
+	 * {@link printObject}, as MusicXML says.
+	 */
+	get printLyric(): boolean {
+		return yesNoOf(this, 'print-lyric', this.printObject);
+	}
+
+	/** Set `print-lyric`, or remove it with null so it follows {@link printObject}. */
+	setPrintLyric(value: boolean | null): void {
+		setYesNo(this, 'print-lyric', value);
+	}
+
+	/**
+	 * Whether a note that prints nothing still takes its horizontal space
+	 * (`print-spacing`); true when unstated.
+	 */
+	get printSpacing(): boolean {
+		return yesNoOf(this, 'print-spacing', true);
+	}
+
+	/** Set `print-spacing`, or remove it with null to restore the default. */
+	setPrintSpacing(value: boolean | null): void {
+		setYesNo(this, 'print-spacing', value);
+	}
+
+	/**
+	 * The note's position attributes, in tenths: `defaultX` places it within
+	 * the measure as the exporter laid it out. Layout only: the onset comes
+	 * from the timeline, never from these.
+	 */
+	get position(): Position {
+		return positionOf(this);
+	}
+
+	/** Replace the note's position attributes; null removes them all. */
+	setPosition(spec: PositionSpec | null): void {
+		setPositionOf(this, spec);
+	}
+
+	/**
+	 * The `<stem>`'s position attributes, in tenths: `defaultY` is where the
+	 * stem ends, relative to the top staff line. Null when there is no stem.
+	 */
+	get stemPosition(): Position | null {
+		const stem = this.child('stem');
+		return stem === null ? null : positionOf(stem);
+	}
+
+	/**
+	 * Replace the `<stem>`'s position attributes; null removes them all. Throws
+	 * when the note has no stem to place.
+	 */
+	setStemPosition(spec: PositionSpec | null): void {
+		setPositionOf(required(this.child('stem'), '<stem> on <note>'), spec);
+	}
+
+	/**
+	 * The `size` of the note's `<type>` as written; null when unstated (see
+	 * {@link SymbolSize} for the default) or when there is no `<type>`.
+	 */
+	get typeSize(): SymbolSize | null {
+		const size = this.child('type')?.getAttribute('size');
+		return size === 'full' ||
+			size === 'cue' ||
+			size === 'grace-cue' ||
+			size === 'large'
+			? size
+			: null;
+	}
+
+	/**
+	 * Set the `size` of the note's `<type>`, or remove it with null. Throws
+	 * when the note has no `<type>` to size.
+	 */
+	setTypeSize(size: SymbolSize | null): void {
+		const type = this.child('type');
+		if (size === null) {
+			type?.removeAttribute('size');
+			return;
+		}
+		required(type, '<type> on <note>').setAttribute('size', size);
 	}
 
 	/**
