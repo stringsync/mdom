@@ -47,7 +47,7 @@ raw, unescaped text the score holds. Treat them as untrusted: render them with
 
 ## Guitar Pro
 
-Import and export core notation and tablature in Guitar Pro 7/8 `.gp` archives. Guitar Pro 6 `.gpx` files import only; `GuitarProParser` detects them by their header:
+Import and export core notation and tablature in Guitar Pro 7/8 `.gp` archives. Guitar Pro 6 `.gpx` and Guitar Pro 5 `.gp5` files import only; `GuitarProParser` detects them by their header:
 
 ```ts
 import { GuitarProParser, GuitarProSerializer } from '@stringsync/mdom';
@@ -87,6 +87,11 @@ preserved. Note pitches use sounding MIDI values; enharmonic spelling is
 normalized using the key, and voice/part identifiers are regenerated. A tuned
 staff carries both pitches and tablature positions on the same mdom notes.
 
+Guitar Pro 5 files are read record by record into the same GPIF tables, so they
+yield the same tree as the matching `.gp`. A bar that stores fewer beats than its
+meter is padded with rests, and an empty bar stays empty. Effects, chord diagrams,
+lyrics, alternate endings and jumps are skipped correctly but throw by default.
+
 Notation-only staves use Guitar Pro's internal tuning/string/fret encoding for
 playback while tablature stays hidden. Import exposes string/fret positions and
 tuning as MusicXML tablature only for staves with tablature enabled in the file.
@@ -97,7 +102,7 @@ discard unsupported annotations, pass `{ unsupported: 'omit' }` as the last
 argument to either parser or serializer methods. Invalid core data still throws:
 for example, missing string assignments on a tuned staff, pitch/fret mismatches,
 inconsistent durations, or mismatched meters across parts. Percussion, older
-`.gp3`/`.gp4`/`.gp5` input, `.gpx` output, and mid-score tuning changes are not supported.
+`.gp3`/`.gp4` input, `.gpx` output, and mid-score tuning changes are not supported.
 
 The tests use committed, independently produced GP7 and GP8 fixtures with
 [provenance and licensing](fixtures/guitar-pro/README.md), direct assertions on

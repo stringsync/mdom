@@ -16,6 +16,13 @@ The `.gpx` files are unmodified Guitar Pro 6 fixtures from the same commit's
 `score-info`). Their GPIF reads through the same reader as GP7/8 with no
 changes, and tests compare them with the GP7 fixtures of the same name.
 
+The `.gp5` files are unmodified Guitar Pro 5 fixtures from the same commit's
+`packages/alphatab/test-data/guitarpro5` directory (`notes`, `strings`,
+`time-signatures`, `key-signatures`, `tuplets`, `grace`, `repeat-close` and
+`score-info`). Tests compare them with the GP7 fixtures of the same name where
+the two files hold the same score; `time-signatures.gp5` stores its default
+dynamic and a bar's trailing rest differently from its GP7 counterpart.
+
 `hide-tuning.gp` comes from the same commit's
 `packages/alphatab/test-data/guitarpro8` directory and covers a GP8 empty bar.
 

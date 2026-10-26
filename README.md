@@ -47,7 +47,7 @@ mdom convert --input song.mxl --output converted.gp
 ```
 
 Extensions select the input and output formats: `.musicxml` or `.xml` for
-UTF-8 MusicXML, `.mxl` for compressed MusicXML, and `.gp` for Guitar Pro 7/8. `.gpx` (Guitar Pro 6) is accepted as input only.
+UTF-8 MusicXML, `.mxl` for compressed MusicXML, and `.gp` for Guitar Pro 7/8. `.gpx` (Guitar Pro 6) and `.gp5` (Guitar Pro 5) are accepted as input only.
 Relative paths resolve from the directory where you ran the command. The
 output directory must already exist.
 
