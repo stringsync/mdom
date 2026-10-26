@@ -4,6 +4,8 @@
 	"private": true,
 	"type": "module",
 	"dependencies": {
-		"@stringsync/mdom": "workspace:*"
+		"@stringsync/mdom": "workspace:*",
+		"webappwiz": "0.0.36",
+		"zod": "^4.4.3"
 	}
 }

@@ -28,6 +28,8 @@
       "version": "0.7.0",
       "dependencies": {
         "@stringsync/mdom": "workspace:*",
+        "webappwiz": "0.0.36",
+        "zod": "^4.4.3",
       },
     },
     "packages/mdom": {
