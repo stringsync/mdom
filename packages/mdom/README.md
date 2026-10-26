@@ -37,7 +37,7 @@ mdom is safe to run on scores you did not write:
 - Doctypes are limited to `root`, `root SYSTEM "uri"`, and
   `root PUBLIC "id" "uri"`. The parser drops an internal subset and never
   expands custom entities or fetches external ones.
-- Archives (`.mxl`, `.gp`) are limited to 128 MiB of uncompressed data by
+- Archives (`.mxl`, `.gp`, `.gpx`) are limited to 128 MiB of uncompressed data by
   default, which guards against zip bombs. Pass
   `{ maxUncompressedBytes }` to `parseFromBlob` to change the limit.
 
@@ -47,7 +47,7 @@ raw, unescaped text the score holds. Treat them as untrusted: render them with
 
 ## Guitar Pro
 
-Import and export core notation and tablature in Guitar Pro 7/8 `.gp` archives:
+Import and export core notation and tablature in Guitar Pro 7/8 `.gp` archives. Guitar Pro 6 `.gpx` files import only; `GuitarProParser` detects them by their header:
 
 ```ts
 import { GuitarProParser, GuitarProSerializer } from '@stringsync/mdom';
@@ -97,7 +97,7 @@ discard unsupported annotations, pass `{ unsupported: 'omit' }` as the last
 argument to either parser or serializer methods. Invalid core data still throws:
 for example, missing string assignments on a tuned staff, pitch/fret mismatches,
 inconsistent durations, or mismatched meters across parts. Percussion, older
-`.gp3`/`.gp4`/`.gp5`/`.gpx` input, and mid-score tuning changes are not supported.
+`.gp3`/`.gp4`/`.gp5` input, `.gpx` output, and mid-score tuning changes are not supported.
 
 The tests use committed, independently produced GP7 and GP8 fixtures with
 [provenance and licensing](fixtures/guitar-pro/README.md), direct assertions on

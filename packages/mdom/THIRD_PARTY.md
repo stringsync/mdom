@@ -10,6 +10,8 @@ by Daniel Kuschny and Contributors and are distributed under MPL-2.0:
 - `guitar-pro-playback.ts`: instrument and sound field structure, based on
   `src/exporter/GpifWriter.ts` and the MIDI instrument mapping from
   `src/exporter/GpifSoundMapper.ts`; built-in soundbank assignments are retained from mdom.
+- `guitar-pro-gpx-file-system.ts`: BCFZ decompression and BCFS file-system reading,
+  based on `src/importer/GpxFileSystem.ts` and `src/io/BitReader.ts`.
 - `guitar-pro-configuration.ts`: binary score views and track flags, based on
   `src/importer/PartConfiguration.ts` and `src/importer/LayoutConfiguration.ts`.
 

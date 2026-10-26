@@ -48,7 +48,7 @@ export async function convert(opts: ConvertOptions): Promise<void> {
 	log.info(`wrote ${output}`);
 }
 
-type Format = 'musicxml' | 'mxl' | 'gp';
+type Format = 'musicxml' | 'mxl' | 'gp' | 'gpx';
 
 function formatOf(path: string): Format {
 	switch (extname(path).toLowerCase()) {
@@ -59,9 +59,11 @@ function formatOf(path: string): Format {
 			return 'mxl';
 		case '.gp':
 			return 'gp';
+		case '.gpx':
+			return 'gpx';
 		default:
 			throw new Error(
-				`Unsupported score extension: ${extname(path) || '(none)'}. Use .musicxml, .xml, .mxl or .gp (Guitar Pro 7/8).`,
+				`Unsupported score extension: ${extname(path) || '(none)'}. Use .musicxml, .xml, .mxl or .gp (Guitar Pro 7/8); .gpx (Guitar Pro 6) is input only.`,
 			);
 	}
 }
@@ -79,6 +81,7 @@ async function parse(
 		case 'mxl':
 			return new MDOMParser().parseFromBlob(new Blob([bytes]));
 		case 'gp':
+		case 'gpx':
 			return new GuitarProParser().parseFromBytes(bytes, opts);
 	}
 }
@@ -99,5 +102,7 @@ async function serialize(
 			);
 		case 'gp':
 			return new GuitarProSerializer().serializeToBytes(doc, opts);
+		case 'gpx':
+			throw new Error('Writing .gpx (Guitar Pro 6) is not supported; use .gp');
 	}
 }

@@ -10,6 +10,12 @@ The files are committed so `mdom test` runs offline. They exercise the reader
 independently of mdom's writer. Export tests inspect the generated GPIF XML,
 and round-trip tests cover the musical values across both conversions.
 
+The `.gpx` files are unmodified Guitar Pro 6 fixtures from the same commit's
+`packages/alphatab/test-data/guitarpro6` directory (`notes`, `strings`,
+`time-signatures`, `key-signatures`, `tuplets`, `grace`, `repeat-close` and
+`score-info`). Their GPIF reads through the same reader as GP7/8 with no
+changes, and tests compare them with the GP7 fixtures of the same name.
+
 `hide-tuning.gp` comes from the same commit's
 `packages/alphatab/test-data/guitarpro8` directory and covers a GP8 empty bar.
 

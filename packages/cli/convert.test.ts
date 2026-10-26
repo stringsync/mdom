@@ -119,6 +119,36 @@ describe('convert', () => {
 		]);
 	});
 
+	it('converts a Guitar Pro 6 .gpx fixture to MusicXML', async () => {
+		files.contents.set(
+			'/scores/source.gpx',
+			new Uint8Array(
+				await Bun.file(
+					new URL('../mdom/fixtures/guitar-pro/strings.gpx', import.meta.url),
+				).arrayBuffer(),
+			),
+		);
+		await convert({ ...opts, input: 'source.gpx', output: 'result.musicxml' });
+		const doc = new MDOMParser().parseFromString(
+			new TextDecoder().decode(await files.read('/scores/result.musicxml')),
+		);
+
+		expect(doc.score.parts[0]!.measures[0]!.notes[0]).toMatchObject({
+			string: 1,
+			fret: 1,
+		});
+	});
+
+	it('refuses to write .gpx', async () => {
+		files.contents.set(
+			'/scores/song.musicxml',
+			new TextEncoder().encode('<score-partwise/>'),
+		);
+		await expect(
+			convert({ ...opts, input: 'song.musicxml', output: 'song.gpx' }),
+		).rejects.toThrow('.gpx');
+	});
+
 	it('converts an independent Guitar Pro fixture to compressed MusicXML', async () => {
 		const bytes = new Uint8Array(
 			await Bun.file(

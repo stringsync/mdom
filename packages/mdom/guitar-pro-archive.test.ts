@@ -21,7 +21,7 @@ describe('Guitar Pro archives', () => {
 			parser.parseFromBytes(
 				new TextEncoder().encode('FICHIER GUITAR PRO v5.10'),
 			),
-		).rejects.toThrow('.gp3, .gp4, .gp5 and .gpx are not supported');
+		).rejects.toThrow('.gp3, .gp4 and .gp5 are not supported');
 	});
 
 	it('rejects an unrelated ZIP archive', async () => {
