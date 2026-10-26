@@ -143,11 +143,14 @@ harmonics, dead and ghost notes, palm mutes and let ring round-trip as
 MusicXML technicals. Hammer-ons and pull-offs (Guitar Pro picks which from the
 pitch direction) round-trip as `<hammer-on>`/`<pull-off>` with a slur, shift
 slides as `<slide>`, legato slides as `<slide>` with a slur, and slides into and
-out of a note as `<scoop>`, `<plop>`, `<doit>` and `<falloff>`; a slur on export
-is kept only when it carries one of these. Slight and wide vibrato round-trip as
-a `<wavy-line>` over each note (a wide one names the `wiggleVibratoWide`
-glyph). Unsupported techniques and annotations, such as glissandos and trills,
-throw by default. To deliberately
+out of a note as `<scoop>`, `<plop>`, `<doit>` and `<falloff>`. A glissando
+exports as the slide it plays as, so it reads back as a `<slide>`. Other slurs
+round-trip as Guitar Pro's beat legato, which slurs a beat to the next one in
+its voice: a slur must join two notes of one voice and share no note with
+another slur, which Guitar Pro would merge it with. Slight and wide vibrato
+round-trip as a `<wavy-line>` over each note (a wide one names the
+`wiggleVibratoWide` glyph). Unsupported techniques and annotations, such as
+trills, throw by default. To deliberately
 discard unsupported annotations, pass `{ unsupported: 'omit' }` as the last
 argument to either parser or serializer methods, and add
 `onUnsupported: (feature) => ...` to hear each feature it drops. Invalid core

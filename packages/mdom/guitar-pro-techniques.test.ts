@@ -198,16 +198,87 @@ describe('Guitar Pro note techniques', () => {
 		);
 	});
 
-	it('refuses a slur that no legato technique carries', async () => {
+	it('round trips plain slurs through GPIF beat legato', async () => {
+		const document = MDocument.empty();
+		const part = document.score.addPart({ name: 'Guitar' });
+		const first = part.addMeasure();
+		first.setTime({ beats: 4, beatType: 4 });
+		first.setClef({ sign: 'G', line: 2 });
+		const second = part.addMeasure();
+		const notes = [
+			...['C', 'D', 'E', 'F'].map((step) =>
+				first
+					.getOrCreateVoice('1')
+					.addNote({ step, octave: 4, type: 'quarter' }),
+			),
+			...['G', 'A'].map((step) =>
+				second.getOrCreateVoice('1').addNote({ step, octave: 4, type: 'half' }),
+			),
+		];
+		notes[0]!.addSlur(notes[1]!);
+		// Over three beats and across the barline.
+		notes[2]!.addSlur(notes[4]!);
+
+		const bytes = await new GuitarProSerializer().serializeToBytes(document);
+		const restored = (
+			await parser.parseFromBytes(bytes)
+		).score.parts[0]!.measures.flatMap((measure) => measure.notes);
+
+		expect(restored.map((note) => note.slurs.length)).toEqual([
+			1, 1, 1, 0, 1, 0,
+		]);
+		expect(restored[0]!.slurs[0]!.partner?.note).toBe(restored[1]!);
+		expect(restored[2]!.slurs[0]!.partner?.note).toBe(restored[4]!);
+		expect(restored.flatMap((note) => note.hammerOns)).toEqual([]);
+	});
+
+	it('refuses slurs Guitar Pro would merge or cannot join', async () => {
 		const document = MDocument.empty();
 		const measure = document.score.addPart({ name: 'Guitar' }).addMeasure();
-		const voice = measure.getOrCreateVoice('v');
-		const [first, second] = ['C', 'D'].map((step) =>
-			voice.addNote({ step, octave: 4, type: 'half' }),
+		const voice = measure.getOrCreateVoice('1');
+		const [first, second, third] = ['C', 'D', 'E'].map((step) =>
+			voice.addNote({ step, octave: 4, type: 'quarter' }),
 		);
 		first!.addSlur(second!);
-		await expect(
-			new GuitarProSerializer().serializeToBytes(document),
-		).rejects.toThrow('<slur>');
+		second!.addSlur(third!);
+		const lower = measure.getOrCreateVoice('2');
+		first!.addSlur(lower.addNote({ step: 'C', octave: 3, type: 'whole' }));
+
+		const omitted: string[] = [];
+		const bytes = await new GuitarProSerializer().serializeToBytes(document, {
+			unsupported: 'omit',
+			onUnsupported: (feature) => omitted.push(feature),
+		});
+		expect(omitted.sort()).toEqual([
+			'slurs that do not join later notes of one voice',
+			'slurs that share a note',
+		]);
+		const restored = (await parser.parseFromBytes(bytes)).score.parts[0]!
+			.measures[0]!.notes;
+		expect(restored[0]!.slurs[0]!.partner?.note).toBe(restored[1]!);
+		expect(restored.flatMap((note) => note.slurs).length).toBe(2);
+	});
+
+	it('exports a glissando as the slide it plays as', async () => {
+		const document = MDocument.empty();
+		const measure = document.score.addPart({ name: 'Guitar' }).addMeasure();
+		measure.setTime({ beats: 4, beatType: 4 });
+		measure.setClef({ sign: 'G', line: 2 });
+		const voice = measure.getOrCreateVoice('v');
+		const [c, g, e] = ['C', 'G', 'E'].map((step) =>
+			voice.addNote({ step, octave: 4, type: 'quarter' }),
+		) as [Note, Note, Note];
+		c.addGlissando(g, { lineType: 'wavy' });
+		g.addGlissando(e);
+		g.addSlur(e);
+
+		const bytes = await new GuitarProSerializer().serializeToBytes(document);
+		const restored = (await parser.parseFromBytes(bytes)).score.parts[0]!
+			.measures[0]!.notes;
+
+		expect(restored[0]!.slides[0]!.partner?.note).toBe(restored[1]!);
+		expect(restored[0]!.slurs).toEqual([]);
+		expect(restored[1]!.slides[1]!.partner?.note).toBe(restored[2]!);
+		expect(restored[1]!.slurs.length).toBe(1);
 	});
 });

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // GPIF field encoding adapted from alphaTab's GpifWriter. See THIRD_PARTY.md.
 // Copyright © 2025 Daniel Kuschny and Contributors.
-import { groupChords } from './chord';
+import { type Chord, groupChords } from './chord';
 import { Direction } from './direction';
 import { GuitarProBeatEffectWriter } from './guitar-pro-beat-effects';
 import { writeDiagram } from './guitar-pro-diagrams';
@@ -30,7 +30,6 @@ import type { Measure } from './measure';
 import type { Note } from './note';
 import type { Part } from './part';
 import { childIndexIn, divisionsBackFrom } from './signature';
-import { Slur } from './slur';
 import type { Sound } from './sound';
 import { onsetOf } from './timeline';
 
@@ -120,6 +119,11 @@ export class GuitarProScoreWriter {
 	};
 	/** The GPIF vibrato (Slight or Wide) of each note a wavy line covers. */
 	private readonly vibratos = new Map<Note, string>();
+	/** The GPIF Legato of each chord, by its lead, that a slur no legato technique carries runs over. */
+	private readonly legatos = new Map<
+		Note,
+		{ origin: boolean; destination: boolean }
+	>();
 	/** Each measure's MasterBar, by measure index. */
 	private readonly masterBars: MElement[] = [];
 	private readonly directionIndex = new GuitarProDirectionIndex((feature) =>
@@ -141,6 +145,7 @@ export class GuitarProScoreWriter {
 		this.checkAnnotations(document.score);
 		for (const part of parts) {
 			this.collectVibratos(part);
+			this.collectSlurs(part);
 		}
 		X.add(this.root, 'GPVersion', '7');
 		X.add(this.root, 'GPRevision', '12025');
@@ -894,6 +899,15 @@ export class GuitarProScoreWriter {
 						if (notes.length) {
 							X.add(beat, 'Notes', notes.join(' '));
 						}
+						const legato = this.legatos.get(lead);
+						// The later pieces of a split chord carry its slur on to the next one.
+						const destination = index ? legato?.origin : legato?.destination;
+						if (legato && (legato.origin || destination)) {
+							X.add(beat, 'Legato', undefined, {
+								origin: String(legato.origin),
+								destination: String(destination),
+							});
+						}
 						if (index === 0) {
 							this.whammy(beat, lead);
 							this.directions(beat, lead);
@@ -1433,12 +1447,14 @@ export class GuitarProScoreWriter {
 			}
 		}
 		let slide = 0;
-		for (const marker of source.slides) {
+		// Guitar Pro has no glissando of its own, so a glissando writes as the slide it plays as.
+		const slides = [
+			...source.slides.filter((marker) => marker.slideType === 'start'),
+			...source.glissandos.filter((marker) => marker.glissandoType === 'start'),
+		];
+		for (const marker of slides) {
 			const partner = marker.partner?.note;
-			if (
-				marker.slideType === 'start' &&
-				this.legatoPartner(source, partner, true)
-			) {
+			if (this.legatoPartner(source, partner, true)) {
 				const slurred = source.slurs.some(
 					(slur) => slur.partner?.note === partner,
 				);
@@ -1485,6 +1501,65 @@ export class GuitarProScoreWriter {
 			return false;
 		}
 		return true;
+	}
+	/**
+	 * Mark the beats each slur runs over that no hammer-on, pull-off, slide or
+	 * glissando carries: GPIF slurs a beat whose Legato is an origin to the next
+	 * beat of its voice, so the slur must join two notes of one voice and share
+	 * no beat with another slur, which would merge with it.
+	 */
+	private collectSlurs(part: Part): void {
+		const lines = new Map<string, Chord[]>();
+		const chords = new Map<Note, { line: Chord[]; index: number }>();
+		for (const measure of part.measures) {
+			const voices = new Map<string, Note[]>();
+			for (const note of measure.notes) {
+				const key = `${note.staff}:${note.voice}`;
+				voices.set(key, [...(voices.get(key) ?? []), note]);
+			}
+			for (const [key, notes] of voices) {
+				const line = lines.get(key) ?? [];
+				lines.set(key, line);
+				for (const chord of groupChords(notes)) {
+					for (const note of chord.notes) {
+						chords.set(note, { line, index: line.length });
+					}
+					line.push(chord);
+				}
+			}
+		}
+		for (const [note, from] of chords) {
+			for (const slur of note.slurs) {
+				const end = slur.partner?.note;
+				const carried = [
+					...note.hammerOns,
+					...note.pullOffs,
+					...note.slides,
+					...note.glissandos,
+				].some((marker) => end && marker.partner?.note === end);
+				if (slur.getAttribute('type') !== 'start' || carried) {
+					continue;
+				}
+				const to = end && chords.get(end);
+				if (!to || to.line !== from.line || to.index <= from.index) {
+					this.values.unsupported(
+						'slurs that do not join later notes of one voice',
+					);
+					continue;
+				}
+				const covered = from.line.slice(from.index, to.index + 1);
+				if (covered.some((chord) => this.legatos.has(chord.lead))) {
+					this.values.unsupported('slurs that share a note');
+					continue;
+				}
+				for (const [index, chord] of covered.entries()) {
+					this.legatos.set(chord.lead, {
+						origin: index < covered.length - 1,
+						destination: index > 0,
+					});
+				}
+			}
+		}
 	}
 	/** Mark every note of a wavy line's voice, from its start to its stop, with its vibrato. */
 	private collectVibratos(part: Part): void {
@@ -1566,7 +1641,6 @@ export class GuitarProScoreWriter {
 			return;
 		}
 		const unsupported = new Set([
-			'glissando',
 			'harmony',
 			'fingering',
 			'pluck',
@@ -1602,18 +1676,6 @@ export class GuitarProScoreWriter {
 				this.values.unsupported(`<tremolo> ${type}`);
 			}
 		}
-		if (element instanceof Slur) {
-			// Guitar Pro draws the slur of a hammer-on, pull-off or legato slide itself.
-			const partner = element.partner?.note;
-			const joined = [
-				...element.note.hammerOns,
-				...element.note.pullOffs,
-				...element.note.slides,
-			].some((marker) => partner && marker.partner?.note === partner);
-			if (!joined) {
-				this.values.unsupported('<slur>');
-			}
-		}
 		if (element.tag === 'articulations') {
 			for (const mark of element.childrenOfType(MElement)) {
 				if (
@@ -1639,6 +1701,7 @@ export class GuitarProScoreWriter {
 				'ornaments',
 				'slur',
 				'slide',
+				'glissando',
 			],
 			ornaments: ['tremolo', 'wavy-line'],
 			technical: [

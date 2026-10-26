@@ -134,6 +134,8 @@ export class GuitarProDocumentReader {
 	private effects: GuitarProBeatEffectReader;
 	/** Notes that start a hammer-on, pull-off or slide, by their GPIF source, until the next note on their string arrives. */
 	private readonly legatoOrigins = new Map<Note, MElement>();
+	/** Each voice's open slur, from the first note of a run of GPIF Legato origin beats to the latest note in it. */
+	private readonly slurChains = new Map<string, { first: Note; last: Note }>();
 	/**
 	 * The part's ties, legato marks and vibratos, added once its notes are all in
 	 * place: each add then extends the part's spanner number index rather than
@@ -405,6 +407,9 @@ export class GuitarProDocumentReader {
 				) {
 					measure.setAttribute('implicit', 'yes');
 				}
+			}
+			for (const voice of [...this.slurChains.keys()]) {
+				this.closeSlur(voice);
 			}
 			for (const add of this.spans) {
 				add();
@@ -945,8 +950,41 @@ export class GuitarProDocumentReader {
 		}
 		if (beat) {
 			this.effects.read(beat, chord, voice);
+			this.readSlur(beat, chord[0]!, voice);
 		}
 		return duration;
+	}
+	/**
+	 * Follow a GPIF slur: a beat whose Legato is an origin slurs to the next beat
+	 * of its voice, so a run of them is one slur from the run's first note to the
+	 * beat after it. A rest ends the run at the note before it.
+	 */
+	private readSlur(beat: MElement, lead: Note, voice: string): void {
+		const origin = beat.child('Legato')?.getAttribute('origin') === 'true';
+		const chain = this.slurChains.get(voice);
+		if (chain && !lead.isRest) {
+			chain.last = lead;
+		}
+		if (chain && (!origin || lead.isRest)) {
+			this.closeSlur(voice);
+		}
+		if (origin && !lead.isRest && !this.slurChains.has(voice)) {
+			this.slurChains.set(voice, { first: lead, last: lead });
+		}
+	}
+	private closeSlur(voice: string): void {
+		const { first, last } = this.slurChains.get(voice)!;
+		this.slurChains.delete(voice);
+		if (first === last) {
+			this.values.unsupported('slurs with no following note');
+		} else {
+			// A hammer-on, pull-off or legato slide over the same pair already slurs it.
+			this.spans.push(() => {
+				if (!first.slurs.some((slur) => slur.partner?.note === last)) {
+					first.addSlur(last);
+				}
+			});
+		}
 	}
 	private chord(staff: StaffContext, id: string): HarmonySpec | null {
 		if (!staff.chords.has(id)) {
@@ -1269,7 +1307,6 @@ export class GuitarProDocumentReader {
 			'Hairpin',
 			'Brush',
 			'Lyrics',
-			'Legato',
 			'Fermata',
 			'Slap',
 			'Pop',
