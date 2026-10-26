@@ -13,6 +13,7 @@ import { Part } from './part';
 import { Pitch } from './pitch';
 import {
 	colorOf,
+	type LineType,
 	type Position,
 	type PositionSpec,
 	positionOf,
@@ -878,6 +879,88 @@ export class Note extends MElement {
 		this.ties.find((tie) => tie.partner?.note === other)?.unlink();
 	}
 
+	/** Slide this note to `other` (a fretboard slide), with an optional `line-type` stroke. */
+	addSlide(other: Note, spec: { lineType?: LineType } = {}): Slide {
+		return this.spanTo(other, Slide, (note) => note.slides, spec.lineType);
+	}
+
+	/** Remove the slide between this note and `other`, either direction; no-op when none. */
+	removeSlide(other: Note): void {
+		this.slides.find((slide) => slide.partner?.note === other)?.unlink();
+	}
+
+	/** Glissando from this note to `other`, with an optional `line-type` stroke. */
+	addGlissando(other: Note, spec: { lineType?: LineType } = {}): Glissando {
+		return this.spanTo(
+			other,
+			Glissando,
+			(note) => note.glissandos,
+			spec.lineType,
+		);
+	}
+
+	/** Remove the glissando between this note and `other`, either direction; no-op when none. */
+	removeGlissando(other: Note): void {
+		this.glissandos
+			.find((glissando) => glissando.partner?.note === other)
+			?.unlink();
+	}
+
+	/** Hammer on from this note to `other`; the start carries the conventional "H" text. */
+	addHammerOn(other: Note): HammerOn {
+		const start = this.spanTo(
+			other,
+			HammerOn,
+			(note) => note.hammerOns,
+			undefined,
+			'technical',
+		);
+		start.setText('H');
+		return start;
+	}
+
+	/** Remove the hammer-on between this note and `other`, either direction; no-op when none. */
+	removeHammerOn(other: Note): void {
+		this.hammerOns.find((marker) => marker.partner?.note === other)?.unlink();
+	}
+
+	/** Pull off from this note to `other`; the start carries the conventional "P" text. */
+	addPullOff(other: Note): PullOff {
+		const start = this.spanTo(
+			other,
+			PullOff,
+			(note) => note.pullOffs,
+			undefined,
+			'technical',
+		);
+		start.setText('P');
+		return start;
+	}
+
+	/** Remove the pull-off between this note and `other`, either direction; no-op when none. */
+	removePullOff(other: Note): void {
+		this.pullOffs.find((marker) => marker.partner?.note === other)?.unlink();
+	}
+
+	/**
+	 * Vibrato as a wavy line from this note to `other`; pass the same note for a
+	 * vibrato over one note. Placed in `<notations><ornaments>`.
+	 */
+	addVibrato(other: Note): WavyLine {
+		return this.spanTo(
+			other,
+			WavyLine,
+			(note) => note.wavyLines,
+			undefined,
+			'ornaments',
+		);
+	}
+
+	/** Remove the vibrato from this note to `other`, either direction; no-op when none. */
+	removeVibrato(other: Note): void {
+		this.wavyLines.find((line) => line.partner?.note === other)?.unlink();
+	}
+
 	/**
 	 * Replace this note's pitch in place (or give a rest one). The duration is
 	 * unchanged, so the timeline doesn't move and any attached slur/tie/beam — which
@@ -1005,19 +1088,42 @@ export class Note extends MElement {
 		other: Note,
 		Marker: new () => T,
 		existing: (note: Note) => T[],
+		lineType?: LineType,
+		block?: 'technical' | 'ornaments',
 	): T {
 		const number = nextNumber(this, existing);
 		const start = new Marker();
 		start.setAttribute('type', 'start');
 		start.setAttribute('number', number);
-		this.notations().append(start);
+		if (lineType !== undefined) {
+			start.setAttribute('line-type', lineType);
+		}
+		this.blockOf(block).append(start);
 
 		const stop = new Marker();
 		stop.setAttribute('type', 'stop');
 		stop.setAttribute('number', number);
-		other.notations().append(stop);
+		other.blockOf(block).append(stop);
 
 		return start;
+	}
+
+	/** The `<notations>` child markers of this kind live under: itself, or a technical/ornaments block. */
+	private blockOf(block?: 'technical' | 'ornaments'): MElement {
+		if (block === 'technical') {
+			return this.technical();
+		}
+		if (block === 'ornaments') {
+			const notations = this.notations();
+			const existing = notations.childrenNamed('ornaments')[0];
+			if (existing) {
+				return existing;
+			}
+			const ornaments = new MElement('ornaments');
+			notations.append(ornaments);
+			return ornaments;
+		}
+		return this.notations();
 	}
 
 	/** Get or create this note's `<notations>` child. */

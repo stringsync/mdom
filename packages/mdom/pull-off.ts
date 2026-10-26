@@ -48,6 +48,11 @@ export class PullOff extends MElement {
 		return new Spanner(this.spec()).membersOf(this);
 	}
 
+	/** Remove this marker and its partner so neither end dangles. */
+	unlink(): void {
+		new Spanner(this.spec()).removeSpan(this);
+	}
+
 	/** Onset of this marker's note within its measure, in beats. */
 	get measureBeat(): number | null {
 		return this.note.measureBeat;
