@@ -307,11 +307,14 @@ describe('convert', () => {
 		files.contents.set(
 			'/scores/song.musicxml',
 			new TextEncoder().encode(
-				xml.replace('</note>', '<lyric><text>la</text></lyric></note>'),
+				xml.replace(
+					'</note>',
+					'<harmony><root><root-step>C</root-step></root></harmony></note>',
+				),
 			),
 		);
 
-		await expect(convert(opts)).rejects.toThrow('<lyric>');
+		await expect(convert(opts)).rejects.toThrow('<harmony>');
 		expect(files.contents.has('/scores/song.gp')).toBe(false);
 	});
 
@@ -319,7 +322,10 @@ describe('convert', () => {
 		files.contents.set(
 			'/scores/song.musicxml',
 			new TextEncoder().encode(
-				xml.replace('</note>', '<lyric><text>la</text></lyric></note>'),
+				xml.replace(
+					'</note>',
+					'<harmony><root><root-step>C</root-step></root></harmony></note>',
+				),
 			),
 		);
 		await convert({ ...opts, omitUnsupported: true });
@@ -328,6 +334,6 @@ describe('convert', () => {
 		);
 
 		expect(doc.score.parts[0]!.measures[0]!.notes[0]!.pitch?.step).toBe('C');
-		expect(doc.score.parts[0]!.measures[0]!.notes[0]!.lyrics).toEqual([]);
+		expect(doc.score.parts[0]!.measures[0]!.notes.length).toBe(1);
 	});
 });

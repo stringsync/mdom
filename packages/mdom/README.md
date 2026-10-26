@@ -82,6 +82,9 @@ The first supported subset includes:
   pickups, repeats, and double barlines.
 - Title, composer, lyricist, artist, copyright, part names, MIDI program/channel,
   tempo (including mid-measure and gradual changes), basic dynamics, text, staccato, and accents.
+- Lyrics: each track's lyric lines become verses on its first staff's first voice, one syllable per sounded note (rests, chord extras, grace notes and tie
+  continuations are skipped). Text splits on spaces and `-`, `+` elides words on
+  one beat, `_` is a space inside a syllable, and a lone `-` skips a beat.
 
 This is a musical conversion, not a lossless file round trip. Layout, engraving,
 Guitar Pro application settings, and metadata outside the list above are not
@@ -99,7 +102,7 @@ playback while tablature stays hidden. Import exposes string/fret positions and
 tuning as MusicXML tablature only for staves with tablature enabled in the file.
 
 Unsupported techniques and annotations, such as bends, harmonics, slides,
-lyrics, chord diagrams, and alternate endings, throw by default. To deliberately
+chord diagrams, and alternate endings, throw by default. To deliberately
 discard unsupported annotations, pass `{ unsupported: 'omit' }` as the last
 argument to either parser or serializer methods, and add
 `onUnsupported: (feature) => ...` to hear each feature it drops. Invalid core

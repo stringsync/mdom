@@ -6,7 +6,7 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 | File | Result |
 | --- | --- |
 | \`anacrusis.gp\` | ok |
-| \`beat-lyrics.gp\` | omits \`beat effects or annotations\`, \`lyrics\` |
+| \`beat-lyrics.gp\` | omits \`beat effects or annotations\` |
 | \`beat-tempo-change.gp\` | ok |
 | \`bends.gp\` | omits \`note techniques\` |
 | \`chords.gp\` | omits \`beat effects or annotations\` |
@@ -56,31 +56,31 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 | \`note techniques\` | 10 |
 | \`beat effects or annotations\` | 6 |
 | \`alternate endings, jumps, free time or swing\` | 3 |
-| \`lyrics\` | 2 |
 | \`instrument changes or track automation\` | 1 |
+| \`lyrics\` | 1 |
 | \`octave clefs\` | 1 |"
 `;
 
 exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpus 1`] = `
-"## Export: 69 of 199 ok
+"## Export: 81 of 199 ok
 
 | File | Result |
 | --- | --- |
-| \`accidentals.xml\` | omits \`<lyric>\`; error: Invalid MIDI pitch: 67.5; expected an integer from 0 to 127 |
+| \`accidentals.xml\` | error: Invalid MIDI pitch: 67.5; expected an integer from 0 to 127 |
 | \`actor_prelude_sample.xml\` | omits \`<down-bow>\`, \`<notehead>\`, \`<ornaments>\`, \`<other-direction>\`, \`<rehearsal>\`, \`<slur>\`, \`<transpose>\`, \`<tremolo>\`, \`<unpitched>\`, \`<up-bow>\`, \`<wedge>\`; error: Guitar Pro export requires a supported note type, got null |
 | \`aloof_gp7.musicxml\` | omits \`<dynamics>\`, \`<hammer-on>\`, \`<notehead>\`, \`<slide>\`, \`<slur>\`, \`<transpose>\`; error: Every pitched note on a Guitar Pro tablature staff needs a string and fret |
 | \`aloof_gp8.musicxml\` | omits \`<hammer-on>\`, \`<notehead>\`, \`<slide>\`, \`<slur>\`, \`<transpose>\`; error: Guitar Pro ties must connect matching pitches in the same voice and staff |
 | \`chopin_prelude.xml\` | omits \`<slur>\` |
 | \`composer_one_line.xml\` | ok |
 | \`concert_score_and_for_part.xml\` | omits \`<transpose>\` |
-| \`dorico_4_notations.musicxml\` | omits \`<lyric>\`, \`<slur>\` |
+| \`dorico_4_notations.musicxml\` | omits \`<slur>\` |
 | \`drum_tuplet_beams_measure.xml\` | omits \`<other-notation>\`, \`<unpitched>\`; error: Unsupported Guitar Pro clef: percussionnull |
-| \`flat_la_cucaracha.musicxml\` | omits \`<harmony>\`, \`<lyric>\` |
+| \`flat_la_cucaracha.musicxml\` | omits \`<harmony>\` |
 | \`hello_world.xml\` | ok |
 | \`invalid_root.xml\` | error: Unmatched closing tag: score-partwise |
 | \`lilypond/01a-Pitches-Pitches.xml\` | ok |
 | \`lilypond/01b-Pitches-Intervals.xml\` | ok |
-| \`lilypond/01c-Pitches-NoVoiceElement.xml\` | omits \`<lyric>\` |
+| \`lilypond/01c-Pitches-NoVoiceElement.xml\` | ok |
 | \`lilypond/01d-Pitches-Microtones.xml\` | error: Invalid MIDI pitch: 58.5; expected an integer from 0 to 127 |
 | \`lilypond/01e-Pitches-ParenthesizedAccidentals.xml\` | ok |
 | \`lilypond/01f-Pitches-ParenthesizedMicrotoneAccidentals.xml\` | error: Invalid MIDI pitch: 61.5; expected an integer from 0 to 127 |
@@ -107,7 +107,7 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/12a-Clefs.xml\` | error: Unsupported Guitar Pro clef: percussionnull |
 | \`lilypond/12b-Clefs-NoKeyOrClef.xml\` | ok |
 | \`lilypond/13a-KeySignatures.xml\` | error: Invalid key fifths: -11; expected an integer from -7 to 7 |
-| \`lilypond/13b-KeySignatures-ChurchModes.xml\` | omits \`<lyric>\`, \`different keys across staves or parts\`, \`key mode locrian\`, \`key mode phrygian\`, \`mid-measure key or time changes\` |
+| \`lilypond/13b-KeySignatures-ChurchModes.xml\` | omits \`different keys across staves or parts\`, \`key mode locrian\`, \`key mode phrygian\`, \`mid-measure key or time changes\` |
 | \`lilypond/13c-KeySignatures-NonTraditional.xml\` | ok |
 | \`lilypond/13d-KeySignatures-Microtones.xml\` | ok |
 | \`lilypond/13e-KeySignatures-Cancel.xml\` | ok |
@@ -122,9 +122,9 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/21g-Chords-Tremolos.xml\` | omits \`<ornaments>\`, \`<tremolo>\` |
 | \`lilypond/21h-Chord-Accidentals.xml\` | ok |
 | \`lilypond/21i-Chord-DifferentVoices.xml\` | ok |
-| \`lilypond/22a-Noteheads.xml\` | omits \`<lyric>\`, \`<notehead>\` |
-| \`lilypond/22b-Staff-Notestyles.xml\` | omits \`<lyric>\` |
-| \`lilypond/22c-Noteheads-Chords.xml\` | omits \`<lyric>\`, \`<notehead>\` |
+| \`lilypond/22a-Noteheads.xml\` | omits \`<notehead>\` |
+| \`lilypond/22b-Staff-Notestyles.xml\` | ok |
+| \`lilypond/22c-Noteheads-Chords.xml\` | omits \`<notehead>\` |
 | \`lilypond/22d-Parenthesized-Noteheads.xml\` | omits \`<notehead>\` |
 | \`lilypond/23a-Tuplets.xml\` | ok |
 | \`lilypond/23b-Tuplets-Styles.xml\` | ok |
@@ -140,15 +140,15 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/24f-GraceNote-Slur.xml\` | omits \`<slur>\` |
 | \`lilypond/24g-GraceNote-Dynamics.xml\` | omits \`<wedge>\` |
 | \`lilypond/24h-GraceNote-Simultaneous.xml\` | omits \`dynamic fp\` |
-| \`lilypond/31a-Directions.xml\` | omits \`<accordion-registration>\`, \`<bracket>\`, \`<coda>\`, \`<damp-all>\`, \`<damp>\`, \`<dashes>\`, \`<eyeglasses>\`, \`<harp-pedals>\`, \`<image>\`, \`<lyric>\`, \`<octave-shift>\`, \`<pedal>\`, \`<percussion>\`, \`<principal-voice>\`, \`<rehearsal>\`, \`<scordatura>\`, \`<segno>\`, \`<staff-divide>\`, \`<string-mute>\`, \`<symbol>\`, \`<wedge>\`, \`dynamic ffff\`, \`dynamic fffff\`, \`dynamic ffffff\`, \`dynamic ffz\`, \`dynamic fp\`, \`dynamic fz\`, \`dynamic pppp\`, \`dynamic ppppp\`, \`dynamic pppppp\`, \`dynamic rf\`, \`dynamic rfz\`, \`dynamic sf\`, \`dynamic sffz\`, \`dynamic sfp\`, \`dynamic sfpp\`, \`dynamic sfz\` |
+| \`lilypond/31a-Directions.xml\` | omits \`<accordion-registration>\`, \`<bracket>\`, \`<coda>\`, \`<damp-all>\`, \`<damp>\`, \`<dashes>\`, \`<eyeglasses>\`, \`<harp-pedals>\`, \`<image>\`, \`<octave-shift>\`, \`<pedal>\`, \`<percussion>\`, \`<principal-voice>\`, \`<rehearsal>\`, \`<scordatura>\`, \`<segno>\`, \`<staff-divide>\`, \`<string-mute>\`, \`<symbol>\`, \`<wedge>\`, \`dynamic ffff\`, \`dynamic fffff\`, \`dynamic ffffff\`, \`dynamic ffz\`, \`dynamic fp\`, \`dynamic fz\`, \`dynamic pppp\`, \`dynamic ppppp\`, \`dynamic pppppp\`, \`dynamic rf\`, \`dynamic rfz\`, \`dynamic sf\`, \`dynamic sffz\`, \`dynamic sfp\`, \`dynamic sfpp\`, \`dynamic sfz\` |
 | \`lilypond/31b-Directions-Order.xml\` | omits \`<wedge>\` |
 | \`lilypond/31c-MetronomeMarks.xml\` | omits \`non-numeric or compound metronome marks\` |
-| \`lilypond/31d-Directions-Compounds.xml\` | omits \`<coda>\`, \`<dashes>\`, \`<lyric>\`, \`<rehearsal>\`, \`<segno>\`, \`<wedge>\`; error: Unsupported metronome beat unit: long |
+| \`lilypond/31d-Directions-Compounds.xml\` | omits \`<coda>\`, \`<dashes>\`, \`<rehearsal>\`, \`<segno>\`, \`<wedge>\`; error: Unsupported metronome beat unit: long |
 | \`lilypond/31f-Direction-Multiline-Compounds.xml\` | ok |
-| \`lilypond/32a-Notations.xml\` | omits \`<accidental-mark>\`, \`<arpeggiate>\`, \`<bend>\`, \`<breath-mark>\`, \`<caesura>\`, \`<detached-legato>\`, \`<doit>\`, \`<double-tongue>\`, \`<down-bow>\`, \`<dynamics>\`, \`<falloff>\`, \`<fermata>\`, \`<fingering>\`, \`<fingernails>\`, \`<hammer-on>\`, \`<harmonic>\`, \`<heel>\`, \`<lyric>\`, \`<non-arpeggiate>\`, \`<open-string>\`, \`<ornaments>\`, \`<plop>\`, \`<pluck>\`, \`<pull-off>\`, \`<scoop>\`, \`<snap-pizzicato>\`, \`<soft-accent>\`, \`<spiccato>\`, \`<staccatissimo>\`, \`<stopped>\`, \`<stress>\`, \`<tap>\`, \`<tenuto>\`, \`<thumb-position>\`, \`<toe>\`, \`<tremolo>\`, \`<triple-tongue>\`, \`<unstress>\`, \`<up-bow>\`; error: Guitar Pro tablature requires tuning, string and fret |
+| \`lilypond/32a-Notations.xml\` | omits \`<accidental-mark>\`, \`<arpeggiate>\`, \`<bend>\`, \`<breath-mark>\`, \`<caesura>\`, \`<detached-legato>\`, \`<doit>\`, \`<double-tongue>\`, \`<down-bow>\`, \`<dynamics>\`, \`<falloff>\`, \`<fermata>\`, \`<fingering>\`, \`<fingernails>\`, \`<hammer-on>\`, \`<harmonic>\`, \`<heel>\`, \`<non-arpeggiate>\`, \`<open-string>\`, \`<ornaments>\`, \`<plop>\`, \`<pluck>\`, \`<pull-off>\`, \`<scoop>\`, \`<snap-pizzicato>\`, \`<soft-accent>\`, \`<spiccato>\`, \`<staccatissimo>\`, \`<stopped>\`, \`<stress>\`, \`<tap>\`, \`<tenuto>\`, \`<thumb-position>\`, \`<toe>\`, \`<tremolo>\`, \`<triple-tongue>\`, \`<unstress>\`, \`<up-bow>\`; error: Guitar Pro tablature requires tuning, string and fret |
 | \`lilypond/32b-Articulations-Texts.xml\` | ok |
 | \`lilypond/32c-MultipleNotationChildren.xml\` | ok |
-| \`lilypond/32d-Arpeggio.xml\` | omits \`<arpeggiate>\`, \`<lyric>\`, \`<non-arpeggiate>\` |
+| \`lilypond/32d-Arpeggio.xml\` | omits \`<arpeggiate>\`, \`<non-arpeggiate>\` |
 | \`lilypond/32e-Arpeggios-Cross.xml\` | omits \`<arpeggiate>\` |
 | \`lilypond/33a-Spanners.xml\` | omits \`<bracket>\`, \`<dashes>\`, \`<glissando>\`, \`<hammer-on>\`, \`<octave-shift>\`, \`<ornaments>\`, \`<pedal>\`, \`<pull-off>\`, \`<slide>\`, \`<slur>\`, \`<tremolo>\`, \`<wedge>\` |
 | \`lilypond/33b-Spanners-Tie.xml\` | ok |
@@ -158,14 +158,14 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/33e-Spanners-OctaveShifts-InvalidSize.xml\` | omits \`<octave-shift>\` |
 | \`lilypond/33f-Trill-EndingOnGraceNote.xml\` | omits \`<ornaments>\`, \`<slur>\` |
 | \`lilypond/33g-Slur-ChordedNotes.xml\` | omits \`<slur>\` |
-| \`lilypond/33h-Spanners-Glissando.xml\` | omits \`<glissando>\`, \`<lyric>\`, \`<slide>\` |
-| \`lilypond/33i-Ties-NotEnded.xml\` | omits \`<lyric>\`; error: Guitar Pro ties must connect matching pitches in the same voice and staff |
+| \`lilypond/33h-Spanners-Glissando.xml\` | omits \`<glissando>\`, \`<slide>\` |
+| \`lilypond/33i-Ties-NotEnded.xml\` | error: Guitar Pro ties must connect matching pitches in the same voice and staff |
 | \`lilypond/33j-Beams-Tremolos.xml\` | omits \`<ornaments>\`, \`<tremolo>\` |
 | \`lilypond/33k-Tie-Types.xml\` | error: Guitar Pro ties must connect matching pitches in the same voice and staff |
 | \`lilypond/34a-Print-Object-Spanners.xml\` | omits \`<glissando>\`, \`<hammer-on>\`, \`<ornaments>\`, \`<pull-off>\`, \`<slide>\`, \`<slur>\`, \`<tremolo>\` |
-| \`lilypond/34b-Colors.xml\` | omits \`<arpeggiate>\`, \`<bracket>\`, \`<breath-mark>\`, \`<dashes>\`, \`<down-bow>\`, \`<ending>\`, \`<fingering>\`, \`<glissando>\`, \`<lyric>\`, \`<notehead>\`, \`<octave-shift>\`, \`<ornaments>\`, \`<pedal>\`, \`<pluck>\`, \`<rehearsal>\`, \`<slur>\`, \`<tremolo>\`, \`<unpitched>\`, \`<wedge>\`, \`mid-measure key or time changes\`; error: Guitar Pro export requires pitched notes; percussion is not supported |
-| \`lilypond/34c-Font-Size.xml\` | omits \`<breath-mark>\`, \`<dashes>\`, \`<down-bow>\`, \`<fingering>\`, \`<lyric>\`, \`<notehead>\`, \`<octave-shift>\`, \`<ornaments>\`, \`<pedal>\`, \`<pluck>\`, \`<rehearsal>\`, \`<unpitched>\`, \`mid-measure clef changes\`, \`mid-measure key or time changes\`; error: Guitar Pro export requires pitched notes; percussion is not supported |
-| \`lilypond/34d-Note-Attributes.xml\` | omits \`<lyric>\` |
+| \`lilypond/34b-Colors.xml\` | omits \`<arpeggiate>\`, \`<bracket>\`, \`<breath-mark>\`, \`<dashes>\`, \`<down-bow>\`, \`<ending>\`, \`<fingering>\`, \`<glissando>\`, \`<notehead>\`, \`<octave-shift>\`, \`<ornaments>\`, \`<pedal>\`, \`<pluck>\`, \`<rehearsal>\`, \`<slur>\`, \`<tremolo>\`, \`<unpitched>\`, \`<wedge>\`, \`mid-measure key or time changes\`; error: Guitar Pro export requires pitched notes; percussion is not supported |
+| \`lilypond/34c-Font-Size.xml\` | omits \`<breath-mark>\`, \`<dashes>\`, \`<down-bow>\`, \`<fingering>\`, \`<notehead>\`, \`<octave-shift>\`, \`<ornaments>\`, \`<pedal>\`, \`<pluck>\`, \`<rehearsal>\`, \`<unpitched>\`, \`mid-measure clef changes\`, \`mid-measure key or time changes\`; error: Guitar Pro export requires pitched notes; percussion is not supported |
+| \`lilypond/34d-Note-Attributes.xml\` | ok |
 | \`lilypond/41a-MultiParts-Partorder.xml\` | ok |
 | \`lilypond/41b-MultiParts-MoreThan10.xml\` | ok |
 | \`lilypond/41c-StaffGroups.xml\` | omits \`<transpose>\`, \`<unpitched>\`, \`different keys across staves or parts\`, \`octave clefs\`; error: Unsupported Guitar Pro clef: percussionnull |
@@ -178,14 +178,14 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/41j-PartNameDisplay-Multiple-DisplayText-Children.xml\` | ok |
 | \`lilypond/41k-PartName-Print.xml\` | ok |
 | \`lilypond/41l-GroupNameDisplay-Override.xml\` | ok |
-| \`lilypond/42a-MultiVoice-TwoVoicesOnStaff-Lyrics.xml\` | omits \`<fermata>\`, \`<lyric>\`, \`<slur>\` |
+| \`lilypond/42a-MultiVoice-TwoVoicesOnStaff-Lyrics.xml\` | omits \`<fermata>\`, \`<slur>\` |
 | \`lilypond/42b-MultiVoice-MidMeasureClefChange.xml\` | omits \`<dynamics>\`, \`<slur>\`, \`mid-measure clef changes\` |
 | \`lilypond/43a-PianoStaff.xml\` | ok |
 | \`lilypond/43b-MultiStaff-DifferentKeys.xml\` | omits \`different keys across staves or parts\` |
 | \`lilypond/43c-MultiStaff-DifferentKeysAfterBackup.xml\` | omits \`mid-measure clef changes\`, \`mid-measure key or time changes\` |
 | \`lilypond/43d-MultiStaff-StaffChange.xml\` | ok |
 | \`lilypond/43e-Multistaff-ClefDynamics.xml\` | omits \`<wedge>\`, \`dynamic ffff\`; error: Unsupported Guitar Pro clef: C2 |
-| \`lilypond/43f-MultiStaff-Lyrics.xml\` | omits \`<lyric>\`, \`<slur>\` |
+| \`lilypond/43f-MultiStaff-Lyrics.xml\` | omits \`<slur>\` |
 | \`lilypond/43g-MultiStaff-PartSymbol.xml\` | ok |
 | \`lilypond/43h-MultiStaff-Chords.xml\` | ok |
 | \`lilypond/43i-MultiStaff-StaffChange-SingleVoice.xml\` | ok |
@@ -217,32 +217,32 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/51d-EmptyTitle.xml\` | error: Overlapping or invalid note timing in measure 1 |
 | \`lilypond/52a-PageLayout.xml\` | ok |
 | \`lilypond/52b-Breaks.xml\` | ok |
-| \`lilypond/61a-Lyrics.xml\` | omits \`<lyric>\` |
-| \`lilypond/61b-MultipleLyrics.xml\` | omits \`<lyric>\` |
-| \`lilypond/61c-Lyrics-Pianostaff.xml\` | omits \`<lyric>\` |
-| \`lilypond/61d-Lyrics-Melisma.xml\` | omits \`<lyric>\`, \`<slur>\` |
-| \`lilypond/61e-Lyrics-Chords.xml\` | omits \`<lyric>\` |
-| \`lilypond/61f-Lyrics-GracedNotes.xml\` | omits \`<lyric>\`, \`<slur>\` |
-| \`lilypond/61g-Lyrics-NameNumber.xml\` | omits \`<lyric>\` |
-| \`lilypond/61h-Lyrics-BeamsMelismata.xml\` | omits \`<lyric>\`, \`<slur>\` |
-| \`lilypond/61i-Lyrics-Chords.xml\` | omits \`<lyric>\` |
-| \`lilypond/61j-Lyrics-Elisions.xml\` | omits \`<lyric>\` |
-| \`lilypond/61k-Lyrics-SpannersExtenders.xml\` | omits \`<lyric>\` |
+| \`lilypond/61a-Lyrics.xml\` | ok |
+| \`lilypond/61b-MultipleLyrics.xml\` | ok |
+| \`lilypond/61c-Lyrics-Pianostaff.xml\` | ok |
+| \`lilypond/61d-Lyrics-Melisma.xml\` | omits \`<slur>\` |
+| \`lilypond/61e-Lyrics-Chords.xml\` | ok |
+| \`lilypond/61f-Lyrics-GracedNotes.xml\` | omits \`<slur>\` |
+| \`lilypond/61g-Lyrics-NameNumber.xml\` | ok |
+| \`lilypond/61h-Lyrics-BeamsMelismata.xml\` | omits \`<slur>\` |
+| \`lilypond/61i-Lyrics-Chords.xml\` | ok |
+| \`lilypond/61j-Lyrics-Elisions.xml\` | ok |
+| \`lilypond/61k-Lyrics-SpannersExtenders.xml\` | ok |
 | \`lilypond/71a-Chordnames.xml\` | omits \`<harmony>\` |
-| \`lilypond/71b-Chordnames-Kinds.xml\` | omits \`<harmony>\`, \`<lyric>\` |
+| \`lilypond/71b-Chordnames-Kinds.xml\` | omits \`<harmony>\` |
 | \`lilypond/71c-ChordsFrets.xml\` | omits \`<fingering>\`, \`<harmony>\` |
 | \`lilypond/71d-ChordsFrets-Multistaff.xml\` | omits \`<harmony>\` |
 | \`lilypond/71e-TabStaves.xml\` | ok |
-| \`lilypond/71f-AllChordTypes.xml\` | omits \`<harmony>\`, \`<lyric>\` |
+| \`lilypond/71f-AllChordTypes.xml\` | omits \`<harmony>\` |
 | \`lilypond/71g-MultipleChordnames.xml\` | omits \`<harmony>\` |
 | \`lilypond/72a-TransposingInstruments.xml\` | omits \`<transpose>\`, \`different keys across staves or parts\` |
 | \`lilypond/72b-TransposingInstruments-Full.xml\` | omits \`<transpose>\`, \`different keys across staves or parts\`, \`octave clefs\` |
 | \`lilypond/72c-TransposingInstruments-Change.xml\` | omits \`<transpose>\` |
 | \`lilypond/73a-Percussion.xml\` | omits \`<ornaments>\`, \`<unpitched>\`; error: Unsupported Guitar Pro clef: percussionnull |
 | \`lilypond/74a-FiguredBass.xml\` | ok |
-| \`lilypond/75a-AccordionRegistrations.xml\` | omits \`<accordion-registration>\`, \`<lyric>\` |
+| \`lilypond/75a-AccordionRegistrations.xml\` | omits \`<accordion-registration>\` |
 | \`lilypond/99a-Sibelius5-IgnoreBeaming.xml\` | omits \`<slur>\` |
-| \`lilypond/99b-Lyrics-BeamsMelismata-IgnoreBeams.xml\` | omits \`<lyric>\`, \`<slur>\` |
+| \`lilypond/99b-Lyrics-BeamsMelismata-IgnoreBeams.xml\` | omits \`<slur>\` |
 | \`lilypond_03c-Rhythm-DivisionChange.xml\` | error: Overlapping or invalid note timing in measure 1 |
 | \`lilypond_11h-TimeSignatures-SenzaMisura.xml\` | omits \`<senza-misura>\`; error: Guitar Pro export requires a simple time signature |
 | \`lilypond_13d-KeySignatures-Microtones.xml\` | ok |
@@ -252,7 +252,7 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond_43c-MultiStaff-DifferentKeysAfterBackup.xml\` | omits \`mid-measure clef changes\`, \`mid-measure key or time changes\` |
 | \`lilypond_45f-Repeats-InvalidEndings.xml\` | omits \`<ending>\` |
 | \`lilypond_46f-IncompleteMeasures.xml\` | ok |
-| \`lilypond_61j-Lyrics-Elisions.xml\` | omits \`<lyric>\` |
+| \`lilypond_61j-Lyrics-Elisions.xml\` | ok |
 | \`lilypond_99a-Sibelius5-IgnoreBeaming.xml\` | omits \`<slur>\` |
 | \`mostly_invalid.xml\` | error: Guitar Pro export requires at least one part with measures |
 | \`musescore_4_tempo_change.musicxml\` | ok |
@@ -268,7 +268,6 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 
 | Omitted feature | Files |
 | --- | --- |
-| \`<lyric>\` | 35 |
 | \`<slur>\` | 24 |
 | \`<ornaments>\` | 12 |
 | \`<harmony>\` | 10 |

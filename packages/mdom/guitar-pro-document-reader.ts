@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // GPIF field interpretation adapted from alphaTab's GpifParser. See THIRD_PARTY.md.
 // Copyright © 2025 Daniel Kuschny and Contributors.
+import { GuitarProLyrics } from './guitar-pro-lyrics';
 import type { GuitarProOptions } from './guitar-pro-options';
 import { GuitarProValues } from './guitar-pro-values';
 import { GuitarProXml as X } from './guitar-pro-xml';
@@ -260,16 +261,7 @@ export class GuitarProDocumentReader {
 					measure.setAttribute('implicit', 'yes');
 				}
 			}
-			// GPIF may contain unused lyric templates even on empty tracks.
-			if (
-				part.measures.some((m) => m.notes.some((n) => !n.isRest)) &&
-				track
-					.child('Lyrics')
-					?.childrenNamed('Line')
-					.some((l) => l.child('Text')?.text?.trim())
-			) {
-				this.values.unsupported('lyrics');
-			}
+			GuitarProLyrics.read(track, part);
 
 			barOffset += staves.length;
 		}

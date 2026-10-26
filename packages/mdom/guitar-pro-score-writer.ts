@@ -3,6 +3,7 @@
 // Copyright © 2025 Daniel Kuschny and Contributors.
 import { groupChords } from './chord';
 import { Direction } from './direction';
+import { GuitarProLyrics } from './guitar-pro-lyrics';
 import type { GuitarProOptions } from './guitar-pro-options';
 import { GuitarProPitchWriter } from './guitar-pro-pitch-writer';
 import { GuitarProPlayback } from './guitar-pro-playback';
@@ -207,6 +208,9 @@ export class GuitarProScoreWriter {
 					staff++
 				) {
 					this.writeStaff(part, staves, String(staff));
+				}
+				if (firstStaff === 1) {
+					GuitarProLyrics.write(track, part);
 				}
 			}
 		}
@@ -759,7 +763,6 @@ export class GuitarProScoreWriter {
 			'other-technical',
 			'fingering',
 			'pluck',
-			'lyric',
 			'harmony',
 			'wedge',
 			'pedal',

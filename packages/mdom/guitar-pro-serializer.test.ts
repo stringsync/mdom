@@ -227,11 +227,11 @@ describe('GuitarProSerializer', () => {
 		const note = measure
 			.getOrCreateVoice('1')
 			.addNote({ step: 'C', octave: 4, type: 'whole' });
-		const lyric = new MElement('lyric');
+		const lyric = new MElement('harmony');
 		note.append(lyric);
 
 		await expect(serializer.serializeToBlob(document)).rejects.toThrow(
-			'<lyric>',
+			'<harmony>',
 		);
 	});
 
@@ -239,7 +239,7 @@ describe('GuitarProSerializer', () => {
 		const note = measure
 			.getOrCreateVoice('1')
 			.addNote({ step: 'C', octave: 4, type: 'whole' });
-		note.append(new MElement('lyric'));
+		note.append(new MElement('harmony'));
 		const gpif = await gpifOf(
 			await serializer.serializeToBlob(document, { unsupported: 'omit' }),
 		);
@@ -252,7 +252,7 @@ describe('GuitarProSerializer', () => {
 		for (const _ of [1, 2]) {
 			voice
 				.addNote({ step: 'C', octave: 4, type: 'half' })
-				.append(new MElement('lyric'));
+				.append(new MElement('harmony'));
 		}
 		const features: string[] = [];
 		await serializer.serializeToBlob(document, {
@@ -260,7 +260,7 @@ describe('GuitarProSerializer', () => {
 			onUnsupported: (feature) => features.push(feature),
 		});
 
-		expect(features).toEqual(['<lyric>', '<lyric>']);
+		expect(features).toEqual(['<harmony>', '<harmony>']);
 	});
 
 	it('rejects malformed core notation even when omission is requested', async () => {
