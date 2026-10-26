@@ -1,7 +1,7 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
 exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
-"## Import: 35 of 45 ok
+"## Import: 36 of 45 ok
 
 | File | Result |
 | --- | --- |
@@ -12,7 +12,7 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 | \`chords.gp\` | ok |
 | \`dead.gp\` | ok |
 | \`directions.gp\` | ok |
-| \`drum-tabs.gp\` | error: Guitar Pro percussion tracks are not supported |
+| \`drum-tabs.gp\` | ok |
 | \`effects.gp\` | omits \`Semi harmonics\`, \`beat effects or annotations\`, \`bend curves\`, \`instrument changes or track automation\`, \`note techniques\`, \`whammy bar curves\` |
 | \`fermata.gp\` | omits \`fermatas between beats\` |
 | \`grace.gp\` | ok |
@@ -70,14 +70,14 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | File | Result |
 | --- | --- |
 | \`accidentals.xml\` | error: Invalid MIDI pitch: 67.5; expected an integer from 0 to 127 |
-| \`actor_prelude_sample.xml\` | omits \`<notehead> diamond\`, \`<other-direction>\`, \`<rehearsal>\`, \`<slur>\`, \`<unpitched>\`, \`<wedge>\`; error: Guitar Pro export requires a supported note type, got null |
+| \`actor_prelude_sample.xml\` | omits \`<notehead> diamond\`, \`<other-direction>\`, \`<rehearsal>\`, \`<slur>\`, \`<wedge>\`; error: Guitar Pro export requires a supported note type, got null |
 | \`aloof_gp7.musicxml\` | omits \`<dynamics>\`, \`<slur>\`; error: Guitar Pro export needs one transposition per part, but this part changes it across measures or staves |
 | \`aloof_gp8.musicxml\` | omits \`<slur>\`; error: Guitar Pro export needs one transposition per part, but this part changes it across measures or staves |
 | \`chopin_prelude.xml\` | omits \`<slur>\` |
 | \`composer_one_line.xml\` | ok |
 | \`concert_score_and_for_part.xml\` | ok |
 | \`dorico_4_notations.musicxml\` | omits \`<slur>\` |
-| \`drum_tuplet_beams_measure.xml\` | omits \`<other-notation>\`, \`<unpitched>\`; error: Unsupported Guitar Pro clef: percussionnull |
+| \`drum_tuplet_beams_measure.xml\` | omits \`<other-notation>\`, \`percussion instruments without a General MIDI drum key\` |
 | \`flat_la_cucaracha.musicxml\` | ok |
 | \`hello_world.xml\` | ok |
 | \`invalid_root.xml\` | error: Unmatched closing tag: score-partwise |
@@ -107,7 +107,7 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/11g-TimeSignatures-SingleNumber.xml\` | error: Invalid time numerator: NaN; expected an integer from 1 to 64 |
 | \`lilypond/11h-TimeSignatures-SenzaMisura.xml\` | omits \`<senza-misura>\`; error: Guitar Pro export requires a simple time signature |
 | \`lilypond/11i-TimeSignatures-Alternate.xml\` | ok |
-| \`lilypond/12a-Clefs.xml\` | error: Unsupported Guitar Pro clef: percussionnull |
+| \`lilypond/12a-Clefs.xml\` | error: Unsupported Guitar Pro clef: percussion |
 | \`lilypond/12b-Clefs-NoKeyOrClef.xml\` | ok |
 | \`lilypond/13a-KeySignatures.xml\` | error: Invalid key fifths: -11; expected an integer from -7 to 7 |
 | \`lilypond/13b-KeySignatures-ChurchModes.xml\` | omits \`different keys across staves or parts\`, \`key mode locrian\`, \`key mode phrygian\`, \`mid-measure key or time changes\` |
@@ -166,12 +166,12 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/33j-Beams-Tremolos.xml\` | omits \`<tremolo> start\`, \`<tremolo> stop\`, \`tremolo of 0 marks\` |
 | \`lilypond/33k-Tie-Types.xml\` | error: Guitar Pro ties must connect matching pitches in the same voice and staff |
 | \`lilypond/34a-Print-Object-Spanners.xml\` | omits \`<glissando>\`, \`<slur>\`, \`<tremolo> start\`, \`<tremolo> stop\`, \`<trill-mark>\` |
-| \`lilypond/34b-Colors.xml\` | omits \`<bracket>\`, \`<breath-mark>\`, \`<dashes>\`, \`<fingering>\`, \`<glissando>\`, \`<pedal>\`, \`<pluck>\`, \`<rehearsal>\`, \`<slur>\`, \`<tremolo> start\`, \`<tremolo> stop\`, \`<trill-mark>\`, \`<unpitched>\`, \`<wedge>\`, \`mid-measure key or time changes\`; error: Guitar Pro export requires pitched notes; percussion is not supported |
-| \`lilypond/34c-Font-Size.xml\` | omits \`<accidental-mark>\`, \`<breath-mark>\`, \`<dashes>\`, \`<fingering>\`, \`<pedal>\`, \`<pluck>\`, \`<rehearsal>\`, \`<trill-mark>\`, \`<unpitched>\`, \`mid-measure clef changes\`, \`mid-measure key or time changes\`; error: Guitar Pro export requires pitched notes; percussion is not supported |
+| \`lilypond/34b-Colors.xml\` | omits \`<bracket>\`, \`<breath-mark>\`, \`<dashes>\`, \`<fingering>\`, \`<glissando>\`, \`<pedal>\`, \`<pluck>\`, \`<rehearsal>\`, \`<slur>\`, \`<tremolo> start\`, \`<tremolo> stop\`, \`<trill-mark>\`, \`<wedge>\`, \`mid-measure key or time changes\`; error: Guitar Pro tracks cannot mix pitched and unpitched notes |
+| \`lilypond/34c-Font-Size.xml\` | omits \`<accidental-mark>\`, \`<breath-mark>\`, \`<dashes>\`, \`<fingering>\`, \`<pedal>\`, \`<pluck>\`, \`<rehearsal>\`, \`<trill-mark>\`, \`mid-measure key or time changes\`; error: Guitar Pro tracks cannot mix pitched and unpitched notes |
 | \`lilypond/34d-Note-Attributes.xml\` | ok |
 | \`lilypond/41a-MultiParts-Partorder.xml\` | ok |
 | \`lilypond/41b-MultiParts-MoreThan10.xml\` | ok |
-| \`lilypond/41c-StaffGroups.xml\` | omits \`<unpitched>\`, \`different keys across staves or parts\`, \`octave clefs\`; error: Unsupported Guitar Pro clef: percussionnull |
+| \`lilypond/41c-StaffGroups.xml\` | omits \`different keys across staves or parts\`, \`octave clefs\`, \`percussion instruments without a General MIDI drum key\` |
 | \`lilypond/41d-StaffGroups-Nested.xml\` | ok |
 | \`lilypond/41e-StaffGroups-InstrumentNames-Linebroken.xml\` | ok |
 | \`lilypond/41f-StaffGroups-Overlapping.xml\` | ok |
@@ -241,7 +241,7 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/72a-TransposingInstruments.xml\` | omits \`different keys across staves or parts\` |
 | \`lilypond/72b-TransposingInstruments-Full.xml\` | omits \`different keys across staves or parts\`, \`octave clefs\` |
 | \`lilypond/72c-TransposingInstruments-Change.xml\` | error: Guitar Pro export needs one transposition per part, but this part changes it across measures or staves |
-| \`lilypond/73a-Percussion.xml\` | omits \`<unpitched>\`; error: Unsupported Guitar Pro clef: percussionnull |
+| \`lilypond/73a-Percussion.xml\` | omits \`percussion instruments without a General MIDI drum key\` |
 | \`lilypond/74a-FiguredBass.xml\` | ok |
 | \`lilypond/75a-AccordionRegistrations.xml\` | omits \`<accordion-registration>\` |
 | \`lilypond/99a-Sibelius5-IgnoreBeaming.xml\` | omits \`<slur>\` |
@@ -275,11 +275,10 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`<wedge>\` | 8 |
 | \`<trill-mark>\` | 7 |
 | \`<rehearsal>\` | 6 |
-| \`<unpitched>\` | 6 |
 | \`different keys across staves or parts\` | 6 |
-| \`mid-measure clef changes\` | 6 |
 | \`mid-measure key or time changes\` | 6 |
 | \`<dashes>\` | 5 |
+| \`mid-measure clef changes\` | 5 |
 | \`<accidental-mark>\` | 4 |
 | \`<glissando>\` | 4 |
 | \`<pedal>\` | 4 |
@@ -293,6 +292,7 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`<notehead> diamond\` | 3 |
 | \`<notehead> slash\` | 3 |
 | \`<pluck>\` | 3 |
+| \`percussion instruments without a General MIDI drum key\` | 3 |
 | \`pickups after the first measure\` | 3 |
 | \`<accordion-registration>\` | 2 |
 | \`<non-arpeggiate>\` | 2 |

@@ -72,7 +72,7 @@ sound from the exported instrument family.
 
 The first supported subset includes:
 
-- Pitched parts and four voices per staff. A Guitar Pro track holds at most
+- Pitched and percussion parts, and four voices per staff. A Guitar Pro track holds at most
   two staves, so a part with more exports as consecutive tracks of up to two
   staves each, which import back as separate parts.
 - Notes, rests, chords, whole through 128th durations, up to three dots,
@@ -111,6 +111,17 @@ The first supported subset includes:
   (8va, 8vb, 15ma, 15mb) as `<octave-shift>` spans over each run of beats, pick
   strokes as `<down-bow>`/`<up-bow>`, and tapping as `<tap hand="right">`.
   Slap, pop and the whammy bar are unsupported.
+- Percussion tracks: each note is unpitched on a percussion clef, drawn on its
+  drum's staff line with the kit's notehead (x, circle-x, diamond, triangle,
+  circled, slashed), and names a `<score-instrument>` per drum whose
+  `<midi-instrument>` holds the General MIDI key as `<midi-unpitched>`. Guitar
+  Pro 7/8 kits are read from the file; Guitar Pro 6 element/variation and
+  Guitar Pro 5 MIDI-key drums map onto Guitar Pro's standard kit. Export writes
+  that standard kit and picks each note's drum by its instrument's MIDI key,
+  then its name, staff line and notehead; a note whose instrument names no key
+  or kit drum takes the kit's first drum on its line, reported as
+  `percussion instruments without a General MIDI drum key`. A track cannot mix
+  pitched and unpitched notes.
 
 This is a musical conversion, not a lossless file round trip. Layout, engraving,
 Guitar Pro application settings, and metadata outside the list above are not
@@ -142,7 +153,7 @@ argument to either parser or serializer methods, and add
 `onUnsupported: (feature) => ...` to hear each feature it drops. Invalid core
 data still throws:
 for example, missing string assignments on a tuned staff, pitch/fret mismatches,
-inconsistent durations, or mismatched meters across parts. Percussion, older
+inconsistent durations, or mismatched meters across parts. Older
 `.gp3`/`.gp4` input, `.gpx` output, and mid-score tuning changes are not supported.
 
 The tests use committed, independently produced GP7 and GP8 fixtures with
@@ -179,6 +190,7 @@ note2.setPitch({ step: 'E', octave: 4, alter: -1 }); // retune, moves no time
 note1.setDuration({ type: 'eighth' }); // reshape, ripples later notes in
 note1.addTie(note2); // spanner
 note2.convertToRest(); // silence, keep the beat
+voice.addUnpitched({ step: 'C', octave: 5, type: 'quarter' }); // a drum hit at a staff position
 note2.remove(); // delete, onsets close the gap
 ```
 

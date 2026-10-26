@@ -4,6 +4,14 @@
 import type { NavigationSpec } from './direction';
 import { GuitarProBeatEffectReader } from './guitar-pro-beat-effects';
 import { readDiagram } from './guitar-pro-diagrams';
+import {
+	displayOfStaffLine,
+	type GuitarProDrumArticulation,
+	gp6ArticulationId,
+	guitarProDrumKit,
+	noteheadOfGlyph,
+	readDrumKit,
+} from './guitar-pro-drum-kit';
 import { GuitarProLyrics } from './guitar-pro-lyrics';
 import type { GuitarProOptions } from './guitar-pro-options';
 import { GuitarProValues } from './guitar-pro-values';
@@ -13,6 +21,7 @@ import { MDocument } from './m-document';
 import { MElement, required } from './m-node';
 import { appendValue, type Measure } from './measure';
 import { buildPitch, Note } from './note';
+import type { Part } from './part';
 import { StaffDetails } from './staff-details';
 import { StaffTuning } from './staff-tuning';
 
@@ -33,6 +42,17 @@ interface StaffContext {
 	/** `DiagramCollection` items by id, read on first reference. */
 	diagrams: Map<string, MElement>;
 	chords: Map<string, HarmonySpec | null>;
+	drums: Drums | null;
+}
+/** A percussion track's kit, and the score-instruments declared for it so far. */
+interface Drums {
+	kit: GuitarProDrumArticulation[];
+	/** Whether notes index `kit` by `<InstrumentArticulation>`, as GP7+ files do. */
+	indexed: boolean;
+	part: Part;
+	channel: number;
+	program: number;
+	declared: Set<number>;
 }
 interface Rhythm {
 	type: string;
@@ -166,7 +186,7 @@ export class GuitarProDocumentReader {
 			0,
 		);
 		for (const [index, track] of tracks.entries()) {
-			if (
+			const percussion =
 				track
 					.child('InstrumentSet')
 					?.child('Type')
@@ -177,23 +197,9 @@ export class GuitarProDocumentReader {
 					?.child('Elements')
 					?.childrenNamed('Element')
 					.some((e) => e.child('Type')?.text === 'percussion') ||
-				track.child('GeneralMidi')?.getAttribute('table') === 'Percussion'
-			) {
-				throw new Error('Guitar Pro percussion tracks are not supported');
-			}
-
+				track.child('GeneralMidi')?.getAttribute('table') === 'Percussion';
 			this.checkTrackAutomations(track);
 			const part = doc.score.addPart({ name: track.child('Name')?.text ?? '' });
-			const scorePart = doc.score
-				.child('part-list')!
-				.childrenNamed('score-part')
-				.at(-1)!;
-			const instrument = new MElement('score-instrument');
-			instrument.setAttribute('id', `${part.id}-I1`);
-			appendValue(instrument, 'instrument-name', part.label || 'Instrument');
-			scorePart.append(instrument);
-			const midi = new MElement('midi-instrument');
-			midi.setAttribute('id', `${part.id}-I1`);
 			const sound =
 				track.child('Sounds')?.child('Sound')?.child('MIDI') ??
 				track.child('GeneralMidi');
@@ -211,9 +217,35 @@ export class GuitarProDocumentReader {
 				0,
 				15,
 			);
-			appendValue(midi, 'midi-channel', String(channel + 1));
-			appendValue(midi, 'midi-program', String(program + 1));
-			scorePart.append(midi);
+			let drums: Drums | null = null;
+			if (percussion) {
+				// Each drum becomes its own score-instrument, declared as notes use it.
+				const fileKit = readDrumKit(
+					track.child('InstrumentSet') ?? new MElement('InstrumentSet'),
+				);
+				drums = {
+					kit: fileKit.length ? fileKit : [...guitarProDrumKit],
+					indexed: fileKit.length > 0,
+					part,
+					channel: channel + 1,
+					program: program + 1,
+					declared: new Set(),
+				};
+			} else {
+				const scorePart = doc.score
+					.child('part-list')!
+					.childrenNamed('score-part')
+					.at(-1)!;
+				const instrument = new MElement('score-instrument');
+				instrument.setAttribute('id', `${part.id}-I1`);
+				appendValue(instrument, 'instrument-name', part.label || 'Instrument');
+				scorePart.append(instrument);
+				const midi = new MElement('midi-instrument');
+				midi.setAttribute('id', `${part.id}-I1`);
+				appendValue(midi, 'midi-channel', String(channel + 1));
+				appendValue(midi, 'midi-program', String(program + 1));
+				scorePart.append(midi);
+			}
 			const staffNodes = track.child('Staves')?.childrenNamed('Staff') ?? [
 				track,
 			];
@@ -221,7 +253,7 @@ export class GuitarProDocumentReader {
 				throw new Error('Guitar Pro track has no staves');
 			}
 			const staves = staffNodes.map((node, i) =>
-				this.staff(node, track, String(i + 1), tablature[index]),
+				this.staff(node, track, String(i + 1), drums, tablature[index]),
 			);
 			this.effects = new GuitarProBeatEffectReader(this.values);
 			// Tie destinations identify their predecessor by string, or pitch for notation-only data.
@@ -375,6 +407,9 @@ export class GuitarProDocumentReader {
 			this.effects.finish();
 			GuitarProLyrics.read(track, part);
 
+			if (drums) {
+				this.sortDrums(part);
+			}
 			barOffset += staves.length;
 		}
 		return doc;
@@ -397,6 +432,7 @@ export class GuitarProDocumentReader {
 		node: MElement,
 		track: MElement,
 		id: string,
+		drums: Drums | null,
 		show?: boolean,
 	): StaffContext {
 		const tuning = X.refs(X.property(node, 'Tuning')?.child('Pitches')).map(
@@ -424,13 +460,15 @@ export class GuitarProDocumentReader {
 				item,
 			]),
 		);
+		// Drum tabs have no strings to number, so percussion stays on its staff.
 		return {
 			id,
 			tuning,
 			capo,
-			tablature: show ?? tuning.length > 0,
+			tablature: !drums && (show ?? tuning.length > 0),
 			diagrams,
 			chords: new Map(),
+			drums,
 		};
 	}
 	private readMaster(master: MElement, measure: Measure): TempoChange[] {
@@ -623,8 +661,13 @@ export class GuitarProDocumentReader {
 		master: MElement,
 		measure: Measure,
 	): void {
-		const clef = bar.child('Clef')?.text ?? 'G2';
-		if (!['G2', 'F4', 'C3', 'C4'].includes(clef)) {
+		const clef = bar.child('Clef')?.text ?? (staff.drums ? 'Neutral' : 'G2');
+		if (clef === 'Neutral' && !staff.drums) {
+			throw new Error(
+				'Guitar Pro neutral clefs are only supported on percussion tracks',
+			);
+		}
+		if (!['G2', 'F4', 'C3', 'C4', 'Neutral'].includes(clef)) {
 			throw new Error(`Unsupported Guitar Pro clef: ${clef}`);
 		}
 		if (
@@ -649,7 +692,11 @@ export class GuitarProDocumentReader {
 			mode: mode === 'Minor' ? 'minor' : 'major',
 			staff: staff.id,
 		});
-		measure.setClef({ sign: clef[0]!, line: Number(clef[1]), staff: staff.id });
+		measure.setClef(
+			clef === 'Neutral'
+				? { sign: 'percussion', staff: staff.id }
+				: { sign: clef[0]!, line: Number(clef[1]), staff: staff.id },
+		);
 		if (measure.index === 0 && staff.tablature && staff.tuning.length) {
 			const details = new StaffDetails();
 			details.setAttribute('number', staff.id);
@@ -800,7 +847,11 @@ export class GuitarProDocumentReader {
 				X.add(note, 'chord');
 			}
 			let pitch = 0;
-			if (source) {
+			let drum = -1;
+			if (source && staff.drums) {
+				drum = this.drum(source, staff.drums);
+				note.setUnpitched(displayOfStaffLine(staff.drums.kit[drum]!.staffLine));
+			} else if (source) {
 				pitch = this.pitch(source, staff);
 				note.append(
 					buildPitch(
@@ -829,19 +880,29 @@ export class GuitarProDocumentReader {
 			}
 			appendValue(note, 'staff', staff.id);
 			measure.append(note);
+			if (source && staff.drums) {
+				this.readDrum(note, rhythm.type, drum, staff.drums);
+			}
 			if (source) {
 				this.readNote(source, note, staff);
 				this.readWhammy(beat, note);
 				this.readVibrato(source.child('Vibrato')?.text ?? beatVibrato, note);
 				const string = X.property(source, 'String')?.child('String')?.text;
-				const key = `${voice}:${string == null ? `pitch${pitch}` : `string${string}`}`;
+				const key = staff.drums
+					? `${voice}:drum${drum}`
+					: `${voice}:${string == null ? `pitch${pitch}` : `string${string}`}`;
 				const before = previous.get(key);
-				if (before) {
+				// Hammer-ons and slides join pitches, which drums do not have.
+				if (before && !staff.drums) {
 					this.readLegato(before, note);
 				}
 				if (source.child('Tie')?.getAttribute('destination') === 'true') {
 					const origin = previous.get(key);
-					if (!origin?.pitch || GuitarProValues.midi(origin.pitch) !== pitch) {
+					if (
+						!origin ||
+						(!staff.drums &&
+							(!origin.pitch || GuitarProValues.midi(origin.pitch) !== pitch))
+					) {
 						throw new Error(
 							'Guitar Pro ties must connect matching pitches in the same voice and staff',
 						);
@@ -871,6 +932,82 @@ export class GuitarProDocumentReader {
 			staff.chords.set(id, readDiagram(item, this.values));
 		}
 		return staff.chords.get(id)!;
+	}
+	/** Lists a drum part's instruments in kit order rather than first use. */
+	private sortDrums(part: Part): void {
+		const scorePart = part.score
+			.child('part-list')!
+			.childrenNamed('score-part')
+			.find((node) => node.getAttribute('id') === part.id)!;
+		const kitIndex = (node: MElement) =>
+			Number(node.getAttribute('id')!.slice(`${part.id}-I`.length));
+		for (const tag of ['score-instrument', 'midi-instrument']) {
+			const nodes = scorePart.childrenNamed(tag);
+			const after =
+				scorePart.children[scorePart.children.indexOf(nodes.at(-1)!) + 1] ??
+				null;
+			for (const node of nodes.toSorted((a, b) => kitIndex(a) - kitIndex(b))) {
+				scorePart.insertBefore(node, after);
+			}
+		}
+	}
+	/** The index in `drums.kit` of the drum a percussion note plays. */
+	private drum(note: MElement, drums: Drums): number {
+		const index = note.child('InstrumentArticulation')?.text;
+		if (drums.indexed && index != null) {
+			return GuitarProValues.integer(
+				Number(index),
+				'drum articulation',
+				0,
+				drums.kit.length - 1,
+			);
+		}
+		const element = X.property(note, 'Element')?.child('Element')?.text;
+		const variation = X.property(note, 'Variation')?.child('Variation')?.text;
+		// GP6 names an element and variation, GP5 a General MIDI key as the fret.
+		const id =
+			element != null && variation != null
+				? gp6ArticulationId(Number(element), Number(variation))
+				: Number(
+						X.property(note, 'Midi')?.child('Number')?.text ??
+							X.property(note, 'Fret')?.child('Fret')?.text,
+					);
+		const found = drums.kit.findIndex((drum) => drum.id === id);
+		const fallback =
+			found >= 0 ? found : drums.kit.findIndex((drum) => drum.output === id);
+		if (fallback < 0) {
+			throw new Error(`Unknown Guitar Pro drum: ${id}`);
+		}
+		return fallback;
+	}
+	/** Names the note's drum, declaring it on first use, and draws its notehead. */
+	private readDrum(
+		note: Note,
+		type: string,
+		index: number,
+		drums: Drums,
+	): void {
+		const drum = drums.kit[index]!;
+		const id = `${drums.part.id}-I${index + 1}`;
+		if (!drums.declared.has(index)) {
+			drums.declared.add(index);
+			drums.part.addInstrument({ id, name: drum.name || drum.element });
+			drums.part.setMidiInstrument(id, {
+				channel: drums.channel,
+				program: drums.program,
+				unpitched: drum.output + 1,
+			});
+		}
+		note.setInstrumentIds([id]);
+		// Kits list a glyph each for short, half and whole notes.
+		const glyph =
+			drum.noteheads[
+				({ half: 1, whole: 2 } as Record<string, number>)[type] ?? 0
+			] ?? drum.noteheads[0];
+		const notehead = glyph ? noteheadOfGlyph(glyph) : null;
+		if (notehead) {
+			note.setNotehead(notehead);
+		}
 	}
 	private pitch(note: MElement, staff: StaffContext): number {
 		const string = X.property(note, 'String')?.child('String')?.text;

@@ -8,6 +8,7 @@ import {
 	Note,
 	type NoteSpec,
 	type PitchSpec,
+	type UnpitchedNoteSpec,
 	WRITE_DIVISIONS,
 } from './note';
 import type { Part } from './part';
@@ -17,7 +18,14 @@ import { alignCursor, onsetOf } from './timeline';
 
 // The note vocabulary and duration math live in note.ts (Voice builds on Note);
 // re-exported here so callers can keep importing them from either place.
-export type { DurationSpec, NoteSpec, NoteType, PitchSpec } from './note';
+export type {
+	DisplayPositionSpec,
+	DurationSpec,
+	NoteSpec,
+	NoteType,
+	PitchSpec,
+	UnpitchedNoteSpec,
+} from './note';
 
 /**
  * A single `<voice>` within a measure — read and write. Reading: `notes` is the
@@ -53,6 +61,20 @@ export class Voice {
 		const duration = this.open(spec);
 		const note = this.build(spec, duration, spec, false);
 		this.measure.append(note);
+		return note;
+	}
+
+	/**
+	 * Append an unpitched (percussion) note at the staff position `spec`
+	 * gives, if any. Follows this voice's cursor unless `onset` is given.
+	 */
+	addUnpitched(spec: UnpitchedNoteSpec): Note {
+		const note = this.addRest(spec);
+		note.setUnpitched(
+			spec.step != null && spec.octave != null
+				? { step: spec.step, octave: spec.octave }
+				: null,
+		);
 		return note;
 	}
 

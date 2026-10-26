@@ -32,7 +32,8 @@ still missing an import fixture: from `guitarpro7`, `bends`, `harmonics`, `dead`
 `effects`, `hammer`, `slides`, `vibrato`, `beat-lyrics`, `lyrics-template`,
 `repeat-close-alternate-endings`, `fermata`, `strokes`, `tremolo`, `ottavia`,
 `chords` and `drum-tabs`; from `guitarpro8`, `directions` and
-`beat-tempo-change`.
+`beat-tempo-change`. `drum-tabs` also backs the percussion tests, and its kit,
+Guitar Pro 7's standard one, is the table `guitar-pro-drum-kit.ts` exports.
 
 `piano-playback.gpif` contains only the first track's AudioEngineState, Sounds,
 and Automations nodes from alphaTab's

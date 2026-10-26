@@ -97,6 +97,8 @@ export type NoteheadValue =
 	| 'triangle'
 	| 'cross'
 	| 'circle-x'
+	| 'circled'
+	| 'slashed'
 	| 'none';
 
 /** A musical duration: a note type, optional dots, and an optional onset. */
@@ -120,6 +122,18 @@ export interface PitchSpec {
 
 /** A pitched note: a {@link PitchSpec} plus a {@link DurationSpec}. */
 export type NoteSpec = PitchSpec & DurationSpec;
+
+/**
+ * An unpitched (percussion) note's staff position: the step and octave of the
+ * line or space it is drawn on, read through the clef as if it were a pitch.
+ */
+export interface DisplayPositionSpec {
+	step: string;
+	octave: number;
+}
+
+/** An unpitched note: an optional {@link DisplayPositionSpec} plus a {@link DurationSpec}. */
+export type UnpitchedNoteSpec = Partial<DisplayPositionSpec> & DurationSpec;
 
 /** Quarter-note beats per note type; dots add half of the previous increment. */
 const QUARTER_BEATS: Record<NoteType, number> = {
@@ -1533,6 +1547,30 @@ export class Note extends MElement {
 	 */
 	setPitch(spec: PitchSpec): void {
 		const replacement = buildPitch(spec);
+		const existing =
+			this.child('pitch') ?? this.child('rest') ?? this.child('unpitched');
+		if (existing) {
+			this.replaceChild(existing, replacement);
+		} else {
+			this.insertBefore(
+				replacement,
+				this.child('duration') ?? this.child('voice'),
+			);
+		}
+	}
+
+	/**
+	 * Make this note unpitched, drawn at `position` (a staff position, not a
+	 * pitch), replacing its pitch or rest in place like {@link setPitch}. Left
+	 * out, the renderer chooses the line. The write side of {@link unpitched};
+	 * pair it with {@link setInstrumentIds} to say which drum plays it.
+	 */
+	setUnpitched(position: DisplayPositionSpec | null = null): void {
+		const replacement = new MElement('unpitched');
+		if (position) {
+			appendValue(replacement, 'display-step', position.step);
+			appendValue(replacement, 'display-octave', String(position.octave));
+		}
 		const existing =
 			this.child('pitch') ?? this.child('rest') ?? this.child('unpitched');
 		if (existing) {

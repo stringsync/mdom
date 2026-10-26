@@ -5,6 +5,11 @@ import { groupChords } from './chord';
 import { Direction } from './direction';
 import { GuitarProBeatEffectWriter } from './guitar-pro-beat-effects';
 import { writeDiagram } from './guitar-pro-diagrams';
+import {
+	guitarProDrumKit,
+	noteheadOfGlyph,
+	staffLineOf,
+} from './guitar-pro-drum-kit';
 import { GuitarProLyrics } from './guitar-pro-lyrics';
 import type { GuitarProOptions } from './guitar-pro-options';
 import { GuitarProPitchWriter } from './guitar-pro-pitch-writer';
@@ -86,6 +91,8 @@ interface StaffContext {
 	pitches: GuitarProPitchWriter;
 	/** Semitones from written to sounding pitch, from the part's `<transpose>`. */
 	shift: number;
+	/** Whether the staff holds unpitched notes, played by the standard drum kit. */
+	drums: boolean;
 }
 
 /** Writes GPIF tables directly from mdom notes; no external score model. */
@@ -250,6 +257,7 @@ export class GuitarProScoreWriter {
 				}
 			}
 			const transposition = this.transposition(part);
+			const drums = this.isPercussion(part);
 			// A Guitar Pro track holds at most a grand staff, so a part with more staves splits into consecutive tracks of up to two.
 			for (let firstStaff = 1; firstStaff <= staffCount; firstStaff += 2) {
 				const track = this.entry('Tracks', 'Track');
@@ -272,19 +280,31 @@ export class GuitarProScoreWriter {
 					) - 1;
 				const channel =
 					GuitarProValues.integer(
-						Number(instrument?.child('midi-channel')?.text ?? 1),
+						Number(instrument?.child('midi-channel')?.text ?? (drums ? 10 : 1)),
 						'MIDI channel',
 						1,
 						16,
 					) - 1;
-				new GuitarProPlayback().write(track, program, channel, transposition);
+				new GuitarProPlayback().write(
+					track,
+					program,
+					channel,
+					transposition,
+					drums,
+				);
 				const staves = X.add(track, 'Staves');
 				for (
 					let staff = firstStaff;
 					staff <= Math.min(firstStaff + 1, staffCount);
 					staff++
 				) {
-					this.writeStaff(part, staves, String(staff), transposition.shift);
+					this.writeStaff(
+						part,
+						staves,
+						String(staff),
+						transposition.shift,
+						drums,
+					);
 				}
 				if (firstStaff === 1) {
 					GuitarProLyrics.write(track, part);
@@ -674,11 +694,23 @@ export class GuitarProScoreWriter {
 		result.shift = result.chromatic + 12 * result.octave;
 		return result;
 	}
+	/** The GPIF tuning a staff stores: blank for drums, generated for notation-only staves. */
+	private staffTuning(
+		drums: boolean,
+		tuning: number[],
+		pitches: GuitarProPitchWriter,
+	): number[] {
+		if (drums) {
+			return [0, 0, 0, 0, 0, 0];
+		}
+		return tuning.length ? tuning : pitches.tuning;
+	}
 	private writeStaff(
 		part: Part,
 		staves: MElement,
 		id: string,
 		shift: number,
+		drums: boolean,
 	): void {
 		const first = part.measures[0]!;
 		const tunings = first
@@ -699,7 +731,10 @@ export class GuitarProScoreWriter {
 			36,
 		);
 		const pitches = new GuitarProPitchWriter(part, id, shift);
-		const ctx: StaffContext = { id, tuning, capo, pitches, shift };
+		if (drums && tuning.length) {
+			throw new Error('Guitar Pro percussion staves cannot have a tuning');
+		}
+		const ctx: StaffContext = { id, tuning, capo, pitches, shift, drums };
 		const ottavas = this.effects.ottavas(part, id);
 		const node = X.add(staves, 'Staff');
 		X.addProperty(node, 'CapoFret', 'Fret', tuning.length ? capo : 0);
@@ -708,7 +743,7 @@ export class GuitarProScoreWriter {
 			node,
 			'Tuning',
 			'Pitches',
-			(tuning.length ? tuning : pitches.tuning).join(' '),
+			this.staffTuning(drums, tuning, pitches).join(' '),
 		);
 		X.add(tuningNode, 'Instrument', 'Guitar');
 		X.add(tuningNode, 'LabelVisible', 'false');
@@ -748,9 +783,17 @@ export class GuitarProScoreWriter {
 			if (clef?.octaveChange) {
 				this.values.unsupported('octave clefs');
 			}
-			const clefName =
-				!clef || clef.sign === 'TAB' ? 'G2' : `${clef.sign}${clef.line}`;
-			if (!['G2', 'F4', 'C3', 'C4'].includes(clefName)) {
+			let clefName =
+				!clef || clef.sign === 'TAB' ? 'G2' : `${clef.sign}${clef.line ?? ''}`;
+			if (drums) {
+				// Unpitched positions read through the clef; percussion and treble agree.
+				if (clef && !['percussion', 'G'].includes(clef.sign)) {
+					throw new Error(
+						'Guitar Pro percussion staves need a percussion or treble clef',
+					);
+				}
+				clefName = 'Neutral';
+			} else if (!['G2', 'F4', 'C3', 'C4'].includes(clefName)) {
 				throw new Error(`Unsupported Guitar Pro clef: ${clefName}`);
 			}
 			const bar = this.entry('Bars', 'Bar');
@@ -1024,15 +1067,126 @@ export class GuitarProScoreWriter {
 			destinationOffset: (100).toFixed(6),
 		});
 	}
+	/** Whether a part is percussion: it has unpitched notes or a percussion clef. */
+	private isPercussion(part: Part): boolean {
+		const notes = part.measures.flatMap((measure) => measure.notes);
+		const percussion =
+			notes.some((note) => note.child('unpitched')) ||
+			part.measures[0]!.getClef('1')?.sign === 'percussion';
+		if (percussion && notes.some((note) => note.pitch)) {
+			throw new Error(
+				'Guitar Pro tracks cannot mix pitched and unpitched notes',
+			);
+		}
+		return percussion;
+	}
+	/**
+	 * The index in the standard drum kit of the drum an unpitched note plays,
+	 * matched by its instrument's General MIDI key (`<midi-unpitched>`), then its
+	 * name, staff position and notehead.
+	 */
+	private drum(source: Note): number {
+		const part = source.part;
+		const id =
+			source.instrumentIds[0] ??
+			(part.instruments.length === 1 ? part.instruments[0]!.id : null);
+		const name = id == null ? null : (part.getInstrument(id)?.name ?? null);
+		const unpitched =
+			id == null ? null : (part.getMidiInstrument(id)?.unpitched ?? null);
+		const key = unpitched == null ? null : unpitched - 1;
+		const line = source.unpitched ? staffLineOf(source.unpitched) : null;
+		const notehead = source.notehead?.value ?? 'normal';
+		let best = -1;
+		let bestScore = -1;
+		for (const [index, drum] of guitarProDrumKit.entries()) {
+			const named = name != null && drum.name === name;
+			if (key == null ? !named : drum.id !== key && drum.output !== key) {
+				continue;
+			}
+			const glyph = noteheadOfGlyph(drum.noteheads[0]!)?.value ?? 'normal';
+			const score =
+				(named ? 8 : 0) +
+				(drum.id === key ? 4 : 0) +
+				(drum.staffLine === line ? 2 : 0) +
+				(glyph === notehead ? 1 : 0);
+			if (score > bestScore) {
+				best = index;
+				bestScore = score;
+			}
+		}
+		if (best < 0 && line != null) {
+			// Nothing names the drum, so take the kit's first one drawn on its line.
+			for (const [index, drum] of guitarProDrumKit.entries()) {
+				const glyph = noteheadOfGlyph(drum.noteheads[0]!)?.value ?? 'normal';
+				const score = glyph === notehead ? 1 : 0;
+				if (drum.staffLine === line && score > bestScore) {
+					best = index;
+					bestScore = score;
+				}
+			}
+			if (best >= 0) {
+				this.values.unsupported(
+					'percussion instruments without a General MIDI drum key',
+				);
+				return best;
+			}
+		}
+		if (best < 0) {
+			throw new Error(
+				'Guitar Pro export needs each unpitched note to have a staff position or name an instrument with a General MIDI drum key (<midi-unpitched>) or a Guitar Pro drum name',
+			);
+		}
+		if (line != null && guitarProDrumKit[best]!.staffLine !== line) {
+			this.values.unsupported(
+				'percussion staff positions outside the Guitar Pro drum kit',
+			);
+		}
+		return best;
+	}
+	private drumNote(
+		source: Note,
+		piece: { index: number; count: number },
+	): MElement {
+		const drum = this.drum(source);
+		for (const tie of source.ties) {
+			const partner = tie.partner?.note;
+			if (
+				tie.tieType !== 'let-ring' &&
+				(!partner?.child('unpitched') ||
+					partner.voice !== source.voice ||
+					partner.staff !== source.staff ||
+					this.drum(partner) !== drum)
+			) {
+				throw new Error(
+					'Guitar Pro ties must connect matching drums in the same voice and staff',
+				);
+			}
+		}
+		const node = this.entry('Notes', 'Note');
+		X.add(node, 'InstrumentArticulation', drum);
+		const properties = X.add(node, 'Properties');
+		for (const name of ['ConcertPitch', 'TransposedPitch']) {
+			const pitch = X.add(
+				X.add(properties, 'Property', undefined, { name }),
+				'Pitch',
+			);
+			X.add(pitch, 'Step', 'C');
+			X.add(pitch, 'Accidental', '');
+			X.add(pitch, 'Octave', -1);
+		}
+		this.marks(source, node, piece, false);
+		return node;
+	}
 	private note(
 		source: Note,
 		staff: StaffContext,
 		piece = { index: 0, count: 1 },
 	): MElement {
+		if (staff.drums) {
+			return this.drumNote(source, piece);
+		}
 		if (!source.pitch) {
-			throw new Error(
-				'Guitar Pro export requires pitched notes; percussion is not supported',
-			);
+			throw new Error('Guitar Pro export requires pitched notes');
 		}
 		const writtenMidi = GuitarProValues.midi(source.pitch);
 		const midi = GuitarProValues.integer(
@@ -1123,6 +1277,16 @@ export class GuitarProScoreWriter {
 			X.add(p, 'Octave', pitch.octave + 1);
 		}
 		X.add(node, 'InstrumentArticulation', 0);
+		this.marks(source, node, piece, true);
+		return node;
+	}
+	/** Ties, then techniques and accents on a note's first piece; shared with drum notes. */
+	private marks(
+		source: Note,
+		node: MElement,
+		piece: { index: number; count: number },
+		techniques: boolean,
+	): void {
 		const start =
 			piece.index < piece.count - 1 ||
 			source.ties.some(
@@ -1138,9 +1302,11 @@ export class GuitarProScoreWriter {
 			});
 		}
 		if (piece.index > 0) {
-			return node;
+			return;
 		}
-		this.techniques(source, node);
+		if (techniques) {
+			this.techniques(source, node);
+		}
 		const accent =
 			(source.articulations.includes('staccato') ? 1 : 0) |
 			(source.articulations.includes('strong-accent') ? 4 : 0) |
@@ -1148,7 +1314,6 @@ export class GuitarProScoreWriter {
 		if (accent) {
 			X.add(node, 'Accent', accent);
 		}
-		return node;
 	}
 	private techniques(source: Note, node: MElement): void {
 		const flag = (name: string) => {
@@ -1355,14 +1520,14 @@ export class GuitarProScoreWriter {
 			'pluck',
 			'wedge',
 			'pedal',
-			'unpitched',
 			'non-arpeggiate',
 			'senza-misura',
 		]);
 		if (unsupported.has(element.tag)) {
 			this.values.unsupported(`<${element.tag}>`);
 		}
-		if (element.tag === 'notehead') {
+		// A drum's notehead belongs to its kit articulation.
+		if (element.tag === 'notehead' && !element.parent?.child('unpitched')) {
 			if (!['x', 'normal'].includes(element.text ?? 'normal')) {
 				this.values.unsupported(`<notehead> ${element.text}`);
 			}

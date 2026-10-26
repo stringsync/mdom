@@ -335,7 +335,7 @@ describe('GuitarProSerializer', () => {
 	});
 
 	it('rejects unsupported clefs without inventing a replacement', async () => {
-		measure.setClef({ sign: 'percussion' });
+		measure.setClef({ sign: 'C', line: 1 });
 
 		await expect(serializer.serializeToBlob(document)).rejects.toThrow(
 			'Unsupported Guitar Pro clef',

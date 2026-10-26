@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // GPIF instrument fields adapted from alphaTab’s GpifWriter. See THIRD_PARTY.md.
 // Copyright © 2025 Daniel Kuschny and Contributors.
+import { writeDrumKit } from './guitar-pro-drum-kit';
 import { GuitarProXml as X } from './guitar-pro-xml';
 import type { MElement } from './m-node';
 
@@ -19,30 +20,40 @@ export class GuitarProPlayback {
 		program: number,
 		channel: number,
 		transposition: GuitarProTransposition,
+		percussion = false,
 	): void {
-		const [name, type, icon] = instruments[program]!;
+		const [name, type, icon] = percussion
+			? (['Drums', 'drumKit', 18] as const)
+			: instruments[program]!;
 		const preset = presets[type]!;
 		X.add(track, 'IconId', icon);
 		const instrument = X.add(track, 'InstrumentSet');
 		X.add(instrument, 'Name', name);
 		X.add(instrument, 'Type', type);
 		X.add(instrument, 'LineCount', 5);
-		const element = X.add(X.add(instrument, 'Elements'), 'Element');
-		X.add(element, 'Name', 'Pitched');
-		X.add(element, 'Type', 'pitched');
-		X.add(element, 'SoundbankName', '');
-		const articulation = X.add(X.add(element, 'Articulations'), 'Articulation');
-		for (const [tag, value] of Object.entries({
-			Name: '',
-			StaffLine: '0',
-			Noteheads: 'noteheadBlack noteheadHalf noteheadWhole',
-			TechniquePlacement: 'outside',
-			TechniqueSymbol: '',
-			InputMidiNumbers: '',
-			OutputRSESound: '',
-			OutputMidiNumber: '0',
-		})) {
-			X.add(articulation, tag, value);
+		if (percussion) {
+			writeDrumKit(instrument);
+		} else {
+			const element = X.add(X.add(instrument, 'Elements'), 'Element');
+			X.add(element, 'Name', 'Pitched');
+			X.add(element, 'Type', 'pitched');
+			X.add(element, 'SoundbankName', '');
+			const articulation = X.add(
+				X.add(element, 'Articulations'),
+				'Articulation',
+			);
+			for (const [tag, value] of Object.entries({
+				Name: '',
+				StaffLine: '0',
+				Noteheads: 'noteheadBlack noteheadHalf noteheadWhole',
+				TechniquePlacement: 'outside',
+				TechniqueSymbol: '',
+				InputMidiNumbers: '',
+				OutputRSESound: '',
+				OutputMidiNumber: '0',
+			})) {
+				X.add(articulation, tag, value);
+			}
 		}
 		const transpose = X.add(track, 'Transpose');
 		X.add(transpose, 'Chromatic', transposition.chromatic);
@@ -239,6 +250,10 @@ interface Preset {
 // Standard GP7/8 soundbank identifiers. Variants share their instrument family's
 // neutral sound; the original General MIDI program stays in the Sound's MIDI node.
 const presets: Record<string, Preset> = {
+	drumKit: {
+		patch: 'Drumkit-Master',
+		path: 'Drums/Drums/Drumkit',
+	},
 	acousticPiano: {
 		patch: 'German-APiano',
 		path: 'Orchestra/Keyboard/Acoustic Piano',
