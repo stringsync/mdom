@@ -77,6 +77,46 @@ describe('Guitar Pro round trips', () => {
 		expect(schemaErrors(result)).toEqual([]);
 	});
 
+	it('splits a part of more than two staves into tracks of up to two', async () => {
+		measure.setStaveCount(3);
+		measure.setClef({ sign: 'F', line: 4, staff: '3' });
+		for (const [staff, octave] of [
+			['1', 5],
+			['2', 4],
+			['3', 2],
+		] as const) {
+			measure
+				.getOrCreateVoice(staff, { staff })
+				.addNote({ step: 'C', octave, type: 'whole' });
+		}
+		const result = await parser.parseFromBytes(
+			await serializer.serializeToBytes(document),
+		);
+
+		expect(
+			result.score.parts.map((part) => [
+				part.label,
+				part.measures[0]!.staveCount,
+				part.measures[0]!.notes.map((note) => [note.staff, note.pitch?.octave]),
+			]),
+		).toEqual([
+			[
+				'Piano',
+				2,
+				[
+					['1', 5],
+					['2', 4],
+				],
+			],
+			['Piano', 1, [['1', 2]]],
+		]);
+		expect(result.score.parts[1]!.measures[0]!.getClef('1')).toMatchObject({
+			sign: 'F',
+			line: 4,
+		});
+		expect(schemaErrors(result)).toEqual([]);
+	});
+
 	it('keeps tied notes connected across measures', async () => {
 		const first = measure
 			.getOrCreateVoice('1')

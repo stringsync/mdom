@@ -63,7 +63,7 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 `;
 
 exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpus 1`] = `
-"## Export: 67 of 199 ok
+"## Export: 69 of 199 ok
 
 | File | Result |
 | --- | --- |
@@ -140,7 +140,7 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/24e-GraceNote-StaffChange.xml\` | ok |
 | \`lilypond/24f-GraceNote-Slur.xml\` | omits \`<slur>\` |
 | \`lilypond/24g-GraceNote-Dynamics.xml\` | omits \`<wedge>\` |
-| \`lilypond/24h-GraceNote-Simultaneous.xml\` | error: Invalid staff count: 3; expected an integer from 1 to 2 |
+| \`lilypond/24h-GraceNote-Simultaneous.xml\` | omits \`dynamic fp\` |
 | \`lilypond/31a-Directions.xml\` | omits \`<accordion-registration>\`, \`<bracket>\`, \`<coda>\`, \`<damp-all>\`, \`<damp>\`, \`<dashes>\`, \`<eyeglasses>\`, \`<harp-pedals>\`, \`<image>\`, \`<lyric>\`, \`<octave-shift>\`, \`<pedal>\`, \`<percussion>\`, \`<principal-voice>\`, \`<rehearsal>\`, \`<scordatura>\`, \`<segno>\`, \`<staff-divide>\`, \`<string-mute>\`, \`<symbol>\`, \`<wedge>\`, \`dynamic ffff\`, \`dynamic fffff\`, \`dynamic ffffff\`, \`dynamic ffz\`, \`dynamic fp\`, \`dynamic fz\`, \`dynamic pppp\`, \`dynamic ppppp\`, \`dynamic pppppp\`, \`dynamic rf\`, \`dynamic rfz\`, \`dynamic sf\`, \`dynamic sffz\`, \`dynamic sfp\`, \`dynamic sfpp\`, \`dynamic sfz\` |
 | \`lilypond/31b-Directions-Order.xml\` | omits \`<wedge>\` |
 | \`lilypond/31c-MetronomeMarks.xml\` | omits \`mid-measure tempo changes\`, \`non-numeric or compound metronome marks\` |
@@ -187,8 +187,8 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/43d-MultiStaff-StaffChange.xml\` | ok |
 | \`lilypond/43e-Multistaff-ClefDynamics.xml\` | omits \`<wedge>\`, \`dynamic ffff\`; error: Unsupported Guitar Pro clef: C2 |
 | \`lilypond/43f-MultiStaff-Lyrics.xml\` | omits \`<lyric>\`, \`<slur>\` |
-| \`lilypond/43g-MultiStaff-PartSymbol.xml\` | error: Invalid staff count: 4; expected an integer from 1 to 2 |
-| \`lilypond/43h-MultiStaff-Chords.xml\` | error: Invalid staff count: 3; expected an integer from 1 to 2 |
+| \`lilypond/43g-MultiStaff-PartSymbol.xml\` | ok |
+| \`lilypond/43h-MultiStaff-Chords.xml\` | ok |
 | \`lilypond/43i-MultiStaff-StaffChange-SingleVoice.xml\` | ok |
 | \`lilypond/43j-MultiStaff-TimeSignatureAfterBackup.xml\` | omits \`mid-measure clef changes\`, \`mid-measure key or time changes\` |
 | \`lilypond/45a-SimpleRepeat.xml\` | ok |
@@ -294,13 +294,13 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`<glissando>\` | 4 |
 | \`<pedal>\` | 4 |
 | \`<segno>\` | 4 |
+| \`dynamic fp\` | 4 |
 | \`<bracket>\` | 3 |
 | \`<breath-mark>\` | 3 |
 | \`<coda>\` | 3 |
 | \`<dynamics>\` | 3 |
 | \`<pluck>\` | 3 |
 | \`<pull-off>\` | 3 |
-| \`dynamic fp\` | 3 |
 | \`pickups after the first measure\` | 3 |
 | \`<accidental-mark>\` | 2 |
 | \`<accordion-registration>\` | 2 |

@@ -77,7 +77,7 @@ export class GuitarProScoreWriter {
 		X.add(score, 'ScoreSystemsDefaultLayout', 3);
 		X.add(score, 'ScoreSystemsLayout', 3);
 		const masterTrack = X.add(this.root, 'MasterTrack');
-		X.add(masterTrack, 'Tracks', parts.map((_, i) => i).join(' '));
+		const masterTracks = X.add(masterTrack, 'Tracks');
 		if (first.measures[0]!.isImplicit) {
 			X.add(masterTrack, 'Anacrusis');
 		}
@@ -107,45 +107,15 @@ export class GuitarProScoreWriter {
 					'Guitar Pro parts must have the same number of measures',
 				);
 			}
-			const track = this.entry('Tracks', 'Track');
-			X.add(track, 'Name', part.label ?? '');
-			X.add(track, 'ShortName', part.label ?? '');
-			X.add(track, 'Color', '200 40 40');
-			X.add(track, 'SystemsDefautLayout', 3);
-			X.add(track, 'SystemsLayout', 3);
-			const scorePart = document.score
-				.child('part-list')
-				?.childrenNamed('score-part')
-				.find((s) => s.getAttribute('id') === part.id);
-			const instrument = scorePart?.child('midi-instrument');
-			const program =
-				GuitarProValues.integer(
-					Number(instrument?.child('midi-program')?.text ?? 1),
-					'MIDI program',
-					1,
-					128,
-				) - 1;
-			const channel =
-				GuitarProValues.integer(
-					Number(instrument?.child('midi-channel')?.text ?? 1),
-					'MIDI channel',
-					1,
-					16,
-				) - 1;
-			new GuitarProPlayback().write(track, program, channel);
-			const staves = X.add(track, 'Staves');
-			const staffCount = GuitarProValues.integer(
-				part.measures[0]!.staveCount,
-				'staff count',
-				1,
-				2,
+			const staffCount = part.measures[0]!.staveCount;
+			if (!Number.isInteger(staffCount) || staffCount < 1) {
+				throw new Error(`Invalid staff count: ${staffCount}`);
+			}
+			const staffIds = Array.from({ length: staffCount }, (_, i) =>
+				String(i + 1),
 			);
 			for (const measure of part.measures) {
-				if (
-					measure.notes.some(
-						(n) => !['1', '2'].slice(0, staffCount).includes(n.staff),
-					)
-				) {
+				if (measure.notes.some((n) => !staffIds.includes(n.staff))) {
 					throw new Error('Guitar Pro notes must refer to a declared staff');
 				}
 				if (measure.staveCount !== staffCount) {
@@ -184,10 +154,51 @@ export class GuitarProScoreWriter {
 					}
 				}
 			}
-			for (let staff = 1; staff <= staffCount; staff++) {
-				this.writeStaff(part, staves, String(staff));
+			// A Guitar Pro track holds at most a grand staff, so a part with more staves splits into consecutive tracks of up to two.
+			for (let firstStaff = 1; firstStaff <= staffCount; firstStaff += 2) {
+				const track = this.entry('Tracks', 'Track');
+				X.add(track, 'Name', part.label ?? '');
+				X.add(track, 'ShortName', part.label ?? '');
+				X.add(track, 'Color', '200 40 40');
+				X.add(track, 'SystemsDefautLayout', 3);
+				X.add(track, 'SystemsLayout', 3);
+				const scorePart = document.score
+					.child('part-list')
+					?.childrenNamed('score-part')
+					.find((s) => s.getAttribute('id') === part.id);
+				const instrument = scorePart?.child('midi-instrument');
+				const program =
+					GuitarProValues.integer(
+						Number(instrument?.child('midi-program')?.text ?? 1),
+						'MIDI program',
+						1,
+						128,
+					) - 1;
+				const channel =
+					GuitarProValues.integer(
+						Number(instrument?.child('midi-channel')?.text ?? 1),
+						'MIDI channel',
+						1,
+						16,
+					) - 1;
+				new GuitarProPlayback().write(track, program, channel);
+				const staves = X.add(track, 'Staves');
+				for (
+					let staff = firstStaff;
+					staff <= Math.min(firstStaff + 1, staffCount);
+					staff++
+				) {
+					this.writeStaff(part, staves, String(staff));
+				}
 			}
 		}
+		masterTracks.setText(
+			this.tables
+				.get('Tracks')!
+				.childrenNamed('Track')
+				.map((track) => track.getAttribute('id'))
+				.join(' '),
+		);
 		return new MDocument(this.root, { version: '1.0', encoding: 'utf-8' });
 	}
 

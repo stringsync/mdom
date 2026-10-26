@@ -72,7 +72,9 @@ sound from the exported instrument family.
 
 The first supported subset includes:
 
-- Pitched parts, up to two staves per exported part, and four voices per staff.
+- Pitched parts and four voices per staff. A Guitar Pro track holds at most
+  two staves, so a part with more exports as consecutive tracks of up to two
+  staves each, which import back as separate parts.
 - Notes, rests, chords, whole through 128th durations, up to three dots,
   tuplet ratios, grace notes, and ties across measures.
 - String/fret positions, open strings, nonstandard tuning, and a fixed capo.
