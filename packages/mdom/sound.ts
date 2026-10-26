@@ -1,11 +1,28 @@
+import {
+	checkRange,
+	decimals,
+	type MidiDevice,
+	type MidiDeviceSpec,
+	type MidiInstrument,
+	type MidiInstrumentSpec,
+	numberIn,
+	readMidiDevice,
+	readMidiInstrument,
+	writeMidiDevice,
+	writeMidiInstrument,
+} from './instrument';
 import { MElement } from './m-node';
 import { Measure } from './measure';
 import { type Offset, offsetOf } from './offset';
+import type { Part } from './part';
 import { setYesNo, yesNoOf } from './print-style';
 import { divisionsBackFrom } from './signature';
 import { onsetOf } from './timeline';
 
 /** Quarter-note beats per swing unit; MusicXML's default swing type is the eighth. */
+const rotationRange = decimals(-180, 180);
+const pedalRange = decimals(0, 100);
+
 const SWING_UNITS: Record<string, number> = {
 	eighth: 0.5,
 	'16th': 0.25,
@@ -38,6 +55,20 @@ export interface SoundSpec {
 	dynamics?: number;
 	/** Play pizzicato (true) or arco again (false). */
 	pizzicato?: boolean;
+	/** Stereo direction in degrees, -180 to 180 (0 straight ahead, 90 hard right). Deprecated in MusicXML in favour of a midi-instrument's pan. */
+	pan?: number;
+	/** Height in degrees, -180 to 180 (0 level, 90 straight up). Deprecated in MusicXML in favour of a midi-instrument's elevation. */
+	elevation?: number;
+	/** Damper (sustain) pedal: true down, false up, or the percent depressed (0-100) for half pedalling. */
+	damperPedal?: boolean | number;
+	/** Soft (una corda) pedal, as {@link damperPedal}. */
+	softPedal?: boolean | number;
+	/** Sostenuto pedal, as {@link damperPedal}. */
+	sostenutoPedal?: boolean | number;
+	/** MIDI devices to switch to from here; an entry with no `id` applies to the whole part. */
+	midiDevices?: Array<MidiDeviceSpec & { id?: string }>;
+	/** MIDI playback to switch to from here, each for the score-instrument its `id` names. */
+	midiInstruments?: Array<MidiInstrumentSpec & { id: string }>;
 }
 
 /**
@@ -134,6 +165,66 @@ export class Sound extends MElement {
 	}
 
 	/**
+	 * `pan`: stereo direction in degrees, -180 to 180 (0 straight ahead, -90 hard
+	 * left, 90 hard right); null when unset or out of range. Deprecated in
+	 * MusicXML: a {@link midiInstruments} entry's pan takes priority.
+	 */
+	get pan(): number | null {
+		return numberIn(this.getAttribute('pan'), rotationRange);
+	}
+
+	/**
+	 * `elevation`: height in degrees, -180 to 180 (0 level, 90 straight up); null
+	 * when unset or out of range. Deprecated as {@link pan} is.
+	 */
+	get elevation(): number | null {
+		return numberIn(this.getAttribute('elevation'), rotationRange);
+	}
+
+	/**
+	 * `damper-pedal`: how far the damper (sustain) pedal is down from here, as a
+	 * percent — `yes` reads 100, `no` 0, a number is half pedalling; null when
+	 * this sound leaves the pedal as it was.
+	 */
+	get damperPedal(): number | null {
+		return pedalOf(this, 'damper-pedal');
+	}
+
+	/** `soft-pedal` (una corda), as {@link damperPedal}. */
+	get softPedal(): number | null {
+		return pedalOf(this, 'soft-pedal');
+	}
+
+	/** `sostenuto-pedal`, as {@link damperPedal}. */
+	get sostenutoPedal(): number | null {
+		return pedalOf(this, 'sostenuto-pedal');
+	}
+
+	/**
+	 * `divisions`: divisions per quarter note that a segno or coda sound may
+	 * state for sound generators; null when unset. Durations elsewhere use the
+	 * measure's `<divisions>` regardless.
+	 */
+	get divisions(): number | null {
+		const divisions = Number(this.getAttribute('divisions'));
+		return divisions > 0 ? divisions : null;
+	}
+
+	/**
+	 * The `<midi-instrument>`s this sound switches to, in document order: a
+	 * mid-score program or volume change for the score-instrument each `id`
+	 * names. They override the part's own {@link Part.midiInstruments} from here.
+	 */
+	get midiInstruments(): MidiInstrument[] {
+		return this.childrenNamed('midi-instrument').map(readMidiInstrument);
+	}
+
+	/** The `<midi-device>`s this sound switches to, in document order. */
+	get midiDevices(): MidiDevice[] {
+		return this.childrenNamed('midi-device').map(readMidiDevice);
+	}
+
+	/**
 	 * The `<sound>`'s own `<offset>`: how far from where it sits playback takes
 	 * it. Its `sound` is true unless stated, since a sound has no printed
 	 * position for the offset to move instead.
@@ -197,7 +288,23 @@ export class Sound extends MElement {
 	}
 }
 
-/** Write a {@link SoundSpec} onto a `<sound>`'s attributes. */
+/** A yes-no-number pedal attribute as percent depressed; null when absent or invalid. */
+function pedalOf(sound: Sound, name: string): number | null {
+	const value = sound.getAttribute(name);
+	if (value === 'yes' || value === 'no') {
+		return value === 'yes' ? 100 : 0;
+	}
+	return numberIn(value, pedalRange);
+}
+
+function pedalText(name: string, pedal: boolean | number): string {
+	if (typeof pedal === 'boolean') {
+		return pedal ? 'yes' : 'no';
+	}
+	return checkRange(name, pedal, pedalRange);
+}
+
+/** Write a {@link SoundSpec} onto a `<sound>`'s attributes and MIDI children. */
 export function writeSound(sound: Sound, spec: SoundSpec): void {
 	const attributes: Array<[string, string | undefined]> = [
 		['segno', spec.segno],
@@ -209,7 +316,26 @@ export function writeSound(sound: Sound, spec: SoundSpec): void {
 		['forward-repeat', spec.forwardRepeat ? 'yes' : undefined],
 		['time-only', spec.timeOnly?.join(',')],
 		['dynamics', spec.dynamics?.toString()],
+		[
+			'pan',
+			spec.pan == null ? undefined : checkRange('pan', spec.pan, rotationRange),
+		],
+		[
+			'elevation',
+			spec.elevation == null
+				? undefined
+				: checkRange('elevation', spec.elevation, rotationRange),
+		],
 	];
+	for (const [name, pedal] of [
+		['damper-pedal', spec.damperPedal],
+		['soft-pedal', spec.softPedal],
+		['sostenuto-pedal', spec.sostenutoPedal],
+	] as const) {
+		if (pedal != null) {
+			attributes.push([name, pedalText(name, pedal)]);
+		}
+	}
 	for (const [name, value] of attributes) {
 		if (value != null) {
 			sound.setAttribute(name, value);
@@ -217,5 +343,43 @@ export function writeSound(sound: Sound, spec: SoundSpec): void {
 	}
 	if (spec.pizzicato != null) {
 		setYesNo(sound, 'pizzicato', spec.pizzicato);
+	}
+	// Ahead of any <swing> or <offset>, each device just before its instrument
+	// so the pairs stay grouped by id as MusicXML asks.
+	const before =
+		sound.children.find(
+			(child) =>
+				child instanceof MElement &&
+				(child.tag === 'swing' || child.tag === 'offset'),
+		) ?? null;
+	const instruments = spec.midiInstruments ?? [];
+	const devices = spec.midiDevices ?? [];
+	// A part-wide device (no id) leads, as on the <score-part>.
+	const ids = [
+		...new Set([
+			...devices.filter((device) => device.id == null).map(() => null),
+			...devices.map((device) => device.id ?? null),
+			...instruments.map((instrument) => instrument.id),
+		]),
+	];
+	for (const id of ids) {
+		for (const { id: deviceId, ...device } of devices) {
+			if ((deviceId ?? null) === id) {
+				const node = new MElement('midi-device');
+				if (deviceId != null) {
+					node.setAttribute('id', deviceId);
+				}
+				writeMidiDevice(node, device);
+				sound.insertBefore(node, before);
+			}
+		}
+		for (const { id: instrumentId, ...instrument } of instruments) {
+			if (instrumentId === id) {
+				const node = new MElement('midi-instrument');
+				node.setAttribute('id', instrumentId);
+				writeMidiInstrument(node, instrument);
+				sound.insertBefore(node, before);
+			}
+		}
 	}
 }

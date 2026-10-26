@@ -74,7 +74,7 @@ export interface MidiDeviceSpec {
 	name?: string;
 }
 
-interface Range {
+export interface Range {
 	min: number;
 	max: number;
 	integer: boolean;
@@ -98,7 +98,7 @@ const portRange = integers(1, 16);
 function integers(min: number, max: number): Range {
 	return { min, max, integer: true };
 }
-function decimals(min: number, max: number): Range {
+export function decimals(min: number, max: number): Range {
 	return { min, max, integer: false };
 }
 
@@ -116,7 +116,7 @@ export function numberIn(
 	return value >= range.min && value <= range.max ? value : null;
 }
 
-function checkRange(label: string, value: number, range: Range): string {
+export function checkRange(label: string, value: number, range: Range): string {
 	if (
 		!Number.isFinite(value) ||
 		(range.integer && !Number.isInteger(value)) ||
