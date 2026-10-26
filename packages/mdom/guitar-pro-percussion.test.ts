@@ -172,16 +172,18 @@ describe('Guitar Pro percussion export', () => {
       </attributes></measure></part></score-partwise>`);
 		const part = document.score.parts[0]!;
 		const voice = part.measures[0]!.getOrCreateVoice('1');
-		for (const [name, key, step, octave] of [
-			['Hi-hat', 43, 'G', 5],
-			['Snare', 39, 'C', 5],
-			['Bass drum', 37, 'F', 4],
+		for (const [name, key, step, octave, notehead] of [
+			['Hi-Hat (closed)', 43, 'G', 5, 'x'],
+			['Snare (hit)', 39, 'C', 5, null],
+			['Kick (hit)', 37, 'F', 4, null],
 		] as const) {
 			const instrument = part.addInstrument({ name });
 			part.setMidiInstrument(instrument.id!, { channel: 10, unpitched: key });
-			voice
-				.addUnpitched({ type: 'quarter', step, octave })
-				.setInstrumentIds([instrument.id!]);
+			const note = voice.addUnpitched({ type: 'quarter', step, octave });
+			note.setInstrumentIds([instrument.id!]);
+			if (notehead) {
+				note.setNotehead({ value: notehead });
+			}
 		}
 		return document;
 	}
@@ -264,6 +266,7 @@ describe('Guitar Pro percussion export', () => {
 		const document = drumScore();
 		const part = document.score.parts[0]!;
 		part.setInstrument(part.instruments[1]!.id!, { name: 'Snare (rim shot)' });
+		part.measures[0]!.notes[1]!.setNotehead({ value: 'diamond' });
 		const restored = await new GuitarProParser().parseFromBytes(
 			await new GuitarProSerializer().serializeToBytes(document),
 		);
@@ -314,6 +317,84 @@ describe('Guitar Pro percussion export', () => {
 						]!.techniqueSymbol,
 				),
 		).toEqual(symbols);
+	});
+
+	it('adds the drums a part names, places or draws differently to the kit', async () => {
+		const document = drumScore();
+		const part = document.score.parts[0]!;
+		const [hiHat, snare, kick] = part.measures[0]!.notes;
+		part.setInstrument(snare!.instrumentIds[0]!, { name: 'Backbeat' });
+		kick!.setUnpitched({ step: 'D', octave: 4 });
+		hiHat!.setNotehead({ value: 'triangle' });
+		const bytes = await new GuitarProSerializer().serializeToBytes(document);
+		const kit = (await gpifOf(bytes))
+			.child('Tracks')!
+			.child('Track')!
+			.child('InstrumentSet')!
+			.child('Elements')!
+			.childrenNamed('Element');
+		const restored = await new GuitarProParser().parseFromBytes(bytes);
+
+		expect(
+			kit
+				.flatMap((element) =>
+					element.child('Articulations')!.childrenNamed('Articulation'),
+				)
+				.slice(guitarProDrumKit.length)
+				.map((articulation) => articulation.child('Name')!.text),
+		).toEqual(['Hi-Hat (closed)', 'Backbeat', 'Kick (hit)']);
+		expect(restored.score.parts[0]!.measures[0]!.notes.map(drum)).toEqual(
+			part.measures[0]!.notes.map(drum),
+		);
+	});
+
+	it('keeps a Guitar Pro file’s custom drum kit', async () => {
+		const gpif = percussionGpif(
+			`<InstrumentSet><Name>Drums</Name><Type>drumKit</Type><Elements>
+<Element><Name>Snare</Name><Type>snare</Type><SoundbankName>Master-Snare</SoundbankName><Articulations>
+<Articulation><Name>Ghost</Name><StaffLine>4</StaffLine><Noteheads>noteheadDiamondWhite noteheadDiamondWhite noteheadDiamondWhite</Noteheads><TechniquePlacement>outside</TechniquePlacement><TechniqueSymbol/><InputMidiNumbers>38</InputMidiNumbers><OutputRSESound>stick.hit.hit</OutputRSESound><OutputMidiNumber>38</OutputMidiNumber></Articulation>
+</Articulations></Element>
+<Element><Name>Kick Drum</Name><Type>kickDrum</Type><SoundbankName>Master-Kick</SoundbankName><Articulations>
+<Articulation><Name>Kick (hit)</Name><StaffLine>7</StaffLine><Noteheads>noteheadBlack noteheadHalf noteheadWhole</Noteheads><TechniquePlacement>outside</TechniquePlacement><TechniqueSymbol/><InputMidiNumbers>36</InputMidiNumbers><OutputRSESound>pedal.hit.hit</OutputRSESound><OutputMidiNumber>36</OutputMidiNumber></Articulation>
+</Articulations></Element>
+</Elements></InstrumentSet>`,
+			[0, 1, 0].map(
+				(index) => `<InstrumentArticulation>${index}</InstrumentArticulation>`,
+			),
+		);
+		const parser = new GuitarProParser();
+		const imported = await parser.parseFromBytes(await archive(gpif));
+		const bytes = await new GuitarProSerializer().serializeToBytes(imported);
+		const restored = await parser.parseFromBytes(bytes);
+		const notes = (await gpifOf(bytes)).child('Notes')!.childrenNamed('Note');
+
+		expect(restored.score.parts[0]!.measures[0]!.notes.map(drum)).toEqual([
+			{
+				name: 'Ghost',
+				key: 39,
+				position: { step: 'B', octave: 4 },
+				notehead: 'diamond',
+			},
+			{
+				name: 'Kick (hit)',
+				key: 37,
+				position: { step: 'F', octave: 4 },
+				notehead: null,
+			},
+			{
+				name: 'Ghost',
+				key: 39,
+				position: { step: 'B', octave: 4 },
+				notehead: 'diamond',
+			},
+		]);
+		expect(
+			notes.map((note) => Number(note.child('InstrumentArticulation')!.text)),
+		).toEqual([
+			guitarProDrumKit.length,
+			guitarProDrumKit.findIndex((drum) => drum.element === 'Kick Drum'),
+			guitarProDrumKit.length,
+		]);
 	});
 
 	it('rejects a part mixing pitched and unpitched notes', async () => {

@@ -337,12 +337,18 @@ export function readDrumKit(set: MElement): GuitarProDrumArticulation[] {
 	);
 }
 
-/** Writes the standard kit's `<Elements>` into a GPIF `<InstrumentSet>`. */
-export function writeDrumKit(set: MElement): void {
-	const elementsNode = X.add(set, 'Elements');
+/**
+ * Appends a kit's articulations to a GPIF `<InstrumentSet>`'s `<Elements>`,
+ * one `<Element>` for each run of articulations sharing an element.
+ */
+export function writeDrumKit(
+	set: MElement,
+	kit: readonly GuitarProDrumArticulation[] = guitarProDrumKit,
+): void {
+	const elementsNode = set.child('Elements') ?? X.add(set, 'Elements');
 	let elementNode: MElement | null = null;
 	let elementName = '';
-	for (const articulation of guitarProDrumKit) {
+	for (const articulation of kit) {
 		if (!elementNode || articulation.element !== elementName) {
 			elementName = articulation.element;
 			elementNode = X.add(elementsNode, 'Element');
@@ -384,6 +390,20 @@ export function staffLineOf(position: DisplayPositionSpec): number {
 		throw new Error(`Invalid display step: ${position.step}`);
 	}
 	return TOP_LINE - (position.octave * 7 + step);
+}
+
+/** The glyph a kit drum draws for a note type: kits list short, half and whole. */
+export function drumGlyph(
+	drum: GuitarProDrumArticulation,
+	type: string,
+): string {
+	return (
+		drum.noteheads[
+			({ half: 1, whole: 2 } as Record<string, number>)[type] ?? 0
+		] ??
+		drum.noteheads[0] ??
+		''
+	);
 }
 
 /** The MusicXML notehead a SMuFL glyph draws; null for the default head. */

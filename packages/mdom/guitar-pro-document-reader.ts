@@ -6,6 +6,7 @@ import { GuitarProBeatEffectReader } from './guitar-pro-beat-effects';
 import { readDiagram } from './guitar-pro-diagrams';
 import {
 	displayOfStaffLine,
+	drumGlyph,
 	type GuitarProDrumArticulation,
 	gp6ArticulationId,
 	guitarProDrumKit,
@@ -999,11 +1000,7 @@ export class GuitarProDocumentReader {
 			});
 		}
 		note.setInstrumentIds([id]);
-		// Kits list a glyph each for short, half and whole notes.
-		const glyph =
-			drum.noteheads[
-				({ half: 1, whole: 2 } as Record<string, number>)[type] ?? 0
-			] ?? drum.noteheads[0];
+		const glyph = drumGlyph(drum, type);
 		const notehead = glyph ? noteheadOfGlyph(glyph) : null;
 		if (notehead) {
 			note.setNotehead(notehead);

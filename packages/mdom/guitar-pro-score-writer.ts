@@ -6,9 +6,12 @@ import { Direction } from './direction';
 import { GuitarProBeatEffectWriter } from './guitar-pro-beat-effects';
 import { writeDiagram } from './guitar-pro-diagrams';
 import {
+	drumGlyph,
+	type GuitarProDrumArticulation,
 	guitarProDrumKit,
 	noteheadOfGlyph,
 	staffLineOf,
+	writeDrumKit,
 } from './guitar-pro-drum-kit';
 import { GuitarProLyrics } from './guitar-pro-lyrics';
 import type { GuitarProOptions } from './guitar-pro-options';
@@ -91,8 +94,11 @@ interface StaffContext {
 	pitches: GuitarProPitchWriter;
 	/** Semitones from written to sounding pitch, from the part's `<transpose>`. */
 	shift: number;
-	/** Whether the staff holds unpitched notes, played by the standard drum kit. */
-	drums: boolean;
+	/**
+	 * The drum kit of a staff of unpitched notes: the standard kit, then any
+	 * drums the part draws or names differently; null for a pitched staff.
+	 */
+	kit: GuitarProDrumArticulation[] | null;
 }
 
 /** Writes GPIF tables directly from mdom notes; no external score model. */
@@ -292,6 +298,7 @@ export class GuitarProScoreWriter {
 					transposition,
 					drums,
 				);
+				const kit = drums ? [...guitarProDrumKit] : null;
 				const staves = X.add(track, 'Staves');
 				for (
 					let staff = firstStaff;
@@ -303,7 +310,13 @@ export class GuitarProScoreWriter {
 						staves,
 						String(staff),
 						transposition.shift,
-						drums,
+						kit,
+					);
+				}
+				if (kit) {
+					writeDrumKit(
+						track.child('InstrumentSet')!,
+						kit.slice(guitarProDrumKit.length),
 					);
 				}
 				if (firstStaff === 1) {
@@ -710,8 +723,9 @@ export class GuitarProScoreWriter {
 		staves: MElement,
 		id: string,
 		shift: number,
-		drums: boolean,
+		kit: GuitarProDrumArticulation[] | null,
 	): void {
+		const drums = kit != null;
 		const first = part.measures[0]!;
 		const tunings = first
 			.getStaffTunings(id)
@@ -734,7 +748,7 @@ export class GuitarProScoreWriter {
 		if (drums && tuning.length) {
 			throw new Error('Guitar Pro percussion staves cannot have a tuning');
 		}
-		const ctx: StaffContext = { id, tuning, capo, pitches, shift, drums };
+		const ctx: StaffContext = { id, tuning, capo, pitches, shift, kit };
 		const ottavas = this.effects.ottavas(part, id);
 		const node = X.add(staves, 'Staff');
 		X.addProperty(node, 'CapoFret', 'Fret', tuning.length ? capo : 0);
@@ -1081,11 +1095,13 @@ export class GuitarProScoreWriter {
 		return percussion;
 	}
 	/**
-	 * The index in the standard drum kit of the drum an unpitched note plays,
-	 * matched by its instrument's General MIDI key (`<midi-unpitched>`), then its
-	 * name, staff position and notehead.
+	 * The index in `kit` of the drum an unpitched note plays: the standard kit
+	 * drum matched by its instrument's General MIDI key (`<midi-unpitched>`),
+	 * then its name, staff position and notehead, or, when the note names,
+	 * places or draws it differently, a drum added to the kit that keeps them
+	 * and plays the standard drum's sound.
 	 */
-	private drum(source: Note): number {
+	private drum(source: Note, kit: GuitarProDrumArticulation[]): number {
 		const part = source.part;
 		const id =
 			source.instrumentIds[0] ??
@@ -1102,6 +1118,9 @@ export class GuitarProScoreWriter {
 				? [`strings${source.bowing === 'up' ? 'Up' : 'Down'}Bow`]
 				: []),
 		];
+		const type = source.type ?? 'quarter';
+		const drawn = (drum: GuitarProDrumArticulation) =>
+			noteheadOfGlyph(drumGlyph(drum, type))?.value ?? 'normal';
 		let best = -1;
 		let bestScore = -1;
 		for (const [index, drum] of guitarProDrumKit.entries()) {
@@ -1109,12 +1128,11 @@ export class GuitarProScoreWriter {
 			if (key == null ? !named : drum.id !== key && drum.output !== key) {
 				continue;
 			}
-			const glyph = noteheadOfGlyph(drum.noteheads[0]!)?.value ?? 'normal';
 			const score =
 				(named ? 8 : 0) +
 				(drum.id === key ? 4 : 0) +
 				(drum.staffLine === line ? 2 : 0) +
-				(glyph === notehead ? 1 : 0) +
+				(drawn(drum) === notehead ? 1 : 0) +
 				(drum.techniqueSymbol && symbols.includes(drum.techniqueSymbol)
 					? 0.5
 					: 0);
@@ -1126,8 +1144,7 @@ export class GuitarProScoreWriter {
 		if (best < 0 && line != null) {
 			// Nothing names the drum, so take the kit's first one drawn on its line.
 			for (const [index, drum] of guitarProDrumKit.entries()) {
-				const glyph = noteheadOfGlyph(drum.noteheads[0]!)?.value ?? 'normal';
-				const score = glyph === notehead ? 1 : 0;
+				const score = drawn(drum) === notehead ? 1 : 0;
 				if (drum.staffLine === line && score > bestScore) {
 					best = index;
 					bestScore = score;
@@ -1145,18 +1162,53 @@ export class GuitarProScoreWriter {
 				'Guitar Pro export needs each unpitched note to have a staff position or name an instrument with a General MIDI drum key (<midi-unpitched>) or a Guitar Pro drum name',
 			);
 		}
-		if (line != null && guitarProDrumKit[best]!.staffLine !== line) {
-			this.values.unsupported(
-				'percussion staff positions outside the Guitar Pro drum kit',
-			);
+		const standard = guitarProDrumKit[best]!;
+		let noteheads = standard.noteheads;
+		if (drawn(standard) !== notehead) {
+			// Borrow the glyphs of a standard drum drawn with the note's head.
+			const like = guitarProDrumKit.find((drum) => drawn(drum) === notehead);
+			if (like) {
+				noteheads = like.noteheads;
+			} else {
+				this.values.unsupported(`<notehead> ${notehead} on percussion`);
+			}
 		}
-		return best;
+		const custom: GuitarProDrumArticulation = {
+			...standard,
+			name: name ?? standard.name,
+			staffLine: line ?? standard.staffLine,
+			noteheads,
+			// The note's own symbol, when the standard drum carries another.
+			techniqueSymbol:
+				symbols.length && !symbols.includes(standard.techniqueSymbol)
+					? symbols[0]!
+					: standard.techniqueSymbol,
+		};
+		const same = (drum: GuitarProDrumArticulation) =>
+			drum.element === custom.element &&
+			drum.name === custom.name &&
+			drum.staffLine === custom.staffLine &&
+			drum.noteheads.join(' ') === custom.noteheads.join(' ') &&
+			drum.techniqueSymbol === custom.techniqueSymbol &&
+			drum.output === custom.output;
+		if (same(standard)) {
+			return best;
+		}
+		const added = kit.findIndex(
+			(drum, index) => index >= guitarProDrumKit.length && same(drum),
+		);
+		if (added >= 0) {
+			return added;
+		}
+		kit.push(custom);
+		return kit.length - 1;
 	}
 	private drumNote(
 		source: Note,
+		kit: GuitarProDrumArticulation[],
 		piece: { index: number; count: number },
 	): MElement {
-		const drum = this.drum(source);
+		const drum = this.drum(source, kit);
 		for (const tie of source.ties) {
 			const partner = tie.partner?.note;
 			if (
@@ -1164,7 +1216,7 @@ export class GuitarProScoreWriter {
 				(!partner?.child('unpitched') ||
 					partner.voice !== source.voice ||
 					partner.staff !== source.staff ||
-					this.drum(partner) !== drum)
+					this.drum(partner, kit) !== drum)
 			) {
 				throw new Error(
 					'Guitar Pro ties must connect matching drums in the same voice and staff',
@@ -1191,8 +1243,8 @@ export class GuitarProScoreWriter {
 		staff: StaffContext,
 		piece = { index: 0, count: 1 },
 	): MElement {
-		if (staff.drums) {
-			return this.drumNote(source, piece);
+		if (staff.kit) {
+			return this.drumNote(source, staff.kit, piece);
 		}
 		if (!source.pitch) {
 			throw new Error('Guitar Pro export requires pitched notes');
