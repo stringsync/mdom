@@ -5,7 +5,7 @@ import { Clef } from './clef';
 import { Glissando } from './glissando';
 import { HammerOn } from './hammer-on';
 import { Key } from './key';
-import { Lyric } from './lyric';
+import { buildLyric, Lyric, type LyricSpec } from './lyric';
 import { MElement, required } from './m-node';
 import { appendValue, Measure } from './measure';
 import {
@@ -798,6 +798,49 @@ export class Note extends MElement {
 		return this.childrenOfType(Lyric);
 	}
 
+	/** The lyric of `verse` (and `name`, when given); null when the note has none. */
+	getLyric(verse = '1', name?: string): Lyric | null {
+		return (
+			this.lyrics.find(
+				(lyric) =>
+					lyric.verse === verse && (name === undefined || lyric.name === name),
+			) ?? null
+		);
+	}
+
+	/**
+	 * Sing a syllable of one verse on this note (see {@link LyricSpec}). A note
+	 * carries one lyric per verse, so this replaces any the verse (and name) has;
+	 * a new verse goes in verse order among the others.
+	 */
+	setLyric(spec: LyricSpec): Lyric {
+		const lyric = buildLyric(spec);
+		const verse = spec.verse ?? '1';
+		const existing = this.getLyric(verse, spec.name);
+		if (existing) {
+			this.replaceChild(existing, lyric);
+			return lyric;
+		}
+		const later = this.lyrics.find(
+			(other) => compareVerses(other.verse, verse) > 0,
+		);
+		this.insertBefore(
+			lyric,
+			later ??
+				this.children.find(
+					(child) =>
+						child instanceof MElement && ['play', 'listen'].includes(child.tag),
+				) ??
+				null,
+		);
+		return lyric;
+	}
+
+	/** Remove the lyric of `verse` (and `name`, when given); a no-op when there is none. */
+	removeLyric(verse = '1', name?: string): void {
+		this.getLyric(verse, name)?.remove();
+	}
+
 	/** `<string>` in `<technical>`: the guitar string this note is fretted on, or null. */
 	get string(): number | null {
 		const value = this.technicalChild('string')?.text;
@@ -1342,6 +1385,15 @@ export class Note extends MElement {
 			appendValue(technical, tag, String(value));
 		}
 	}
+}
+
+/** Order verses as numbers when both are, so verse 10 follows verse 9. */
+function compareVerses(left: string, right: string): number {
+	const leftNumber = Number(left);
+	const rightNumber = Number(right);
+	return Number.isFinite(leftNumber) && Number.isFinite(rightNumber)
+		? leftNumber - rightNumber
+		: left.localeCompare(right);
 }
 
 /** `<note>` children the schema puts after `<instrument>`. */

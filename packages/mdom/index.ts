@@ -79,7 +79,13 @@ export {
 	type KeySpec,
 } from './key';
 export { LineDetail, type LineDetailSpec } from './line-detail';
-export { Lyric, type LyricRun } from './lyric';
+export {
+	Lyric,
+	type LyricExtend,
+	type LyricRun,
+	type LyricSpec,
+	type Syllabic,
+} from './lyric';
 export { MDocument } from './m-document';
 export { MDOMParser } from './m-dom-parser';
 export type { MHistory, MHistoryChange } from './m-history';

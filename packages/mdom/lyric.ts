@@ -3,6 +3,7 @@ import {
 	colorOf,
 	type Position,
 	type PositionSpec,
+	placementOf,
 	positionOf,
 	setPositionOf,
 	setYesNo,
@@ -19,6 +20,37 @@ import {
 
 /** How a syllable joins its neighbours: a whole word, or one piece of one. */
 export type Syllabic = 'single' | 'begin' | 'end' | 'middle';
+
+/** Which end of a melisma line an `<extend>` marks; null when it states none. */
+export type LyricExtend = 'start' | 'stop' | 'continue';
+
+/**
+ * What {@link Note.setLyric} writes: one syllable of one verse.
+ *
+ * `text` is the syllable, or several words sung on the one note (an elision,
+ * "look it"), joined by `elision`: the symbol drawn between them, left to the
+ * renderer when unstated. Leave `syllabic` out and mdom reads it off the
+ * hyphens the way lyrics are typed: `"lov-"` begins a word, `"-ing-"` sits in
+ * the middle of one, `"-ly"` ends one, and `"love"` is a word of its own, the
+ * hyphens dropped from the text. Give `syllabic` and the text is written as is.
+ *
+ * `extend` draws a melisma line after the syllable: `true` for a plain
+ * `<extend/>`, or the end of the line it marks. A lyric of only an extend
+ * (`{ extend: 'continue' }` or `'stop'`) carries the line on through a later
+ * note of the melisma.
+ */
+export interface LyricSpec {
+	text?: string | readonly string[];
+	/** The verse, '1' when left out. */
+	verse?: string;
+	/** The lyric's part ("verse", "chorus", …). */
+	name?: string;
+	syllabic?: Syllabic;
+	/** What an elision between the `text` runs draws; '' or unset leaves it to the renderer. */
+	elision?: string;
+	extend?: boolean | LyricExtend;
+	placement?: 'above' | 'below';
+}
 
 /**
  * One run of a syllable: a `<text>` or an `<elision>` between two. `font` is
@@ -119,6 +151,19 @@ export class Lyric extends MElement {
 		return this.child('extend') !== null;
 	}
 
+	/** Which end of the melisma line the `<extend>` marks; null when it states none or there is none. */
+	get extendType(): LyricExtend | null {
+		const type = this.child('extend')?.getAttribute('type');
+		return type === 'start' || type === 'stop' || type === 'continue'
+			? type
+			: null;
+	}
+
+	/** `placement`: above or below the staff; null when unstated. */
+	get placement(): 'above' | 'below' | null {
+		return placementOf(this);
+	}
+
 	/** The normalized `color`; null when unset. */
 	get color(): string | null {
 		return colorOf(this);
@@ -142,4 +187,69 @@ export class Lyric extends MElement {
 	setPosition(spec: PositionSpec | null): void {
 		setPositionOf(this, spec);
 	}
+}
+
+/** Build the `<lyric>` a {@link LyricSpec} describes, in the schema's child order. */
+export function buildLyric(spec: LyricSpec): Lyric {
+	const texts =
+		typeof spec.text === 'string' ? [spec.text] : [...(spec.text ?? [])];
+	if (texts.length === 0 && !spec.extend) {
+		throw new Error('mdom: a lyric needs text or an extend');
+	}
+	const lyric = new Lyric();
+	if (spec.verse !== undefined) {
+		lyric.setAttribute('number', spec.verse);
+	}
+	if (spec.name !== undefined) {
+		lyric.setAttribute('name', spec.name);
+	}
+	if (spec.placement !== undefined) {
+		lyric.setAttribute('placement', spec.placement);
+	}
+	if (texts.length > 0) {
+		const syllabic = spec.syllabic ?? syllabicFromHyphens(texts);
+		const syllabicNode = new MElement('syllabic');
+		syllabicNode.setText(syllabic);
+		lyric.append(syllabicNode);
+		texts.forEach((run, index) => {
+			if (index > 0) {
+				const elision = new MElement('elision');
+				if (spec.elision) {
+					elision.setText(spec.elision);
+				}
+				lyric.append(elision);
+			}
+			const textNode = new MElement('text');
+			textNode.setText(run);
+			lyric.append(textNode);
+		});
+	}
+	if (spec.extend) {
+		const extend = new MElement('extend');
+		if (spec.extend !== true) {
+			extend.setAttribute('type', spec.extend);
+		}
+		lyric.append(extend);
+	}
+	return lyric;
+}
+
+/**
+ * Read where the syllable sits in its word off a leading and trailing hyphen,
+ * dropping them from `texts` in place. A run of only hyphens stays as typed.
+ */
+function syllabicFromHyphens(texts: string[]): Syllabic {
+	const last = texts.length - 1;
+	const continuesBefore = /^-+(?=[^-])/.test(texts[0]!);
+	const continuesAfter = /(?<=[^-])-+$/.test(texts[last]!);
+	if (continuesBefore) {
+		texts[0] = texts[0]!.replace(/^-+/, '');
+	}
+	if (continuesAfter) {
+		texts[last] = texts[last]!.replace(/-+$/, '');
+	}
+	if (continuesBefore) {
+		return continuesAfter ? 'middle' : 'end';
+	}
+	return continuesAfter ? 'begin' : 'single';
 }

@@ -166,6 +166,22 @@ the signature drawn with the stave — however many notes are already there. Pas
 `measure.getOrCreateAttributes({ onset })` is the escape hatch for whatever the
 setters don't cover.
 
+## Lyrics
+
+`note.setLyric(spec)` sings one syllable of one verse; a note keeps one lyric
+per verse, so setting a verse again replaces it. Type the hyphens the way lyrics
+are written and mdom works out `<syllabic>` from them, dropping them from the
+text; pass `syllabic` to write the text as is.
+
+```ts
+const [first, second, third] = notes;
+first.setLyric({ text: 'Hal-' }); // begin
+second.setLyric({ text: '-le-', extend: 'start' }); // middle, a melisma line follows
+third.setLyric({ extend: 'stop' }); // the line ends here
+first.setLyric({ text: ['look', 'it'], elision: '‿', verse: '2' }); // two words on one note
+first.removeLyric('2');
+```
+
 ## Tuplets and complex signatures
 
 `timeModification` sets a note's cumulative performed ratio. Printed tuplet
