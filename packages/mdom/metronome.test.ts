@@ -82,6 +82,10 @@ describe('metronome — both notated forms, read whole', () => {
 			type: 'start',
 			actual: 3,
 			normal: 2,
+			normalType: null,
+			normalDots: 0,
+			bracket: null,
+			showNumber: null,
 		});
 		expect(swing!.beatUnits).toEqual([]);
 	});

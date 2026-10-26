@@ -166,6 +166,70 @@ the signature drawn with the stave — however many notes are already there. Pas
 `measure.getOrCreateAttributes({ onset })` is the escape hatch for whatever the
 setters don't cover.
 
+## Tuplets and complex signatures
+
+`timeModification` sets a note's cumulative performed ratio. Printed tuplet
+brackets are separate: `first.addTuplet(last, options)` pairs the endpoints and
+can display a different ratio (including nested groups).
+
+```ts
+const voice = measure.getOrCreateVoice('1');
+const notes = Array.from({ length: 3 }, () => voice.addRest({
+  type: 'eighth', timeModification: { actual: 3, normal: 2, normalType: 'eighth' },
+}));
+notes[0].addTuplet(notes[2], {
+  bracket: true, showNumber: 'both',
+  actual: { number: 3, type: 'eighth' }, normal: { number: 2 },
+});
+notes[0].setTimeModification({ actual: 5, normal: 4 });
+notes[0].setDuration({ type: 'quarter' }); // retains the performed ratio
+notes[0].setTimeModification(null); // returns to the written duration
+
+measure.setKey({ alterations: [
+  { step: 'F', alter: 0.5, accidental: 'quarter-sharp', octave: 4 },
+  { step: 'B', alter: -1 },
+] });
+measure.setKey({ fifths: 1, cancel: { fifths: -2, location: 'before-barline' } });
+measure.setTime({ components: [{ beats: '3+2', beatType: 8 }, { beats: 2, beatType: 4 }],
+  interchangeable: { components: [{ beats: 9, beatType: 8 }], relation: 'equals' },
+});
+measure.setTime({ senzaMisura: 'X', staff: '2' });
+```
+
+`Note.timeModification` includes `normalType` (null when omitted) and
+`normalDots`. These describe the reference unit; playback duration is the
+written type and dots multiplied by `normal / actual`. Both duration setters
+ripple later notes in the voice and keep the next voice anchored. New scores
+use 26880 divisions per quarter, supporting triplets, quintuplets and septuplets.
+Imported divisions are retained. A duration that cannot be represented as an
+integer at the current divisions throws before changing the note; set suitable
+divisions before writing such a score.
+
+Complex metronomes use the same `measure.addDirection({ metronome })` entry point:
+
+```ts
+measure.addDirection({ metronome: {
+  beatUnit: 'quarter', tied: [{ type: 'eighth' }], perMinute: 'ca. 120',
+} });
+measure.addDirection({ metronome: {
+  beatUnit: 'quarter', dots: 1, equivalent: { type: 'half' },
+} });
+measure.addDirection({ metronome: {
+  arrows: true,
+  left: [{ type: 'eighth', beams: ['begin'] }, { type: 'eighth', beams: ['end'] }],
+  relation: { operator: 'equals', right: [{ type: 'quarter',
+    tuplet: { type: 'start', actual: 3, normal: 2, normalType: 'eighth',
+      normalDots: 1, bracket: false, showNumber: 'both' },
+  }] },
+} });
+```
+
+`Metronome.beatUnitGroups` retains each side's tied units. `relationOperator`
+preserves an absent versus explicitly empty relation, and `arrows` reads the
+arrow marker. Each `MetronomeNote` exposes `tied`, numbered `beamDetails`, and
+its tuplet's reference type, dots and display attributes. The existing
+`beatUnits`, `relation`, and flattened `Direction.metronome` reads remain available.
+
 ## Transactions and undo/redo
 
 Access `doc.history` to enable synchronous transactions for that document. Set up

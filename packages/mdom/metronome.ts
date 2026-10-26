@@ -1,6 +1,13 @@
 import type { BeamValue } from './beam';
 import { MElement } from './m-node';
+import { appendValue } from './measure';
 import type { NoteType } from './note';
+import {
+	buildTimeModification,
+	readTimeModification,
+	type TimeModificationSpec,
+	validateDots,
+} from './time-modification';
 
 /**
  * A `<metronome-note>`: one note of the note-group form of a metronome mark —
@@ -30,20 +37,45 @@ export class MetronomeNote extends MElement {
 	}
 
 	/** `<metronome-tuplet>`: the ratio this note is compressed by, or null. */
-	get tuplet(): {
-		type: 'start' | 'stop';
-		actual: number;
-		normal: number;
-	} | null {
-		const tuplet = this.child('metronome-tuplet');
-		if (!tuplet) {
+	get tuplet() {
+		const node = this.child('metronome-tuplet');
+		const ratio = readTimeModification(node);
+		if (!node || !ratio) {
 			return null;
 		}
 		return {
-			type: tuplet.getAttribute('type') === 'stop' ? 'stop' : 'start',
-			actual: Number(tuplet.child('actual-notes')?.text ?? 0),
-			normal: Number(tuplet.child('normal-notes')?.text ?? 0),
+			...ratio,
+			type: node.getAttribute('type') as 'start' | 'stop',
+			bracket:
+				node.getAttribute('bracket') == null
+					? null
+					: node.getAttribute('bracket') === 'yes',
+			showNumber: node.getAttribute('show-number') as
+				| 'actual'
+				| 'both'
+				| 'none'
+				| null,
 		};
+	}
+
+	get tied(): 'start' | 'stop' | null {
+		return (
+			(this.child('metronome-tied')?.getAttribute('type') as
+				| 'start'
+				| 'stop'
+				| null) ?? null
+		);
+	}
+
+	/** Beam levels, retaining an omitted number rather than synthesizing the schema default. */
+	get beamDetails(): { value: BeamValue; number: number | null }[] {
+		return this.childrenNamed('metronome-beam').map((node) => ({
+			value: node.text as BeamValue,
+			number:
+				node.getAttribute('number') == null
+					? null
+					: Number(node.getAttribute('number')),
+		}));
 	}
 }
 
@@ -83,6 +115,51 @@ export class Metronome extends MElement {
 		return units;
 	}
 
+	/** Each root beat unit with any following tied units, preserving the two sides. */
+	get beatUnitGroups(): Array<{
+		type: NoteType;
+		dots: number;
+		tied: { type: NoteType; dots: number }[];
+	}> {
+		const groups: Array<{
+			type: NoteType;
+			dots: number;
+			tied: { type: NoteType; dots: number }[];
+		}> = [];
+		for (const child of this.children) {
+			if (!(child instanceof MElement)) {
+				continue;
+			}
+			if (child.tag === 'beat-unit') {
+				groups.push({ type: child.text as NoteType, dots: 0, tied: [] });
+			}
+			const last = groups.at(-1);
+			if (!last) {
+				continue;
+			}
+			if (child.tag === 'beat-unit-dot') {
+				last.dots++;
+			}
+			if (child.tag === 'beat-unit-tied') {
+				last.tied.push({
+					type: child.child('beat-unit')?.text as NoteType,
+					dots: child.childrenNamed('beat-unit-dot').length,
+				});
+			}
+		}
+		return groups;
+	}
+
+	get relationOperator(): string | null {
+		return (
+			this.child('metronome-relation')?.text ??
+			(this.child('metronome-relation') ? '' : null)
+		);
+	}
+	get arrows(): boolean {
+		return this.child('metronome-arrows') !== null;
+	}
+
 	/** `<per-minute>`, kept as a string (MusicXML allows "ca. 120"); null when absent. */
 	get perMinute(): string | null {
 		return this.child('per-minute')?.text ?? null;
@@ -114,4 +191,115 @@ export class Metronome extends MElement {
 		}
 		return left.length === 0 && right.length === 0 ? null : { left, right };
 	}
+}
+
+export interface BeatUnitSpec {
+	type: NoteType;
+	dots?: number;
+	tied?: { type: NoteType; dots?: number }[];
+}
+export interface MetronomeNoteSpec {
+	type: NoteType;
+	dots?: number;
+	beams?: (BeamValue | { value: BeamValue; number?: number })[];
+	tied?: 'start' | 'stop';
+	tuplet?: TimeModificationSpec & {
+		type: 'start' | 'stop';
+		bracket?: boolean;
+		showNumber?: 'actual' | 'both' | 'none';
+	};
+}
+
+/** Rate, beat-unit modulation, or a notated metric relationship. */
+export type MetronomeSpec = (
+	| ({
+			beatUnit: NoteType;
+			dots?: number;
+			tied?: BeatUnitSpec['tied'];
+	  } & (
+			| { perMinute: string | number; equivalent?: never }
+			| { equivalent: BeatUnitSpec; perMinute?: never }
+	  ))
+	| {
+			left: MetronomeNoteSpec[];
+			relation?: { operator: string; right: MetronomeNoteSpec[] };
+			arrows?: boolean;
+	  }
+) & { parentheses?: boolean };
+
+function writeUnit(node: MElement, spec: BeatUnitSpec): void {
+	validateDots(spec.dots);
+	appendValue(node, 'beat-unit', spec.type);
+	for (let i = 0; i < (spec.dots ?? 0); i++) {
+		node.append(new MElement('beat-unit-dot'));
+	}
+	for (const tied of spec.tied ?? []) {
+		const block = new MElement('beat-unit-tied');
+		writeUnit(block, tied);
+		node.append(block);
+	}
+}
+function writeNotes(node: MElement, specs: MetronomeNoteSpec[]): void {
+	if (specs.length === 0) {
+		throw new Error('metronome relationship needs notes on each stated side');
+	}
+	for (const spec of specs) {
+		validateDots(spec.dots);
+		const note = new MetronomeNote();
+		appendValue(note, 'metronome-type', spec.type);
+		for (let i = 0; i < (spec.dots ?? 0); i++) {
+			note.append(new MElement('metronome-dot'));
+		}
+		for (const beamSpec of spec.beams ?? []) {
+			const beam = appendValue(
+				note,
+				'metronome-beam',
+				typeof beamSpec === 'string' ? beamSpec : beamSpec.value,
+			);
+			if (typeof beamSpec !== 'string' && beamSpec.number != null) {
+				beam.setAttribute('number', String(beamSpec.number));
+			}
+		}
+		if (spec.tied) {
+			const tied = new MElement('metronome-tied');
+			tied.setAttribute('type', spec.tied);
+			note.append(tied);
+		}
+		if (spec.tuplet) {
+			const tuplet = buildTimeModification(spec.tuplet, 'metronome-tuplet');
+			tuplet.setAttribute('type', spec.tuplet.type);
+			if (spec.tuplet.bracket != null) {
+				tuplet.setAttribute('bracket', spec.tuplet.bracket ? 'yes' : 'no');
+			}
+			if (spec.tuplet.showNumber != null) {
+				tuplet.setAttribute('show-number', spec.tuplet.showNumber);
+			}
+			note.append(tuplet);
+		}
+		node.append(note);
+	}
+}
+export function buildMetronome(spec: MetronomeSpec): Metronome {
+	const node = new Metronome();
+	if (spec.parentheses != null) {
+		node.setAttribute('parentheses', spec.parentheses ? 'yes' : 'no');
+	}
+	if ('beatUnit' in spec) {
+		writeUnit(node, { type: spec.beatUnit, dots: spec.dots, tied: spec.tied });
+		if (spec.equivalent) {
+			writeUnit(node, spec.equivalent);
+		} else {
+			appendValue(node, 'per-minute', String(spec.perMinute));
+		}
+	} else {
+		if (spec.arrows) {
+			node.append(new MElement('metronome-arrows'));
+		}
+		writeNotes(node, spec.left);
+		if (spec.relation) {
+			appendValue(node, 'metronome-relation', spec.relation.operator);
+			writeNotes(node, spec.relation.right);
+		}
+	}
+	return node;
 }

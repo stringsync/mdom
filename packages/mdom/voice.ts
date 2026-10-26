@@ -12,6 +12,7 @@ import {
 } from './note';
 import type { Part } from './part';
 import { divisionsBackFrom } from './signature';
+import { buildTimeModification } from './time-modification';
 import { alignCursor, onsetOf } from './timeline';
 
 // The note vocabulary and duration math live in note.ts (Voice builds on Note);
@@ -116,6 +117,9 @@ export class Voice {
 		appendValue(note, 'type', spec.type);
 		for (let dot = 0; dot < (spec.dots ?? 0); dot++) {
 			note.append(new MElement('dot'));
+		}
+		if (spec.timeModification) {
+			note.append(buildTimeModification(spec.timeModification));
 		}
 		if (this.staff !== '1') {
 			appendValue(note, 'staff', this.staff);

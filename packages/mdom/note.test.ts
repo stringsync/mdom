@@ -69,7 +69,12 @@ describe('Note', () => {
 			.getMeasure('1')!.notes;
 		expect(fancy!.articulations).toEqual(['staccato', 'accent']);
 		expect(fancy!.stem).toBe('up');
-		expect(fancy!.timeModification).toEqual({ actual: 3, normal: 2 });
+		expect(fancy!.timeModification).toEqual({
+			actual: 3,
+			normal: 2,
+			normalType: null,
+			normalDots: 0,
+		});
 		expect(plain!.articulations).toEqual([]);
 		expect(plain!.stem).toBeNull();
 		const noneStem = `<score-partwise><part id="P1"><measure number="1">

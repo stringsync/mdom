@@ -6,7 +6,7 @@ import { buildDirection, Direction, type DirectionSpec } from './direction';
 import { FiguredBass } from './figured-bass';
 import type { Frame } from './frame';
 import { buildHarmony, Harmony, type HarmonySpec } from './harmony';
-import { Key } from './key';
+import { buildKey, Key, type KeySpec } from './key';
 import { LineDetail } from './line-detail';
 import { MElement, type MNode, MText, required } from './m-node';
 import {
@@ -29,7 +29,7 @@ import {
 import { Sound } from './sound';
 import { StaffDetails } from './staff-details';
 import { StaffTuning } from './staff-tuning';
-import { Time } from './time';
+import { buildTime, Time, type TimeSpec } from './time';
 import { alignCursor, contentEnd, onsetsIn } from './timeline';
 import {
 	buildForPart,
@@ -576,26 +576,13 @@ export class Measure extends MElement {
 	}
 
 	/** Upsert the `<key>` in this measure's `<attributes>`; `onset` as in {@link setClef}. */
-	setKey(spec: {
-		fifths: number;
-		mode?: string;
-		staff?: string;
-		onset?: number;
-	}): Key {
+	setKey(spec: KeySpec): Key {
+		const key = buildKey(spec);
 		const attrs = this.getOrCreateAttributes(spec);
-		const number = spec.staff ?? null;
 		attrs
 			.childrenOfType(Key)
-			.find((key) => key.getAttribute('number') === number)
+			.find((key) => key.getAttribute('number') === (spec.staff ?? null))
 			?.remove();
-		const key = new Key();
-		if (spec.staff != null) {
-			key.setAttribute('number', spec.staff);
-		}
-		appendValue(key, 'fifths', String(spec.fifths));
-		if (spec.mode != null) {
-			appendValue(key, 'mode', spec.mode);
-		}
 		return placeInAttributes(attrs, key);
 	}
 
@@ -687,20 +674,13 @@ export class Measure extends MElement {
 	}
 
 	/** Upsert the `<time>` in this measure's `<attributes>`; `onset` as in {@link setClef}. */
-	setTime(spec: {
-		beats: number;
-		beatType: number;
-		symbol?: string;
-		onset?: number;
-	}): Time {
+	setTime(spec: TimeSpec): Time {
+		const time = buildTime(spec);
 		const attrs = this.getOrCreateAttributes(spec);
-		attrs.childrenOfType(Time)[0]?.remove();
-		const time = new Time();
-		if (spec.symbol != null) {
-			time.setAttribute('symbol', spec.symbol);
-		}
-		appendValue(time, 'beats', String(spec.beats));
-		appendValue(time, 'beat-type', String(spec.beatType));
+		attrs
+			.childrenOfType(Time)
+			.find((time) => time.getAttribute('number') === (spec.staff ?? null))
+			?.remove();
 		return placeInAttributes(attrs, time);
 	}
 

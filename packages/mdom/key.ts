@@ -1,4 +1,5 @@
 import { MElement } from './m-node';
+import { appendValue } from './measure';
 
 /** Major/minor tonic by circle-of-fifths position (index = fifths + 7), -7..+7. */
 const MAJOR_TONICS = [
@@ -62,6 +63,39 @@ export class Key extends MElement {
 		return this.child('mode')?.text ?? null;
 	}
 
+	/** Explicit cancellation of a traditional signature, or null. */
+	get cancel(): {
+		fifths: number;
+		location: 'left' | 'right' | 'before-barline' | null;
+	} | null {
+		const node = this.child('cancel');
+		return node == null
+			? null
+			: {
+					fifths: Number(node.text),
+					location: node.getAttribute('location') as
+						| 'left'
+						| 'right'
+						| 'before-barline'
+						| null,
+				};
+	}
+
+	get octaves(): Array<{
+		number: number;
+		octave: number;
+		cancel: boolean | null;
+	}> {
+		return this.childrenNamed('key-octave').map((node) => ({
+			number: Number(node.getAttribute('number')),
+			octave: Number(node.text),
+			cancel:
+				node.getAttribute('cancel') == null
+					? null
+					: node.getAttribute('cancel') === 'yes',
+		}));
+	}
+
 	/**
 	 * Tonic implied by fifths + mode, e.g. -3 major -> 'Eb'. Defaults to major when
 	 * no (or a non-minor) mode is given; null outside the -7..+7 range.
@@ -116,7 +150,11 @@ export class Key extends MElement {
 				current.alter = Number(child.text ?? 0);
 			} else if (child.tag === 'key-accidental' && current) {
 				current.accidental = child.text ?? '';
-			} else if (child.tag === 'key-octave' && child.text != null) {
+			} else if (
+				child.tag === 'key-octave' &&
+				child.text != null &&
+				child.getAttribute('cancel') !== 'yes'
+			) {
 				octaves.set(
 					Number(child.getAttribute('number') ?? 0),
 					Number(child.text),
@@ -131,4 +169,76 @@ export class Key extends MElement {
 		}
 		return alterations;
 	}
+}
+
+export interface KeyAlterationSpec {
+	step: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
+	alter: number;
+	accidental?: string;
+	octave?: number;
+}
+export interface KeyOctaveSpec {
+	number: number;
+	octave: number;
+	cancel?: boolean;
+}
+export type KeySpec = (
+	| {
+			fifths: number;
+			mode?: string;
+			cancel?: {
+				fifths: number;
+				location?: 'left' | 'right' | 'before-barline';
+			};
+			alterations?: never;
+	  }
+	| {
+			alterations: KeyAlterationSpec[];
+			fifths?: never;
+			mode?: never;
+			cancel?: never;
+	  }
+) & { staff?: string; onset?: number; octaves?: KeyOctaveSpec[] };
+
+export function buildKey(spec: KeySpec): Key {
+	const key = new Key();
+	if (spec.staff != null) {
+		key.setAttribute('number', spec.staff);
+	}
+	if (spec.alterations != null) {
+		for (const alteration of spec.alterations) {
+			appendValue(key, 'key-step', alteration.step);
+			appendValue(key, 'key-alter', String(alteration.alter));
+			if (alteration.accidental != null) {
+				appendValue(key, 'key-accidental', alteration.accidental);
+			}
+		}
+	} else {
+		if (spec.cancel) {
+			const cancel = appendValue(key, 'cancel', String(spec.cancel.fifths));
+			if (spec.cancel.location) {
+				cancel.setAttribute('location', spec.cancel.location);
+			}
+		}
+		appendValue(key, 'fifths', String(spec.fifths));
+		if (spec.mode != null) {
+			appendValue(key, 'mode', spec.mode);
+		}
+	}
+	const octaves =
+		spec.octaves ??
+		spec.alterations?.flatMap((alteration, index) =>
+			alteration.octave == null
+				? []
+				: [{ number: index + 1, octave: alteration.octave }],
+		) ??
+		[];
+	for (const spec of octaves) {
+		const octave = appendValue(key, 'key-octave', String(spec.octave));
+		octave.setAttribute('number', String(spec.number));
+		if ('cancel' in spec && spec.cancel != null) {
+			octave.setAttribute('cancel', spec.cancel ? 'yes' : 'no');
+		}
+	}
+	return key;
 }

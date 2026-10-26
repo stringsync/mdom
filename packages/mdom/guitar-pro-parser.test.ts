@@ -99,9 +99,9 @@ describe('GuitarProParser', () => {
 		expect(
 			measure.notes.slice(0, 3).map((note) => note.timeModification),
 		).toEqual([
-			{ actual: 3, normal: 2 },
-			{ actual: 3, normal: 2 },
-			{ actual: 3, normal: 2 },
+			{ actual: 3, normal: 2, normalType: null, normalDots: 0 },
+			{ actual: 3, normal: 2, normalType: null, normalDots: 0 },
+			{ actual: 3, normal: 2, normalType: null, normalDots: 0 },
 		]);
 		expect(measure.notes.map((note) => note.duration)).toEqual([
 			512, 512, 512, 1536,

@@ -30,9 +30,16 @@ import { Slur } from './slur';
 import { Technical } from './technical';
 import { Tie } from './tie';
 import { Time } from './time';
+import {
+	buildTimeModification,
+	readTimeModification,
+	type TimeModificationSpec,
+	validateDots,
+	validateTimeModification,
+} from './time-modification';
 import { onsetOf, repairTimelineAfter } from './timeline';
 import { Transpose } from './transpose';
-import { Tuplet } from './tuplet';
+import { buildTuplet, Tuplet, type TupletSpec } from './tuplet';
 import { WavyLine } from './wavy-line';
 
 /** MusicXML note-type values, coarsest to finest. */
@@ -68,6 +75,7 @@ export type NoteheadValue =
 export interface DurationSpec {
 	type: NoteType;
 	dots?: number;
+	timeModification?: TimeModificationSpec;
 	/**
 	 * Beat within the measure to place this at; defaults to the voice's own cursor
 	 * (the end of its last note). Pass it to jump back and stack, or leave a gap.
@@ -97,10 +105,9 @@ const QUARTER_BEATS: Record<NoteType, number> = {
 	'128th': 0.03125,
 };
 
-// Fixed divisions mdom writes (PPQ). 2^8 makes every note type (down to 128th)
-// and up to triple dots land on an integer <duration>; bump to a multiple of 3
-// when tuplet writing arrives. ponytail: one constant beats adaptive rescaling.
-export const WRITE_DIVISIONS = 256;
+// Fixed PPQ supports up to triple dots and ratios with factors 3, 5 and 7.
+// Imported scores retain their divisions; unrepresentable durations throw.
+export const WRITE_DIVISIONS = 256 * 3 * 5 * 7;
 
 /**
  * A single note. Chords, ties, beams, slurs, voice/staff grouping, and the
@@ -706,14 +713,66 @@ export class Note extends MElement {
 	 * The `<time-modification>` tuplet ratio (`actual-notes` : `normal-notes`, e.g.
 	 * 3:2 for a triplet), or null when this note isn't time-modified.
 	 */
-	get timeModification(): { actual: number; normal: number } | null {
-		const node = this.child('time-modification');
-		const actual = node?.child('actual-notes')?.text;
-		const normal = node?.child('normal-notes')?.text;
-		if (actual == null || normal == null) {
-			return null;
+	get timeModification() {
+		return readTimeModification(this.child('time-modification'));
+	}
+
+	/** Set the cumulative performed ratio, recomputing timing without changing the written type. */
+	setTimeModification(spec: TimeModificationSpec | null): void {
+		const block = spec == null ? null : buildTimeModification(spec);
+		const duration = this.child('duration');
+		const after =
+			duration == null
+				? null
+				: durationDivisions(
+						{
+							type: required(
+								this.type,
+								'<type> on time-modified note',
+							) as NoteType,
+							dots: this.dots,
+							timeModification: spec ?? undefined,
+						},
+						required(this.divisions, 'divisions for time modification'),
+					);
+		const before = this.duration ?? 0;
+		this.child('time-modification')?.remove();
+		if (block) {
+			const following = new Set([
+				'stem',
+				'notehead',
+				'notehead-text',
+				'staff',
+				'beam',
+				'notations',
+				'lyric',
+				'play',
+				'listen',
+			]);
+			this.insertBefore(
+				block,
+				this.children.find(
+					(child) => child instanceof MElement && following.has(child.tag),
+				) ?? null,
+			);
 		}
-		return { actual: Number(actual), normal: Number(normal) };
+		if (duration && after != null) {
+			duration.setText(String(after));
+			const measure = this.closest(Measure);
+			if (measure) {
+				repairTimelineAfter(measure, this, after - before);
+			}
+		}
+	}
+
+	/** Pair printed tuplet endpoints. Performed ratios are set separately on each note. */
+	addTuplet(other: Note, spec: TupletSpec = {}): Tuplet {
+		const number = nextNumber(this, (note) => note.tuplets);
+		const start = buildTuplet('start', number, spec);
+		const stop = buildTuplet('stop', number, {});
+		this.notations().append(start);
+		other.notations().append(stop);
+		return start;
 	}
 
 	/** The `<lyric>` verses attached to this note, in document order (one per verse). */
@@ -873,10 +932,11 @@ export class Note extends MElement {
 	 * voice is kept anchored by adjusting the `<backup>` between them.
 	 */
 	setDuration(spec: { type: NoteType; dots?: number }): void {
-		this.child('type')?.setText(spec.type);
-		this.refreshDots(spec.dots ?? 0);
+		validateDots(spec.dots);
 		const durationNode = this.child('duration');
 		if (durationNode === null) {
+			this.child('type')?.setText(spec.type);
+			this.refreshDots(spec.dots ?? 0);
 			return; // a grace note carries no <duration>; only the notation changed
 		}
 		const divisions = required(
@@ -884,7 +944,12 @@ export class Note extends MElement {
 			'divisions to recompute <duration>',
 		);
 		const before = Number(durationNode.text ?? 0);
-		const after = durationDivisions(spec, divisions);
+		const after = durationDivisions(
+			{ ...spec, timeModification: this.timeModification ?? undefined },
+			divisions,
+		);
+		this.child('type')?.setText(spec.type);
+		this.refreshDots(spec.dots ?? 0);
 		durationNode.setText(String(after));
 		const measure = this.closest(Measure);
 		if (measure) {
@@ -950,7 +1015,14 @@ export class Note extends MElement {
 			return existing;
 		}
 		const notations = new MElement('notations');
-		this.append(notations);
+		this.insertBefore(
+			notations,
+			this.children.find(
+				(child) =>
+					child instanceof MElement &&
+					['lyric', 'play', 'listen'].includes(child.tag),
+			) ?? null,
+		);
 		return notations;
 	}
 
@@ -1080,13 +1152,19 @@ export function durationDivisions(
 	spec: DurationSpec,
 	divisions: number,
 ): number {
+	validateDots(spec.dots);
 	let increment = QUARTER_BEATS[spec.type] * divisions;
 	let total = increment;
 	for (let dot = 0; dot < (spec.dots ?? 0); dot++) {
 		increment /= 2;
 		total += increment;
 	}
-	if (!Number.isInteger(total)) {
+	if (spec.timeModification) {
+		validateTimeModification(spec.timeModification);
+		total =
+			(total * spec.timeModification.normal) / spec.timeModification.actual;
+	}
+	if (!Number.isSafeInteger(total)) {
 		throw new Error(
 			`cannot represent ${spec.dots ?? 0}-dotted "${spec.type}" at divisions ${divisions}: fractional duration ${total}`,
 		);

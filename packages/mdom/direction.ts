@@ -3,7 +3,10 @@ import { Dashes } from './dashes';
 import { Dynamics } from './dynamics';
 import { MElement, required } from './m-node';
 import { appendValue, Measure } from './measure';
-import { Metronome } from './metronome';
+import { buildMetronome, Metronome, type MetronomeSpec } from './metronome';
+
+export type { MetronomeSpec } from './metronome';
+
 import { adjacentNote, type Note, type NoteType } from './note';
 import { OctaveShift } from './octave-shift';
 import { Pedal } from './pedal';
@@ -15,15 +18,6 @@ import type { FontSize, TextAlign, TextVerticalAlign } from './text-format';
 import { onsetOf } from './timeline';
 import { Wedge } from './wedge';
 import { Words } from './words';
-
-/** A `<metronome>` to write: the beat unit (with its trailing dots) and its rate. */
-export interface MetronomeSpec {
-	beatUnit: NoteType;
-	dots?: number;
-	/** `<per-minute>`; a string because MusicXML allows "ca. 120". */
-	perMinute: string | number;
-	parentheses?: boolean;
-}
 
 /** A `<words>` to write: the text, and the font it is measured and drawn in. */
 export interface WordsSpec {
@@ -302,21 +296,4 @@ function directionType(direction: Direction): MElement {
 	const block = new MElement('direction-type');
 	direction.append(block);
 	return block;
-}
-
-/**
- * Build a `<metronome>` in the `<beat-unit>` form. The dots TRAIL the unit they
- * modify, which is the whole reason {@link Metronome.beatUnits} reads positionally.
- */
-function buildMetronome(spec: MetronomeSpec): Metronome {
-	const metronome = new Metronome();
-	if (spec.parentheses) {
-		metronome.setAttribute('parentheses', 'yes');
-	}
-	appendValue(metronome, 'beat-unit', spec.beatUnit);
-	for (let dot = 0; dot < (spec.dots ?? 0); dot++) {
-		metronome.append(new MElement('beat-unit-dot'));
-	}
-	appendValue(metronome, 'per-minute', String(spec.perMinute));
-	return metronome;
 }

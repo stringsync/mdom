@@ -1,8 +1,10 @@
 import { MElement, required } from './m-node';
+import { appendValue } from './measure';
 import { Note, type NoteType } from './note';
 import { Part } from './part';
 import { placementOf } from './print-style';
 import { noteMarkers, Spanner, type SpannerSpec } from './spanner';
+import { validateDots } from './time-modification';
 
 export type TupletType = 'start' | 'stop';
 
@@ -101,6 +103,11 @@ export class Tuplet extends MElement {
 		return readDisplay(this.child('tuplet-normal'));
 	}
 
+	/** Bracket shape, preserving an omitted attribute. */
+	get lineShape(): 'straight' | 'curved' | null {
+		return this.getAttribute('line-shape') as 'straight' | 'curved' | null;
+	}
+
 	/** The marker at the far end (same number), or null. */
 	get partner(): Tuplet | null {
 		return new Spanner(this.spec()).partnerOf(this);
@@ -124,4 +131,60 @@ export class Tuplet extends MElement {
 			isClose: (tuplet) => tuplet.getAttribute('type') === 'stop',
 		};
 	}
+}
+
+/** Explicit printed ratio and bracket options; these never change playback. */
+export interface TupletSpec {
+	bracket?: boolean;
+	showNumber?: 'actual' | 'both' | 'none';
+	showType?: 'actual' | 'both' | 'none';
+	placement?: 'above' | 'below';
+	lineShape?: 'straight' | 'curved';
+	actual?: { number?: number; type?: NoteType; dots?: number };
+	normal?: { number?: number; type?: NoteType; dots?: number };
+}
+
+export function buildTuplet(
+	type: TupletType,
+	number: string,
+	spec: TupletSpec,
+): Tuplet {
+	const node = new Tuplet();
+	node.setAttribute('type', type);
+	node.setAttribute('number', number);
+	if (spec.bracket != null) {
+		node.setAttribute('bracket', spec.bracket ? 'yes' : 'no');
+	}
+	for (const [key, value] of [
+		['show-number', spec.showNumber],
+		['show-type', spec.showType],
+		['placement', spec.placement],
+		['line-shape', spec.lineShape],
+	] as const) {
+		if (value != null) {
+			node.setAttribute(key, value);
+		}
+	}
+	for (const side of ['actual', 'normal'] as const) {
+		const display = spec[side];
+		if (!display) {
+			continue;
+		}
+		validateDots(display.dots);
+		const block = new MElement(`tuplet-${side}`);
+		if (display.number != null) {
+			if (!Number.isSafeInteger(display.number) || display.number < 0) {
+				throw new Error('tuplet number must be non-negative');
+			}
+			appendValue(block, 'tuplet-number', String(display.number));
+		}
+		if (display.type != null) {
+			appendValue(block, 'tuplet-type', display.type);
+		}
+		for (let i = 0; i < (display.dots ?? 0); i++) {
+			block.append(new MElement('tuplet-dot'));
+		}
+		node.append(block);
+	}
+	return node;
 }

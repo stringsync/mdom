@@ -83,6 +83,8 @@ describe('the sibling runs MusicXML reads positionally', () => {
 		expect(measure.notes[0]!.timeModification).toEqual({
 			actual: 3,
 			normal: 2,
+			normalType: null,
+			normalDots: 0,
 		});
 		expect(stop.actual).toBeNull(); // fall back to timeModification
 	});

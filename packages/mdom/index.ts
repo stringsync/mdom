@@ -71,7 +71,12 @@ export type {
 	VirtualInstrument,
 	VirtualInstrumentSpec,
 } from './instrument';
-export { Key } from './key';
+export {
+	Key,
+	type KeyAlterationSpec,
+	type KeyOctaveSpec,
+	type KeySpec,
+} from './key';
 export { LineDetail, type LineDetailSpec } from './line-detail';
 export { Lyric, type LyricRun } from './lyric';
 export { MDocument } from './m-document';
@@ -87,7 +92,12 @@ export {
 	type SlashType,
 	type StatefulMeasureStyleKind,
 } from './measure-style';
-export { Metronome, MetronomeNote } from './metronome';
+export {
+	type BeatUnitSpec,
+	Metronome,
+	MetronomeNote,
+	type MetronomeNoteSpec,
+} from './metronome';
 export { MusicXMLSerializer } from './music-xml-serializer';
 export { MXLSerializer } from './mxl-serializer';
 export { Note, type SymbolSize } from './note';
@@ -162,7 +172,18 @@ export type {
 	TextVerticalAlign,
 } from './text-format';
 export { Tie } from './tie';
-export { Time } from './time';
+export {
+	type InterchangeableSpec,
+	Time,
+	type TimeComponentSpec,
+	type TimeRelation,
+	type TimeSeparator,
+	type TimeSpec,
+} from './time';
+export type {
+	TimeModification,
+	TimeModificationSpec,
+} from './time-modification';
 export {
 	ForPart,
 	type ForPartSpec,
@@ -174,7 +195,7 @@ export {
 	TransposeGroup,
 	type TransposeSpec,
 } from './transpose';
-export { Tuplet, type TupletDisplay } from './tuplet';
+export { Tuplet, type TupletDisplay, type TupletSpec } from './tuplet';
 export { Voice } from './voice';
 export { WavyLine } from './wavy-line';
 export { Wedge } from './wedge';
