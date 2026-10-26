@@ -1,6 +1,6 @@
 import { Direction } from './direction';
 import { MElement, required } from './m-node';
-import { Measure } from './measure';
+import { appendValue, Measure } from './measure';
 import {
 	type DashStyle,
 	type DashStyleSpec,
@@ -14,6 +14,56 @@ import {
 import { directionMarkers, Spanner, type SpannerSpec } from './spanner';
 
 export type OctaveShiftType = 'up' | 'down' | 'stop' | 'continue';
+
+/**
+ * The printed ottava: 8va/15ma/22ma sound higher than written, 8vb/15mb/22mb
+ * lower. MusicXML names these backwards (`down` is 8va), so writers take this.
+ */
+export type Ottava = '8va' | '8vb' | '15ma' | '15mb' | '22ma' | '22mb';
+
+const OTTAVAS: Record<Ottava, { type: 'up' | 'down'; size: number }> = {
+	'8va': { type: 'down', size: 8 },
+	'8vb': { type: 'up', size: 8 },
+	'15ma': { type: 'down', size: 15 },
+	'15mb': { type: 'up', size: 15 },
+	'22ma': { type: 'down', size: 22 },
+	'22mb': { type: 'up', size: 22 },
+};
+
+/** The ottava a start marker prints, or null for a stop or a size mdom has no name for. */
+export function ottavaOf(shift: OctaveShift): Ottava | null {
+	const type = shift.getAttribute('type');
+	return (
+		(Object.keys(OTTAVAS) as Ottava[]).find(
+			(name) =>
+				OTTAVAS[name].type === type && OTTAVAS[name].size === shift.size,
+		) ?? null
+	);
+}
+
+/** Build a `<direction>` holding one `<octave-shift>`; `ottava` null builds the stop. */
+export function buildOctaveShiftDirection(
+	ottava: Ottava | null,
+	number: string,
+	staff: string,
+): Direction {
+	const shift = new OctaveShift();
+	if (ottava) {
+		shift.setAttribute('type', OTTAVAS[ottava].type);
+		shift.setAttribute('size', String(OTTAVAS[ottava].size));
+	} else {
+		shift.setAttribute('type', 'stop');
+	}
+	shift.setAttribute('number', number);
+	const block = new MElement('direction-type');
+	block.append(shift);
+	const direction = new Direction();
+	direction.append(block);
+	if (staff !== '1') {
+		appendValue(direction, 'staff', staff);
+	}
+	return direction;
+}
 
 /**
  * An `<octave-shift>` (ottava) under `<direction-type>`. Direction-attached
@@ -56,6 +106,11 @@ export class OctaveShift extends MElement {
 			this.closest(Measure),
 			'<measure> ancestor of <octave-shift>',
 		);
+	}
+
+	/** The printed ottava (8va, 15mb, …) of a start marker; null on a stop. */
+	get ottava(): Ottava | null {
+		return ottavaOf(this);
 	}
 
 	/** `line-type` (solid/dashed/dotted/wavy) — the stroke to draw; null when unstated. */

@@ -8,6 +8,11 @@ import { Key } from './key';
 import { Lyric } from './lyric';
 import { MElement, required } from './m-node';
 import { appendValue, Measure } from './measure';
+import {
+	buildOctaveShiftDirection,
+	type OctaveShift,
+	type Ottava,
+} from './octave-shift';
 import { Ornament } from './ornament';
 import { Part } from './part';
 import { Pitch } from './pitch';
@@ -854,6 +859,130 @@ export class Note extends MElement {
 		const mark = new MElement(name);
 		this.articulationsBlock().append(mark);
 		return mark;
+	}
+
+	/**
+	 * Set or clear the fermata on this note ('upright' or 'inverted'); null
+	 * removes it. The write side of {@link fermata}.
+	 */
+	setFermata(type: 'upright' | 'inverted' | null): void {
+		for (const notations of this.childrenNamed('notations')) {
+			for (const node of notations.childrenNamed('fermata')) {
+				node.remove();
+			}
+		}
+		if (type) {
+			const fermata = new MElement('fermata');
+			fermata.setAttribute('type', type);
+			this.notations().append(fermata);
+		}
+	}
+
+	/**
+	 * Set or clear the arpeggio roll on this note. `{ direction }` rolls up or
+	 * down (a Guitar Pro brush); `{ direction: null }` is a plain wavy roll; null
+	 * removes it. The write side of {@link arpeggiate}.
+	 */
+	setArpeggiate(spec: { direction: 'up' | 'down' | null } | null): void {
+		for (const notations of this.childrenNamed('notations')) {
+			for (const node of notations.childrenNamed('arpeggiate')) {
+				node.remove();
+			}
+		}
+		if (spec) {
+			const arpeggiate = new MElement('arpeggiate');
+			if (spec.direction) {
+				arpeggiate.setAttribute('direction', spec.direction);
+			}
+			this.notations().append(arpeggiate);
+		}
+	}
+
+	/**
+	 * Set or clear a single-note tremolo with `marks` slashes (1-8, tremolo
+	 * picking); null removes it. The write side of the `tremolo` {@link ornaments}
+	 * entry.
+	 */
+	setTremolo(marks: number | null): void {
+		for (const ornament of this.ornaments) {
+			if (ornament.tag === 'tremolo') {
+				ornament.remove();
+			}
+		}
+		if (marks == null) {
+			return;
+		}
+		if (!Number.isInteger(marks) || marks < 0 || marks > 8) {
+			throw new Error(
+				`mdom: tremolo marks must be an integer 0-8, got ${marks}`,
+			);
+		}
+		const tremolo = new Ornament('tremolo');
+		tremolo.setAttribute('type', 'single');
+		tremolo.setText(String(marks));
+		const notations = this.notations();
+		let block = notations.childrenNamed('ornaments')[0];
+		if (!block) {
+			block = new MElement('ornaments');
+			notations.append(block);
+		}
+		// <tremolo> leads the ornament sequence, ahead of any accidental-marks.
+		block.insertBefore(tremolo, block.children[0] ?? null);
+	}
+
+	/**
+	 * Span an ottava from this note through `other` (8va, 8vb, 15ma, …): mdom adds
+	 * the start `<direction>` before this note's chord and the stop after
+	 * `other`'s, with an unused number, on this note's staff.
+	 */
+	addOctaveShift(other: Note, ottava: Ottava): OctaveShift {
+		const part = this.closest(Part);
+		const used = new Set(
+			(part?.measures ?? []).flatMap((measure) =>
+				measure.directions.flatMap((direction) =>
+					direction.octaveShifts.map((shift) => shift.number),
+				),
+			),
+		);
+		let number = 1;
+		while (used.has(String(number))) {
+			number++;
+		}
+		const start = buildOctaveShiftDirection(ottava, String(number), this.staff);
+		const stop = buildOctaveShiftDirection(null, String(number), this.staff);
+		const first = this.chordLead();
+		first.parent?.insertBefore(start, first);
+		const last = other.chordTail();
+		const siblings = last.parent?.children ?? [];
+		last.parent?.insertBefore(
+			stop,
+			siblings[siblings.indexOf(last) + 1] ?? null,
+		);
+		return start.octaveShifts[0]!;
+	}
+
+	/** First note of the `<chord/>` stack this note belongs to. */
+	private chordLead(): Note {
+		const siblings = this.parent?.children ?? [];
+		let index = siblings.indexOf(this);
+		while (index > 0 && (siblings[index] as Note).isChordMember) {
+			index--;
+		}
+		return siblings[index] as Note;
+	}
+
+	/** Last note of the `<chord/>` stack this note belongs to. */
+	private chordTail(): Note {
+		const siblings = this.parent?.children ?? [];
+		let index = siblings.indexOf(this);
+		for (;;) {
+			const next = siblings[index + 1];
+			if (next instanceof Note && next.isChordMember) {
+				index++;
+			} else {
+				return siblings[index] as Note;
+			}
+		}
 	}
 
 	/**
