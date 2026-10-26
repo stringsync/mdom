@@ -7,7 +7,7 @@ import type { Part } from './part';
 export class GuitarProPitchWriter {
 	readonly tuning = [40, 45, 50, 55, 59, 64];
 	readonly strings = new Map<Note, number>();
-	constructor(part: Part, staff: string) {
+	constructor(part: Part, staff: string, shift = 0) {
 		const heldByVoice = new Map<string, Set<number>>();
 		for (const measure of part.measures) {
 			const notes = measure.notes.filter((n) => n.staff === staff);
@@ -40,7 +40,7 @@ export class GuitarProPitchWriter {
 							this.strings.set(note, string);
 							used.add(string);
 						}
-						const midi = GuitarProValues.midi(note.pitch);
+						const midi = GuitarProValues.midi(note.pitch) + shift;
 						this.tuning[string] = Math.min(this.tuning[string] ?? midi, midi);
 						if (
 							note.ties.some(

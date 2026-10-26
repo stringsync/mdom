@@ -62,17 +62,17 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 `;
 
 exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpus 1`] = `
-"## Export: 81 of 199 ok
+"## Export: 83 of 199 ok
 
 | File | Result |
 | --- | --- |
 | \`accidentals.xml\` | error: Invalid MIDI pitch: 67.5; expected an integer from 0 to 127 |
-| \`actor_prelude_sample.xml\` | omits \`<down-bow>\`, \`<notehead>\`, \`<ornaments>\`, \`<other-direction>\`, \`<rehearsal>\`, \`<slur>\`, \`<transpose>\`, \`<tremolo>\`, \`<unpitched>\`, \`<up-bow>\`, \`<wedge>\`; error: Guitar Pro export requires a supported note type, got null |
-| \`aloof_gp7.musicxml\` | omits \`<dynamics>\`, \`<hammer-on>\`, \`<notehead>\`, \`<slide>\`, \`<slur>\`, \`<transpose>\`; error: Every pitched note on a Guitar Pro tablature staff needs a string and fret |
-| \`aloof_gp8.musicxml\` | omits \`<hammer-on>\`, \`<notehead>\`, \`<slide>\`, \`<slur>\`, \`<transpose>\`; error: Guitar Pro ties must connect matching pitches in the same voice and staff |
+| \`actor_prelude_sample.xml\` | omits \`<down-bow>\`, \`<notehead>\`, \`<ornaments>\`, \`<other-direction>\`, \`<rehearsal>\`, \`<slur>\`, \`<tremolo>\`, \`<unpitched>\`, \`<up-bow>\`, \`<wedge>\`; error: Guitar Pro export requires a supported note type, got null |
+| \`aloof_gp7.musicxml\` | omits \`<dynamics>\`, \`<hammer-on>\`, \`<notehead>\`, \`<slide>\`, \`<slur>\`; error: Guitar Pro export needs one transposition per part, but this part changes it across measures or staves |
+| \`aloof_gp8.musicxml\` | omits \`<hammer-on>\`, \`<notehead>\`, \`<slide>\`, \`<slur>\`; error: Guitar Pro export needs one transposition per part, but this part changes it across measures or staves |
 | \`chopin_prelude.xml\` | omits \`<slur>\` |
 | \`composer_one_line.xml\` | ok |
-| \`concert_score_and_for_part.xml\` | omits \`<transpose>\` |
+| \`concert_score_and_for_part.xml\` | ok |
 | \`dorico_4_notations.musicxml\` | omits \`<slur>\` |
 | \`drum_tuplet_beams_measure.xml\` | omits \`<other-notation>\`, \`<unpitched>\`; error: Unsupported Guitar Pro clef: percussionnull |
 | \`flat_la_cucaracha.musicxml\` | omits \`<harmony>\` |
@@ -168,7 +168,7 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/34d-Note-Attributes.xml\` | ok |
 | \`lilypond/41a-MultiParts-Partorder.xml\` | ok |
 | \`lilypond/41b-MultiParts-MoreThan10.xml\` | ok |
-| \`lilypond/41c-StaffGroups.xml\` | omits \`<transpose>\`, \`<unpitched>\`, \`different keys across staves or parts\`, \`octave clefs\`; error: Unsupported Guitar Pro clef: percussionnull |
+| \`lilypond/41c-StaffGroups.xml\` | omits \`<unpitched>\`, \`different keys across staves or parts\`, \`octave clefs\`; error: Unsupported Guitar Pro clef: percussionnull |
 | \`lilypond/41d-StaffGroups-Nested.xml\` | ok |
 | \`lilypond/41e-StaffGroups-InstrumentNames-Linebroken.xml\` | ok |
 | \`lilypond/41f-StaffGroups-Overlapping.xml\` | ok |
@@ -235,9 +235,9 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/71e-TabStaves.xml\` | ok |
 | \`lilypond/71f-AllChordTypes.xml\` | omits \`<harmony>\` |
 | \`lilypond/71g-MultipleChordnames.xml\` | omits \`<harmony>\` |
-| \`lilypond/72a-TransposingInstruments.xml\` | omits \`<transpose>\`, \`different keys across staves or parts\` |
-| \`lilypond/72b-TransposingInstruments-Full.xml\` | omits \`<transpose>\`, \`different keys across staves or parts\`, \`octave clefs\` |
-| \`lilypond/72c-TransposingInstruments-Change.xml\` | omits \`<transpose>\` |
+| \`lilypond/72a-TransposingInstruments.xml\` | omits \`different keys across staves or parts\` |
+| \`lilypond/72b-TransposingInstruments-Full.xml\` | omits \`different keys across staves or parts\`, \`octave clefs\` |
+| \`lilypond/72c-TransposingInstruments-Change.xml\` | error: Guitar Pro export needs one transposition per part, but this part changes it across measures or staves |
 | \`lilypond/73a-Percussion.xml\` | omits \`<ornaments>\`, \`<unpitched>\`; error: Unsupported Guitar Pro clef: percussionnull |
 | \`lilypond/74a-FiguredBass.xml\` | ok |
 | \`lilypond/75a-AccordionRegistrations.xml\` | omits \`<accordion-registration>\` |
@@ -260,10 +260,10 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`octave_shift_simple_piano.xml\` | omits \`<octave-shift>\`, \`<slur>\` |
 | \`partially_invalid.xml\` | error: Overlapping or invalid note timing in measure 1 |
 | \`rehearsal_marks_bolivia.xml\` | omits \`<harmony>\`, \`<notehead>\`, \`<rehearsal>\` |
-| \`sibelius_2023_tab.musicxml\` | omits \`<transpose>\` |
+| \`sibelius_2023_tab.musicxml\` | ok |
 | \`sorted_notes_chord_vexflow_keys_order.xml\` | omits \`different keys across staves or parts\`, \`key mode none\` |
 | \`stave_repetitions_coda_etc.xml\` | omits \`<coda>\`, \`<segno>\`, \`mid-measure clef changes\` |
-| \`tablature_bends.xml\` | omits \`<bend>\`, \`<transpose>\` |
+| \`tablature_bends.xml\` | omits \`<bend>\`; error: Note pitch disagrees with its string, fret and capo |
 | \`wanna_skip_class.xml\` | omits \`<hammer-on>\`, \`<slide>\`, \`<slur>\` |
 
 | Omitted feature | Files |
@@ -271,7 +271,6 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`<slur>\` | 24 |
 | \`<ornaments>\` | 12 |
 | \`<harmony>\` | 10 |
-| \`<transpose>\` | 10 |
 | \`<notehead>\` | 9 |
 | \`<octave-shift>\` | 9 |
 | \`<ending>\` | 8 |

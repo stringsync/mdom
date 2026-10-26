@@ -63,6 +63,62 @@ describe('Guitar Pro notation pitches', () => {
 		).toEqual(['ConcertPitch', 'Fret', 'Midi', 'String', 'TransposedPitch']);
 	});
 
+	it('keeps written pitch and sounding pitch apart for a B-flat clarinet', async () => {
+		measure.setTranspose({ diatonic: -1, chromatic: -2 });
+		measure
+			.getOrCreateVoice('1')
+			.addNote({ step: 'D', octave: 5, type: 'whole' });
+		const root = await gpif(await serializer.serializeToBytes(document));
+		const track = root.child('Tracks')!.child('Track')!;
+		const note = root.child('Notes')!.child('Note')!;
+		const pitchOf = (name: string) => {
+			const found = note
+				.child('Properties')!
+				.childrenNamed('Property')
+				.find((p) => p.getAttribute('name') === name)!
+				.child('Pitch')!;
+			return `${found.child('Step')!.text}${found.child('Octave')!.text}`;
+		};
+
+		expect(track.child('Transpose')!.child('Chromatic')!.text).toBe('-2');
+		expect(track.child('Transpose')!.child('Octave')!.text).toBe('0');
+		expect(property(note, 'Midi')).toBe(72);
+		expect(pitchOf('ConcertPitch')).toBe('C6');
+		expect(pitchOf('TransposedPitch')).toBe('D6');
+	});
+
+	it('records an octave transposition and fits tablature to sounding pitch', async () => {
+		measure.setTranspose({ chromatic: 0, octaveChange: -1 });
+		measure
+			.getOrCreateVoice('1')
+			.addNote({ step: 'F', octave: 3, type: 'whole' });
+		const root = await gpif(await serializer.serializeToBytes(document));
+		const note = root.child('Notes')!.child('Note')!;
+
+		expect(
+			root.child('Tracks')!.child('Track')!.child('Transpose')!.child('Octave')!
+				.text,
+		).toBe('-1');
+		expect(property(note, 'Midi')).toBe(41);
+	});
+
+	it('rejects a transposition that changes within a part', async () => {
+		const second = part.addMeasure();
+		second.setClef({ sign: 'G', line: 2 });
+		measure.setTranspose({ chromatic: -2 });
+		second.setTranspose({ chromatic: -3 });
+		measure
+			.getOrCreateVoice('1')
+			.addNote({ step: 'C', octave: 4, type: 'whole' });
+		second
+			.getOrCreateVoice('1')
+			.addNote({ step: 'C', octave: 4, type: 'whole' });
+
+		await expect(serializer.serializeToBytes(document)).rejects.toThrow(
+			'one transposition per part',
+		);
+	});
+
 	it('keeps internal strings out of notation-only MusicXML', async () => {
 		measure
 			.getOrCreateVoice('1')

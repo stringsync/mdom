@@ -6,7 +6,10 @@ import { Direction } from './direction';
 import { GuitarProLyrics } from './guitar-pro-lyrics';
 import type { GuitarProOptions } from './guitar-pro-options';
 import { GuitarProPitchWriter } from './guitar-pro-pitch-writer';
-import { GuitarProPlayback } from './guitar-pro-playback';
+import {
+	GuitarProPlayback,
+	type GuitarProTransposition,
+} from './guitar-pro-playback';
 import { GuitarProValues } from './guitar-pro-values';
 import { GuitarProXml as X } from './guitar-pro-xml';
 import { MDocument } from './m-document';
@@ -32,6 +35,8 @@ interface StaffContext {
 	tuning: number[];
 	capo: number;
 	pitches: GuitarProPitchWriter;
+	/** Semitones from written to sounding pitch, from the part's `<transpose>`. */
+	shift: number;
 }
 
 /** Writes GPIF tables directly from mdom notes; no external score model. */
@@ -173,6 +178,7 @@ export class GuitarProScoreWriter {
 					}
 				}
 			}
+			const transposition = this.transposition(part);
 			// A Guitar Pro track holds at most a grand staff, so a part with more staves splits into consecutive tracks of up to two.
 			for (let firstStaff = 1; firstStaff <= staffCount; firstStaff += 2) {
 				const track = this.entry('Tracks', 'Track');
@@ -200,14 +206,14 @@ export class GuitarProScoreWriter {
 						1,
 						16,
 					) - 1;
-				new GuitarProPlayback().write(track, program, channel);
+				new GuitarProPlayback().write(track, program, channel, transposition);
 				const staves = X.add(track, 'Staves');
 				for (
 					let staff = firstStaff;
 					staff <= Math.min(firstStaff + 1, staffCount);
 					staff++
 				) {
-					this.writeStaff(part, staves, String(staff));
+					this.writeStaff(part, staves, String(staff), transposition.shift);
 				}
 				if (firstStaff === 1) {
 					GuitarProLyrics.write(track, part);
@@ -385,7 +391,54 @@ export class GuitarProScoreWriter {
 		}
 		return result.toSorted((a, b) => a.position - b.position);
 	}
-	private writeStaff(part: Part, staves: MElement, id: string): void {
+	/**
+	 * The one `<transpose>` a GPIF track can carry. Written pitches stay as notated;
+	 * the track records the written-to-sounding shift, as Guitar Pro does.
+	 */
+	private transposition(part: Part): GuitarProTransposition {
+		let found: GuitarProTransposition | null = null;
+		for (const measure of part.measures) {
+			for (let staff = 1; staff <= measure.staveCount; staff++) {
+				const transpose = measure.getTranspose(String(staff));
+				const current = {
+					chromatic: GuitarProValues.integer(
+						transpose?.chromatic ?? 0,
+						'transpose chromatic',
+						-11,
+						11,
+					),
+					octave: GuitarProValues.integer(
+						transpose?.octaveChange ?? 0,
+						'transpose octave-change',
+						-4,
+						4,
+					),
+				};
+				if (transpose?.double) {
+					this.values.unsupported('<double>');
+				}
+				if (
+					found &&
+					(found.chromatic !== current.chromatic ||
+						found.octave !== current.octave)
+				) {
+					throw new Error(
+						'Guitar Pro export needs one transposition per part, but this part changes it across measures or staves',
+					);
+				}
+				found = { ...current, shift: 0 };
+			}
+		}
+		const result = found ?? { chromatic: 0, octave: 0, shift: 0 };
+		result.shift = result.chromatic + 12 * result.octave;
+		return result;
+	}
+	private writeStaff(
+		part: Part,
+		staves: MElement,
+		id: string,
+		shift: number,
+	): void {
 		const first = part.measures[0]!;
 		const tunings = first
 			.getStaffTunings(id)
@@ -404,8 +457,8 @@ export class GuitarProScoreWriter {
 			0,
 			36,
 		);
-		const pitches = new GuitarProPitchWriter(part, id);
-		const ctx: StaffContext = { id, tuning, capo, pitches };
+		const pitches = new GuitarProPitchWriter(part, id, shift);
+		const ctx: StaffContext = { id, tuning, capo, pitches, shift };
 		const node = X.add(staves, 'Staff');
 		X.addProperty(node, 'CapoFret', 'Fret', tuning.length ? capo : 0);
 		X.addProperty(node, 'FretCount', 'Number', 24);
@@ -606,7 +659,13 @@ export class GuitarProScoreWriter {
 				'Guitar Pro export requires pitched notes; percussion is not supported',
 			);
 		}
-		const midi = GuitarProValues.midi(source.pitch);
+		const writtenMidi = GuitarProValues.midi(source.pitch);
+		const midi = GuitarProValues.integer(
+			writtenMidi + staff.shift,
+			'sounding MIDI pitch',
+			0,
+			127,
+		);
 		for (const tie of source.ties) {
 			if (tie.tieType === 'let-ring') {
 				this.values.unsupported('let-ring ties');
@@ -615,7 +674,7 @@ export class GuitarProScoreWriter {
 			const partner = tie.partner?.note;
 			if (
 				!partner?.pitch ||
-				GuitarProValues.midi(partner.pitch) !== midi ||
+				GuitarProValues.midi(partner.pitch) !== writtenMidi ||
 				partner.voice !== source.voice ||
 				partner.staff !== source.staff
 			) {
@@ -661,10 +720,20 @@ export class GuitarProScoreWriter {
 		X.addProperty(node, 'String', 'String', string);
 		X.addProperty(node, 'Fret', 'Fret', fret);
 		X.addProperty(node, 'Midi', 'Number', midi);
-		const pitch = GuitarProValues.pitch(midi, {
+		const concert = GuitarProValues.pitch(midi, {
 			flats: (source.measure.getKey(source.staff)?.fifths ?? 0) < 0,
 		});
-		for (const name of ['ConcertPitch', 'TransposedPitch']) {
+		const written = staff.shift
+			? {
+					step: source.pitch.step,
+					alter: source.pitch.alter ?? 0,
+					octave: source.pitch.octave,
+				}
+			: concert;
+		for (const [name, pitch] of [
+			['ConcertPitch', concert],
+			['TransposedPitch', written],
+		] as const) {
 			const prop = X.add(node.child('Properties')!, 'Property', undefined, {
 				name,
 			});
@@ -768,7 +837,6 @@ export class GuitarProScoreWriter {
 			'pedal',
 			'octave-shift',
 			'ending',
-			'transpose',
 			'unpitched',
 			'tremolo',
 			'fermata',

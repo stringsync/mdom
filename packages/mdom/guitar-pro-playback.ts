@@ -4,9 +4,22 @@
 import { GuitarProXml as X } from './guitar-pro-xml';
 import type { MElement } from './m-node';
 
+/** A track's written-to-sounding transposition, as GPIF's `<Transpose>` holds it. */
+export interface GuitarProTransposition {
+	chromatic: number;
+	octave: number;
+	/** Chromatic plus octaves, in semitones. */
+	shift: number;
+}
+
 /** Writes native instrument definitions and built-in RSE sounds directly to GPIF. */
 export class GuitarProPlayback {
-	write(track: MElement, program: number, channel: number): void {
+	write(
+		track: MElement,
+		program: number,
+		channel: number,
+		transposition: GuitarProTransposition,
+	): void {
 		const [name, type, icon] = instruments[program]!;
 		const preset = presets[type]!;
 		X.add(track, 'IconId', icon);
@@ -32,8 +45,8 @@ export class GuitarProPlayback {
 			X.add(articulation, tag, value);
 		}
 		const transpose = X.add(track, 'Transpose');
-		X.add(transpose, 'Chromatic', 0);
-		X.add(transpose, 'Octave', 0);
+		X.add(transpose, 'Chromatic', transposition.chromatic);
+		X.add(transpose, 'Octave', transposition.octave);
 		const strip = X.add(X.add(track, 'RSE'), 'ChannelStrip', undefined, {
 			version: 'E56',
 		});
