@@ -11,7 +11,8 @@ export class MDOMParser {
 	/**
 	 * Parses a MusicXML string into an {@link MDocument}, mapping known tags to
 	 * typed nodes and preserving the XML declaration and doctype. Throws if the
-	 * input has no root element.
+	 * input has no root element. Repairs barline endings placed after repeats
+	 * by moving them before the repeat, as required by MusicXML.
 	 */
 	parseFromString(xml: string): MDocument {
 		const tree = xml2js(xml, { compact: false }) as unknown as XmlNode;
@@ -83,7 +84,14 @@ function build(node: XmlNode): MElement {
 
 	for (const child of node.elements ?? []) {
 		if (child.type === 'element') {
-			el.append(build(child));
+			const built = build(child);
+			// Some exporters put a barline's ending after its repeat. Repair this
+			// on import so the tree itself has the order MusicXML requires.
+			if (el.tag === 'barline' && built.tag === 'ending') {
+				el.insertBefore(built, el.child('repeat'));
+			} else {
+				el.append(built);
+			}
 		} else if (
 			child.type === 'text' &&
 			typeof child.text === 'string' &&

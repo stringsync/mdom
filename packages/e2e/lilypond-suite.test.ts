@@ -4114,8 +4114,7 @@ describe('LilyPond MusicXML suite', () => {
 		);
 		expect(twice).toBe(once);
 	});
-	// Known failure (#23): upstream measure 5 puts repeat before ending; XSD requires the reverse.
-	it.failing('satisfies the output XSD for 45i-Repeats-Nested.xml', async () => {
+	it('satisfies the output XSD for 45i-Repeats-Nested.xml', async () => {
 		const doc = new MDOMParser().parseFromString(
 			await Bun.file(
 				new URL('./examples/lilypond/45i-Repeats-Nested.xml', import.meta.url),

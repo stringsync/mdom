@@ -11,6 +11,45 @@ import { Score } from './score';
 describe('MDOMParser', () => {
 	const parser = new MDOMParser();
 
+	it('repairs an ending after a repeat without losing barline content', () => {
+		const doc = parser.parseFromString(`<barline location="left" custom="kept">
+			<bar-style color="#123456">heavy-light</bar-style>
+			<fermata type="upright">normal</fermata>
+			<repeat direction="forward" times="3"/>
+			<ending number="1,2" type="start" print-object="no">First &amp; second</ending>
+			<unmodeled flag="yes"/>
+		</barline>`);
+		const expected =
+			parser.parseFromString(`<barline location="left" custom="kept">
+			<bar-style color="#123456">heavy-light</bar-style>
+			<fermata type="upright">normal</fermata>
+			<ending number="1,2" type="start" print-object="no">First &amp; second</ending>
+			<repeat direction="forward" times="3"/>
+			<unmodeled flag="yes"/>
+		</barline>`);
+		const serializer = new MusicXMLSerializer();
+		const once = serializer.serializeToString(doc);
+		expect(once).toBe(serializer.serializeToString(expected));
+		expect(serializer.serializeToString(parser.parseFromString(once))).toBe(
+			once,
+		);
+		for (const child of doc.root.children) {
+			expect(child.parent).toBe(doc.root);
+		}
+	});
+
+	it.each([
+		'<barline><ending number="1" type="stop"/><repeat direction="backward"/></barline>',
+		'<barline><ending number="2" type="discontinue"/></barline>',
+		'<barline><repeat direction="forward"/></barline>',
+		'<barline><bar-style>regular</bar-style></barline>',
+		'<unmodeled><repeat/><ending/></unmodeled>',
+	])('preserves child order when no barline repair is needed: %s', (xml) => {
+		const doc = parser.parseFromString(xml);
+		const serialized = new MusicXMLSerializer().serializeToString(doc);
+		expect(serialized.replace(/\n\s*/g, '')).toBe(xml);
+	});
+
 	it('builds typed nodes from the registry and leaves unknown tags as MElement', () => {
 		const doc = parser.parseFromString(`
       <score-partwise>
