@@ -59,6 +59,22 @@ export { PullOff } from './pull-off';
 export { Rehearsal } from './rehearsal';
 export { Scaling } from './scaling';
 export { Score } from './score';
+export type {
+	CreditInfo,
+	CreditSpec,
+	EncodingInfo,
+	EncodingSpec,
+	EncodingSupport,
+	EncodingSupportSpec,
+	FormattedText,
+	FormattedTextSpec,
+	MiscellaneousField,
+	NameDisplay,
+	NameDisplaySpec,
+	TextFormatting,
+	TypedText,
+	TypedTextSpec,
+} from './score-metadata';
 export { Slide } from './slide';
 export { Slur } from './slur';
 export { Sound } from './sound';

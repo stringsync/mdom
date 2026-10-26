@@ -2,6 +2,15 @@ import { MElement, required } from './m-node';
 import { Measure } from './measure';
 import { memo } from './read-cache';
 import { Score } from './score';
+import {
+	ensureMetadata,
+	makeFormattedText,
+	type NameDisplay,
+	type NameDisplaySpec,
+	nameDisplay,
+	partMetadataOrder,
+	setMetadataText,
+} from './score-metadata';
 import type { StaffTuning } from './staff-tuning';
 
 /** A `<part>`: a sequence of measures, keyed to a `<score-part>` by id. */
@@ -44,6 +53,60 @@ export class Part extends MElement {
 	 */
 	get label(): string | null {
 		return scorePartOf(this)?.child('part-name')?.text ?? null;
+	}
+
+	get abbreviation(): string | null {
+		return scorePartOf(this)?.child('part-abbreviation')?.text ?? null;
+	}
+	get nameDisplay(): NameDisplay | null {
+		return nameDisplay(scorePartOf(this)?.child('part-name-display') ?? null);
+	}
+	get abbreviationDisplay(): NameDisplay | null {
+		return nameDisplay(
+			scorePartOf(this)?.child('part-abbreviation-display') ?? null,
+		);
+	}
+	/** Set the plain name without changing a separately specified display name. */
+	setLabel(value: string): void {
+		setMetadataText(
+			required(scorePartOf(this), '<score-part> for part'),
+			'part-name',
+			value,
+			partMetadataOrder,
+		);
+	}
+	setAbbreviation(value: string | null): void {
+		setMetadataText(
+			required(scorePartOf(this), '<score-part> for part'),
+			'part-abbreviation',
+			value,
+			partMetadataOrder,
+		);
+	}
+	setNameDisplay(spec: NameDisplaySpec | null): void {
+		this.setDisplay('part-name-display', spec);
+	}
+	setAbbreviationDisplay(spec: NameDisplaySpec | null): void {
+		this.setDisplay('part-abbreviation-display', spec);
+	}
+	private setDisplay(tag: string, spec: NameDisplaySpec | null): void {
+		const parent = required(scorePartOf(this), '<score-part> for part');
+		if (spec === null) {
+			parent.child(tag)?.remove();
+			return;
+		}
+		const node = ensureMetadata(parent, tag, partMetadataOrder);
+		for (const child of [...node.children]) {
+			child.remove();
+		}
+		if (spec.printObject === undefined) {
+			node.removeAttribute('print-object');
+		} else {
+			node.setAttribute('print-object', spec.printObject);
+		}
+		for (const run of spec.runs) {
+			node.append(makeFormattedText(run.kind, run));
+		}
 	}
 
 	/**
