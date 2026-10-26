@@ -1,0 +1,443 @@
+element	schema_types	registered_class	source_literal_candidate	corpus_occurrences	corpus_files	guitar_tab_occurrences	observed_parents	typed_read	intent_write
+duration	positive-divisions	false	true	3309	25	101	backup,forward,note	Note getters (some fields partial)	Voice note/chord builders; Note pitch/duration/rest/grace setters
+note	note	true	true	3240	25	101	measure	Note getters (some fields partial)	Voice note/chord builders; Note pitch/duration/rest/grace setters
+measure	anonymous	true	true	999	25	17	part	Score/Part/Measure navigation (structural)	MDocument.empty / Score.addPart / Part.addMeasure
+part	anonymous	true	true	50	25	2	score-partwise	Score/Part/Measure navigation (structural)	MDocument.empty / Score.addPart / Part.addMeasure
+part-name	part-name	false	true	48	25	2	score-part	Part.label/program (first instrument only)	MDocument.empty / Score.addPart / Part.addMeasure
+score-part	score-part	false	true	48	25	2	part-list	Score/Part/Measure navigation (structural)	MDocument.empty / Score.addPart / Part.addMeasure
+part-list	part-list	false	true	25	25	2	score-partwise	Score/Part/Measure navigation (structural)	MDocument.empty / Score.addPart / Part.addMeasure
+score-partwise	anonymous	true	true	25	25	2		Score/Part/Measure navigation (structural)	MDocument.empty / Score.addPart / Part.addMeasure
+voice	xs:string	false	true	3249	24	101	forward,note	Note getters (some fields partial)	Voice note/chord builders; Note pitch/duration/rest/grace setters
+type	note-type	false	true	2394	24	101	note	Note getters (some fields partial)	Voice note/chord builders; Note pitch/duration/rest/grace setters
+attributes	attributes	false	true	593	24	6	measure	Score/Part/Measure navigation (structural)	Measure signature setters (simple signatures)
+sign	clef-sign	false	true	55	24	2	clef,part-clef	Measure/Note signature getters; Key/Time getters	Measure signature setters (simple signatures)
+clef	clef	true	true	54	24	2	attributes	Measure/Note signature getters; Key/Time getters	Measure signature setters (simple signatures)
+divisions	positive-divisions	false	true	53	24	6	attributes	Measure/Note signature getters; Key/Time getters	Measure signature setters (simple signatures)
+time	time	true	true	574	23	2	attributes	Measure/Note signature getters; Key/Time getters	Measure signature setters (simple signatures)
+line	staff-line-position	false	true	52	23	2	clef,part-clef	Measure/Note signature getters; Key/Time getters	Measure signature setters (simple signatures)
+key	key	true	true	47	23	2	attributes	Measure/Note signature getters; Key/Time getters	Measure signature setters (simple signatures)
+octave	octave	false	true	2209	22	101	pitch	Note getters (some fields partial)	Voice note/chord builders; Note pitch/duration/rest/grace setters
+pitch	pitch	true	true	2209	22	101	note	Note getters (some fields partial)	Voice note/chord builders; Note pitch/duration/rest/grace setters
+step	step	false	true	2209	22	101	pitch	Note getters (some fields partial)	Voice note/chord builders; Note pitch/duration/rest/grace setters
+beat-type	xs:string	false	true	573	22	2	time	Measure/Note signature getters; Key/Time getters	Measure signature setters (simple signatures)
+beats	xs:string	false	true	573	22	2	time	Measure/Note signature getters; Key/Time getters	Measure signature setters (simple signatures)
+fifths	fifths	false	true	46	22	2	key	Measure/Note signature getters; Key/Time getters	Measure signature setters (simple signatures)
+identification	identification	false	true	22	22	2	score-partwise	Score title/software/scaling/layout (wrappers partial)	none
+mode	mode	false	true	40	17	2	key	Measure/Note signature getters; Key/Time getters	Measure signature setters (simple signatures)
+barline	barline	true	true	80	12	0	measure	Barline getters (ending text omitted)	Measure.addBarline
+bar-style	bar-style-color	false	true	76	12	0	barline	Barline getters (ending text omitted)	Measure.addBarline
+software	xs:string	false	true	15	12	2	encoding	Score title/software/scaling/layout (wrappers partial)	none
+encoding	encoding	false	true	12	12	2	identification	Score title/software/scaling/layout (wrappers partial)	none
+supports	supports	false	false	41	11	6	encoding	none	none
+encoding-date	yyyy-mm-dd	false	false	11	11	2	encoding	none	none
+miscellaneous	miscellaneous	false	false	11	11	0	identification	none	none
+miscellaneous-field	miscellaneous-field	false	false	11	11	0	miscellaneous	none	none
+stem	stem	false	true	2307	10	101	note	Note getters (some fields partial)	none
+alter	semitones	false	true	780	10	34	pitch	Note getters (some fields partial)	Voice note/chord builders; Note pitch/duration/rest/grace setters
+page-height	tenths	false	false	16	10	3	page-layout	none	none
+page-layout	page-layout	false	true	16	10	3	defaults,print	none	none
+page-width	tenths	false	false	16	10	3	page-layout	none	none
+defaults	defaults	false	true	10	10	2	score-partwise	Score title/software/scaling/layout (wrappers partial)	Score/Measure getOrCreate layout container (fields still generic)
+millimeters	millimeters	false	true	10	10	2	scaling	Score title/software/scaling/layout (wrappers partial)	none
+scaling	scaling	false	true	10	10	2	defaults	Score title/software/scaling/layout (wrappers partial)	none
+tenths	tenths	false	true	10	10	2	scaling	Score title/software/scaling/layout (wrappers partial)	none
+print	print	true	true	921	9	7	measure	Print break and systemLayout getters	Score/Measure getOrCreate layout container (fields still generic)
+staff	xs:positiveInteger	false	true	278	9	4	direction,forward,note	Note getters (some fields partial)	Voice note/chord builders; Note pitch/duration/rest/grace setters
+notations	notations	false	true	857	8	101	note	Note mark collections (structural)	Note.addSlur/addTie/removeTie
+midi-instrument	midi-instrument	false	true	47	8	2	score-part,sound	Part.label/program (first instrument only)	none
+midi-program	midi-128	false	true	47	8	2	midi-instrument	Part.label/program (first instrument only)	none
+left-margin	tenths	false	true	31	8	4	page-margins,system-margins	Score title/software/scaling/layout (wrappers partial)	SystemLayout property setters
+right-margin	tenths	false	true	31	8	4	page-margins,system-margins	Score title/software/scaling/layout (wrappers partial)	SystemLayout property setters
+instrument-name	xs:string	false	false	29	8	1	score-instrument	none	none
+midi-channel	midi-16	false	false	29	8	2	midi-instrument	none	none
+part-abbreviation	part-name	false	false	29	8	2	score-part	none	none
+score-instrument	score-instrument	false	false	29	8	1	score-part	none	none
+system-layout	system-layout	true	true	18	8	2	defaults,print	Score title/software/scaling/layout (wrappers partial)	Score/Measure getOrCreate layout container (fields still generic)
+bottom-margin	tenths	false	false	17	8	2	page-margins	none	none
+page-margins	page-margins	false	false	17	8	2	page-layout	none	none
+top-margin	tenths	false	false	17	8	2	page-margins	none	none
+top-system-distance	tenths	false	true	15	8	2	system-layout	Score title/software/scaling/layout (wrappers partial)	SystemLayout property setters
+system-margins	system-margins	false	true	14	8	2	system-layout	Score title/software/scaling/layout (wrappers partial)	SystemLayout property setters
+staves	xs:nonNegativeInteger	false	true	8	8	1	attributes	Measure/Note signature getters; Key/Time getters	Measure signature setters (simple signatures)
+beam	beam	true	true	2936	7	94	note	Note typed mark/spanner getters	none
+rest	rest	false	true	784	7	0	note	Note getters (some fields partial)	Voice note/chord builders; Note pitch/duration/rest/grace setters
+direction-type	direction-type	false	true	507	7	17	direction	Direction/Measure getters (offset only contributes to measureBeat)	Measure.addDirection (simple form)
+direction	direction	true	true	503	7	17	measure	Direction/Measure getters (offset only contributes to measureBeat)	Measure.addDirection (simple form)
+accidental	accidental	true	true	432	7	4	note	Note typed mark/spanner getters	none
+pan	rotation-degrees	false	false	28	7	2	midi-instrument	none	none
+volume	percent	false	false	28	7	2	midi-instrument	none	none
+system-distance	tenths	false	true	8	7	1	system-layout	Score title/software/scaling/layout (wrappers partial)	SystemLayout property setters
+sound	sound	true	true	255	6	2	direction,measure	Direction/Measure getters (offset only contributes to measureBeat)	Measure.addDirection (simple form)
+creator	typed-text	false	false	8	6	1	identification	none	none
+word-font	empty-font	false	true	6	6	1	defaults	none	none
+work	work	false	true	6	6	1	score-partwise	Score title/software/scaling/layout (wrappers partial)	none
+work-title	xs:string	false	true	6	6	1	work	Score title/software/scaling/layout (wrappers partial)	none
+slur	slur	true	true	635	5	33	notations	Note typed mark/spanner getters	Note.addSlur/addTie/removeTie
+staff-details	staff-details	true	true	79	5	2	attributes	Measure/Part/StaffDetails getters	none
+staff-distance	tenths	false	false	71	5	1	staff-layout	none	none
+staff-layout	staff-layout	false	true	71	5	1	defaults,print	none	none
+backup	backup	false	true	64	5	0	measure	Note.measureBeat / timeline (structural only)	Voice onset/timeline writes
+line-width	line-width	false	false	59	5	10	appearance	none	none
+credit	credit	false	false	13	5	0	score-partwise	none	none
+credit-words	formatted-text-id	false	false	13	5	0	credit	none	none
+note-size	note-size	false	false	10	5	2	appearance	none	none
+appearance	appearance	false	true	5	5	1	defaults	none	none
+movement-title	xs:string	false	true	5	5	0	score-partwise	Score title/software/scaling/layout (wrappers partial)	none
+music-font	empty-font	false	true	5	5	1	defaults	none	none
+chord	empty	false	true	286	4	3	note	Note getters (some fields partial)	Voice note/chord builders; Note pitch/duration/rest/grace setters
+measure-numbering	measure-numbering	false	false	25	4	1	print	none	none
+lyric-font	lyric-font	false	true	4	4	0	defaults	none	none
+dynamics	dynamics	true	true	242	3	16	direction-type	Direction/Measure getters (offset only contributes to measureBeat)	Measure.addDirection (simple form)
+technical	technical	false	true	146	3	101	notations	Note mark collections (structural)	Note.setStringFret (note technical context only)
+part-group	part-group	false	true	28	3	0	part-list	Score.partGroups	none
+accent	empty-placement	false	false	13	3	0	articulations	Note.articulations (tag names only)	Note.addArticulation (tag only)
+articulations	articulations	false	true	13	3	0	notations	Note getters (some fields partial)	Note.addArticulation
+chromatic	semitones	false	false	10	3	1	part-transpose,transpose	none	none
+diatonic	xs:integer	false	false	10	3	1	part-transpose,transpose	none	none
+group-symbol	group-symbol	false	true	9	3	0	part-group	Score.partGroups	none
+transpose	transpose	false	true	9	3	1	attributes	none	none
+distance	distance	false	false	6	3	2	appearance	none	none
+octave-change	xs:integer	false	false	6	3	1	part-transpose,transpose	none	none
+beat-unit	note-type-value	false	true	5	3	1	metronome	Metronome/MetronomeNote getters (relation operator omitted)	Measure.addDirection (simple form)
+metronome	metronome	true	true	5	3	1	direction-type	Direction/Measure getters (offset only contributes to measureBeat)	Measure.addDirection (simple form)
+per-minute	per-minute	false	true	5	3	1	metronome	Metronome/MetronomeNote getters (relation operator omitted)	Measure.addDirection (simple form)
+instrument-sound	xs:string	false	false	3	3	1	score-instrument	none	none
+midi-device	midi-device	false	false	3	3	0	score-part	none	none
+rights	typed-text	false	false	3	3	0	identification	none	none
+staff-lines	xs:nonNegativeInteger	false	true	3	3	2	staff-details	Measure/Part/StaffDetails getters	none
+instrument	instrument	false	false	249	2	0	note	none	none
+display-octave	octave	false	true	247	2	0	unpitched	Note getters (some fields partial)	none
+display-step	step	false	true	247	2	0	unpitched	Note getters (some fields partial)	none
+unpitched	unpitched	false	true	247	2	0	note	Note getters (some fields partial)	none
+dot	empty-placement	false	true	108	2	0	note	Note getters (some fields partial)	Voice note/chord builders; Note pitch/duration/rest/grace setters
+fret	fret	true	true	101	2	101	technical	Note getters (some fields partial)	Note.setStringFret (note technical context only)
+string	string	true	true	101	2	101	technical	Note getters (some fields partial)	Note.setStringFret (note technical context only)
+mf	empty	false	false	48	2	16	dynamics	Dynamics.marks	Measure.addDirection dynamics (tag only)
+ff	empty	false	false	47	2	0	dynamics	Dynamics.marks	Measure.addDirection dynamics (tag only)
+notehead	notehead	false	true	46	2	0	note	Note getters (some fields partial)	none
+words	formatted-text-id	true	true	42	2	0	direction-type	Direction/Measure getters (offset only contributes to measureBeat)	Measure.addDirection (simple form)
+ornaments	ornaments	false	true	15	2	0	notations	Note mark collections (structural)	none
+text	text-element-data	false	true	15	2	0	lyric	Lyric/Figure getters (extend presence only)	none
+group-barline	group-barline	false	true	13	2	0	part-group	Score.partGroups	none
+lyric	lyric	true	true	12	2	0	note	Lyric/Figure getters (extend presence only)	none
+staff-tuning	staff-tuning	true	true	12	2	12	staff-details	Measure/Part/StaffDetails getters	none
+tuning-octave	octave	false	true	12	2	12	staff-tuning	Measure/Part/StaffDetails getters	none
+tuning-step	step	false	true	12	2	12	staff-tuning	Measure/Part/StaffDetails getters	none
+forward	forward	false	true	10	2	0	measure	Note.measureBeat / timeline (structural only)	Voice onset/timeline writes
+octave-shift	octave-shift	true	true	10	2	0	direction-type	Direction/Measure getters (offset only contributes to measureBeat)	none
+rehearsal	formatted-text-id	true	true	5	2	0	direction-type	Direction/Measure getters (offset only contributes to measureBeat)	none
+repeat	repeat	false	true	5	2	0	barline	Barline getters (ending text omitted)	Measure.addBarline
+display-text	formatted-text	false	false	4	2	0	part-abbreviation-display,part-name-display	none	none
+group	xs:string	false	false	4	2	0	score-part	none	none
+part-name-display	name-display	false	false	3	2	0	score-part	none	none
+midi-bank	midi-16384	false	false	2	2	1	midi-instrument	none	none
+virtual-instrument	virtual-instrument	false	false	2	2	0	score-instrument	none	none
+offset	offset	false	true	212	1	0	direction	Direction/Measure getters (offset only contributes to measureBeat)	none
+wedge	wedge	true	true	198	1	0	direction-type	Direction/Measure getters (offset only contributes to measureBeat)	none
+tie	tie	false	false	186	1	0	note	none	none
+tied	tied	true	true	186	1	0	notations	Note typed mark/spanner getters	Note.addSlur/addTie/removeTie
+staff-size	staff-size	false	true	69	1	0	staff-details	Measure/Part/StaffDetails getters	none
+f	empty	false	false	68	1	0	dynamics	Dynamics.marks	Measure.addDirection dynamics (tag only)
+p	empty	false	false	54	1	0	dynamics	Dynamics.marks	Measure.addDirection dynamics (tag only)
+harmony	harmony	true	true	33	1	0	measure	Harmony/Frame/FrameNote getters (partial)	Measure.addHarmony / Harmony.setFrame / Frame.addFrameNote
+kind	kind	false	true	33	1	0	harmony	Harmony/Frame/FrameNote getters (partial)	Measure.addHarmony / Harmony.setFrame / Frame.addFrameNote
+root	root	false	true	33	1	0	harmony	Harmony/Frame/FrameNote getters (partial)	Measure.addHarmony / Harmony.setFrame / Frame.addFrameNote
+root-step	root-step	false	true	33	1	0	root	Harmony/Frame/FrameNote getters (partial)	Measure.addHarmony / Harmony.setFrame / Frame.addFrameNote
+down-bow	empty-placement	true	true	25	1	0	technical	Exported typed node / parent collection (nested fields may be missing)	none
+hammer-on	hammer-on-pull-off	true	true	24	1	24	technical	Note typed mark/spanner getters	none
+mp	empty	false	false	22	1	0	dynamics	Dynamics.marks	Measure.addDirection dynamics (tag only)
+up-bow	empty-placement	true	true	20	1	0	technical	Exported typed node / parent collection (nested fields may be missing)	none
+tremolo	tremolo	true	true	14	1	0	ornaments	Exported typed node / parent collection (nested fields may be missing)	none
+actual-notes	xs:nonNegativeInteger	false	true	10	1	0	time-modification	Note getters (some fields partial)	none
+normal-notes	xs:nonNegativeInteger	false	true	10	1	0	time-modification	Note getters (some fields partial)	none
+slide	slide	true	true	10	1	10	notations	Note typed mark/spanner getters	none
+time-modification	time-modification	false	true	10	1	0	note	Note getters (some fields partial)	none
+group-name	group-name	false	true	8	1	0	part-group	Score.partGroups	none
+syllabic	syllabic	false	true	8	1	0	lyric	Lyric/Figure getters (extend presence only)	none
+key-alter	semitones	false	true	7	1	0	key	Measure/Note signature getters; Key/Time getters	none
+key-step	step	false	true	7	1	0	key	Measure/Note signature getters; Key/Time getters	none
+degree	degree	false	false	5	1	0	harmony	none	none
+degree-alter	degree-alter	false	false	5	1	0	degree	none	none
+degree-type	degree-type	false	false	5	1	0	degree	none	none
+degree-value	degree-value	false	false	5	1	0	degree	none	none
+ending	ending	false	true	5	1	0	barline	Barline getters (ending text omitted)	Measure.addBarline
+grace	grace	false	true	5	1	0	note	Note getters (some fields partial)	Voice note/chord builders; Note pitch/duration/rest/grace setters
+root-alter	harmony-alter	false	true	5	1	0	root	Harmony/Frame/FrameNote getters (partial)	Measure.addHarmony / Harmony.setFrame / Frame.addFrameNote
+bend	bend	true	true	4	1	4	technical	Note getters (some fields partial)	none
+bend-alter	semitones	false	true	4	1	4	bend	Note getters (some fields partial)	none
+tuplet	tuplet	true	true	4	1	0	notations	Note typed mark/spanner getters	none
+tuplet-number	tuplet-number	false	true	4	1	0	tuplet-actual,tuplet-normal	Tuplet display getters	none
+tuplet-type	tuplet-type	false	true	4	1	0	tuplet-actual,tuplet-normal	Tuplet display getters	none
+elision	elision	false	true	3	1	0	lyric	Lyric/Figure getters (extend presence only)	none
+group-abbreviation	group-name	false	true	3	1	0	part-group	Score.partGroups	none
+other-direction	other-direction	false	false	3	1	0	direction-type	none	none
+pp	empty	false	false	3	1	0	dynamics	Dynamics.marks	Measure.addDirection dynamics (tag only)
+accidental-mark	accidental-mark	true	true	2	1	0	notations,ornaments	Exported typed node / parent collection (nested fields may be missing)	none
+accidental-text	accidental-text	false	false	2	1	0	part-name-display	none	none
+midi-unpitched	midi-128	false	false	2	1	0	midi-instrument	none	none
+tuplet-actual	tuplet-portion	false	true	2	1	0	tuplet	Tuplet display getters	none
+tuplet-normal	tuplet-portion	false	true	2	1	0	tuplet	Tuplet display getters	none
+bass	bass	false	true	1	1	0	harmony	Harmony/Frame/FrameNote getters (partial)	Measure.addHarmony / Harmony.setFrame / Frame.addFrameNote
+bass-step	bass-step	false	true	1	1	0	bass	Harmony/Frame/FrameNote getters (partial)	Measure.addHarmony / Harmony.setFrame / Frame.addFrameNote
+coda	coda	false	true	1	1	0	direction-type	Direction/Measure getters (offset only contributes to measureBeat)	none
+concert-score	empty	false	false	1	1	0	defaults	none	none
+credit-type	xs:string	false	false	1	1	0	credit	none	none
+cue	empty	false	false	1	1	0	note	none	none
+encoder	typed-text	false	false	1	1	0	encoding	none	none
+encoding-description	xs:string	false	false	1	1	0	encoding	none	none
+ensemble	positive-integer-or-empty	false	false	1	1	0	score-instrument	none	none
+for-part	for-part	false	true	1	1	0	attributes	none	none
+glyph	glyph	false	false	1	1	0	appearance	none	none
+lyric-language	lyric-language	false	true	1	1	0	defaults	none	none
+measure-style	measure-style	false	true	1	1	0	attributes	none	none
+other-notation	other-notation	false	false	1	1	0	notations	none	none
+part-abbreviation-display	name-display	false	false	1	1	0	score-part	none	none
+part-clef	part-clef	false	false	1	1	0	for-part	none	none
+part-transpose	part-transpose	false	false	1	1	0	for-part	none	none
+segno	segno	false	true	1	1	0	direction-type	Direction/Measure getters (offset only contributes to measureBeat)	none
+senza-misura	xs:string	false	true	1	1	0	time	Measure/Note signature getters; Key/Time getters	none
+slash	slash	false	true	1	1	0	measure-style	none	none
+solo	empty	false	false	1	1	0	score-instrument	none	none
+trill-mark	empty-trill-sound	true	true	1	1	0	ornaments	Exported typed node / parent collection (nested fields may be missing)	none
+virtual-library	xs:string	false	false	1	1	0	virtual-instrument	none	none
+virtual-name	xs:string	false	false	1	1	0	virtual-instrument	none	none
+accord	accord	false	false	0	0	0		none	none
+accordion-high	empty	false	false	0	0	0		none	none
+accordion-low	empty	false	false	0	0	0		none	none
+accordion-middle	accordion-middle	false	false	0	0	0		none	none
+accordion-registration	accordion-registration	false	false	0	0	0		none	none
+arpeggiate	arpeggiate	false	true	0	0	0		Note getters (some fields partial)	none
+arrow	arrow	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+arrow-direction	arrow-direction	false	false	0	0	0		none	none
+arrow-style	arrow-style	false	false	0	0	0		none	none
+arrowhead	empty	false	false	0	0	0		none	none
+artificial	empty	false	false	0	0	0		none	none
+assess	assess	false	false	0	0	0		none	none
+barre	barre	false	true	0	0	0		Harmony/Frame/FrameNote getters (partial)	Measure.addHarmony / Harmony.setFrame / Frame.addFrameNote
+base-pitch	empty	false	false	0	0	0		none	none
+bass-alter	harmony-alter	false	true	0	0	0		Harmony/Frame/FrameNote getters (partial)	Measure.addHarmony / Harmony.setFrame / Frame.addFrameNote
+bass-separator	style-text	false	false	0	0	0		none	none
+beat-repeat	beat-repeat	false	false	0	0	0		none	none
+beat-unit-dot	empty	false	true	0	0	0		Metronome/MetronomeNote getters (relation operator omitted)	Measure.addDirection (simple form)
+beat-unit-tied	beat-unit-tied	false	false	0	0	0		none	none
+beater	beater	false	false	0	0	0		none	none
+bookmark	bookmark	false	false	0	0	0		none	none
+bracket	bracket	true	true	0	0	0		Direction/Measure getters (offset only contributes to measureBeat)	none
+brass-bend	empty-placement	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+breath-mark	breath-mark	false	false	0	0	0		Note.articulations (tag names only)	Note.addArticulation (tag only)
+caesura	caesura	false	false	0	0	0		Note.articulations (tag names only)	Note.addArticulation (tag only)
+cancel	cancel	false	false	0	0	0		none	none
+capo	xs:nonNegativeInteger	false	true	0	0	0		Measure/Part/StaffDetails getters	none
+circular-arrow	circular-arrow	false	false	0	0	0		none	none
+clef-octave-change	xs:integer	false	true	0	0	0		Measure/Note signature getters; Key/Time getters	Measure signature setters (simple signatures)
+credit-image	image	false	false	0	0	0		none	none
+credit-symbol	formatted-symbol-id	false	false	0	0	0		none	none
+damp	empty-print-style-align-id	false	false	0	0	0		none	none
+damp-all	empty-print-style-align-id	false	false	0	0	0		none	none
+dashes	dashes	true	true	0	0	0		Direction/Measure getters (offset only contributes to measureBeat)	none
+delayed-inverted-turn	horizontal-turn	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+delayed-turn	horizontal-turn	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+detached-legato	empty-placement	false	false	0	0	0		Note.articulations (tag names only)	Note.addArticulation (tag only)
+directive	anonymous	false	true	0	0	0		none	none
+doit	empty-line	false	false	0	0	0		Note.articulations (tag names only)	Note.addArticulation (tag only)
+double	double	false	true	0	0	0		none	none
+double-tongue	empty-placement	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+effect	effect	false	false	0	0	0		none	none
+elevation	rotation-degrees	false	false	0	0	0		none	none
+end-line	empty	false	false	0	0	0		none	none
+end-paragraph	empty	false	false	0	0	0		none	none
+except-voice	xs:string	false	false	0	0	0		none	none
+extend	extend	false	true	0	0	0		Lyric/Figure getters (extend presence only)	none
+eyeglasses	empty-print-style-align-id	false	false	0	0	0		none	none
+falloff	empty-line	false	false	0	0	0		Note.articulations (tag names only)	Note.addArticulation (tag only)
+feature	feature	false	false	0	0	0		none	none
+fermata	fermata	false	true	0	0	0		Note getters (some fields partial)	none
+fff	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+ffff	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+fffff	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+ffffff	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+figure	figure	true	true	0	0	0		FiguredBass/Figure getters	none
+figure-number	style-text	false	true	0	0	0		FiguredBass/Figure getters	none
+figured-bass	figured-bass	true	true	0	0	0		FiguredBass/Figure getters	none
+fingering	fingering	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+fingernails	empty-placement	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+first	xs:positiveInteger	false	true	0	0	0		Sound.swing	none
+first-fret	first-fret	false	true	0	0	0		Harmony/Frame/FrameNote getters (partial)	Measure.addHarmony / Harmony.setFrame / Frame.addFrameNote
+flip	empty-placement	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+footnote	formatted-text	false	true	0	0	0		none	none
+fp	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+frame	frame	true	true	0	0	0		Harmony/Frame/FrameNote getters (partial)	Measure.addHarmony / Harmony.setFrame / Frame.addFrameNote
+frame-frets	xs:positiveInteger	false	true	0	0	0		Harmony/Frame/FrameNote getters (partial)	Measure.addHarmony / Harmony.setFrame / Frame.addFrameNote
+frame-note	frame-note	true	true	0	0	0		Harmony/Frame/FrameNote getters (partial)	Measure.addHarmony / Harmony.setFrame / Frame.addFrameNote
+frame-strings	xs:positiveInteger	false	true	0	0	0		Harmony/Frame/FrameNote getters (partial)	Measure.addHarmony / Harmony.setFrame / Frame.addFrameNote
+function	style-text	false	true	0	0	0		none	none
+fz	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+glass	glass	false	false	0	0	0		none	none
+glissando	glissando	true	true	0	0	0		Note typed mark/spanner getters	none
+golpe	empty-placement	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+group-abbreviation-display	name-display	false	false	0	0	0		none	none
+group-link	xs:string	false	false	0	0	0		none	none
+group-name-display	name-display	false	false	0	0	0		none	none
+group-time	empty	false	false	0	0	0		none	none
+grouping	grouping	false	false	0	0	0		none	none
+half-muted	empty-placement-smufl	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+handbell	handbell	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+harmon-closed	harmon-closed	false	false	0	0	0		none	none
+harmon-mute	harmon-mute	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+harmonic	harmonic	true	true	0	0	0		Note getters (some fields partial)	none
+harp-pedals	harp-pedals	false	false	0	0	0		none	none
+haydn	empty-trill-sound	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+heel	heel-toe	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+hole	hole	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+hole-closed	hole-closed	false	false	0	0	0		none	none
+hole-shape	xs:string	false	false	0	0	0		none	none
+hole-type	xs:string	false	false	0	0	0		none	none
+humming	empty	false	false	0	0	0		none	none
+image	image	false	false	0	0	0		none	none
+instrument-abbreviation	xs:string	false	false	0	0	0		none	none
+instrument-change	instrument-change	false	false	0	0	0		none	none
+instrument-link	instrument-link	false	false	0	0	0		none	none
+instruments	xs:nonNegativeInteger	false	true	0	0	0		none	none
+interchangeable	interchangeable	false	false	0	0	0		none	none
+inversion	inversion	false	false	0	0	0		none	none
+inverted-mordent	mordent	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+inverted-turn	horizontal-turn	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+inverted-vertical-turn	empty-trill-sound	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+ipa	xs:string	false	false	0	0	0		none	none
+key-accidental	key-accidental	false	true	0	0	0		Measure/Note signature getters; Key/Time getters	none
+key-octave	key-octave	false	true	0	0	0		Measure/Note signature getters; Key/Time getters	none
+laughing	empty	false	false	0	0	0		none	none
+left-divider	empty-print-object-style-align	false	false	0	0	0		none	none
+level	level	false	true	0	0	0		none	none
+line-detail	line-detail	true	true	0	0	0		Measure/Part/StaffDetails getters	none
+link	link	false	false	0	0	0		none	none
+listen	listen	false	false	0	0	0		none	none
+listening	listening	false	false	0	0	0		none	none
+measure-distance	tenths	false	false	0	0	0		none	none
+measure-layout	measure-layout	false	false	0	0	0		none	none
+measure-repeat	measure-repeat	false	false	0	0	0		none	none
+membrane	membrane	false	false	0	0	0		none	none
+metal	metal	false	false	0	0	0		none	none
+metronome-arrows	empty	false	false	0	0	0		none	none
+metronome-beam	metronome-beam	false	true	0	0	0		Metronome/MetronomeNote getters (relation operator omitted)	none
+metronome-dot	empty	false	true	0	0	0		Metronome/MetronomeNote getters (relation operator omitted)	none
+metronome-note	metronome-note	true	true	0	0	0		Metronome/MetronomeNote getters (relation operator omitted)	none
+metronome-relation	xs:string	false	true	0	0	0		Metronome/MetronomeNote getters (relation operator omitted)	none
+metronome-tied	metronome-tied	false	false	0	0	0		none	none
+metronome-tuplet	metronome-tuplet	false	true	0	0	0		Metronome/MetronomeNote getters (relation operator omitted)	none
+metronome-type	note-type-value	false	true	0	0	0		Metronome/MetronomeNote getters (relation operator omitted)	none
+midi-name	xs:string	false	false	0	0	0		none	none
+mordent	mordent	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+movement-number	xs:string	false	false	0	0	0		none	none
+multiple-rest	multiple-rest	false	true	0	0	0		Measure/Note signature getters; Key/Time getters	none
+mute	mute	false	false	0	0	0		none	none
+n	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+natural	empty	false	false	0	0	0		none	none
+non-arpeggiate	non-arpeggiate	false	true	0	0	0		Note getters (some fields partial)	none
+normal-dot	empty	false	false	0	0	0		none	none
+normal-type	note-type-value	false	false	0	0	0		none	none
+notehead-text	notehead-text	false	false	0	0	0		none	none
+numeral	numeral	false	false	0	0	0		none	none
+numeral-alter	harmony-alter	false	false	0	0	0		none	none
+numeral-fifths	fifths	false	false	0	0	0		none	none
+numeral-key	numeral-key	false	false	0	0	0		none	none
+numeral-mode	numeral-mode	false	false	0	0	0		none	none
+numeral-root	numeral-root	false	false	0	0	0		none	none
+open	empty-placement-smufl	false	false	0	0	0		none	none
+open-string	empty-placement	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+opus	opus	false	false	0	0	0		none	none
+other-appearance	other-appearance	false	false	0	0	0		none	none
+other-articulation	other-placement-text	false	false	0	0	0		Note.articulations (tag names only)	Note.addArticulation (tag only)
+other-dynamics	other-text	false	true	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+other-listen	other-listening	false	false	0	0	0		none	none
+other-listening	other-listening	false	false	0	0	0		none	none
+other-ornament	other-placement-text	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+other-percussion	other-text	false	false	0	0	0		none	none
+other-play	other-play	false	false	0	0	0		none	none
+other-technical	other-placement-text	true	true	0	0	0		Note getters (some fields partial)	none
+part-link	part-link	false	false	0	0	0		none	none
+part-symbol	part-symbol	false	true	0	0	0		Measure/Part/StaffDetails getters	none
+pedal	pedal	true	true	0	0	0		Direction/Measure getters (offset only contributes to measureBeat)	none
+pedal-alter	semitones	false	false	0	0	0		none	none
+pedal-step	step	false	false	0	0	0		none	none
+pedal-tuning	pedal-tuning	false	false	0	0	0		none	none
+percussion	percussion	false	false	0	0	0		none	none
+pf	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+pitched	pitched	false	false	0	0	0		none	none
+play	play	false	false	0	0	0		none	none
+player	player	false	false	0	0	0		none	none
+player-name	xs:string	false	false	0	0	0		none	none
+plop	empty-line	false	false	0	0	0		Note.articulations (tag names only)	Note.addArticulation (tag only)
+pluck	placement-text	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+ppp	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+pppp	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+ppppp	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+pppppp	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+pre-bend	empty	false	false	0	0	0		none	none
+prefix	style-text	false	true	0	0	0		FiguredBass/Figure getters	none
+principal-voice	principal-voice	false	false	0	0	0		none	none
+pull-off	hammer-on-pull-off	true	true	0	0	0		Note typed mark/spanner getters	none
+relation	typed-text	false	false	0	0	0		none	none
+release	release	false	true	0	0	0		Note getters (some fields partial)	none
+rf	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+rfz	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+right-divider	empty-print-object-style-align	false	false	0	0	0		none	none
+schleifer	empty-placement	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+scoop	empty-line	false	false	0	0	0		Note.articulations (tag names only)	Note.addArticulation (tag only)
+scordatura	scordatura	false	false	0	0	0		none	none
+score-timewise	anonymous	false	false	0	0	0		none	none
+second	xs:positiveInteger	false	true	0	0	0		Sound.swing	none
+semi-pitched	semi-pitched	false	false	0	0	0		none	none
+sf	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+sffz	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+sfp	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+sfpp	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+sfz	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+sfzp	empty	false	false	0	0	0		Dynamics.marks	Measure.addDirection dynamics (tag only)
+shake	empty-trill-sound	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+slash-dot	empty	false	false	0	0	0		none	none
+slash-type	note-type-value	false	false	0	0	0		none	none
+smear	empty-placement	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+snap-pizzicato	empty-placement	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+soft-accent	empty-placement	false	false	0	0	0		Note.articulations (tag names only)	Note.addArticulation (tag only)
+sounding-pitch	empty	false	false	0	0	0		none	none
+source	xs:string	false	false	0	0	0		none	none
+spiccato	empty-placement	false	false	0	0	0		Note.articulations (tag names only)	Note.addArticulation (tag only)
+staccatissimo	empty-placement	false	false	0	0	0		Note.articulations (tag names only)	Note.addArticulation (tag only)
+staccato	empty-placement	false	false	0	0	0		Note.articulations (tag names only)	Note.addArticulation (tag only)
+staff-divide	staff-divide	false	false	0	0	0		none	none
+staff-type	staff-type	false	false	0	0	0		none	none
+stick	stick	false	false	0	0	0		none	none
+stick-location	stick-location	false	false	0	0	0		none	none
+stick-material	stick-material	false	false	0	0	0		none	none
+stick-type	stick-type	false	false	0	0	0		none	none
+stopped	empty-placement-smufl	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+straight	empty	false	true	0	0	0		Sound.swing	none
+stress	empty-placement	false	false	0	0	0		Note.articulations (tag names only)	Note.addArticulation (tag only)
+string-mute	string-mute	false	false	0	0	0		none	none
+strong-accent	strong-accent	false	false	0	0	0		Note.articulations (tag names only)	Note.addArticulation (tag only)
+suffix	style-text	false	true	0	0	0		FiguredBass/Figure getters	none
+swing	swing	false	true	0	0	0		Sound.swing	none
+swing-style	xs:string	false	false	0	0	0		none	none
+swing-type	swing-type-value	false	true	0	0	0		Sound.swing	none
+symbol	formatted-symbol-id	false	true	0	0	0		none	none
+sync	sync	false	false	0	0	0		none	none
+system-dividers	system-dividers	false	true	0	0	0		none	none
+tap	tap	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+tenuto	empty-placement	false	false	0	0	0		Note.articulations (tag names only)	Note.addArticulation (tag only)
+thumb-position	empty-placement	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+time-relation	time-relation	false	false	0	0	0		none	none
+timpani	timpani	false	false	0	0	0		none	none
+toe	heel-toe	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+touching-pitch	empty	false	false	0	0	0		none	none
+triple-tongue	empty-placement	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+tuning-alter	semitones	false	true	0	0	0		Measure/Part/StaffDetails getters	none
+tuplet-dot	tuplet-dot	false	true	0	0	0		Tuplet display getters	none
+turn	horizontal-turn	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+unstress	empty-placement	false	false	0	0	0		Note.articulations (tag names only)	Note.addArticulation (tag only)
+vertical-turn	empty-trill-sound	true	true	0	0	0		Exported typed node / parent collection (nested fields may be missing)	none
+wait	wait	false	false	0	0	0		none	none
+wavy-line	wavy-line	true	true	0	0	0		Note typed mark/spanner getters	none
+with-bar	placement-text	false	false	0	0	0		none	none
+wood	wood	false	false	0	0	0		none	none
+work-number	xs:string	false	false	0	0	0		none	none

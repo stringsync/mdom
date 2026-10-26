@@ -1,0 +1,193 @@
+element	schema_types	registered_class	source_literal_candidate	corpus_occurrences	corpus_files	guitar_tab_occurrences	observed_parents	typed_read	intent_write
+supports	supports	false	false	41	11	6	encoding	none	none
+encoding-date	yyyy-mm-dd	false	false	11	11	2	encoding	none	none
+miscellaneous	miscellaneous	false	false	11	11	0	identification	none	none
+miscellaneous-field	miscellaneous-field	false	false	11	11	0	miscellaneous	none	none
+page-height	tenths	false	false	16	10	3	page-layout	none	none
+page-layout	page-layout	false	true	16	10	3	defaults,print	none	none
+page-width	tenths	false	false	16	10	3	page-layout	none	none
+instrument-name	xs:string	false	false	29	8	1	score-instrument	none	none
+midi-channel	midi-16	false	false	29	8	2	midi-instrument	none	none
+part-abbreviation	part-name	false	false	29	8	2	score-part	none	none
+score-instrument	score-instrument	false	false	29	8	1	score-part	none	none
+bottom-margin	tenths	false	false	17	8	2	page-margins	none	none
+page-margins	page-margins	false	false	17	8	2	page-layout	none	none
+top-margin	tenths	false	false	17	8	2	page-margins	none	none
+pan	rotation-degrees	false	false	28	7	2	midi-instrument	none	none
+volume	percent	false	false	28	7	2	midi-instrument	none	none
+creator	typed-text	false	false	8	6	1	identification	none	none
+word-font	empty-font	false	true	6	6	1	defaults	none	none
+staff-distance	tenths	false	false	71	5	1	staff-layout	none	none
+staff-layout	staff-layout	false	true	71	5	1	defaults,print	none	none
+line-width	line-width	false	false	59	5	10	appearance	none	none
+credit	credit	false	false	13	5	0	score-partwise	none	none
+credit-words	formatted-text-id	false	false	13	5	0	credit	none	none
+note-size	note-size	false	false	10	5	2	appearance	none	none
+appearance	appearance	false	true	5	5	1	defaults	none	none
+music-font	empty-font	false	true	5	5	1	defaults	none	none
+measure-numbering	measure-numbering	false	false	25	4	1	print	none	none
+lyric-font	lyric-font	false	true	4	4	0	defaults	none	none
+chromatic	semitones	false	false	10	3	1	part-transpose,transpose	none	none
+diatonic	xs:integer	false	false	10	3	1	part-transpose,transpose	none	none
+transpose	transpose	false	true	9	3	1	attributes	none	none
+distance	distance	false	false	6	3	2	appearance	none	none
+octave-change	xs:integer	false	false	6	3	1	part-transpose,transpose	none	none
+instrument-sound	xs:string	false	false	3	3	1	score-instrument	none	none
+midi-device	midi-device	false	false	3	3	0	score-part	none	none
+rights	typed-text	false	false	3	3	0	identification	none	none
+instrument	instrument	false	false	249	2	0	note	none	none
+display-text	formatted-text	false	false	4	2	0	part-abbreviation-display,part-name-display	none	none
+group	xs:string	false	false	4	2	0	score-part	none	none
+part-name-display	name-display	false	false	3	2	0	score-part	none	none
+midi-bank	midi-16384	false	false	2	2	1	midi-instrument	none	none
+virtual-instrument	virtual-instrument	false	false	2	2	0	score-instrument	none	none
+tie	tie	false	false	186	1	0	note	none	none
+degree	degree	false	false	5	1	0	harmony	none	none
+degree-alter	degree-alter	false	false	5	1	0	degree	none	none
+degree-type	degree-type	false	false	5	1	0	degree	none	none
+degree-value	degree-value	false	false	5	1	0	degree	none	none
+other-direction	other-direction	false	false	3	1	0	direction-type	none	none
+accidental-text	accidental-text	false	false	2	1	0	part-name-display	none	none
+midi-unpitched	midi-128	false	false	2	1	0	midi-instrument	none	none
+concert-score	empty	false	false	1	1	0	defaults	none	none
+credit-type	xs:string	false	false	1	1	0	credit	none	none
+cue	empty	false	false	1	1	0	note	none	none
+encoder	typed-text	false	false	1	1	0	encoding	none	none
+encoding-description	xs:string	false	false	1	1	0	encoding	none	none
+ensemble	positive-integer-or-empty	false	false	1	1	0	score-instrument	none	none
+for-part	for-part	false	true	1	1	0	attributes	none	none
+glyph	glyph	false	false	1	1	0	appearance	none	none
+lyric-language	lyric-language	false	true	1	1	0	defaults	none	none
+measure-style	measure-style	false	true	1	1	0	attributes	none	none
+other-notation	other-notation	false	false	1	1	0	notations	none	none
+part-abbreviation-display	name-display	false	false	1	1	0	score-part	none	none
+part-clef	part-clef	false	false	1	1	0	for-part	none	none
+part-transpose	part-transpose	false	false	1	1	0	for-part	none	none
+slash	slash	false	true	1	1	0	measure-style	none	none
+solo	empty	false	false	1	1	0	score-instrument	none	none
+virtual-library	xs:string	false	false	1	1	0	virtual-instrument	none	none
+virtual-name	xs:string	false	false	1	1	0	virtual-instrument	none	none
+accord	accord	false	false	0	0	0		none	none
+accordion-high	empty	false	false	0	0	0		none	none
+accordion-low	empty	false	false	0	0	0		none	none
+accordion-middle	accordion-middle	false	false	0	0	0		none	none
+accordion-registration	accordion-registration	false	false	0	0	0		none	none
+arrow-direction	arrow-direction	false	false	0	0	0		none	none
+arrow-style	arrow-style	false	false	0	0	0		none	none
+arrowhead	empty	false	false	0	0	0		none	none
+artificial	empty	false	false	0	0	0		none	none
+assess	assess	false	false	0	0	0		none	none
+base-pitch	empty	false	false	0	0	0		none	none
+bass-separator	style-text	false	false	0	0	0		none	none
+beat-repeat	beat-repeat	false	false	0	0	0		none	none
+beat-unit-tied	beat-unit-tied	false	false	0	0	0		none	none
+beater	beater	false	false	0	0	0		none	none
+bookmark	bookmark	false	false	0	0	0		none	none
+cancel	cancel	false	false	0	0	0		none	none
+circular-arrow	circular-arrow	false	false	0	0	0		none	none
+credit-image	image	false	false	0	0	0		none	none
+credit-symbol	formatted-symbol-id	false	false	0	0	0		none	none
+damp	empty-print-style-align-id	false	false	0	0	0		none	none
+damp-all	empty-print-style-align-id	false	false	0	0	0		none	none
+directive	anonymous	false	true	0	0	0		none	none
+double	double	false	true	0	0	0		none	none
+effect	effect	false	false	0	0	0		none	none
+elevation	rotation-degrees	false	false	0	0	0		none	none
+end-line	empty	false	false	0	0	0		none	none
+end-paragraph	empty	false	false	0	0	0		none	none
+except-voice	xs:string	false	false	0	0	0		none	none
+eyeglasses	empty-print-style-align-id	false	false	0	0	0		none	none
+feature	feature	false	false	0	0	0		none	none
+footnote	formatted-text	false	true	0	0	0		none	none
+function	style-text	false	true	0	0	0		none	none
+glass	glass	false	false	0	0	0		none	none
+group-abbreviation-display	name-display	false	false	0	0	0		none	none
+group-link	xs:string	false	false	0	0	0		none	none
+group-name-display	name-display	false	false	0	0	0		none	none
+group-time	empty	false	false	0	0	0		none	none
+grouping	grouping	false	false	0	0	0		none	none
+harmon-closed	harmon-closed	false	false	0	0	0		none	none
+harp-pedals	harp-pedals	false	false	0	0	0		none	none
+hole-closed	hole-closed	false	false	0	0	0		none	none
+hole-shape	xs:string	false	false	0	0	0		none	none
+hole-type	xs:string	false	false	0	0	0		none	none
+humming	empty	false	false	0	0	0		none	none
+image	image	false	false	0	0	0		none	none
+instrument-abbreviation	xs:string	false	false	0	0	0		none	none
+instrument-change	instrument-change	false	false	0	0	0		none	none
+instrument-link	instrument-link	false	false	0	0	0		none	none
+instruments	xs:nonNegativeInteger	false	true	0	0	0		none	none
+interchangeable	interchangeable	false	false	0	0	0		none	none
+inversion	inversion	false	false	0	0	0		none	none
+ipa	xs:string	false	false	0	0	0		none	none
+laughing	empty	false	false	0	0	0		none	none
+left-divider	empty-print-object-style-align	false	false	0	0	0		none	none
+level	level	false	true	0	0	0		none	none
+link	link	false	false	0	0	0		none	none
+listen	listen	false	false	0	0	0		none	none
+listening	listening	false	false	0	0	0		none	none
+measure-distance	tenths	false	false	0	0	0		none	none
+measure-layout	measure-layout	false	false	0	0	0		none	none
+measure-repeat	measure-repeat	false	false	0	0	0		none	none
+membrane	membrane	false	false	0	0	0		none	none
+metal	metal	false	false	0	0	0		none	none
+metronome-arrows	empty	false	false	0	0	0		none	none
+metronome-tied	metronome-tied	false	false	0	0	0		none	none
+midi-name	xs:string	false	false	0	0	0		none	none
+movement-number	xs:string	false	false	0	0	0		none	none
+mute	mute	false	false	0	0	0		none	none
+natural	empty	false	false	0	0	0		none	none
+normal-dot	empty	false	false	0	0	0		none	none
+normal-type	note-type-value	false	false	0	0	0		none	none
+notehead-text	notehead-text	false	false	0	0	0		none	none
+numeral	numeral	false	false	0	0	0		none	none
+numeral-alter	harmony-alter	false	false	0	0	0		none	none
+numeral-fifths	fifths	false	false	0	0	0		none	none
+numeral-key	numeral-key	false	false	0	0	0		none	none
+numeral-mode	numeral-mode	false	false	0	0	0		none	none
+numeral-root	numeral-root	false	false	0	0	0		none	none
+open	empty-placement-smufl	false	false	0	0	0		none	none
+opus	opus	false	false	0	0	0		none	none
+other-appearance	other-appearance	false	false	0	0	0		none	none
+other-listen	other-listening	false	false	0	0	0		none	none
+other-listening	other-listening	false	false	0	0	0		none	none
+other-percussion	other-text	false	false	0	0	0		none	none
+other-play	other-play	false	false	0	0	0		none	none
+part-link	part-link	false	false	0	0	0		none	none
+pedal-alter	semitones	false	false	0	0	0		none	none
+pedal-step	step	false	false	0	0	0		none	none
+pedal-tuning	pedal-tuning	false	false	0	0	0		none	none
+percussion	percussion	false	false	0	0	0		none	none
+pitched	pitched	false	false	0	0	0		none	none
+play	play	false	false	0	0	0		none	none
+player	player	false	false	0	0	0		none	none
+player-name	xs:string	false	false	0	0	0		none	none
+pre-bend	empty	false	false	0	0	0		none	none
+principal-voice	principal-voice	false	false	0	0	0		none	none
+relation	typed-text	false	false	0	0	0		none	none
+right-divider	empty-print-object-style-align	false	false	0	0	0		none	none
+scordatura	scordatura	false	false	0	0	0		none	none
+score-timewise	anonymous	false	false	0	0	0		none	none
+semi-pitched	semi-pitched	false	false	0	0	0		none	none
+slash-dot	empty	false	false	0	0	0		none	none
+slash-type	note-type-value	false	false	0	0	0		none	none
+sounding-pitch	empty	false	false	0	0	0		none	none
+source	xs:string	false	false	0	0	0		none	none
+staff-divide	staff-divide	false	false	0	0	0		none	none
+staff-type	staff-type	false	false	0	0	0		none	none
+stick	stick	false	false	0	0	0		none	none
+stick-location	stick-location	false	false	0	0	0		none	none
+stick-material	stick-material	false	false	0	0	0		none	none
+stick-type	stick-type	false	false	0	0	0		none	none
+string-mute	string-mute	false	false	0	0	0		none	none
+swing-style	xs:string	false	false	0	0	0		none	none
+symbol	formatted-symbol-id	false	true	0	0	0		none	none
+sync	sync	false	false	0	0	0		none	none
+system-dividers	system-dividers	false	true	0	0	0		none	none
+time-relation	time-relation	false	false	0	0	0		none	none
+timpani	timpani	false	false	0	0	0		none	none
+touching-pitch	empty	false	false	0	0	0		none	none
+wait	wait	false	false	0	0	0		none	none
+with-bar	placement-text	false	false	0	0	0		none	none
+wood	wood	false	false	0	0	0		none	none
+work-number	xs:string	false	false	0	0	0		none	none
