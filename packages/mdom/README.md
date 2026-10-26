@@ -131,8 +131,14 @@ staff carries both pitches and tablature positions on the same mdom notes.
 
 Guitar Pro 5 files are read record by record into the same GPIF tables, so they
 yield the same tree as the matching `.gp`. A bar that stores fewer beats than its
-meter is padded with rests, and an empty bar stays empty. Effects, chord diagrams,
-lyrics, alternate endings and jumps are skipped correctly but throw by default.
+meter is padded with rests, and an empty bar stays empty. Their note and beat
+effects (bends, whammy bar, harmonics, dead and ghost notes, palm mutes, let ring,
+accents, hammer-ons, slides, vibrato, tremolo picking, grace note slides and
+hammer-ons, brushes, pick strokes, tapping, ottavas), mix-table tempo changes,
+chord diagrams, lyrics, alternate endings and jumps import as the GP7 equivalents
+do. Features with no MusicXML equivalent (trills, slaps and pops, fade-ins,
+semi harmonics, fingering, instrument changes and curves a single bend cannot
+state) throw by default and are dropped with `unsupported: 'omit'`.
 
 Notation-only staves use Guitar Pro's internal tuning/string/fret encoding for
 playback while tablature stays hidden. Import exposes string/fret positions and

@@ -15,6 +15,55 @@ const STRING_SLOTS = 7;
 const BASS_CLEF_TUNING = 35;
 const NOTE_TECHNIQUES = 'note techniques';
 const BEAT_EFFECTS = 'beat effects or annotations';
+/** Guitar Pro's jump and target markers, in the order the header stores their bar numbers. */
+const DIRECTIONS = [
+	'Coda',
+	'DoubleCoda',
+	'Segno',
+	'SegnoSegno',
+	'Fine',
+	'DaCapo',
+	'DaCapoAlCoda',
+	'DaCapoAlDoubleCoda',
+	'DaCapoAlFine',
+	'DaSegno',
+	'DaSegnoAlCoda',
+	'DaSegnoAlDoubleCoda',
+	'DaSegnoAlFine',
+	'DaSegnoSegno',
+	'DaSegnoSegnoAlCoda',
+	'DaSegnoSegnoAlDoubleCoda',
+	'DaSegnoSegnoAlFine',
+	'DaCoda',
+	'DaDoubleCoda',
+];
+/** The first of {@link DIRECTIONS} that are targets, which mark a bar's start; the rest are jumps. */
+const TARGET_COUNT = 5;
+const LYRIC_LINES = 5;
+const SLAPS: Record<number, string> = {
+	1: 'Tapped',
+	2: 'Slapped',
+	3: 'Popped',
+};
+const HARMONICS: Record<number, string> = {
+	1: 'Natural',
+	2: 'Artificial',
+	3: 'Tap',
+	4: 'Pinch',
+	5: 'Semi',
+};
+const TREMOLO_PICKING: Record<number, string> = {
+	1: '1/2',
+	2: '1/4',
+	3: '1/8',
+};
+const FINGERS = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky'];
+const OTTAVAS: [number, string][] = [
+	[0x10, '8va'],
+	[0x20, '8vb'],
+	[0x40, '15ma'],
+	[0x100, '15mb'],
+];
 
 const DURATIONS = [
 	'whole',
@@ -59,6 +108,11 @@ interface MasterBar {
 	doubleBar: boolean;
 	/** The GPIF `TripletFeel` the bar plays with; null when straight. */
 	tripletFeel: string | null;
+	/** The passes an alternate ending's volta plays on; empty outside one. */
+	endings: number[];
+	/** Landmarks (segno, coda, fine) at the bar's start, and jumps taken at its end. */
+	targets: string[];
+	jumps: string[];
 }
 
 /** The GP5 bar triplet-feel byte as the GPIF `TripletFeel` it means. */
@@ -75,6 +129,32 @@ interface Track {
 	program: number;
 	channel: number;
 	bassClef: boolean;
+	/** Chord diagram items of the GPIF `DiagramCollection`, and the ids of those written. */
+	diagrams: string[];
+	diagramIds: Map<string, number>;
+	lyrics: LyricLine[];
+}
+interface LyricLine {
+	startBar: number;
+	text: string;
+}
+/** The GPIF a beat's effects add: child tags, and `Property` nodes for its `Properties`. */
+interface BeatEffects {
+	tags: string;
+	properties: string;
+}
+/** The GPIF a note's effects add. */
+interface NoteEffects {
+	staccato: boolean;
+	/** The GPIF tremolo picking speed, which GPIF keeps on the beat. */
+	tremolo: string | null;
+	tags: string;
+	properties: string;
+}
+interface TempoChange {
+	bar: number;
+	position: number;
+	tempo: number;
 }
 interface PlaybackInfo {
 	program: number;
@@ -92,6 +172,9 @@ export class GuitarProBinaryReader {
 	private readonly voiceXml: string[] = [];
 	private readonly barXml: string[] = [];
 	private readonly tiedFrets = new Map<string, number>();
+	/** Tempo changes by bar and position; the header tempo is the first. */
+	private readonly tempos = new Map<string, TempoChange>();
+	private barIndex = 0;
 
 	constructor(opts: GuitarProOptions = {}) {
 		this.values = new GuitarProValues(opts);
@@ -112,7 +195,7 @@ export class GuitarProBinaryReader {
 		this.cursor = new GuitarProBinaryCursor(bytes);
 		this.readVersion();
 		const info = this.readScoreInformation();
-		const lyricsText = this.readLyrics();
+		const lyrics = this.readLyrics();
 		if (this.version >= 510) {
 			this.cursor.skip(19);
 		}
@@ -123,13 +206,16 @@ export class GuitarProBinaryReader {
 		}
 		this.cursor.intByteString();
 		const tempo = this.cursor.int32();
+		if (tempo > 0) {
+			this.addTempo({ bar: 0, position: 0, tempo });
+		}
 		if (this.version >= 510) {
 			this.cursor.byte();
 		}
 		this.cursor.int32();
 		this.cursor.byte();
 		const playback = this.readPlayback();
-		this.readDirections();
+		const directions = this.readDirections();
 		const barCount = this.cursor.count(
 			this.cursor.int32(),
 			MAX_BARS,
@@ -141,20 +227,31 @@ export class GuitarProBinaryReader {
 			'track count',
 		);
 		const masters = this.readMasterBars(barCount);
+		for (const [bar, direction] of directions) {
+			const master = masters[bar];
+			if (!master) {
+				this.values.unsupported('jumps outside the score');
+			} else if (DIRECTIONS.indexOf(direction) < TARGET_COUNT) {
+				master.targets.push(direction);
+			} else {
+				master.jumps.push(direction);
+			}
+		}
 		const tracks: Track[] = [];
 		for (let index = 0; index < trackCount; index++) {
 			tracks.push(this.readTrack(playback));
 		}
 		for (let bar = 0; bar < barCount; bar++) {
+			this.barIndex = bar;
 			for (const [trackIndex, track] of tracks.entries()) {
 				this.readBar(trackIndex, track, masters[bar]!);
 			}
 		}
-		if (lyricsText.trim()) {
-			this.values.unsupported('lyrics');
+		if (lyrics.track >= 0 && lyrics.track < tracks.length) {
+			tracks[lyrics.track]!.lyrics = lyrics.lines;
 		}
 		return {
-			gpif: this.gpif(info, tempo, masters, tracks),
+			gpif: this.gpif(info, masters, tracks),
 			tablature: tracks.map((track) => track.tablature),
 		};
 	}
@@ -195,14 +292,15 @@ export class GuitarProBinaryReader {
 		return { title, artist, words, music, copyright };
 	}
 
-	private readLyrics(): string {
-		this.cursor.int32();
-		let text = '';
-		for (let line = 0; line < 5; line++) {
-			this.cursor.int32();
-			text += this.cursor.intString();
+	/** The lyric lines of the one track that sings them; the track and start bars are 1-based. */
+	private readLyrics(): { track: number; lines: LyricLine[] } {
+		const track = this.cursor.int32() - 1;
+		const lines: LyricLine[] = [];
+		for (let line = 0; line < LYRIC_LINES; line++) {
+			const startBar = Math.max(0, this.cursor.int32() - 1);
+			lines.push({ startBar, text: this.cursor.intString() });
 		}
-		return text;
+		return { track, lines };
 	}
 
 	private readPlayback(): PlaybackInfo[] {
@@ -214,16 +312,17 @@ export class GuitarProBinaryReader {
 		return infos;
 	}
 
-	/** Jump and target markers; reading them waits on the GP5 effects work. */
-	private readDirections(): void {
-		let found = false;
-		for (let direction = 0; direction < 19; direction++) {
-			found = this.cursor.int16() !== -1 || found;
+	/** The bar index (0-based) each jump or target marker sits on, in {@link DIRECTIONS} names. */
+	private readDirections(): [number, string][] {
+		const found: [number, string][] = [];
+		for (const name of DIRECTIONS) {
+			const bar = this.cursor.int16();
+			if (bar !== -1) {
+				found.push([bar - 1, name]);
+			}
 		}
 		this.cursor.skip(4);
-		if (found) {
-			this.values.unsupported('jumps');
-		}
+		return found;
 	}
 
 	private readMasterBars(count: number): MasterBar[] {
@@ -237,6 +336,9 @@ export class GuitarProBinaryReader {
 			repeatCount: 0,
 			doubleBar: false,
 			tripletFeel: null,
+			endings: [],
+			targets: [],
+			jumps: [],
 		};
 		for (let index = 0; index < count; index++) {
 			const flags = this.cursor.byte();
@@ -245,6 +347,9 @@ export class GuitarProBinaryReader {
 				repeatStart: (flags & 0x04) !== 0,
 				repeatCount: 0,
 				doubleBar: (flags & 0x80) !== 0,
+				endings: [],
+				targets: [],
+				jumps: [],
 			};
 			if (flags & 0x01) {
 				master.numerator = this.cursor.byte();
@@ -270,8 +375,10 @@ export class GuitarProBinaryReader {
 			const tripletFeel = this.cursor.byte();
 			this.cursor.byte();
 			master.tripletFeel = TRIPLET_FEELS[tripletFeel] ?? null;
-			if (endings) {
-				this.values.unsupported('alternate endings');
+			for (let pass = 0; pass < 8; pass++) {
+				if (endings & (1 << pass)) {
+					master.endings.push(pass + 1);
+				}
 			}
 			if (tripletFeel && !master.tripletFeel) {
 				this.values.unsupported('triplet feel');
@@ -326,6 +433,9 @@ export class GuitarProBinaryReader {
 			bassClef:
 				clefMode === 12 ||
 				(tuning.length > 0 && tuning[tuning.length - 1]! < BASS_CLEF_TUNING),
+			diagrams: [],
+			diagramIds: new Map(),
+			lyrics: [],
 		};
 	}
 
@@ -341,7 +451,13 @@ export class GuitarProBinaryReader {
 			const beatIds: number[] = [];
 			let length: Fraction = [0, 1];
 			for (let beat = 0; beat < beatCount; beat++) {
-				const read = this.readBeat(trackIndex, voiceIndex, track);
+				const read = this.readBeat(
+					trackIndex,
+					voiceIndex,
+					track,
+					master,
+					length,
+				);
 				beatIds.push(...read.ids);
 				length = add(length, read.length);
 			}
@@ -369,6 +485,8 @@ export class GuitarProBinaryReader {
 		trackIndex: number,
 		voiceIndex: number,
 		track: Track,
+		master: MasterBar,
+		onset: Fraction,
 	): { ids: number[]; length: Fraction } {
 		const flags = this.cursor.byte();
 		// Status 0 is a placeholder that GP shows as an empty bar, not a rest.
@@ -387,20 +505,26 @@ export class GuitarProBinaryReader {
 				tuplet = [actual, normal];
 			}
 		}
-		if (flags & 0x02) {
-			this.readChord();
-		}
+		const chord = flags & 0x02 ? this.readChord(track) : null;
 		const text = flags & 0x04 ? this.cursor.unusedIntString() : '';
-		if (flags & 0x08) {
-			this.readBeatEffects();
-		}
+		const effects: BeatEffects =
+			flags & 0x08 ? this.readBeatEffects() : { tags: '', properties: '' };
 		if (flags & 0x10) {
-			this.readMixTableChange();
+			const tempo = this.readMixTableChange();
+			if (tempo != null) {
+				this.addTempo({
+					bar: this.barIndex,
+					position:
+						toNumber(onset) / toNumber([master.numerator, master.denominator]),
+					tempo,
+				});
+			}
 		}
 		const stringFlags = this.cursor.byte();
 		const notes: string[] = [];
 		const graceBeats: number[] = [];
 		let dynamic = 'F';
+		let tremolo: string | null = null;
 		for (let bit = 6; bit >= 0; bit--) {
 			const stringIndex = 6 - bit;
 			if (!(stringFlags & (1 << bit)) || stringIndex >= track.tuning.length) {
@@ -415,8 +539,9 @@ export class GuitarProBinaryReader {
 			);
 			notes.push(note.id);
 			dynamic = note.dynamic ?? dynamic;
+			tremolo = note.tremolo ?? tremolo;
 		}
-		this.readBeatFlags();
+		const ottava = this.readBeatFlags();
 		if (placeholder && !notes.length) {
 			return { ids: [], length: [0, 1] };
 		}
@@ -425,6 +550,10 @@ export class GuitarProBinaryReader {
 		this.beatXml.push(
 			`<Beat id="${id}"><Rhythm ref="${rhythm}"/><Dynamic>${dynamic}</Dynamic>${
 				text ? `<FreeText>${escapeXml(text)}</FreeText>` : ''
+			}${chord == null ? '' : `<Chord>${chord}</Chord>`}${ottava}${tremolo ? `<Tremolo>${tremolo}</Tremolo>` : ''}${effects.tags}${
+				effects.properties
+					? `<Properties>${effects.properties}</Properties>`
+					: ''
 			}${notes.length ? `<Notes>${notes.join(' ')}</Notes>` : ''}</Beat>`,
 		);
 		return {
@@ -451,73 +580,135 @@ export class GuitarProBinaryReader {
 		return ids;
 	}
 
-	/** The trailing beat flags only carry layout (beaming, ottava), which is regenerated. */
-	private readBeatFlags(): void {
+	/** The trailing beat flags carry layout (beaming), which is regenerated, and the ottava. */
+	private readBeatFlags(): string {
 		const flags = this.cursor.int16();
-		if (flags & (0x10 | 0x20 | 0x40 | 0x100)) {
-			this.values.unsupported('octave markings');
-		}
 		if (flags & 0x800) {
 			this.cursor.byte();
 		}
+		const ottava = OTTAVAS.find(([bit]) => flags & bit)?.[1];
+		return ottava ? `<Ottavia>${ottava}</Ottavia>` : '';
 	}
 
-	private readChord(): void {
+	/** Reads a chord diagram into the track's diagram collection; returns its id. */
+	private readChord(track: Track): number {
 		this.cursor.skip(17);
 		const name = this.cursor.fixedString(21);
 		this.cursor.skip(4);
-		this.cursor.int32();
+		const firstFret = this.cursor.int32();
+		const frets: number[] = [];
 		for (let slot = 0; slot < STRING_SLOTS; slot++) {
-			this.cursor.int32();
+			frets.push(this.cursor.int32());
+		}
+		this.cursor.skip(16);
+		const fingers: number[] = [];
+		this.cursor.skip(8);
+		for (let slot = 0; slot < STRING_SLOTS; slot++) {
+			fingers.push(this.cursor.signedByte());
 		}
 		this.cursor.byte();
-		this.cursor.skip(5);
-		this.cursor.skip(26);
-		if (name) {
-			this.values.unsupported(BEAT_EFFECTS);
+		const strings = track.tuning.length;
+		const played = frets.slice(0, strings);
+		const key = `${name}|${firstFret}|${played.join(',')}|${fingers.slice(0, strings).join(',')}`;
+		let id = track.diagramIds.get(key);
+		if (id == null) {
+			id = track.diagrams.length;
+			track.diagramIds.set(key, id);
+			track.diagrams.push(
+				this.diagram(id, name, firstFret, played, fingers, strings),
+			);
 		}
+		return id;
 	}
 
-	private readBeatEffects(): void {
+	/** One `DiagramCollection` item; Guitar Pro lists strings from the highest, GPIF from the lowest. */
+	private diagram(
+		id: number,
+		name: string,
+		firstFret: number,
+		frets: number[],
+		fingers: number[],
+		strings: number,
+	): string {
+		const baseFret = Math.max(firstFret - 1, 0);
+		const dots: string[] = [];
+		const positions: string[] = [];
+		for (const [slot, fret] of frets.entries()) {
+			if (fret < 0) {
+				continue;
+			}
+			const string = strings - 1 - slot;
+			const relative = fret > 0 ? Math.max(fret - baseFret, 1) : 0;
+			dots.push(`<Fret string="${string}" fret="${relative}"/>`);
+			const finger = FINGERS[fingers[slot]!];
+			if (finger && relative) {
+				positions.push(
+					`<Position finger="${finger}" fret="${relative}" string="${string}"/>`,
+				);
+			}
+		}
+		const shown = dots.length > 0;
+		return `<Item id="${id}" name="${escapeXml(name)}"><Diagram stringCount="${strings}" fretCount="5" baseFret="${baseFret}" barsStates="1 1 1 1 1">${dots.join('')}${
+			positions.length ? `<Fingering>${positions.join('')}</Fingering>` : ''
+		}<Property name="ShowDiagram" type="bool" value="${shown}"/><Property name="ShowName" type="bool" value="true"/><Property name="ShowFingering" type="bool" value="true"/></Diagram></Item>`;
+	}
+
+	private readBeatEffects(): BeatEffects {
+		const effects: BeatEffects = { tags: '', properties: '' };
 		const flags = this.cursor.byte();
 		const flags2 = this.cursor.byte();
-		let found = (flags & (0x02 | 0x10)) !== 0 || (flags2 & 0x01) !== 0;
+		if (flags & 0x10) {
+			effects.tags += '<Fade>FadeIn</Fade>';
+		}
 		if (flags & 0x20) {
-			this.cursor.signedByte();
-			found = true;
+			const slap = SLAPS[this.cursor.signedByte()];
+			if (slap) {
+				effects.properties += `<Property name="${slap}"><Enable/></Property>`;
+			}
 		}
 		if (flags2 & 0x04) {
-			this.readBend();
-			found = true;
+			const points = this.readBend();
+			if (points.length) {
+				const [origin, middle, destination] = bendValues(points);
+				effects.tags += `<Whammy originValue="${origin}" originOffset="0" middleValue="${middle}" middleOffset1="0" middleOffset2="100" destinationValue="${destination}" destinationOffset="100"/>`;
+			}
 		}
 		if (flags & 0x40) {
-			this.cursor.skip(2);
-			found = true;
+			const up = this.cursor.signedByte();
+			const down = this.cursor.signedByte();
+			if (up > 0 || down > 0) {
+				effects.properties += `<Property name="Brush"><Direction>${up > 0 ? 'Up' : 'Down'}</Direction></Property>`;
+			}
 		}
 		if (flags2 & 0x02) {
-			this.cursor.signedByte();
-			found = true;
+			const stroke = this.cursor.signedByte();
+			if (stroke === 1 || stroke === 2) {
+				effects.properties += `<Property name="PickStroke"><Direction>${stroke === 1 ? 'Up' : 'Down'}</Direction></Property>`;
+			}
 		}
-		if (found) {
-			this.values.unsupported(BEAT_EFFECTS);
-		}
+		return effects;
 	}
 
-	/** Reads a bend or tremolo bar curve; both share one layout. */
-	private readBend(): void {
+	/** Reads a bend or tremolo bar curve, which share one layout, as its point values. */
+	private readBend(): number[] {
 		this.cursor.byte();
 		this.cursor.int32();
-		const points = this.cursor.count(
+		const count = this.cursor.count(
 			this.cursor.int32(),
 			MAX_POINTS,
 			'bend point count',
 		);
-		for (let point = 0; point < points; point++) {
-			this.cursor.skip(9);
+		const values: number[] = [];
+		for (let point = 0; point < count; point++) {
+			this.cursor.int32();
+			values.push(this.cursor.int32());
+			this.cursor.byte();
 		}
+		return values;
 	}
 
-	private readMixTableChange(): void {
+	/** Reads a mix table change; returns the tempo it sets, if any. */
+	private readMixTableChange(): number | null {
 		const instrument = this.cursor.signedByte();
 		this.cursor.skip(16);
 		const volume = this.cursor.signedByte();
@@ -545,12 +736,17 @@ export class GuitarProBinaryReader {
 			this.cursor.intByteString();
 			this.cursor.intByteString();
 		}
-		if (instrument >= 0 || volume >= 0 || balance >= 0 || tempo >= 0) {
+		if (instrument >= 0 || volume >= 0 || balance >= 0) {
 			this.values.unsupported('instrument changes or track automation');
 		}
 		if (wah >= 0) {
 			this.values.unsupported(BEAT_EFFECTS);
 		}
+		return tempo > 0 ? tempo : null;
+	}
+
+	private addTempo(change: TempoChange): void {
+		this.tempos.set(`${change.bar}:${change.position}`, change);
 	}
 
 	private readNote(
@@ -559,7 +755,7 @@ export class GuitarProBinaryReader {
 		track: Track,
 		stringIndex: number,
 		graceBeats: number[],
-	): { id: string; dynamic?: string } {
+	): { id: string; dynamic?: string; tremolo: string | null } {
 		const flags = this.cursor.byte();
 		let noteType = 0;
 		if (flags & 0x20) {
@@ -582,15 +778,23 @@ export class GuitarProBinaryReader {
 		}
 		this.cursor.byte();
 		let accent = (flags & 0x02 ? 4 : 0) | (flags & 0x40 ? 8 : 0);
-		let effects: NoteEffects = {};
+		let effects: NoteEffects = {
+			staccato: false,
+			tremolo: null,
+			tags: '',
+			properties: '',
+		};
 		if (flags & 0x08) {
 			effects = this.readNoteEffects(track, graceBeats, stringIndex);
 		}
 		if (effects.staccato) {
 			accent |= 1;
 		}
-		if (flags & 0x04 || noteType === 3) {
-			this.values.unsupported(NOTE_TECHNIQUES);
+		if (flags & 0x04) {
+			effects.tags += '<AntiAccent>Normal</AntiAccent>';
+		}
+		if (noteType === 3) {
+			effects.properties += '<Property name="Muted"><Enable/></Property>';
 		}
 		const key = `${trackIndex}:${voiceIndex}:${stringIndex}`;
 		if (noteType === 2) {
@@ -602,9 +806,9 @@ export class GuitarProBinaryReader {
 		this.noteXml.push(
 			`<Note id="${id}">${noteType === 2 ? '<Tie origin="false" destination="true"/>' : ''}${
 				accent ? `<Accent>${accent}</Accent>` : ''
-			}<Properties><Property name="String"><String>${string}</String></Property><Property name="Fret"><Fret>${fret}</Fret></Property></Properties></Note>`,
+			}${effects.tags}<Properties><Property name="String"><String>${string}</String></Property><Property name="Fret"><Fret>${fret}</Fret></Property>${effects.properties}</Properties></Note>`,
 		);
-		return { id: String(id), dynamic };
+		return { id: String(id), dynamic, tremolo: effects.tremolo };
 	}
 
 	private readNoteEffects(
@@ -612,48 +816,66 @@ export class GuitarProBinaryReader {
 		graceBeats: number[],
 		stringIndex: number,
 	): NoteEffects {
+		const effects: NoteEffects = {
+			staccato: false,
+			tremolo: null,
+			tags: '',
+			properties: '',
+		};
 		const flags = this.cursor.byte();
 		const flags2 = this.cursor.byte();
-		let technique = (flags & (0x02 | 0x08)) !== 0;
 		if (flags & 0x01) {
-			this.readBend();
-			technique = true;
+			const points = this.readBend();
+			if (points.length) {
+				const [origin, middle, destination] = bendValues(points);
+				effects.properties += `<Property name="Bended"><Enable/></Property><Property name="BendOriginValue"><Float>${origin}</Float></Property><Property name="BendMiddleValue"><Float>${middle}</Float></Property><Property name="BendDestinationValue"><Float>${destination}</Float></Property>`;
+			}
+		}
+		if (flags & 0x02) {
+			effects.properties += '<Property name="HopoOrigin"><Enable/></Property>';
+		}
+		if (flags & 0x08) {
+			effects.tags += '<LetRing/>';
 		}
 		if (flags & 0x10) {
 			this.readGrace(track, graceBeats, stringIndex);
 		}
 		if (flags2 & 0x04) {
-			this.cursor.byte();
-			this.values.unsupported(BEAT_EFFECTS);
+			const tremolo = TREMOLO_PICKING[this.cursor.byte()];
+			effects.tremolo = tremolo ?? null;
 		}
 		if (flags2 & 0x08) {
-			this.cursor.byte();
-			technique = true;
+			effects.properties += `<Property name="Slide"><Flags>${this.cursor.byte()}</Flags></Property>`;
 		}
 		if (flags2 & 0x10) {
-			this.readHarmonic();
-			technique = true;
+			const type = HARMONICS[this.readHarmonic()];
+			if (type) {
+				effects.properties += `<Property name="HarmonicType"><HType>${type}</HType></Property>`;
+			}
 		}
 		if (flags2 & 0x20) {
-			this.cursor.skip(2);
-			technique = true;
+			effects.tags += `<Trill>${this.cursor.byte()}</Trill>`;
+			this.cursor.byte();
 		}
-		if (flags2 & (0x02 | 0x40)) {
-			technique = true;
+		if (flags2 & 0x02) {
+			effects.properties += '<Property name="PalmMuted"><Enable/></Property>';
 		}
-		if (technique) {
-			this.values.unsupported(NOTE_TECHNIQUES);
+		if (flags2 & 0x40) {
+			effects.tags += '<Vibrato>Slight</Vibrato>';
 		}
-		return { staccato: (flags2 & 0x01) !== 0 };
+		effects.staccato = (flags2 & 0x01) !== 0;
+		return effects;
 	}
 
-	private readHarmonic(): void {
+	/** Reads a harmonic's type, skipping the pitch an artificial or tapped one names. */
+	private readHarmonic(): number {
 		const type = this.cursor.byte();
 		if (type === 2) {
 			this.cursor.skip(3);
 		} else if (type === 3) {
 			this.cursor.byte();
 		}
+		return type;
 	}
 
 	private readGrace(
@@ -666,12 +888,20 @@ export class GuitarProBinaryReader {
 		const transition = this.cursor.signedByte();
 		this.cursor.byte();
 		const flags = this.cursor.byte();
-		if (transition !== 0 || flags & 0x01) {
+		let properties = '';
+		if (flags & 0x01) {
+			properties += '<Property name="Muted"><Enable/></Property>';
+		}
+		if (transition === 1) {
+			properties += '<Property name="Slide"><Flags>2</Flags></Property>';
+		} else if (transition === 2) {
+			properties += '<Property name="HopoOrigin"><Enable/></Property>';
+		} else if (transition !== 0) {
 			this.values.unsupported(NOTE_TECHNIQUES);
 		}
 		const noteId = this.noteXml.length;
 		this.noteXml.push(
-			`<Note id="${noteId}"><Properties><Property name="String"><String>${track.tuning.length - 1 - stringIndex}</String></Property><Property name="Fret"><Fret>${fret}</Fret></Property></Properties></Note>`,
+			`<Note id="${noteId}"><Properties><Property name="String"><String>${track.tuning.length - 1 - stringIndex}</String></Property><Property name="Fret"><Fret>${fret}</Fret></Property>${properties}</Properties></Note>`,
 		);
 		const beatId = this.beatXml.length;
 		this.beatXml.push(
@@ -701,7 +931,6 @@ export class GuitarProBinaryReader {
 
 	private gpif(
 		info: Record<string, string>,
-		tempo: number,
 		masters: MasterBar[],
 		tracks: Track[],
 	): string {
@@ -717,7 +946,11 @@ export class GuitarProBinaryReader {
 					.reverse()
 					.join(
 						' ',
-					)}</Pitches></Property><Property name="CapoFret"><Fret>${track.capo}</Fret></Property></Properties></Staff></Staves></Track>`,
+					)}</Pitches></Property><Property name="CapoFret"><Fret>${track.capo}</Fret></Property>${
+					track.diagrams.length
+						? `<Property name="DiagramCollection"><Items>${track.diagrams.join('')}</Items></Property>`
+						: ''
+				}</Properties></Staff></Staves>${lyricsXml(track.lyrics)}</Track>`,
 		);
 		const masterXml = masters.map((master, index) => {
 			const first = index * tracks.length;
@@ -728,16 +961,31 @@ export class GuitarProBinaryReader {
 				master.repeatStart || master.repeatCount
 					? `<Repeat start="${master.repeatStart}" end="${master.repeatCount > 0}" count="${master.repeatCount || 1}"/>`
 					: ''
+			}${
+				master.endings.length
+					? `<AlternateEndings>${master.endings.join(' ')}</AlternateEndings>`
+					: ''
+			}${
+				master.targets.length || master.jumps.length
+					? `<Directions>${[
+							...master.targets.map((name) => `<Target>${name}</Target>`),
+							...master.jumps.map((name) => `<Jump>${name}</Jump>`),
+						].join('')}</Directions>`
+					: ''
 			}${master.doubleBar ? '<DoubleBar/>' : ''}${
 				master.tripletFeel
 					? `<TripletFeel>${master.tripletFeel}</TripletFeel>`
 					: ''
 			}<Bars>${bars}</Bars></MasterBar>`;
 		});
-		const tempoXml =
-			tempo > 0
-				? `<Automations><Automation><Type>Tempo</Type><Linear>false</Linear><Bar>0</Bar><Position>0</Position><Value>${tempo} 2</Value></Automation></Automations>`
-				: '';
+		const tempoXml = this.tempos.size
+			? `<Automations>${[...this.tempos.values()]
+					.map(
+						(change) =>
+							`<Automation><Type>Tempo</Type><Linear>false</Linear><Bar>${change.bar}</Bar><Position>${change.position}</Position><Value>${change.tempo} 2</Value></Automation>`,
+					)
+					.join('')}</Automations>`
+			: '';
 		return `<GPIF><Score>${tag('Title', info.title!)}${tag('Artist', info.artist!)}${tag('Words', info.words!)}${tag('Music', info.music!)}${tag('Copyright', info.copyright!)}</Score><MasterTrack><Tracks>${tracks.map((_, index) => index).join(' ')}</Tracks>${tempoXml}</MasterTrack><Tracks>${trackXml.join('')}</Tracks><MasterBars>${masterXml.join('')}</MasterBars><Bars>${this.barXml.join('')}</Bars><Voices>${this.voiceXml.join('')}</Voices><Beats>${this.beatXml.join('')}</Beats><Notes>${this.noteXml.join('')}</Notes><Rhythms>${this.rhythmXml.join('')}</Rhythms></GPIF>`;
 	}
 }
@@ -774,8 +1022,29 @@ function compare(left: Fraction, right: Fraction): number {
 	return left[0] * right[1] - right[0] * left[1];
 }
 
-interface NoteEffects {
-	staccato?: boolean;
+function lyricsXml(lines: LyricLine[]): string {
+	return lines.some((line) => line.text.trim())
+		? `<Lyrics dispatched="true">${lines
+				.map(
+					(line) =>
+						`<Line><Text>${escapeXml(line.text)}</Text><Offset>${line.startBar}</Offset></Line>`,
+				)
+				.join('')}</Lyrics>`
+		: '';
+}
+
+/** A curve's first, middle (the point furthest from zero) and last values; GPIF counts them as Guitar Pro 5 does, 50 per semitone. */
+function bendValues(points: number[]): [number, number, number] {
+	const inner = points.slice(1, -1);
+	const middle = inner.reduce(
+		(extreme, value) => (Math.abs(value) > Math.abs(extreme) ? value : extreme),
+		points[0]!,
+	);
+	return [points[0]!, middle, points.at(-1)!];
+}
+
+function toNumber([numerator, denominator]: Fraction): number {
+	return numerator / denominator;
 }
 
 /** XML 1.0 forbids most control characters, which old Guitar Pro files may contain. */

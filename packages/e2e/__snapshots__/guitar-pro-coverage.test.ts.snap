@@ -1,25 +1,33 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
 exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
-"## Import: 36 of 45 ok
+"## Import: 48 of 59 ok
 
 | File | Result |
 | --- | --- |
 | \`anacrusis.gp\` | ok |
 | \`beat-lyrics.gp\` | omits \`beat effects or annotations\` |
 | \`beat-tempo-change.gp\` | ok |
+| \`beat-text-lyrics.gp5\` | ok |
 | \`bends.gp\` | omits \`bend curves\` |
+| \`bends.gp5\` | omits \`bend curves\` |
 | \`chords.gp\` | ok |
+| \`chords.gp5\` | ok |
 | \`dead.gp\` | ok |
+| \`dead.gp5\` | ok |
 | \`directions.gp\` | ok |
+| \`directions.gp5\` | ok |
 | \`drum-tabs.gp\` | ok |
 | \`effects.gp\` | omits \`Semi harmonics\`, \`beat effects or annotations\`, \`bend curves\`, \`instrument changes or track automation\`, \`note techniques\`, \`whammy bar curves\` |
+| \`effects.gp5\` | omits \`Semi harmonics\`, \`beat effects or annotations\`, \`bend curves\`, \`instrument changes or track automation\`, \`note techniques\`, \`whammy bar curves\` |
 | \`fermata.gp\` | omits \`fermatas between beats\` |
 | \`grace.gp\` | ok |
-| \`grace.gp5\` | omits \`note techniques\` |
+| \`grace.gp5\` | ok |
 | \`grace.gpx\` | ok |
 | \`hammer.gp\` | ok |
+| \`hammer.gp5\` | ok |
 | \`harmonics.gp\` | omits \`Semi harmonics\` |
+| \`harmonics.gp5\` | omits \`Semi harmonics\` |
 | \`hide-tuning.gp\` | ok |
 | \`key-signatures.gp\` | ok |
 | \`key-signatures.gp5\` | ok |
@@ -29,38 +37,43 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 | \`notes.gp5\` | ok |
 | \`notes.gpx\` | ok |
 | \`ottavia.gp\` | omits \`octave clefs\` |
+| \`ottavia.gp5\` | ok |
 | \`piano-native.gp\` | ok |
 | \`repeat-close-alternate-endings.gp\` | ok |
+| \`repeat-close-alternate-endings.gp5\` | ok |
 | \`repeat-close.gp\` | ok |
 | \`repeat-close.gp5\` | ok |
 | \`repeat-close.gpx\` | ok |
 | \`score-info.gp\` | ok |
-| \`score-info.gp5\` | omits \`lyrics\` |
+| \`score-info.gp5\` | ok |
 | \`score-info.gpx\` | ok |
 | \`slides.gp\` | ok |
+| \`slides.gp5\` | ok |
 | \`strings.gp\` | ok |
 | \`strings.gp5\` | ok |
 | \`strings.gpx\` | ok |
 | \`strokes.gp\` | ok |
+| \`strokes.gp5\` | ok |
 | \`time-signatures.gp\` | ok |
 | \`time-signatures.gp5\` | ok |
 | \`time-signatures.gpx\` | ok |
 | \`tremolo.gp\` | omits \`whammy bar curves\` |
+| \`tremolo.gp5\` | omits \`whammy bar curves\` |
 | \`tuplets.gp\` | ok |
 | \`tuplets.gp5\` | ok |
 | \`tuplets.gpx\` | ok |
 | \`vibrato.gp\` | ok |
+| \`vibrato.gp5\` | ok |
 
 | Omitted feature | Files |
 | --- | --- |
-| \`beat effects or annotations\` | 2 |
-| \`bend curves\` | 2 |
+| \`bend curves\` | 4 |
+| \`Semi harmonics\` | 4 |
+| \`whammy bar curves\` | 4 |
+| \`beat effects or annotations\` | 3 |
+| \`instrument changes or track automation\` | 2 |
 | \`note techniques\` | 2 |
-| \`Semi harmonics\` | 2 |
-| \`whammy bar curves\` | 2 |
 | \`fermatas between beats\` | 1 |
-| \`instrument changes or track automation\` | 1 |
-| \`lyrics\` | 1 |
 | \`octave clefs\` | 1 |"
 `;
 

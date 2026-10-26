@@ -23,6 +23,11 @@ The `.gp5` files are unmodified Guitar Pro 5 fixtures from the same commit's
 the two files hold the same score; `time-signatures.gp5` stores its default
 dynamic and a bar's trailing rest differently from its GP7 counterpart.
 
+The same directory supplies `bends`, `dead`, `directions`, `effects`, `hammer`,
+`harmonics`, `chords`, `ottavia`, `slides`, `strokes`, `tremolo`, `vibrato`,
+`repeat-close-alternate-endings` and `beat-text-lyrics` as `.gp5`, which tests
+compare with the GP7 file of the same name (`directions.gp` is Guitar Pro 8).
+
 `hide-tuning.gp` comes from the same commit's
 `packages/alphatab/test-data/guitarpro8` directory and covers a GP8 empty bar.
 
