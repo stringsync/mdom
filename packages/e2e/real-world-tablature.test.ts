@@ -29,6 +29,7 @@ describe('Guitar Tab Creator — a tablature part', () => {
 		expect(notes.filter((note) => note.bend)).toHaveLength(4);
 		expect(notes.find((note) => note.bend)?.bend).toEqual({
 			semitones: 4,
+			preBend: false,
 			release: false,
 		});
 		expect([

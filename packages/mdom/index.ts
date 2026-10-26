@@ -107,7 +107,13 @@ export {
 } from './metronome';
 export { MusicXMLSerializer } from './music-xml-serializer';
 export { MXLSerializer } from './mxl-serializer';
-export { Note, type SymbolSize } from './note';
+export {
+	type HarmonicKind,
+	type HarmonicPitch,
+	Note,
+	type NoteheadValue,
+	type SymbolSize,
+} from './note';
 export { OctaveShift, type Ottava } from './octave-shift';
 export { Ornament, type OrnamentType } from './ornament';
 export {

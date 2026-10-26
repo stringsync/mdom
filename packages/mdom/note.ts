@@ -569,17 +569,43 @@ export class Note extends MElement {
 	}
 
 	/**
-	 * The `<notations><technical><bend>`: `semitones` from `<bend-alter>` (2 = whole
-	 * step), `release` = presence of a `<release/>` child. Null when there is no bend.
+	 * The `<notations><technical><harmonic>`: `kind` is natural or artificial (an
+	 * artificial one covers pinch harmonics) and `pitch` which pitch the note is
+	 * written at — the base (played) pitch, the touching pitch, or the sounding
+	 * pitch. Either is null when unstated. Null when the note is no harmonic.
 	 */
-	get bend(): { semitones: number; release: boolean } | null {
-		const bend = this.technicalChild('bend');
-		if (!bend) {
+	get harmonic(): {
+		kind: HarmonicKind | null;
+		pitch: HarmonicPitch | null;
+	} | null {
+		const harmonic = this.technicalChild('harmonic');
+		if (!harmonic) {
+			return null;
+		}
+		const kind = HARMONIC_KINDS.find((name) => harmonic.child(name));
+		const pitch = HARMONIC_PITCHES.find((name) =>
+			harmonic.child(`${name}-pitch`),
+		);
+		return { kind: kind ?? null, pitch: pitch ?? null };
+	}
+
+	/**
+	 * The bend across this note's `<notations><technical><bend>` elements:
+	 * `semitones` from the first one's `<bend-alter>` (2 = whole step), `preBend`
+	 * when the string is bent before it is struck, `release` when the bend is let
+	 * back down. MusicXML writes a bend and release as two `<bend>`s, the second
+	 * a negative release; one `<bend>` carrying `<release/>` reads the same. Null
+	 * when there is no bend.
+	 */
+	get bend(): { semitones: number; preBend: boolean; release: boolean } | null {
+		const bends = this.technicalChildrenNamed('bend');
+		if (bends.length === 0) {
 			return null;
 		}
 		return {
-			semitones: Number(bend.child('bend-alter')?.text ?? 0),
-			release: bend.child('release') !== null,
+			semitones: Number(bends[0]!.child('bend-alter')?.text ?? 0),
+			preBend: bends.some((bend) => bend.child('pre-bend') !== null),
+			release: bends.some((bend) => bend.child('release') !== null),
 		};
 	}
 
@@ -588,6 +614,25 @@ export class Note extends MElement {
 		return this.technicalChildrenNamed('other-technical').map(
 			(node) => node.text ?? '',
 		);
+	}
+
+	/**
+	 * Whether the note rings on, undamped: a `<tied type="let-ring">`, or the
+	 * `let ring` text some exporters write as `<other-technical>`.
+	 */
+	get isLetRing(): boolean {
+		return (
+			this.ties.some((tie) => tie.getAttribute('type') === 'let-ring') ||
+			this.otherTechnical.some((text) => LET_RING_TEXT.test(text))
+		);
+	}
+
+	/**
+	 * Whether the note is palm muted. MusicXML has no element for it, so it is
+	 * the `<other-technical>` text `P.M.` (or a spelling such as `palm mute`).
+	 */
+	get isPalmMuted(): boolean {
+		return this.otherTechnical.some((text) => PALM_MUTE_TEXT.test(text));
 	}
 
 	/** `<stem>` direction (splits two voices on one stave; `none`/`double` are real values too); null when absent. */
@@ -1194,6 +1239,150 @@ export class Note extends MElement {
 	}
 
 	/**
+	 * Set or clear this note's bend; null removes every `<bend>`. `semitones` is
+	 * how far the string is bent (2 = whole step, 0.5 = quarter tone). `preBend`
+	 * bends it before it is struck; `release` lets it back down, written as a
+	 * second `<bend>` with the negative alter MusicXML gives a release. The write
+	 * side of {@link bend}.
+	 */
+	setBend(
+		spec: { semitones: number; preBend?: boolean; release?: boolean } | null,
+	): void {
+		for (const bend of this.technicalChildrenNamed('bend')) {
+			bend.remove();
+		}
+		if (!spec) {
+			return;
+		}
+		if (!Number.isFinite(spec.semitones) || spec.semitones === 0) {
+			throw new Error(
+				`mdom: bend semitones must be a nonzero number, got ${spec.semitones}`,
+			);
+		}
+		const technical = this.technical();
+		const bend = new Technical('bend');
+		appendValue(bend, 'bend-alter', String(spec.semitones));
+		if (spec.preBend) {
+			bend.append(new MElement('pre-bend'));
+		}
+		technical.append(bend);
+		if (spec.release) {
+			const release = new Technical('bend');
+			appendValue(release, 'bend-alter', String(-spec.semitones));
+			release.append(new MElement('release'));
+			technical.append(release);
+		}
+	}
+
+	/**
+	 * Set or clear this note's harmonic; null removes it. `kind` natural or
+	 * artificial (pinch harmonics are artificial), `pitch` which pitch the note
+	 * is written at: base (played), touching, or sounding. Leave either out to
+	 * leave it unstated. The write side of {@link harmonic}.
+	 */
+	setHarmonic(
+		spec: { kind?: HarmonicKind; pitch?: HarmonicPitch } | null,
+	): void {
+		for (const harmonic of this.technicalChildrenNamed('harmonic')) {
+			harmonic.remove();
+		}
+		if (!spec) {
+			return;
+		}
+		const harmonic = new Technical('harmonic');
+		if (spec.kind) {
+			harmonic.append(new MElement(spec.kind));
+		}
+		if (spec.pitch) {
+			harmonic.append(new MElement(`${spec.pitch}-pitch`));
+		}
+		this.technical().append(harmonic);
+	}
+
+	/**
+	 * Set or clear the `<notehead>`; null draws the default head. A dead (muted)
+	 * note is `{ value: 'x' }`, a ghost note `{ parentheses: true }`, and the two
+	 * combine. `value` defaults to `normal`; `filled` left out lets the duration
+	 * decide. The write side of {@link notehead}, whose `color` it keeps.
+	 */
+	setNotehead(
+		spec: {
+			value?: NoteheadValue;
+			parentheses?: boolean;
+			filled?: boolean;
+		} | null,
+	): void {
+		const existing = this.child('notehead');
+		if (!spec) {
+			existing?.remove();
+			return;
+		}
+		const notehead = new MElement('notehead');
+		const color = existing?.getAttribute('color');
+		if (spec.filled != null) {
+			notehead.setAttribute('filled', spec.filled ? 'yes' : 'no');
+		}
+		if (spec.parentheses) {
+			notehead.setAttribute('parentheses', 'yes');
+		}
+		if (color) {
+			notehead.setAttribute('color', color);
+		}
+		notehead.setText(spec.value ?? 'normal');
+		if (existing) {
+			this.replaceChild(existing, notehead);
+		} else {
+			this.insertBefore(
+				notehead,
+				this.children.find(
+					(child) => child instanceof MElement && AFTER_NOTEHEAD.has(child.tag),
+				) ?? null,
+			);
+		}
+	}
+
+	/**
+	 * Let this note ring on, undamped, or damp it again: a `<tied
+	 * type="let-ring">`, the schema's own mark for it. Turning it off also drops
+	 * any `let ring` text {@link isLetRing} reads. The write side of {@link isLetRing}.
+	 */
+	setLetRing(value: boolean): void {
+		if (value === this.isLetRing) {
+			return;
+		}
+		if (value) {
+			const tie = new Tie();
+			tie.setAttribute('type', 'let-ring');
+			this.notations().append(tie);
+			return;
+		}
+		for (const tie of this.ties) {
+			if (tie.getAttribute('type') === 'let-ring') {
+				tie.unlink();
+			}
+		}
+		this.removeOtherTechnical(LET_RING_TEXT);
+	}
+
+	/**
+	 * Palm mute this note or lift it: `<other-technical>P.M.</other-technical>`,
+	 * since MusicXML has no element for it. Turning it off drops every spelling
+	 * {@link isPalmMuted} reads. The write side of {@link isPalmMuted}.
+	 */
+	setPalmMuted(value: boolean): void {
+		if (value === this.isPalmMuted) {
+			return;
+		}
+		if (value) {
+			const palmMute = new Technical('other-technical');
+			palmMute.setText('P.M.');
+			this.technical().append(palmMute);
+			return;
+		}
+		this.removeOtherTechnical(PALM_MUTE_TEXT);
+	}
+
+	/**
 	 * Change this note's notated duration (`type` + `dots`), recomputing `<duration>`
 	 * from the divisions in effect and rippling the rest of its voice. A sibling
 	 * voice is kept anchored by adjusting the `<backup>` between them.
@@ -1375,6 +1564,15 @@ export class Note extends MElement {
 		return technical;
 	}
 
+	/** Remove each `<other-technical>` whose text matches `pattern`. */
+	private removeOtherTechnical(pattern: RegExp): void {
+		for (const node of this.technicalChildrenNamed('other-technical')) {
+			if (pattern.test(node.text ?? '')) {
+				node.remove();
+			}
+		}
+	}
+
 	/** Set (or create) a numeric `<tag>` inside this note's `<technical>` block. */
 	private upsertTechnical(tag: string, value: number): void {
 		const technical = this.technical();
@@ -1395,6 +1593,36 @@ function compareVerses(left: string, right: string): number {
 		? leftNumber - rightNumber
 		: left.localeCompare(right);
 }
+
+/** How a harmonic is produced: on the open string's node, or stopped (pinch included). */
+export type HarmonicKind = 'natural' | 'artificial';
+
+/** Which pitch a harmonic's note is written at: the played, touched or heard one. */
+export type HarmonicPitch = 'base' | 'touching' | 'sounding';
+
+const HARMONIC_KINDS: readonly HarmonicKind[] = ['natural', 'artificial'];
+const HARMONIC_PITCHES: readonly HarmonicPitch[] = [
+	'base',
+	'touching',
+	'sounding',
+];
+
+/** `<other-technical>` text read as let ring: `let ring`, `let-ring`, `l.r.`. */
+const LET_RING_TEXT = /^\s*(let[\s-]*ring|l\.\s*r\.?)\s*$/i;
+
+/** `<other-technical>` text read as palm mute: `P.M.`, `PM`, `palm mute(d)`. */
+const PALM_MUTE_TEXT = /^\s*(p\.?\s*m\.?|palm[\s-]*mut(e|ed|ing))\s*$/i;
+
+/** `<note>` children the schema puts after `<notehead>`. */
+const AFTER_NOTEHEAD = new Set([
+	'notehead-text',
+	'staff',
+	'beam',
+	'notations',
+	'lyric',
+	'play',
+	'listen',
+]);
 
 /** `<note>` children the schema puts after `<instrument>`. */
 const afterInstrument = new Set([

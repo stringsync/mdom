@@ -61,7 +61,13 @@ describe('note — notation and technical reader getters', () => {
 
 	it('detects a harmonic and reads a bend with its release, null when absent', () => {
 		expect(fancy!.isHarmonic).toBe(true);
-		expect(fancy!.bend).toEqual({ semitones: 2, release: true });
+		expect(fancy!.bend).toEqual({
+			semitones: 2,
+			preBend: false,
+			release: true,
+		});
+		expect(fancy!.harmonic).toEqual({ kind: null, pitch: null });
+		expect(plain!.harmonic).toBeNull();
 		expect(plain!.isHarmonic).toBe(false);
 		expect(plain!.bend).toBeNull();
 	});
