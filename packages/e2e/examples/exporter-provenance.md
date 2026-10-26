@@ -69,7 +69,8 @@ or proof of lossless conversion. Task #7's scoreboard has not merged yet.
 | `musescore_4_tempo_change.musicxml` | Converts |
 | `flat_la_cucaracha.musicxml` | Rejects `<harmony>` (chord symbols with frames); tracked by task #14 |
 
-A TuxGuitar export is still needed: no standalone, redistributable one was
-found. alphaTab's `musicxml4/dead-note.xml` has a part labeled TuxGuitar, but
+TuxGuitar is deliberately left out: no standalone, redistributable export was
+found, and the Guitar Pro exports already cover guitar tab, so one would add
+little. alphaTab's `musicxml4/dead-note.xml` has a part labeled TuxGuitar, but
 it is a hand-assembled composite with no encoding metadata, so it is not used.
-No older or hand-built file is labeled as a missing dialect.
+No older or hand-built file is labeled as TuxGuitar.
