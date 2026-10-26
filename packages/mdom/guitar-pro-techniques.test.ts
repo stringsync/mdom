@@ -259,6 +259,36 @@ describe('Guitar Pro note techniques', () => {
 		expect(restored.flatMap((note) => note.slurs).length).toBe(2);
 	});
 
+	it('writes slurs between the same two chords as one slur', async () => {
+		const document = MDocument.empty();
+		const measure = document.score.addPart({ name: 'Guitar' }).addMeasure();
+		const voice = measure.getOrCreateVoice('1');
+		const [first, second] = [
+			['C', 'E'],
+			['D', 'F'],
+		].map((steps) =>
+			voice.addChord(
+				steps.map((step) => ({ step, octave: 4 })),
+				{ type: 'half' },
+			),
+		);
+		for (const [index, note] of first!.notes.entries()) {
+			note.addSlur(second!.notes[index]!);
+		}
+
+		const omitted: string[] = [];
+		const bytes = await new GuitarProSerializer().serializeToBytes(document, {
+			unsupported: 'omit',
+			onUnsupported: (feature) => omitted.push(feature),
+		});
+		expect(omitted).toEqual([]);
+		const restored = (await parser.parseFromBytes(bytes)).score.parts[0]!
+			.measures[0]!.notes;
+		const slurs = restored.flatMap((note) => note.slurs);
+		expect(slurs.length).toBe(2);
+		expect(restored[0]!.slurs[0]!.partner?.note).toBe(restored[2]!);
+	});
+
 	it('exports a glissando as the slide it plays as', async () => {
 		const document = MDocument.empty();
 		const measure = document.score.addPart({ name: 'Guitar' }).addMeasure();

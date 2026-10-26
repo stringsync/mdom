@@ -1506,10 +1506,12 @@ export class GuitarProScoreWriter {
 	 * Mark the beats each slur runs over that no hammer-on, pull-off, slide or
 	 * glissando carries: GPIF slurs a beat whose Legato is an origin to the next
 	 * beat of its voice, so the slur must join two notes of one voice and share
-	 * no beat with another slur, which would merge with it.
+	 * no beat with another slur, which would merge with it. Slurs between the
+	 * same two chords, one per chord member, are one GPIF slur.
 	 */
 	private collectSlurs(part: Part): void {
 		const lines = new Map<string, Chord[]>();
+		const spans = new Map<Chord[], Set<string>>();
 		const chords = new Map<Note, { line: Chord[]; index: number }>();
 		for (const measure of part.measures) {
 			const voices = new Map<string, Note[]>();
@@ -1547,11 +1549,18 @@ export class GuitarProScoreWriter {
 					);
 					continue;
 				}
+				const span = `${from.index}:${to.index}`;
+				const written = spans.get(from.line) ?? new Set<string>();
+				spans.set(from.line, written);
+				if (written.has(span)) {
+					continue;
+				}
 				const covered = from.line.slice(from.index, to.index + 1);
 				if (covered.some((chord) => this.legatos.has(chord.lead))) {
 					this.values.unsupported('slurs that share a note');
 					continue;
 				}
+				written.add(span);
 				for (const [index, chord] of covered.entries()) {
 					this.legatos.set(chord.lead, {
 						origin: index < covered.length - 1,
