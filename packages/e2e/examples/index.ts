@@ -18,6 +18,11 @@ export const EXAMPLES = {
 	ACTOR_PRELUDE_SAMPLE: 'actor_prelude_sample.xml',
 	// Guitar Pro
 	WANNA_SKIP_CLASS: 'wanna_skip_class.xml',
+	ALOOF_GP7: 'aloof_gp7.musicxml',
+	ALOOF_GP8: 'aloof_gp8.musicxml',
+	// Modern exporter originals; see exporter-provenance.md for sources and licenses.
+	SIBELIUS_2023_TAB: 'sibelius_2023_tab.musicxml',
+	DORICO_4_NOTATIONS: 'dorico_4_notations.musicxml',
 	// MuseScore (v2, v3)
 	ACCIDENTALS: 'accidentals.xml',
 	OCTAVE_SHIFT_SIMPLE_PIANO: 'octave_shift_simple_piano.xml',

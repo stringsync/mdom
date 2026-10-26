@@ -20,6 +20,24 @@ const roundTrip = (xml: string): string =>
 	serializer.serializeToString(parser.parseFromString(xml));
 
 describe('cross-exporter round-trip idempotence', () => {
+	for (const [exporter, file] of [
+		['Guitar Pro 7.5.5 guitar notation and tab', EXAMPLES.ALOOF_GP7],
+		['Guitar Pro 8.1.5 guitar notation and tab', EXAMPLES.ALOOF_GP8],
+		['Sibelius 2023.6 with Dolet 8.3 tablature', EXAMPLES.SIBELIUS_2023_TAB],
+		['Dorico 4.2 notations', EXAMPLES.DORICO_4_NOTATIONS],
+	] as const) {
+		it(`holds for ${exporter}`, () => {
+			const xml = loadExample(file);
+			expect(
+				parser
+					.parseFromString(xml)
+					.score.parts.some((part) => part.measures.length > 0),
+			).toBe(true);
+			const once = roundTrip(xml);
+			expect(roundTrip(once)).toBe(once);
+		});
+	}
+
 	it('holds for the Chopin prelude Finale wrote', () => {
 		const xml = loadExample(EXAMPLES.CHOPIN_PRELUDE);
 		expect(
