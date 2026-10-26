@@ -41,6 +41,7 @@ import { PullOff } from './pull-off';
 import {
 	appliesToStaff,
 	attributeBackFrom,
+	childIndexIn,
 	divisionsBackFrom,
 } from './signature';
 import { Slide } from './slide';
@@ -313,7 +314,7 @@ export class Note extends MElement {
 	get divisions(): number | null {
 		const measure = this.closest(Measure);
 		return measure
-			? divisionsBackFrom(measure, measure.children.indexOf(this))
+			? divisionsBackFrom(measure, childIndexIn(measure, this))
 			: null;
 	}
 
@@ -2044,7 +2045,7 @@ export class Note extends MElement {
 	): T | null {
 		const measure = this.closest(Measure);
 		return measure
-			? attributeBackFrom(measure, measure.children.indexOf(this), key, pick)
+			? attributeBackFrom(measure, childIndexIn(measure, this), key, pick)
 			: null;
 	}
 

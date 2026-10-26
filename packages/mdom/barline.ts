@@ -1,7 +1,7 @@
 import { MElement } from './m-node';
 import { appendValue, Measure } from './measure';
 import { colorOf } from './print-style';
-import { divisionsBackFrom } from './signature';
+import { childIndexIn, divisionsBackFrom } from './signature';
 import { onsetOf } from './timeline';
 
 /** A `<barline>` to write: the bar style, and any repeat or volta on it. */
@@ -114,10 +114,7 @@ export class Barline extends MElement {
 		if (!measure) {
 			return null;
 		}
-		const divisions = divisionsBackFrom(
-			measure,
-			measure.children.indexOf(this),
-		);
+		const divisions = divisionsBackFrom(measure, childIndexIn(measure, this));
 		const onset = onsetOf(measure, this);
 		if (divisions == null || onset == null) {
 			return null;

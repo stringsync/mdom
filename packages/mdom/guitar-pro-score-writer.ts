@@ -28,7 +28,7 @@ import { MElement } from './m-node';
 import type { Measure } from './measure';
 import type { Note } from './note';
 import type { Part } from './part';
-import { divisionsBackFrom } from './signature';
+import { childIndexIn, divisionsBackFrom } from './signature';
 import { Slur } from './slur';
 import type { Sound } from './sound';
 import { onsetOf } from './timeline';
@@ -585,10 +585,7 @@ export class GuitarProScoreWriter {
 			return sound.parent.measureBeat;
 		}
 		const onset = onsetOf(measure, sound);
-		const divisions = divisionsBackFrom(
-			measure,
-			measure.children.indexOf(sound),
-		);
+		const divisions = divisionsBackFrom(measure, childIndexIn(measure, sound));
 		return onset == null || !divisions ? null : onset / divisions;
 	}
 	private key(parent: MElement, measure: Measure, staff: string): void {

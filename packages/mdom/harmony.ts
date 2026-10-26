@@ -4,7 +4,7 @@ import { appendValue, Measure } from './measure';
 import { adjacentNote, type Note } from './note';
 import { type Offset, type OffsetSpec, offsetOf, writeOffset } from './offset';
 import { placementOf, setYesNo, yesNoOf } from './print-style';
-import { divisionsBackFrom } from './signature';
+import { childIndexIn, divisionsBackFrom } from './signature';
 import {
 	setOrRemove,
 	type TextAlign,
@@ -438,10 +438,7 @@ export class Harmony extends MElement {
 		if (!measure) {
 			return null;
 		}
-		const divisions = divisionsBackFrom(
-			measure,
-			measure.children.indexOf(this),
-		);
+		const divisions = divisionsBackFrom(measure, childIndexIn(measure, this));
 		const onset = onsetOf(measure, this);
 		if (divisions == null || onset == null) {
 			return null;

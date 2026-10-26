@@ -18,12 +18,9 @@ export function attributesBackFrom(
 ): MElement[] {
 	const result: MElement[] = [];
 
-	const children: readonly MNode[] = measure.children;
-	for (let index = fromIndex - 1; index >= 0; index--) {
-		const node = children[index];
-		if (node instanceof MElement && node.tag === 'attributes') {
-			result.push(node);
-		}
+	const local = localAttributes(measure);
+	for (let at = attributesBefore(local, fromIndex) - 1; at >= 0; at--) {
+		result.push(local[at]!.attrs);
 	}
 
 	const part = measure.closest(Part);
@@ -58,20 +55,64 @@ export function attributeBackFrom<T>(
 	key: string,
 	pick: (attrs: MElement) => T | null | undefined,
 ): T | null {
-	const children: readonly MNode[] = measure.children;
-	for (let index = fromIndex - 1; index >= 0; index--) {
-		const node = children[index];
-		if (node instanceof MElement && node.tag === 'attributes') {
-			const found = pick(node);
-			if (found != null) {
-				return found;
-			}
+	const local = localAttributes(measure);
+	for (let at = attributesBefore(local, fromIndex) - 1; at >= 0; at--) {
+		const found = pick(local[at]!.attrs);
+		if (found != null) {
+			return found;
 		}
 	}
 	const part = measure.closest(Part);
 	return part
 		? carriedInto(part, measureIndexIn(part, measure), key, pick)
 		: null;
+}
+
+/** `child`'s index among `measure`'s children, from a per-measure index; -1 when absent. */
+export function childIndexIn(measure: Measure, child: MNode): number {
+	const indexes = memo(
+		measure,
+		'child-indexes',
+		() =>
+			new Map(measure.children.map((each, index) => [each, index] as const)),
+	);
+	return indexes.get(child) ?? -1;
+}
+
+interface LocalAttributes {
+	index: number;
+	attrs: MElement;
+}
+
+/** `measure`'s own `<attributes>` children with their child indexes, in order. */
+function localAttributes(measure: Measure): readonly LocalAttributes[] {
+	return memo(measure, 'local-attributes', () => {
+		const found: LocalAttributes[] = [];
+		measure.children.forEach((node, index) => {
+			if (node instanceof MElement && node.tag === 'attributes') {
+				found.push({ index, attrs: node });
+			}
+		});
+		return found;
+	});
+}
+
+/** How many of `local` sit before child index `fromIndex`: a binary search. */
+function attributesBefore(
+	local: readonly LocalAttributes[],
+	fromIndex: number,
+): number {
+	let low = 0;
+	let high = local.length;
+	while (low < high) {
+		const middle = (low + high) >> 1;
+		if (local[middle]!.index < fromIndex) {
+			low = middle + 1;
+		} else {
+			high = middle;
+		}
+	}
+	return low;
 }
 
 /**

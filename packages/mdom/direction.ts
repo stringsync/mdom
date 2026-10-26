@@ -13,7 +13,7 @@ import { type Offset, type OffsetSpec, offsetOf, writeOffset } from './offset';
 import { Pedal } from './pedal';
 import { colorOf, placementOf, setYesNo, yesNoOf } from './print-style';
 import { Rehearsal } from './rehearsal';
-import { divisionsBackFrom } from './signature';
+import { childIndexIn, divisionsBackFrom } from './signature';
 import { Sound, type SoundSpec, writeSound } from './sound';
 import type { FontSize, TextAlign, TextVerticalAlign } from './text-format';
 import { onsetOf } from './timeline';
@@ -338,10 +338,7 @@ export class Direction extends MElement {
 		if (!measure) {
 			return null;
 		}
-		const divisions = divisionsBackFrom(
-			measure,
-			measure.children.indexOf(this),
-		);
+		const divisions = divisionsBackFrom(measure, childIndexIn(measure, this));
 		const onset = onsetOf(measure, this);
 		if (divisions == null || onset == null) {
 			return null;

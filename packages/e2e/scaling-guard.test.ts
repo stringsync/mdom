@@ -22,6 +22,7 @@ const linearOperations = [
 	'serialize-xml',
 	'serialize-mxl',
 	'read-walk',
+	'cursor',
 	'history',
 ] as const satisfies readonly Operation[];
 
@@ -80,36 +81,51 @@ function historyRetention(xml: string, entries: number) {
 	}
 }
 
+/**
+ * Best-of-three timings of `operation` on two inputs, after warming both, with
+ * fresh documents per run so cached reads cannot make it a warm-cache guard.
+ */
+async function guardRatio(
+	operation: Operation,
+	scores: readonly string[],
+	units: readonly number[],
+	evidenceOf: Record<string, unknown>,
+): Promise<void> {
+	for (const xml of scores) {
+		await measureOperation(operation, xml, 0);
+	}
+	const samples: number[][] = [[], []];
+	for (let run = 0; run < 3; run++) {
+		// Alternate order to avoid consistently favoring one size.
+		for (const index of run % 2 ? [1, 0] : [0, 1]) {
+			const sample = await measureOperation(operation, scores[index]!, 0);
+			expect(sample.workUnits).toBe(units[index]!);
+			expect(sample.checksum).toBeGreaterThan(0);
+			samples[index]!.push(sample.elapsedMs);
+		}
+	}
+	const small = Math.min(...samples[0]!);
+	const large = Math.min(...samples[1]!);
+	const evidence = JSON.stringify({
+		operation,
+		...evidenceOf,
+		samples,
+		small,
+		large,
+	});
+	expect(small, evidence).toBeGreaterThan(0);
+	expect(large / small, evidence).toBeLessThan(6);
+}
+
 describe('bounded-density measure scaling guards (64 → 256)', () => {
 	for (const operation of linearOperations) {
-		it(`${operation} time grows less than 6x for 4x measures`, async () => {
-			// Warm both sizes, but use fresh documents per measured operation so
-			// cached read results cannot turn this into a warm-cache-only guard.
-			for (const xml of inputs) {
-				await measureOperation(operation, xml, 0);
-			}
-			const samples: number[][] = [[], []];
-			for (let run = 0; run < 3; run++) {
-				// Alternate order to avoid consistently favoring one size.
-				for (const index of run % 2 ? [1, 0] : [0, 1]) {
-					const sample = await measureOperation(operation, inputs[index]!, 0);
-					expect(sample.workUnits).toBe(sizes[index]! * 4);
-					expect(sample.checksum).toBeGreaterThan(0);
-					samples[index]!.push(sample.elapsedMs);
-				}
-			}
-			const small = Math.min(...samples[0]!);
-			const large = Math.min(...samples[1]!);
-			const evidence = JSON.stringify({
+		it(`${operation} time grows less than 6x for 4x measures`, () =>
+			guardRatio(
 				operation,
-				sizes,
-				samples,
-				small,
-				large,
-			});
-			expect(small, evidence).toBeGreaterThan(0);
-			expect(large / small, evidence).toBeLessThan(6);
-		});
+				inputs,
+				sizes.map((measures) => measures * 4),
+				{ sizes },
+			));
 	}
 
 	for (const fixedEntries of [false, true]) {
@@ -143,6 +159,24 @@ describe('bounded-density measure scaling guards (64 → 256)', () => {
 	it.todo('edit-insert/read, edit-remove/read, edit-set/read: #45 scoped-read-caches', () => {});
 	it.todo('GP export/import: #66 indexed-gp-events, #46 bulk-tree-construction, #45 scoped-read-caches', () => {});
 	it.todo('wide XML/GPIF parsing: #46 bulk-tree-construction (measure and density axes)', () => {});
-	it.todo('cursor measure/density walks and dense read-walk: #47 indexed-score-walks', () => {});
 	it.todo('spanner creation: #49 indexed-spanner-numbers (static audit evidence; needs a span workload)', () => {});
+});
+
+// Notes per measure grow at a fixed 16 measures: the audit's dense cursor walk
+// (#42) rescanned each measure's prefix per note.
+const densities = [32, 128] as const;
+const denseInputs = densities.map((notes) =>
+	syntheticScore(seed, { measures: 16, parts: 1, voices: 1, notes }),
+);
+
+describe('notes-per-measure scaling guards (32 → 128)', () => {
+	for (const operation of ['cursor', 'read-walk'] as const) {
+		it(`${operation} time grows less than 6x for 4x notes per measure`, () =>
+			guardRatio(
+				operation,
+				denseInputs,
+				densities.map((notes) => notes * 16),
+				{ densities },
+			));
+	}
 });

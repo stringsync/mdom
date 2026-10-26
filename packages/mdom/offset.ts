@@ -1,7 +1,7 @@
 import { MElement, required } from './m-node';
 import { Measure } from './measure';
 import { setYesNo, yesNoOf } from './print-style';
-import { divisionsBackFrom } from './signature';
+import { childIndexIn, divisionsBackFrom } from './signature';
 
 /**
  * An `<offset>`: how far from its cursor position a harmony, direction or sound
@@ -80,5 +80,5 @@ function divisionsAt(element: MElement): number | null {
 	while (child.parent !== measure && child.parent) {
 		child = child.parent;
 	}
-	return divisionsBackFrom(measure, measure.children.indexOf(child));
+	return divisionsBackFrom(measure, childIndexIn(measure, child));
 }

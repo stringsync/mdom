@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'bun:test';
 import { Cursor } from './cursor';
 import { MDocument } from './m-document';
+import { MDOMParser } from './m-dom-parser';
+import { MElement } from './m-node';
+import type { Part } from './part';
 
 // A two-measure single line: m1 = C D E F (quarters), m2 = G A. The cursor is an
 // immutable caret addressed by (measure, voice, onset-in-beats), so moving
@@ -122,4 +125,120 @@ describe('Cursor — an immutable timeline caret', () => {
 		expect(cursor.measure).toBe(m1);
 		expect(cursor.voice.id).toBe('1');
 	});
+
+	it('steps over grace notes, gaps and a mid-measure divisions change', () => {
+		const note = (step: string, rest: string) =>
+			`<note><pitch><step>${step}</step><octave>4</octave></pitch>${rest}<voice>1</voice></note>`;
+		const part = new MDOMParser().parseFromString(
+			`<score-partwise version="4.0"><part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list><part id="P1">
+<measure number="1"><attributes><divisions>1</divisions></attributes>${note('C', '<duration>1</duration>')}${note('D', '<grace/>')}${note('E', '<duration>1</duration>')}<forward><duration>1</duration></forward><attributes><divisions>2</divisions></attributes>${note('F', '<duration>2</duration>')}</measure>
+<measure number="2"><attributes><divisions>4</divisions></attributes></measure>
+<measure number="3">${note('G', '<duration>2</duration>')}${note('A', '<duration>2</duration>')}</measure></part></score-partwise>`,
+		).score.parts[0]!;
+		const steps = (from: Cursor | null, move: 'next' | 'prev') => {
+			const found: string[] = [];
+			for (let at = from; at; at = at[move]()) {
+				found.push(`${at.measure.number}:${at.onset}:${at.note?.pitch?.step}`);
+			}
+			return found;
+		};
+		const [first, , last] = part.measures;
+
+		// The grace note D shares E's onset: it is a stop, and next() leaves it for
+		// the first later onset. F sits at beat 1.5 once divisions change to 2 mid-bar.
+		expect(steps(Cursor.at(first!.getOrCreateVoice('1')), 'next')).toEqual([
+			'1:0:C',
+			'1:1:D',
+			'1:1.5:F',
+			'3:0:G',
+			'3:0.5:A',
+		]);
+		expect(steps(Cursor.at(last!.notes[1]!), 'prev')).toEqual([
+			'3:0.5:A',
+			'3:0:G',
+			'1:1.5:F',
+			'1:1:D', // a caret at beat 1 reads its first stop, the grace note
+			'1:0:C',
+		]);
+	});
+
+	it('reads its stops afresh after an edit and an undo', () => {
+		const { part, m1, m2 } = twoMeasures();
+		const fromF = Cursor.at(m1.getOrCreateVoice('1'), 3);
+		expect(fromF.next()?.note?.pitch?.step).toBe('G');
+
+		m2.notes[0]!.remove();
+		expect(fromF.next()?.note?.pitch?.step).toBe('A');
+		m1.getOrCreateVoice('1').addNote({ step: 'B', octave: 4, type: 'quarter' });
+		expect(fromF.next()?.measure).toBe(m1);
+		expect(fromF.next()?.note?.pitch?.step).toBe('B');
+		expect(part.measures).toHaveLength(2);
+	});
+
+	// Element children scanned under a walk: each read of `children` and each
+	// typed or named child filter counts the children it can visit. Doubling the
+	// measures or the notes per measure must about double the work, never square it.
+	it('walks a score with work linear in measures and in notes per measure', () => {
+		const walkWork = (measures: number, notes: number) => {
+			const part = MDocument.empty().score.addPart({ id: 'P1' });
+			for (let index = 0; index < measures; index++) {
+				const voice = part.addMeasure().getOrCreateVoice('1');
+				for (let at = 0; at < notes; at++) {
+					voice.addNote({ step: 'C', octave: 4, type: '16th' });
+				}
+			}
+			return countScans(part, () => {
+				let cursor: Cursor | null = Cursor.at(part.measures[0]!.notes[0]!);
+				while (cursor) {
+					cursor.note?.clef;
+					cursor = cursor.next();
+				}
+				for (const measure of part.measures) {
+					for (const note of measure.notes) {
+						note.measureBeat;
+						note.key;
+						note.time;
+					}
+				}
+			});
+		};
+		const base = walkWork(8, 16);
+		expect(walkWork(16, 16) / base).toBeLessThan(2.5);
+		expect(walkWork(8, 32) / base).toBeLessThan(2.5);
+		expect(walkWork(8, 64) / walkWork(8, 32)).toBeLessThan(2.5);
+	});
 });
+
+function countScans(part: Part, walk: () => void): number {
+	expect(part.measures.length).toBeGreaterThan(0);
+	const prototype = MElement.prototype;
+	const children = Object.getOwnPropertyDescriptor(prototype, 'children')!;
+	const { childrenOfType, childrenNamed } = prototype;
+	let scanned = 0;
+	Object.defineProperty(prototype, 'children', {
+		...children,
+		get(this: MElement) {
+			const found = children.get!.call(this) as readonly unknown[];
+			scanned += found.length;
+			return found;
+		},
+	});
+	prototype.childrenOfType = function (this: MElement, type) {
+		const found = childrenOfType.call(this, type);
+		scanned += this.children.length - found.length;
+		return found;
+	} as typeof childrenOfType;
+	prototype.childrenNamed = function (this: MElement, tag) {
+		const found = childrenNamed.call(this, tag);
+		scanned += this.children.length - found.length;
+		return found;
+	};
+	try {
+		walk();
+	} finally {
+		Object.defineProperty(prototype, 'children', children);
+		prototype.childrenOfType = childrenOfType;
+		prototype.childrenNamed = childrenNamed;
+	}
+	return scanned;
+}

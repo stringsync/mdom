@@ -24,7 +24,7 @@ import { Measure } from './measure';
 import { type Offset, offsetOf } from './offset';
 import type { Part } from './part';
 import { setYesNo, yesNoOf } from './print-style';
-import { divisionsBackFrom } from './signature';
+import { childIndexIn, divisionsBackFrom } from './signature';
 import { onsetOf } from './timeline';
 
 const rotationRange = decimals(-180, 180);
@@ -279,10 +279,7 @@ export class Sound extends MElement {
 			return null;
 		}
 		const host = parent === measure ? this : parent;
-		const divisions = divisionsBackFrom(
-			measure,
-			measure.children.indexOf(host),
-		);
+		const divisions = divisionsBackFrom(measure, childIndexIn(measure, host));
 		const onset = onsetOf(measure, host);
 		if (divisions == null || onset == null) {
 			return null;
