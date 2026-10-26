@@ -685,26 +685,21 @@ export class GuitarProDocumentReader {
 	}
 	private readNote(source: MElement, note: Note, staff: StaffContext): void {
 		if (
-			[
-				'LetRing',
-				'Trill',
-				'Vibrato',
-				'LeftFingering',
-				'RightFingering',
-				'Ornament',
-				'AntiAccent',
-			].some((tag) => source.child(tag)) ||
+			['Trill', 'Vibrato', 'LeftFingering', 'RightFingering', 'Ornament'].some(
+				(tag) => source.child(tag),
+			) ||
 			source
 				.child('Properties')
 				?.childrenNamed('Property')
 				.some((p) =>
-					/^(Bend|Bended|Harmonic|Hopo|Slide|Muted|PalmMuted|Tapped|LeftHandTapped)/.test(
+					/^(Hopo|Slide|Tapped|LeftHandTapped)/.test(
 						p.getAttribute('name') ?? '',
 					),
 				)
 		) {
 			this.values.unsupported('note techniques');
 		}
+		this.readTechniques(source, note);
 		const string = X.property(source, 'String')?.child('String')?.text;
 		const fret = X.property(source, 'Fret')?.child('Fret')?.text;
 		if (staff.tablature && string != null && fret != null) {
@@ -724,6 +719,56 @@ export class GuitarProDocumentReader {
 		}
 		if (accent & ~13) {
 			this.values.unsupported('note accent');
+		}
+	}
+	private readTechniques(source: MElement, note: Note): void {
+		const enabled = (name: string) =>
+			!!X.property(source, name)?.child('Enable');
+		const antiAccent = source.child('AntiAccent')?.text;
+		if (antiAccent != null && antiAccent !== 'Normal') {
+			this.values.unsupported('note techniques');
+		}
+		const dead = enabled('Muted');
+		const ghost = antiAccent === 'Normal';
+		if (dead || ghost) {
+			note.setNotehead({
+				...(dead ? { value: 'x' as const } : {}),
+				...(ghost ? { parentheses: true } : {}),
+			});
+		}
+		if (enabled('PalmMuted')) {
+			note.setPalmMuted(true);
+		}
+		if (source.child('LetRing')) {
+			note.setLetRing(true);
+		}
+		const harmonicType = X.property(source, 'HarmonicType')?.child(
+			'HType',
+		)?.text;
+		if (harmonicType != null || enabled('Harmonic')) {
+			const spec = GuitarProValues.harmonic(harmonicType ?? 'Natural');
+			if (spec) {
+				note.setHarmonic(spec);
+			} else {
+				this.values.unsupported(`${harmonicType} harmonics`);
+			}
+		}
+		if (enabled('Bended')) {
+			const value = (name: string) =>
+				Number(X.property(source, name)?.child('Float')?.text ?? 0);
+			const bend = GuitarProValues.bend(
+				value('BendOriginValue'),
+				[value('BendMiddleValue')],
+				value('BendDestinationValue'),
+			);
+			if (bend === 'none') {
+				return;
+			}
+			if (bend) {
+				note.setBend(bend);
+			} else {
+				this.values.unsupported('bend curves');
+			}
 		}
 	}
 	private checkBeat(beat: MElement): void {

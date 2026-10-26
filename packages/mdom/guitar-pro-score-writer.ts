@@ -668,7 +668,6 @@ export class GuitarProScoreWriter {
 		);
 		for (const tie of source.ties) {
 			if (tie.tieType === 'let-ring') {
-				this.values.unsupported('let-ring ties');
 				continue;
 			}
 			const partner = tie.partner?.note;
@@ -761,6 +760,7 @@ export class GuitarProScoreWriter {
 				destination: String(stop),
 			});
 		}
+		this.techniques(source, node);
 		const accent =
 			(source.articulations.includes('staccato') ? 1 : 0) |
 			(source.articulations.includes('strong-accent') ? 4 : 0) |
@@ -769,6 +769,52 @@ export class GuitarProScoreWriter {
 			X.add(node, 'Accent', accent);
 		}
 		return node;
+	}
+	private techniques(source: Note, node: MElement): void {
+		const flag = (name: string) => {
+			const prop = X.add(node.child('Properties')!, 'Property', undefined, {
+				name,
+			});
+			X.add(prop, 'Enable');
+		};
+		const notehead = source.notehead;
+		if (notehead?.value === 'x') {
+			flag('Muted');
+		}
+		if (source.isPalmMuted) {
+			flag('PalmMuted');
+		}
+		const harmonic = source.harmonic;
+		if (harmonic) {
+			flag('Harmonic');
+			X.addProperty(
+				node,
+				'HarmonicType',
+				'HType',
+				GuitarProValues.harmonicType(harmonic),
+			);
+			X.addProperty(node, 'HarmonicFret', 'HFret', '12.000000');
+		}
+		const bend = source.bend;
+		if (bend) {
+			const peak = bend.semitones * 50;
+			const float = (name: string, value: number) =>
+				X.addProperty(node, name, 'Float', value.toFixed(6));
+			flag('Bended');
+			float('BendOriginValue', bend.preBend ? peak : 0);
+			float('BendOriginOffset', 0);
+			float('BendMiddleValue', peak);
+			float('BendMiddleOffset1', 50);
+			float('BendMiddleOffset2', 50);
+			float('BendDestinationValue', bend.release ? 0 : peak);
+			float('BendDestinationOffset', 100);
+		}
+		if (notehead?.parentheses) {
+			X.add(node, 'AntiAccent', 'Normal');
+		}
+		if (source.isLetRing) {
+			X.add(node, 'LetRing');
+		}
 	}
 	private directions(beat: MElement, note: Note): void {
 		let dynamic = 'F';
@@ -821,15 +867,12 @@ export class GuitarProScoreWriter {
 	}
 	private checkAnnotations(element: MElement): void {
 		const unsupported = new Set([
-			'bend',
-			'harmonic',
 			'hammer-on',
 			'pull-off',
 			'slide',
 			'glissando',
 			'slur',
 			'ornaments',
-			'other-technical',
 			'fingering',
 			'pluck',
 			'harmony',
@@ -842,12 +885,21 @@ export class GuitarProScoreWriter {
 			'fermata',
 			'arpeggiate',
 			'non-arpeggiate',
-			'notehead',
 			'senza-misura',
 			'swing',
 		]);
 		if (unsupported.has(element.tag)) {
 			this.values.unsupported(`<${element.tag}>`);
+		}
+		if (element.tag === 'notehead') {
+			if (!['x', 'normal'].includes(element.text ?? 'normal')) {
+				this.values.unsupported(`<notehead> ${element.text}`);
+			}
+		}
+		if (element.tag === 'other-technical') {
+			if (!/^(P\.?M\.?|palm mute)/i.test(element.text ?? '')) {
+				this.values.unsupported('<other-technical>');
+			}
 		}
 		if (element.tag === 'articulations') {
 			for (const mark of element.childrenOfType(MElement)) {
@@ -858,7 +910,7 @@ export class GuitarProScoreWriter {
 		}
 		const supportedChildren: Record<string, string[]> = {
 			notations: ['tied', 'tuplet', 'technical', 'articulations'],
-			technical: ['string', 'fret'],
+			technical: ['string', 'fret', 'harmonic', 'bend', 'other-technical'],
 			'direction-type': ['metronome', 'dynamics', 'words'],
 		};
 		const allowed = supportedChildren[element.tag];

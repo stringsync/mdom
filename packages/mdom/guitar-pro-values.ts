@@ -1,5 +1,6 @@
 import type { GuitarProOptions } from './guitar-pro-options';
 import type { PitchSpec } from './note';
+import type { HarmonicKind, HarmonicPitch } from './technical';
 
 interface GuitarProRhythmOptions {
 	dots?: number;
@@ -90,6 +91,75 @@ export class GuitarProValues {
 			);
 		}
 		return value;
+	}
+
+	/** GPIF bend values are 50 per semitone (100 is a whole step). */
+	private static readonly bendUnit = 50;
+
+	/**
+	 * A GPIF harmonic type as MusicXML's kind and pitch. Artificial, pinch and
+	 * tap are all artificial harmonics, told apart by the pitch they are
+	 * written at (none, sounding, touching); null for types with no mapping.
+	 */
+	static harmonic(
+		type: string,
+	): { kind: HarmonicKind; pitch?: HarmonicPitch } | null {
+		switch (type) {
+			case 'Natural':
+				return { kind: 'natural' };
+			case 'Artificial':
+				return { kind: 'artificial' };
+			case 'Pinch':
+				return { kind: 'artificial', pitch: 'sounding' };
+			case 'Tap':
+				return { kind: 'artificial', pitch: 'touching' };
+			default:
+				return null;
+		}
+	}
+
+	/** The GPIF type of a MusicXML harmonic, the inverse of {@link harmonic}. */
+	static harmonicType(harmonic: {
+		kind: HarmonicKind | null;
+		pitch: HarmonicPitch | null;
+	}): string {
+		if (harmonic.kind !== 'artificial') {
+			return 'Natural';
+		}
+		if (harmonic.pitch === 'sounding') {
+			return 'Pinch';
+		}
+		return harmonic.pitch === 'touching' ? 'Tap' : 'Artificial';
+	}
+
+	/**
+	 * A GPIF bend (origin, middle and destination values) as a note bend: a
+	 * rise from nothing, optionally released back to nothing, or a pre-bend held
+	 * at its peak or released. 'none' when it never leaves zero; null for a
+	 * curve MusicXML's bend cannot state.
+	 */
+	static bend(
+		origin: number,
+		middles: number[],
+		destination: number,
+	): 'none' | { semitones: number; preBend: boolean; release: boolean } | null {
+		const peak = Math.max(origin, destination, ...middles);
+		if (peak <= 0) {
+			return 'none';
+		}
+		if (origin !== 0 && origin !== peak) {
+			return null;
+		}
+		if (destination !== 0 && destination !== peak) {
+			return null;
+		}
+		const preBend = origin !== 0;
+		const release = destination === 0;
+		return {
+			semitones: peak / GuitarProValues.bendUnit,
+			preBend,
+			release,
+		};
 	}
 
 	private static readonly semitones: Record<string, number> = {

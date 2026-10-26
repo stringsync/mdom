@@ -1,25 +1,25 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
 exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
-"## Import: 25 of 45 ok
+"## Import: 26 of 45 ok
 
 | File | Result |
 | --- | --- |
 | \`anacrusis.gp\` | ok |
 | \`beat-lyrics.gp\` | omits \`beat effects or annotations\` |
 | \`beat-tempo-change.gp\` | ok |
-| \`bends.gp\` | omits \`note techniques\` |
+| \`bends.gp\` | omits \`bend curves\` |
 | \`chords.gp\` | omits \`beat effects or annotations\` |
-| \`dead.gp\` | omits \`note techniques\` |
+| \`dead.gp\` | ok |
 | \`directions.gp\` | omits \`alternate endings, jumps, free time or swing\` |
 | \`drum-tabs.gp\` | error: Guitar Pro percussion tracks are not supported |
-| \`effects.gp\` | omits \`beat effects or annotations\`, \`instrument changes or track automation\`, \`note techniques\` |
+| \`effects.gp\` | omits \`Semi harmonics\`, \`beat effects or annotations\`, \`bend curves\`, \`instrument changes or track automation\`, \`note techniques\` |
 | \`fermata.gp\` | omits \`alternate endings, jumps, free time or swing\` |
 | \`grace.gp\` | omits \`note techniques\` |
 | \`grace.gp5\` | omits \`note techniques\` |
 | \`grace.gpx\` | omits \`note techniques\` |
 | \`hammer.gp\` | omits \`note techniques\` |
-| \`harmonics.gp\` | omits \`note techniques\` |
+| \`harmonics.gp\` | omits \`Semi harmonics\` |
 | \`hide-tuning.gp\` | ok |
 | \`key-signatures.gp\` | ok |
 | \`key-signatures.gp5\` | ok |
@@ -53,23 +53,25 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 
 | Omitted feature | Files |
 | --- | --- |
-| \`note techniques\` | 10 |
+| \`note techniques\` | 7 |
 | \`beat effects or annotations\` | 6 |
 | \`alternate endings, jumps, free time or swing\` | 3 |
+| \`bend curves\` | 2 |
+| \`Semi harmonics\` | 2 |
 | \`instrument changes or track automation\` | 1 |
 | \`lyrics\` | 1 |
 | \`octave clefs\` | 1 |"
 `;
 
 exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpus 1`] = `
-"## Export: 83 of 199 ok
+"## Export: 84 of 199 ok
 
 | File | Result |
 | --- | --- |
 | \`accidentals.xml\` | error: Invalid MIDI pitch: 67.5; expected an integer from 0 to 127 |
-| \`actor_prelude_sample.xml\` | omits \`<down-bow>\`, \`<notehead>\`, \`<ornaments>\`, \`<other-direction>\`, \`<rehearsal>\`, \`<slur>\`, \`<tremolo>\`, \`<unpitched>\`, \`<up-bow>\`, \`<wedge>\`; error: Guitar Pro export requires a supported note type, got null |
-| \`aloof_gp7.musicxml\` | omits \`<dynamics>\`, \`<hammer-on>\`, \`<notehead>\`, \`<slide>\`, \`<slur>\`; error: Guitar Pro export needs one transposition per part, but this part changes it across measures or staves |
-| \`aloof_gp8.musicxml\` | omits \`<hammer-on>\`, \`<notehead>\`, \`<slide>\`, \`<slur>\`; error: Guitar Pro export needs one transposition per part, but this part changes it across measures or staves |
+| \`actor_prelude_sample.xml\` | omits \`<down-bow>\`, \`<notehead> diamond\`, \`<ornaments>\`, \`<other-direction>\`, \`<rehearsal>\`, \`<slur>\`, \`<tremolo>\`, \`<unpitched>\`, \`<up-bow>\`, \`<wedge>\`; error: Guitar Pro export requires a supported note type, got null |
+| \`aloof_gp7.musicxml\` | omits \`<dynamics>\`, \`<hammer-on>\`, \`<slide>\`, \`<slur>\`; error: Guitar Pro export needs one transposition per part, but this part changes it across measures or staves |
+| \`aloof_gp8.musicxml\` | omits \`<hammer-on>\`, \`<slide>\`, \`<slur>\`; error: Guitar Pro export needs one transposition per part, but this part changes it across measures or staves |
 | \`chopin_prelude.xml\` | omits \`<slur>\` |
 | \`composer_one_line.xml\` | ok |
 | \`concert_score_and_for_part.xml\` | ok |
@@ -122,10 +124,10 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/21g-Chords-Tremolos.xml\` | omits \`<ornaments>\`, \`<tremolo>\` |
 | \`lilypond/21h-Chord-Accidentals.xml\` | ok |
 | \`lilypond/21i-Chord-DifferentVoices.xml\` | ok |
-| \`lilypond/22a-Noteheads.xml\` | omits \`<notehead>\` |
+| \`lilypond/22a-Noteheads.xml\` | omits \`<notehead> arrow down\`, \`<notehead> arrow up\`, \`<notehead> back slashed\`, \`<notehead> circle-x\`, \`<notehead> cluster\`, \`<notehead> cross\`, \`<notehead> diamond\`, \`<notehead> do\`, \`<notehead> fa\`, \`<notehead> inverted triangle\`, \`<notehead> la\`, \`<notehead> mi\`, \`<notehead> none\`, \`<notehead> re\`, \`<notehead> slash\`, \`<notehead> slashed\`, \`<notehead> so\`, \`<notehead> square\`, \`<notehead> ti\`, \`<notehead> triangle\` |
 | \`lilypond/22b-Staff-Notestyles.xml\` | ok |
-| \`lilypond/22c-Noteheads-Chords.xml\` | omits \`<notehead>\` |
-| \`lilypond/22d-Parenthesized-Noteheads.xml\` | omits \`<notehead>\` |
+| \`lilypond/22c-Noteheads-Chords.xml\` | omits \`<notehead> arrow down\`, \`<notehead> arrow up\`, \`<notehead> circle-x\`, \`<notehead> cross\`, \`<notehead> diamond\`, \`<notehead> inverted triangle\`, \`<notehead> slash\`, \`<notehead> slashed\`, \`<notehead> square\`, \`<notehead> triangle\` |
+| \`lilypond/22d-Parenthesized-Noteheads.xml\` | ok |
 | \`lilypond/23a-Tuplets.xml\` | ok |
 | \`lilypond/23b-Tuplets-Styles.xml\` | ok |
 | \`lilypond/23c-Tuplet-Display-NonStandard.xml\` | ok |
@@ -145,7 +147,7 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/31c-MetronomeMarks.xml\` | omits \`non-numeric or compound metronome marks\` |
 | \`lilypond/31d-Directions-Compounds.xml\` | omits \`<coda>\`, \`<dashes>\`, \`<rehearsal>\`, \`<segno>\`, \`<wedge>\`; error: Unsupported metronome beat unit: long |
 | \`lilypond/31f-Direction-Multiline-Compounds.xml\` | ok |
-| \`lilypond/32a-Notations.xml\` | omits \`<accidental-mark>\`, \`<arpeggiate>\`, \`<bend>\`, \`<breath-mark>\`, \`<caesura>\`, \`<detached-legato>\`, \`<doit>\`, \`<double-tongue>\`, \`<down-bow>\`, \`<dynamics>\`, \`<falloff>\`, \`<fermata>\`, \`<fingering>\`, \`<fingernails>\`, \`<hammer-on>\`, \`<harmonic>\`, \`<heel>\`, \`<non-arpeggiate>\`, \`<open-string>\`, \`<ornaments>\`, \`<plop>\`, \`<pluck>\`, \`<pull-off>\`, \`<scoop>\`, \`<snap-pizzicato>\`, \`<soft-accent>\`, \`<spiccato>\`, \`<staccatissimo>\`, \`<stopped>\`, \`<stress>\`, \`<tap>\`, \`<tenuto>\`, \`<thumb-position>\`, \`<toe>\`, \`<tremolo>\`, \`<triple-tongue>\`, \`<unstress>\`, \`<up-bow>\`; error: Guitar Pro tablature requires tuning, string and fret |
+| \`lilypond/32a-Notations.xml\` | omits \`<accidental-mark>\`, \`<arpeggiate>\`, \`<breath-mark>\`, \`<caesura>\`, \`<detached-legato>\`, \`<doit>\`, \`<double-tongue>\`, \`<down-bow>\`, \`<dynamics>\`, \`<falloff>\`, \`<fermata>\`, \`<fingering>\`, \`<fingernails>\`, \`<hammer-on>\`, \`<heel>\`, \`<non-arpeggiate>\`, \`<open-string>\`, \`<ornaments>\`, \`<plop>\`, \`<pluck>\`, \`<pull-off>\`, \`<scoop>\`, \`<snap-pizzicato>\`, \`<soft-accent>\`, \`<spiccato>\`, \`<staccatissimo>\`, \`<stopped>\`, \`<stress>\`, \`<tap>\`, \`<tenuto>\`, \`<thumb-position>\`, \`<toe>\`, \`<tremolo>\`, \`<triple-tongue>\`, \`<unstress>\`, \`<up-bow>\`; error: Guitar Pro tablature requires tuning, string and fret |
 | \`lilypond/32b-Articulations-Texts.xml\` | ok |
 | \`lilypond/32c-MultipleNotationChildren.xml\` | ok |
 | \`lilypond/32d-Arpeggio.xml\` | omits \`<arpeggiate>\`, \`<non-arpeggiate>\` |
@@ -163,8 +165,8 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/33j-Beams-Tremolos.xml\` | omits \`<ornaments>\`, \`<tremolo>\` |
 | \`lilypond/33k-Tie-Types.xml\` | error: Guitar Pro ties must connect matching pitches in the same voice and staff |
 | \`lilypond/34a-Print-Object-Spanners.xml\` | omits \`<glissando>\`, \`<hammer-on>\`, \`<ornaments>\`, \`<pull-off>\`, \`<slide>\`, \`<slur>\`, \`<tremolo>\` |
-| \`lilypond/34b-Colors.xml\` | omits \`<arpeggiate>\`, \`<bracket>\`, \`<breath-mark>\`, \`<dashes>\`, \`<down-bow>\`, \`<ending>\`, \`<fingering>\`, \`<glissando>\`, \`<notehead>\`, \`<octave-shift>\`, \`<ornaments>\`, \`<pedal>\`, \`<pluck>\`, \`<rehearsal>\`, \`<slur>\`, \`<tremolo>\`, \`<unpitched>\`, \`<wedge>\`, \`mid-measure key or time changes\`; error: Guitar Pro export requires pitched notes; percussion is not supported |
-| \`lilypond/34c-Font-Size.xml\` | omits \`<breath-mark>\`, \`<dashes>\`, \`<down-bow>\`, \`<fingering>\`, \`<notehead>\`, \`<octave-shift>\`, \`<ornaments>\`, \`<pedal>\`, \`<pluck>\`, \`<rehearsal>\`, \`<unpitched>\`, \`mid-measure clef changes\`, \`mid-measure key or time changes\`; error: Guitar Pro export requires pitched notes; percussion is not supported |
+| \`lilypond/34b-Colors.xml\` | omits \`<arpeggiate>\`, \`<bracket>\`, \`<breath-mark>\`, \`<dashes>\`, \`<down-bow>\`, \`<ending>\`, \`<fingering>\`, \`<glissando>\`, \`<octave-shift>\`, \`<ornaments>\`, \`<pedal>\`, \`<pluck>\`, \`<rehearsal>\`, \`<slur>\`, \`<tremolo>\`, \`<unpitched>\`, \`<wedge>\`, \`mid-measure key or time changes\`; error: Guitar Pro export requires pitched notes; percussion is not supported |
+| \`lilypond/34c-Font-Size.xml\` | omits \`<breath-mark>\`, \`<dashes>\`, \`<down-bow>\`, \`<fingering>\`, \`<octave-shift>\`, \`<ornaments>\`, \`<pedal>\`, \`<pluck>\`, \`<rehearsal>\`, \`<unpitched>\`, \`mid-measure clef changes\`, \`mid-measure key or time changes\`; error: Guitar Pro export requires pitched notes; percussion is not supported |
 | \`lilypond/34d-Note-Attributes.xml\` | ok |
 | \`lilypond/41a-MultiParts-Partorder.xml\` | ok |
 | \`lilypond/41b-MultiParts-MoreThan10.xml\` | ok |
@@ -259,11 +261,11 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`note_variations.xml\` | omits \`<accidental-mark>\`, \`<ornaments>\`; error: Note duration disagrees with its notation in measure 1 |
 | \`octave_shift_simple_piano.xml\` | omits \`<octave-shift>\`, \`<slur>\` |
 | \`partially_invalid.xml\` | error: Overlapping or invalid note timing in measure 1 |
-| \`rehearsal_marks_bolivia.xml\` | omits \`<harmony>\`, \`<notehead>\`, \`<rehearsal>\` |
+| \`rehearsal_marks_bolivia.xml\` | omits \`<harmony>\`, \`<notehead> slash\`, \`<rehearsal>\` |
 | \`sibelius_2023_tab.musicxml\` | ok |
 | \`sorted_notes_chord_vexflow_keys_order.xml\` | omits \`different keys across staves or parts\`, \`key mode none\` |
 | \`stave_repetitions_coda_etc.xml\` | omits \`<coda>\`, \`<segno>\`, \`mid-measure clef changes\` |
-| \`tablature_bends.xml\` | omits \`<bend>\`; error: Note pitch disagrees with its string, fret and capo |
+| \`tablature_bends.xml\` | error: Note pitch disagrees with its string, fret and capo |
 | \`wanna_skip_class.xml\` | omits \`<hammer-on>\`, \`<slide>\`, \`<slur>\` |
 
 | Omitted feature | Files |
@@ -271,7 +273,6 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`<slur>\` | 24 |
 | \`<ornaments>\` | 12 |
 | \`<harmony>\` | 10 |
-| \`<notehead>\` | 9 |
 | \`<octave-shift>\` | 9 |
 | \`<ending>\` | 8 |
 | \`<tremolo>\` | 8 |
@@ -296,13 +297,22 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`<breath-mark>\` | 3 |
 | \`<coda>\` | 3 |
 | \`<dynamics>\` | 3 |
+| \`<notehead> diamond\` | 3 |
+| \`<notehead> slash\` | 3 |
 | \`<pluck>\` | 3 |
 | \`<pull-off>\` | 3 |
 | \`pickups after the first measure\` | 3 |
 | \`<accidental-mark>\` | 2 |
 | \`<accordion-registration>\` | 2 |
-| \`<bend>\` | 2 |
 | \`<non-arpeggiate>\` | 2 |
+| \`<notehead> arrow down\` | 2 |
+| \`<notehead> arrow up\` | 2 |
+| \`<notehead> circle-x\` | 2 |
+| \`<notehead> cross\` | 2 |
+| \`<notehead> inverted triangle\` | 2 |
+| \`<notehead> slashed\` | 2 |
+| \`<notehead> square\` | 2 |
+| \`<notehead> triangle\` | 2 |
 | \`<senza-misura>\` | 2 |
 | \`<up-bow>\` | 2 |
 | \`dynamic ffff\` | 2 |
@@ -316,10 +326,19 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`<eyeglasses>\` | 1 |
 | \`<falloff>\` | 1 |
 | \`<fingernails>\` | 1 |
-| \`<harmonic>\` | 1 |
 | \`<harp-pedals>\` | 1 |
 | \`<heel>\` | 1 |
 | \`<image>\` | 1 |
+| \`<notehead> back slashed\` | 1 |
+| \`<notehead> cluster\` | 1 |
+| \`<notehead> do\` | 1 |
+| \`<notehead> fa\` | 1 |
+| \`<notehead> la\` | 1 |
+| \`<notehead> mi\` | 1 |
+| \`<notehead> none\` | 1 |
+| \`<notehead> re\` | 1 |
+| \`<notehead> so\` | 1 |
+| \`<notehead> ti\` | 1 |
 | \`<open-string>\` | 1 |
 | \`<other-direction>\` | 1 |
 | \`<other-notation>\` | 1 |
