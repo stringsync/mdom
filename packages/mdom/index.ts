@@ -60,11 +60,22 @@ export { MXLSerializer } from './mxl-serializer';
 export { Note } from './note';
 export { OctaveShift } from './octave-shift';
 export { Ornament, type OrnamentType } from './ornament';
+export {
+	type MarginType,
+	PageLayout,
+	type PageMargins,
+	type PageMarginsSpec,
+} from './page-layout';
 export { Part } from './part';
 export type { PartGroupSpan } from './part-group';
 export { Pedal } from './pedal';
 export { Pitch } from './pitch';
-export { Print } from './print';
+export {
+	type MeasureNumbering,
+	type MeasureNumberingSpec,
+	Print,
+	type SystemRelation,
+} from './print';
 export { PullOff } from './pull-off';
 export { Rehearsal } from './rehearsal';
 export { Scaling } from './scaling';

@@ -1,5 +1,6 @@
 import { MElement } from './m-node';
 import { appendValue } from './measure';
+import { PageLayout } from './page-layout';
 import { Part } from './part';
 import { type PartGroupSpan, partGroupsOf } from './part-group';
 import { Scaling } from './scaling';
@@ -22,6 +23,20 @@ import {
 	typedTexts,
 } from './score-metadata';
 import { SystemLayout } from './system-layout';
+
+/** Canonical child order of the MusicXML `<defaults>` sequence. */
+const defaultsOrder = [
+	'scaling',
+	'concert-score',
+	'page-layout',
+	'system-layout',
+	'staff-layout',
+	'appearance',
+	'music-font',
+	'word-font',
+	'lyric-font',
+	'lyric-language',
+];
 
 /** The `<score-partwise>` root. Holds the parts and the part-list metadata. */
 export class Score extends MElement {
@@ -319,27 +334,33 @@ export class Score extends MElement {
 		if (existing) {
 			return existing;
 		}
-		let defaults = this.child('defaults');
-		if (!defaults) {
-			defaults = new MElement('defaults');
-			insertMetadata(this, defaults, headerOrder);
-		}
 		const layout = new SystemLayout();
-		// <defaults> is a sequence; system-layout precedes these.
-		const after = new Set([
-			'staff-layout',
-			'appearance',
-			'music-font',
-			'word-font',
-			'lyric-font',
-			'lyric-language',
-		]);
-		const ref =
-			defaults.children.find(
-				(node) => node instanceof MElement && after.has(node.tag),
-			) ?? null;
-		defaults.insertBefore(layout, ref);
+		insertMetadata(this.defaults(), layout, defaultsOrder);
 		return layout;
+	}
+
+	/**
+	 * The `<defaults><page-layout>`: the score-wide page size and margins. Null
+	 * when unset, which leaves the page to the application. Per-page overrides
+	 * live on a measure's `<print>`.
+	 */
+	get pageLayout(): PageLayout | null {
+		return this.child('defaults')?.childrenOfType(PageLayout)[0] ?? null;
+	}
+
+	/** Get or create the `<defaults><page-layout>` (both created if absent), keeping `<defaults>` order. */
+	getOrCreatePageLayout(): PageLayout {
+		const existing = this.pageLayout;
+		if (existing) {
+			return existing;
+		}
+		const layout = new PageLayout();
+		insertMetadata(this.defaults(), layout, defaultsOrder);
+		return layout;
+	}
+
+	private defaults(): MElement {
+		return ensureMetadata(this, 'defaults', headerOrder);
 	}
 
 	/** `<movement-title>`, falling back to `<work><work-title>`. */

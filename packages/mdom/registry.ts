@@ -20,6 +20,7 @@ import { Metronome, MetronomeNote } from './metronome';
 import { Note } from './note';
 import { OctaveShift } from './octave-shift';
 import { ORNAMENT_TAGS, Ornament } from './ornament';
+import { PageLayout } from './page-layout';
 import { Part } from './part';
 import { Pedal } from './pedal';
 import { Pitch } from './pitch';
@@ -101,6 +102,7 @@ function tags(): Record<string, ElementCtor> {
 		glissando: Glissando,
 		'line-detail': LineDetail,
 		print: Print,
+		'page-layout': PageLayout,
 		'system-layout': SystemLayout,
 	};
 	for (const tag of ORNAMENT_TAGS) {

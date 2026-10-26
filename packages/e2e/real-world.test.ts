@@ -11,6 +11,31 @@ describe('Finale + Dolet — a 22-part orchestral score', () => {
 	const measures = score.parts.flatMap((part) => part.measures);
 	const notes = measures.flatMap((measure) => measure.notes);
 
+	it('reads odd/even page margins, per-page overrides and measure numbering', () => {
+		const defaults = score.pageLayout!;
+		expect([defaults.height, defaults.width]).toEqual([3560, 2797]);
+		expect(defaults.margins.map((each) => each.type)).toEqual(['even', 'odd']);
+		expect(defaults.getMargins('even')).toMatchObject({
+			left: 141,
+			right: 115,
+		});
+
+		const prints = score.parts[0]!.measures.flatMap((measure) =>
+			measure.print ? [measure.print] : [],
+		);
+		const pages = prints.filter((print) => print.pageNumber !== null);
+		expect(pages.map((print) => print.pageNumber)).toEqual(
+			pages.map((_, index) => String(index + 1)),
+		);
+		expect(pages[1]!.newPage).toBe(true);
+		expect(pages[1]!.pageLayout!.getMargins('even')).toMatchObject({
+			type: null,
+			left: 141,
+			top: 104,
+		});
+		expect(prints[0]!.measureNumbering?.value).toBe('system');
+	});
+
 	it('reads per-note instrument assignments and the percussion MIDI keys', () => {
 		const cymbal = score.getPart('P15')!;
 		expect(cymbal.instruments.map((each) => each.name)).toEqual([
