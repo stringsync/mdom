@@ -11,6 +11,26 @@ describe('Finale + Dolet — a 22-part orchestral score', () => {
 	const measures = score.parts.flatMap((part) => part.measures);
 	const notes = measures.flatMap((measure) => measure.notes);
 
+	it('reads per-note instrument assignments and the percussion MIDI keys', () => {
+		const cymbal = score.getPart('P15')!;
+		expect(cymbal.instruments.map((each) => each.name)).toEqual([
+			'Splash Cymbal',
+		]);
+		expect(cymbal.getMidiInstrument('P15-X8')).toMatchObject({
+			channel: 10,
+			unpitched: 56,
+			volume: 80,
+			pan: 0,
+		});
+		const assigned = cymbal.measures
+			.flatMap((measure) => measure.notes)
+			.filter((note) => note.instrumentIds.length > 0);
+		expect(assigned).toHaveLength(66);
+		expect(new Set(assigned.flatMap((note) => note.instrumentIds))).toEqual(
+			new Set(['P15-X8']),
+		);
+	});
+
 	it('resolves the part-list brackets and braces, outermost first', () => {
 		const groups = score.partGroups;
 		expect(score.parts).toHaveLength(22);

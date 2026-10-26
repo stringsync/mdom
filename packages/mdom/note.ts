@@ -602,6 +602,45 @@ export class Note extends MElement {
 	}
 
 	/**
+	 * Ids of the `<score-instrument>`s this note plays, from its `<instrument>`
+	 * elements, in document order. Empty when the note names none, which
+	 * MusicXML leaves to the part: its only instrument when it declares one
+	 * ({@link Part.instruments}), unspecified when it declares several.
+	 */
+	get instrumentIds(): string[] {
+		return this.childrenNamed('instrument').flatMap((node) => {
+			const id = node.getAttribute('id');
+			return id === null ? [] : [id];
+		});
+	}
+
+	/**
+	 * Assign this note to these instruments of its part, replacing any it
+	 * named; an empty list removes the assignment. Throws for an id the part
+	 * does not declare ({@link Part.addInstrument}).
+	 */
+	setInstrumentIds(ids: readonly string[]): void {
+		const part = this.part;
+		for (const id of ids) {
+			if (part.getInstrument(id) === null) {
+				throw new Error(`part "${part.id}" declares no instrument "${id}"`);
+			}
+		}
+		for (const node of this.childrenNamed('instrument')) {
+			node.remove();
+		}
+		const before =
+			this.children.find(
+				(child) => child instanceof MElement && afterInstrument.has(child.tag),
+			) ?? null;
+		for (const id of ids) {
+			const node = new MElement('instrument');
+			node.setAttribute('id', id);
+			this.insertBefore(node, before);
+		}
+	}
+
+	/**
 	 * Add an articulation mark (staccato, accent, tenuto, …), creating
 	 * `<notations><articulations>` as needed. MusicXML names the mark by its TAG,
 	 * so `name` is written through as one — the write side of {@link articulations},
@@ -853,6 +892,26 @@ export class Note extends MElement {
 		}
 	}
 }
+
+/** `<note>` children the schema puts after `<instrument>`. */
+const afterInstrument = new Set([
+	'footnote',
+	'level',
+	'voice',
+	'type',
+	'dot',
+	'accidental',
+	'time-modification',
+	'stem',
+	'notehead',
+	'notehead-text',
+	'staff',
+	'beam',
+	'notations',
+	'lyric',
+	'play',
+	'listen',
+]);
 
 /**
  * The lowest spanner number not already used by markers of this kind anywhere in

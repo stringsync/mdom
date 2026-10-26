@@ -36,6 +36,16 @@ export {
 	type HarmonySpec,
 	type HarmonyStepSpec,
 } from './harmony';
+export type {
+	MidiDevice,
+	MidiDeviceSpec,
+	MidiInstrument,
+	MidiInstrumentSpec,
+	ScoreInstrument,
+	ScoreInstrumentSpec,
+	VirtualInstrument,
+	VirtualInstrumentSpec,
+} from './instrument';
 export { Key } from './key';
 export { LineDetail } from './line-detail';
 export { Lyric } from './lyric';

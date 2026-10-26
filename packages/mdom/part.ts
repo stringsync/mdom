@@ -1,9 +1,24 @@
+import {
+	type MidiDevice,
+	type MidiDeviceSpec,
+	type MidiInstrument,
+	type MidiInstrumentSpec,
+	readMidiDevice,
+	readMidiInstrument,
+	readScoreInstrument,
+	type ScoreInstrument,
+	type ScoreInstrumentSpec,
+	writeMidiDevice,
+	writeMidiInstrument,
+	writeScoreInstrument,
+} from './instrument';
 import { MElement, required } from './m-node';
 import { Measure } from './measure';
 import { memo } from './read-cache';
 import { Score } from './score';
 import {
 	ensureMetadata,
+	insertMetadata,
 	makeFormattedText,
 	type NameDisplay,
 	type NameDisplaySpec,
@@ -113,7 +128,8 @@ export class Part extends MElement {
 	 * MIDI program the part plays on, 1 to 128 as MusicXML numbers it (General
 	 * MIDI's 0-based program plus one), resolved like {@link label} from this
 	 * part's `<score-part><midi-instrument><midi-program>`. The first
-	 * `<midi-instrument>` wins when the part declares several. Null when there is
+	 * `<midi-instrument>` wins when the part declares several; read
+	 * {@link getMidiInstrument} for a particular instrument's. Null when there is
 	 * no `<score-part>`, `<midi-instrument>`, or `<midi-program>`, or its text is
 	 * not an integer from 1 to 128.
 	 */
@@ -127,6 +143,163 @@ export class Part extends MElement {
 		}
 		const program = Number(text);
 		return program >= 1 && program <= 128 ? program : null;
+	}
+
+	/**
+	 * Every `<score-instrument>` the part declares, in document order. A part
+	 * may declare several (divisi, percussion kits, doublings); a note picks
+	 * among them with {@link Note.instrumentIds}.
+	 */
+	get instruments(): ScoreInstrument[] {
+		return (scorePartOf(this)?.childrenNamed('score-instrument') ?? []).map(
+			readScoreInstrument,
+		);
+	}
+
+	/** The `<score-instrument>` with this id, or null. */
+	getInstrument(id: string): ScoreInstrument | null {
+		const node = instrumentNode(this, id);
+		return node ? readScoreInstrument(node) : null;
+	}
+
+	/**
+	 * Every `<midi-instrument>` in the part's `<score-part>`, in document order,
+	 * including any whose id names no declared instrument.
+	 */
+	get midiInstruments(): MidiInstrument[] {
+		return (scorePartOf(this)?.childrenNamed('midi-instrument') ?? []).map(
+			readMidiInstrument,
+		);
+	}
+
+	/** The `<midi-instrument>` assigned to the instrument with this id, or null. */
+	getMidiInstrument(instrumentId: string): MidiInstrument | null {
+		const node = midiNode(this, 'midi-instrument', instrumentId);
+		return node ? readMidiInstrument(node) : null;
+	}
+
+	/** Every `<midi-device>` in the part's `<score-part>`, in document order. */
+	get midiDevices(): MidiDevice[] {
+		return (scorePartOf(this)?.childrenNamed('midi-device') ?? []).map(
+			readMidiDevice,
+		);
+	}
+
+	/**
+	 * The `<midi-device>` the instrument with this id plays through: one naming
+	 * it, else one with no id (which applies to the whole part), else null.
+	 */
+	getMidiDevice(instrumentId: string): MidiDevice | null {
+		const node =
+			midiNode(this, 'midi-device', instrumentId) ??
+			midiNode(this, 'midi-device', null);
+		return node ? readMidiDevice(node) : null;
+	}
+
+	/**
+	 * Declare a `<score-instrument>`, after any the part already declares. The
+	 * id defaults to the first free `<part id>-I<n>`; an id already used in the
+	 * document throws.
+	 */
+	addInstrument(spec: ScoreInstrumentSpec): ScoreInstrument {
+		const scorePart = required(scorePartOf(this), '<score-part> for part');
+		const id = spec.id ?? freeInstrumentId(this);
+		if (documentIds(this).has(id)) {
+			throw new Error(`id "${id}" is already used in the document`);
+		}
+		const node = new MElement('score-instrument');
+		node.setAttribute('id', id);
+		writeScoreInstrument(node, spec);
+		insertMetadata(scorePart, node, partMetadataOrder);
+		return readScoreInstrument(node);
+	}
+
+	/** Replace the identity of the instrument with this id; its MIDI fields stay. */
+	setInstrument(id: string, spec: Omit<ScoreInstrumentSpec, 'id'>): void {
+		writeScoreInstrument(requiredInstrument(this, id), spec);
+	}
+
+	/**
+	 * Remove the instrument with this id, with the `<midi-instrument>` and
+	 * `<midi-device>` assigned to it. Throws while a note still names it, since
+	 * that note's `<instrument>` would dangle; reassign those notes first.
+	 */
+	removeInstrument(id: string): void {
+		const node = requiredInstrument(this, id);
+		if (
+			this.measures.some((measure) =>
+				measure.notes.some((note) => note.instrumentIds.includes(id)),
+			)
+		) {
+			throw new Error(`notes still play instrument "${id}"`);
+		}
+		midiNode(this, 'midi-instrument', id)?.remove();
+		midiNode(this, 'midi-device', id)?.remove();
+		node.remove();
+	}
+
+	/**
+	 * Set the MIDI playback of the instrument with this id, replacing every
+	 * field of any existing assignment; null removes it.
+	 */
+	setMidiInstrument(
+		instrumentId: string,
+		spec: MidiInstrumentSpec | null,
+	): void {
+		requiredInstrument(this, instrumentId);
+		const existing = midiNode(this, 'midi-instrument', instrumentId);
+		if (spec === null) {
+			existing?.remove();
+			return;
+		}
+		const node = existing ?? new MElement('midi-instrument');
+		writeMidiInstrument(node, spec);
+		if (!existing) {
+			node.setAttribute('id', instrumentId);
+			// Right after its own device, so each device/instrument pair stays together.
+			const device = midiNode(this, 'midi-device', instrumentId);
+			const scorePart = required(scorePartOf(this), '<score-part> for part');
+			scorePart.insertBefore(node, device ? nextSibling(device) : null);
+		}
+	}
+
+	/**
+	 * Set the MIDI device the instrument with this id plays through, or with a
+	 * null id the device for the whole part; a null spec removes it.
+	 */
+	setMidiDevice(
+		instrumentId: string | null,
+		spec: MidiDeviceSpec | null,
+	): void {
+		if (instrumentId !== null) {
+			requiredInstrument(this, instrumentId);
+		}
+		const existing = midiNode(this, 'midi-device', instrumentId);
+		if (spec === null) {
+			existing?.remove();
+			return;
+		}
+		if (existing) {
+			writeMidiDevice(existing, spec);
+			return;
+		}
+		const node = new MElement('midi-device');
+		if (instrumentId !== null) {
+			node.setAttribute('id', instrumentId);
+		}
+		writeMidiDevice(node, spec);
+		const scorePart = required(scorePartOf(this), '<score-part> for part');
+		// A part-wide device leads the MIDI sequence; an instrument's own device
+		// sits just before its <midi-instrument>, or last until one is added.
+		const before =
+			instrumentId === null
+				? (scorePart.children.find(
+						(child) =>
+							child instanceof MElement &&
+							(child.tag === 'midi-device' || child.tag === 'midi-instrument'),
+					) ?? null)
+				: midiNode(this, 'midi-instrument', instrumentId);
+		scorePart.insertBefore(node, before);
 	}
 
 	/** Append a `<measure>`, numbered after the last one when `number` is omitted. */
@@ -233,4 +406,75 @@ function scorePartOf(part: Part): MElement | null {
 			?.childrenNamed('score-part')
 			.find((entry) => entry.getAttribute('id') === part.id) ?? null
 	);
+}
+
+function instrumentNode(part: Part, id: string): MElement | null {
+	return (
+		scorePartOf(part)
+			?.childrenNamed('score-instrument')
+			.find((node) => node.getAttribute('id') === id) ?? null
+	);
+}
+
+function requiredInstrument(part: Part, id: string): MElement {
+	const node = instrumentNode(part, id);
+	if (!node) {
+		throw new Error(`part "${part.id}" declares no instrument "${id}"`);
+	}
+	return node;
+}
+
+/** The `<tag>` in `part`'s `<score-part>` whose id is `id` (null: has no id). */
+function midiNode(
+	part: Part,
+	tag: 'midi-instrument' | 'midi-device',
+	id: string | null,
+): MElement | null {
+	return (
+		scorePartOf(part)
+			?.childrenNamed(tag)
+			.find((node) => node.getAttribute('id') === id) ?? null
+	);
+}
+
+function nextSibling(node: MElement): MElement | null {
+	const siblings = node.parent?.children ?? [];
+	return (
+		siblings
+			.slice(siblings.indexOf(node) + 1)
+			.find((sibling) => sibling instanceof MElement) ?? null
+	);
+}
+
+/** Tags whose `id` is an IDREF to another element, not an ID of its own. */
+const idReferenceTags = new Set([
+	'part',
+	'instrument',
+	'midi-instrument',
+	'midi-device',
+]);
+
+/** Every XML ID in the document, which score-instrument ids must not repeat. */
+function documentIds(part: Part): Set<string> {
+	const ids = new Set<string>();
+	const visit = (node: MElement) => {
+		const id = node.getAttribute('id');
+		if (id !== null && !idReferenceTags.has(node.tag)) {
+			ids.add(id);
+		}
+		for (const child of node.childrenOfType(MElement)) {
+			visit(child);
+		}
+	};
+	visit(part.score);
+	return ids;
+}
+
+function freeInstrumentId(part: Part): string {
+	const used = documentIds(part);
+	let index = 1;
+	while (used.has(`${part.id}-I${index}`)) {
+		index++;
+	}
+	return `${part.id}-I${index}`;
 }
