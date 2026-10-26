@@ -17,6 +17,7 @@ import { LineDetail } from './line-detail';
 import { Lyric } from './lyric';
 import { MCData, MElement, type MNode, MText } from './m-node';
 import { Measure } from './measure';
+import { MeasureStyle } from './measure-style';
 import { Metronome, MetronomeNote } from './metronome';
 import { Note } from './note';
 import { OctaveShift } from './octave-shift';
@@ -95,6 +96,7 @@ function tags(): Record<string, ElementCtor> {
 		'figured-bass': FiguredBass,
 		figure: Figure,
 		'staff-details': StaffDetails,
+		'measure-style': MeasureStyle,
 		'staff-tuning': StaffTuning,
 		frame: Frame,
 		'frame-note': FrameNote,

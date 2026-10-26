@@ -79,6 +79,14 @@ export { MDOMParser } from './m-dom-parser';
 export type { MHistory, MHistoryChange } from './m-history';
 export { MElement, MNode, MText } from './m-node';
 export { Measure } from './measure';
+export {
+	MeasureStyle,
+	type MeasureStyleKind,
+	type MeasureStyleSpec,
+	type MeasureStyleType,
+	type SlashType,
+	type StatefulMeasureStyleKind,
+} from './measure-style';
 export { Metronome, MetronomeNote } from './metronome';
 export { MusicXMLSerializer } from './music-xml-serializer';
 export { MXLSerializer } from './mxl-serializer';

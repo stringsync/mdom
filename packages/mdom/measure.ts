@@ -9,6 +9,12 @@ import { buildHarmony, Harmony, type HarmonySpec } from './harmony';
 import { Key } from './key';
 import { LineDetail } from './line-detail';
 import { MElement, type MNode, MText, required } from './m-node';
+import {
+	buildMeasureStyle,
+	MeasureStyle,
+	type MeasureStyleSpec,
+	type StatefulMeasureStyleKind,
+} from './measure-style';
 import { Note } from './note';
 import { measureIndexIn, Part } from './part';
 import { Print } from './print';
@@ -375,6 +381,44 @@ export class Measure extends MElement {
 		return count?.text == null ? null : Number(count.text);
 	}
 
+	/** All style declarations in this measure, including mid-measure starts/stops. */
+	get measureStyles(): MeasureStyle[] {
+		return this.childrenNamed('attributes').flatMap((attrs) =>
+			attrs.childrenOfType(MeasureStyle),
+		);
+	}
+
+	/**
+	 * Append a style declaration, optionally at an onset in quarter-note beats.
+	 * Starts/stops are explicit; this does not alter the underlying notes.
+	 * Remove a declaration using its inherited remove() method.
+	 */
+	addMeasureStyle(spec: MeasureStyleSpec & { onset?: number }): MeasureStyle {
+		const style = buildMeasureStyle(spec);
+		return placeInAttributes(this.getOrCreateAttributes(spec), style);
+	}
+
+	/**
+	 * Active start declaration at the opening of this measure for a style family.
+	 * The latest matching stop clears that family; other families are independent.
+	 * Use measureStyles for all declarations, including changes later in the bar.
+	 */
+	getActiveMeasureStyle(
+		kind: StatefulMeasureStyleKind,
+		staff = '1',
+	): MeasureStyle | null {
+		const declaration = this.attributeBack(
+			`measure-style:${kind}:${staff}`,
+			(attrs) =>
+				attrs
+					.childrenOfType(MeasureStyle)
+					.findLast(
+						(style) => style.kind === kind && appliesToStaff(style, staff),
+					),
+		);
+		return declaration?.type === 'start' ? declaration : null;
+	}
+
 	/** The measure's directions. */
 	get directions(): Direction[] {
 		return this.childrenOfType(Direction);
@@ -687,7 +731,7 @@ export class Measure extends MElement {
 	/**
 	 * Get or create an `<attributes>` block to write into — the escape hatch behind
 	 * {@link setClef} and friends, for the corners they don't cover (a
-	 * `<measure-style>`, a `<directive>`).
+	 * `<directive>`).
 	 *
 	 * Without `onset` this is the measure's LEADING block, positioned before the
 	 * first note: the signature drawn with the stave. With `onset` (in quarter-note

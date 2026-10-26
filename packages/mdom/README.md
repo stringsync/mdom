@@ -266,7 +266,7 @@ verbatim. Reach for it with `measure.getOrCreateAttributes()` for a
 | | |
 | --- | --- |
 | Structure | `Score`, `Part`, `Measure`, `Voice`, `Chord`, `Note`, `Pitch` |
-| Signatures | `Clef`, `Key`, `Time`, `StaffTuning`, `LineDetail` |
+| Signatures | `Clef`, `Key`, `Time`, `StaffTuning`, `LineDetail`, `MeasureStyle` |
 | Note marks | `Accidental`, `Lyric`, `Ornament`, `Technical`, `Beam`, `Tuplet` |
 | Spanners | `Slur`, `Tie`, `Slide`, `Glissando`, `HammerOn`, `PullOff`, `WavyLine`, `Wedge`, `Pedal`, `OctaveShift`, `Bracket`, `Dashes` |
 | Directions | `Direction`, `Dynamics`, `Words`, `Rehearsal`, `Metronome`, `MetronomeNote`, `Sound` |
@@ -288,6 +288,32 @@ note.ornaments; // document order, so each <accidental-mark> stays with its orna
 score.partGroups; // [{ fromPartIndex, toPartIndex, symbol, depth, ... }]
 note.color; // "#AARRGGBB" normalized to a CSS color
 ```
+
+Measure styles declare slash notation, beat repeats, measure repeats, or multiple
+rests. Each block has one style; append separate declarations for simultaneous
+families or start/stop changes. These writers leave the underlying music intact.
+
+```ts
+measure.addMeasureStyle({
+  kind: 'slash', type: 'start', staff: '1', useStems: true,
+  slashType: 'quarter', dots: 1, exceptVoices: ['2'],
+});
+measure.addMeasureStyle({ kind: 'slash', type: 'stop', staff: '1', onset: 2 });
+measure.addMeasureStyle({ kind: 'measure-repeat', type: 'start', count: 2, slashes: 2 });
+measure.addMeasureStyle({ kind: 'beat-repeat', type: 'start', useDots: false });
+measure.addMeasureStyle({ kind: 'multiple-rest', count: 4, useSymbols: false });
+measure.measureStyles; // this measure's declarations, in document order
+measure.getActiveMeasureStyle('slash', '1'); // active start at the measure opening, or null
+measure.getMultiRestCount(); // count only where the multiple-rest begins
+```
+
+`onset` is in quarter-note beats. Stateful styles carry forward independently
+until a matching stop; `multiple-rest` supplies its own extent and is read only
+where declared. A style's `staff` preserves an absent number as null (all staves),
+and optional boolean and numeric attributes remain null when unwritten. Inspect
+`type`, `count`, `slashes`, `useStems`, `useDots`, `useSymbols`, `slashType`,
+`dots`, and `exceptVoices` on each typed `MeasureStyle`; remove a declaration
+with `remove()`.
 
 ## Slicing
 
