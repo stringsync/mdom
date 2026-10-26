@@ -7,7 +7,7 @@ describe('LilyPond — the shapes only a positional walk reads', () => {
 		const runs = score.parts[0]!.measures.flatMap(
 			(measure) => measure.notes,
 		).map((note) => note.lyrics[0]?.runs);
-		expect(runs[2]).toEqual([
+		expect(runs[2]!.map(({ kind, text }) => ({ kind, text }))).toEqual([
 			{ kind: 'text', text: 'd' },
 			{ kind: 'elision', text: '' },
 			{ kind: 'text', text: 'e' },

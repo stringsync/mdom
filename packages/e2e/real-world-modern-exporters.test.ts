@@ -40,6 +40,30 @@ describe('modern exporter dialects', () => {
 		expect(note.fret).toBe(3);
 	});
 
+	it('reads the Sibelius default fonts as family lists without sizes', () => {
+		const score = loadScore(EXAMPLES.SIBELIUS_2023_TAB);
+		expect(score.musicFont!.family).toBe('Helsinki Std,engraved');
+		expect(score.wordFont).toEqual({
+			family: 'Palatino,serif',
+			size: null,
+			style: null,
+			weight: null,
+		});
+	});
+
+	it('reads a Sibelius lyric font and language', () => {
+		const score = loadScore(EXAMPLES.COMPOSER_ONE_LINE);
+		expect(score.musicFont).toMatchObject({
+			family: 'Opus Std',
+			size: 19.8425,
+		});
+		expect(score.getLyricFont()!.font).toMatchObject({
+			family: 'Times New Roman',
+			size: 11.4715,
+		});
+		expect(score.getLyricLanguage()!.language).toBe('en');
+	});
+
 	it('reads both Dorico notations blocks on the tied bass note', () => {
 		const score = loadScore(EXAMPLES.DORICO_4_NOTATIONS);
 		expect(score.parts).toHaveLength(4);

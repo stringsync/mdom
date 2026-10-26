@@ -29,6 +29,16 @@ import {
 	staffLayoutIn,
 } from './staff-layout';
 import { SystemLayout } from './system-layout';
+import {
+	type Font,
+	type FontSpec,
+	fontOf,
+	type LyricFont,
+	type LyricLanguage,
+	type LyricTarget,
+	lyricDefaultFor,
+	setFontOf,
+} from './text-format';
 
 /** Canonical child order of the MusicXML `<defaults>` sequence. */
 const defaultsOrder = [
@@ -401,6 +411,148 @@ export class Score extends MElement {
 		const appearance = new Appearance();
 		insertMetadata(this.defaults(), appearance, defaultsOrder);
 		return appearance;
+	}
+
+	/**
+	 * The `<defaults><music-font>`: the score-wide font for music symbols (a
+	 * SMuFL font family, usually). Null when unset, which leaves it to the
+	 * application; a null field inherits likewise.
+	 */
+	get musicFont(): Font | null {
+		const node = this.child('defaults')?.child('music-font');
+		return node ? fontOf(node) : null;
+	}
+
+	/** Set the `<defaults><music-font>` (its fields replaced), or remove it with null. */
+	setMusicFont(spec: FontSpec | null): void {
+		this.setDefaultFont('music-font', spec);
+	}
+
+	/**
+	 * The `<defaults><word-font>`: the score-wide font for text such as
+	 * `<words>` and `<rehearsal>`, which {@link Words.resolvedFont} falls back
+	 * to. Null when unset.
+	 */
+	get wordFont(): Font | null {
+		const node = this.child('defaults')?.child('word-font');
+		return node ? fontOf(node) : null;
+	}
+
+	/** Set the `<defaults><word-font>` (its fields replaced), or remove it with null. */
+	setWordFont(spec: FontSpec | null): void {
+		this.setDefaultFont('word-font', spec);
+	}
+
+	/** Every `<defaults><lyric-font>`, in document order. */
+	get lyricFonts(): LyricFont[] {
+		return this.lyricDefaults('lyric-font').map((node) => ({
+			number: node.getAttribute('number'),
+			name: node.getAttribute('name'),
+			font: fontOf(node),
+		}));
+	}
+
+	/**
+	 * The `<defaults><lyric-font>` that applies to the lyric of `verse` (default
+	 * '1') and `name`: the most specific whose stated number and name match.
+	 * Null when none applies.
+	 */
+	getLyricFont(verse = '1', name: string | null = null): LyricFont | null {
+		return lyricDefaultFor(this.lyricFonts, verse, name);
+	}
+
+	/**
+	 * Set the `<defaults><lyric-font>` written for exactly `target` (none: the
+	 * one for every lyric), its fields replaced, or remove it with null.
+	 */
+	setLyricFont(spec: FontSpec | null, target: LyricTarget = {}): void {
+		const node = this.lyricDefaultNode('lyric-font', target, spec !== null);
+		if (spec === null) {
+			node?.remove();
+		} else if (node) {
+			setFontOf(node, spec);
+		}
+	}
+
+	/** Every `<defaults><lyric-language>`, in document order. */
+	get lyricLanguages(): LyricLanguage[] {
+		return this.lyricDefaults('lyric-language').flatMap((node) => {
+			const language = node.getAttribute('xml:lang');
+			return language === null
+				? []
+				: [
+						{
+							number: node.getAttribute('number'),
+							name: node.getAttribute('name'),
+							language,
+						},
+					];
+		});
+	}
+
+	/**
+	 * The `<defaults><lyric-language>` that applies to the lyric of `verse`
+	 * (default '1') and `name`, as {@link getLyricFont} matches. Null when none does.
+	 */
+	getLyricLanguage(
+		verse = '1',
+		name: string | null = null,
+	): LyricLanguage | null {
+		return lyricDefaultFor(this.lyricLanguages, verse, name);
+	}
+
+	/**
+	 * Set the `<defaults><lyric-language>` written for exactly `target` to the
+	 * `xml:lang` code `language` (`"de"`, `"en-US"`), or remove it with null.
+	 */
+	setLyricLanguage(language: string | null, target: LyricTarget = {}): void {
+		const node = this.lyricDefaultNode(
+			'lyric-language',
+			target,
+			language !== null,
+		);
+		if (language === null) {
+			node?.remove();
+		} else {
+			node?.setAttribute('xml:lang', language);
+		}
+	}
+
+	private setDefaultFont(tag: string, spec: FontSpec | null): void {
+		if (spec === null) {
+			this.child('defaults')?.child(tag)?.remove();
+			return;
+		}
+		setFontOf(ensureMetadata(this.defaults(), tag, defaultsOrder), spec);
+	}
+
+	private lyricDefaults(tag: string): MElement[] {
+		return this.child('defaults')?.childrenNamed(tag) ?? [];
+	}
+
+	/** The `tag` entry written for exactly `target`, created after its peers when `create`. */
+	private lyricDefaultNode(
+		tag: string,
+		target: LyricTarget,
+		create: boolean,
+	): MElement | null {
+		const existing = this.lyricDefaults(tag).find(
+			(node) =>
+				node.getAttribute('number') === (target.number ?? null) &&
+				node.getAttribute('name') === (target.name ?? null),
+		);
+		if (existing || !create) {
+			return existing ?? null;
+		}
+		const node = new MElement(tag);
+		if (target.number !== undefined) {
+			node.setAttribute('number', target.number);
+		}
+		if (target.name !== undefined) {
+			node.setAttribute('name', target.name);
+		}
+		insertMetadata(this.defaults(), node, defaultsOrder);
+		return node;
 	}
 
 	private defaults(): MElement {

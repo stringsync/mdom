@@ -1,19 +1,13 @@
-import { MElement } from './m-node';
-import { colorOf } from './print-style';
+import { FormattedTextElement } from './formatted-text';
 
 /**
  * A `<rehearsal>` under `<direction-type>`: the boxed letter or number a
  * conductor calls out. Its {@link enclosure} is what distinguishes it visually
  * from a plain `<words>` direction.
  */
-export class Rehearsal extends MElement {
+export class Rehearsal extends FormattedTextElement {
 	constructor() {
 		super('rehearsal');
-	}
-
-	/** The printed mark ('A', '12', …); '' when the element carries no text. */
-	override get text(): string {
-		return super.text ?? '';
 	}
 
 	/**
@@ -23,10 +17,5 @@ export class Rehearsal extends MElement {
 	 */
 	get enclosure(): string | null {
 		return this.getAttribute('enclosure');
-	}
-
-	/** The normalized `color`; null when unset. */
-	get color(): string | null {
-		return colorOf(this);
 	}
 }

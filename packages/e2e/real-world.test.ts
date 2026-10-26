@@ -54,6 +54,29 @@ describe('Finale + Dolet — a 22-part orchestral score', () => {
 		expect(score.parts[0]!.measures[1]!.getStaffDistance()).toBe(93);
 	});
 
+	it('reads default fonts and the explicit words formatting that overrides them', () => {
+		expect(score.musicFont).toMatchObject({
+			family: 'Maestro,music',
+			size: 11.3,
+		});
+		expect(score.wordFont).toMatchObject({
+			family: 'Times New Roman',
+			size: 5.7,
+		});
+		const words = measures.flatMap((measure) =>
+			measure.directions.flatMap((direction) => direction.wordsElements),
+		);
+		const moderato = words.find((each) => each.text === 'Moderato')!;
+		expect(moderato.font).toMatchObject({ size: 7.1, weight: 'bold' });
+		expect(moderato.resolvedFont).toMatchObject({
+			family: 'Times New Roman',
+			size: 7.1,
+		});
+		expect(
+			words.filter((each) => each.halign === 'right').length,
+		).toBeGreaterThan(0);
+	});
+
 	it('reads per-note instrument assignments and the percussion MIDI keys', () => {
 		const cymbal = score.getPart('P15')!;
 		expect(cymbal.instruments.map((each) => each.name)).toEqual([

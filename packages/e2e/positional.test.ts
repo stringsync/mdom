@@ -58,7 +58,7 @@ describe('the sibling runs MusicXML reads positionally', () => {
 	});
 
 	it('keeps the lyric elision runs and their separators, which syllable joins away', () => {
-		expect(lyric.runs).toEqual([
+		expect(lyric.runs.map(({ kind, text }) => ({ kind, text }))).toEqual([
 			{ kind: 'text', text: 'de' },
 			{ kind: 'elision', text: '_' },
 			{ kind: 'text', text: 'o' },

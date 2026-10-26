@@ -11,6 +11,7 @@ import { colorOf, placementOf } from './print-style';
 import { Rehearsal } from './rehearsal';
 import { divisionsBackFrom } from './signature';
 import { Sound } from './sound';
+import type { FontSize, TextAlign, TextVerticalAlign } from './text-format';
 import { onsetOf } from './timeline';
 import { Wedge } from './wedge';
 import { Words } from './words';
@@ -29,6 +30,12 @@ export interface WordsSpec {
 	text: string;
 	fontStyle?: string;
 	fontWeight?: string;
+	/** A comma-separated list of family names, or a generic family (`serif`). */
+	fontFamily?: string;
+	fontSize?: FontSize;
+	justify?: TextAlign;
+	halign?: TextAlign;
+	valign?: TextVerticalAlign;
 }
 
 /**
@@ -254,6 +261,15 @@ export function buildDirection(spec: DirectionSpec): Direction {
 		if (words.fontWeight != null) {
 			element.setAttribute('font-weight', words.fontWeight);
 		}
+		if (words.fontFamily != null) {
+			element.setAttribute('font-family', words.fontFamily);
+		}
+		if (words.fontSize != null) {
+			element.setAttribute('font-size', String(words.fontSize));
+		}
+		element.setJustify(words.justify ?? null);
+		element.setHalign(words.halign ?? null);
+		element.setValign(words.valign ?? null);
 		directionType(direction).append(element);
 	}
 	if (spec.dynamics != null) {

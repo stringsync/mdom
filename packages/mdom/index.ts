@@ -29,6 +29,7 @@ export {
 } from './direction';
 export { Dynamics } from './dynamics';
 export { Figure, FiguredBass } from './figured-bass';
+export { FormattedTextElement } from './formatted-text';
 export { Frame, FrameNote, type FrameNoteSpec, type FrameSpec } from './frame';
 export { Glissando } from './glissando';
 export type { GuitarProOptions } from './guitar-pro-options';
@@ -53,7 +54,7 @@ export type {
 } from './instrument';
 export { Key } from './key';
 export { LineDetail, type LineDetailSpec } from './line-detail';
-export { Lyric } from './lyric';
+export { Lyric, type LyricRun } from './lyric';
 export { MDocument } from './m-document';
 export { MDOMParser } from './m-dom-parser';
 export type { MHistory, MHistoryChange } from './m-history';
@@ -113,6 +114,17 @@ export { StaffLayout } from './staff-layout';
 export { StaffTuning } from './staff-tuning';
 export { SystemLayout } from './system-layout';
 export { Technical } from './technical';
+export type {
+	CssFontSize,
+	Font,
+	FontSize,
+	FontSpec,
+	LyricFont,
+	LyricLanguage,
+	LyricTarget,
+	TextAlign,
+	TextVerticalAlign,
+} from './text-format';
 export { Tie } from './tie';
 export { Time } from './time';
 export { Tuplet, type TupletDisplay } from './tuplet';
