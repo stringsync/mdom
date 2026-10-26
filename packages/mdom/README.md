@@ -81,7 +81,7 @@ The first supported subset includes:
 - Simple time signatures, major/minor keys, treble/bass/alto/tenor clefs,
   pickups, repeats, and double barlines.
 - Title, composer, lyricist, artist, copyright, part names, MIDI program/channel,
-  tempo at measure boundaries, basic dynamics, text, staccato, and accents.
+  tempo (including mid-measure and gradual changes), basic dynamics, text, staccato, and accents.
 
 This is a musical conversion, not a lossless file round trip. Layout, engraving,
 Guitar Pro application settings, and metadata outside the list above are not

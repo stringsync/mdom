@@ -308,23 +308,6 @@ describe('GuitarProSerializer', () => {
 		);
 	});
 
-	it('rejects mid-measure tempo changes outside the initial subset', async () => {
-		measure
-			.getOrCreateVoice('1')
-			.addNote({ step: 'C', octave: 4, type: 'half' });
-		measure.addDirection({
-			tempo: 100,
-			metronome: { beatUnit: 'quarter', perMinute: 100 },
-		});
-		measure
-			.getOrCreateVoice('1')
-			.addNote({ step: 'D', octave: 4, type: 'half' });
-
-		await expect(serializer.serializeToBlob(document)).rejects.toThrow(
-			'mid-measure tempo',
-		);
-	});
-
 	it('rejects mid-measure key changes outside the initial subset', async () => {
 		measure
 			.getOrCreateVoice('1')

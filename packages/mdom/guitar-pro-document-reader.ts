@@ -11,6 +11,15 @@ import { buildPitch, Note } from './note';
 import { StaffDetails } from './staff-details';
 import { StaffTuning } from './staff-tuning';
 
+/** A GPIF tempo automation, with the tempo of the next one it ramps toward. */
+interface TempoChange {
+	bar: number;
+	position: number;
+	tempo: number;
+	linear: boolean;
+	target?: number;
+}
+
 interface StaffContext {
 	id: string;
 	tuning: number[];
@@ -27,6 +36,7 @@ interface Rhythm {
 /** Resolves GPIF tables straight into the MusicXML-backed mdom tree. */
 export class GuitarProDocumentReader {
 	private readonly values: GuitarProValues;
+	private tempoChanges: TempoChange[] | null = null;
 	constructor(
 		private readonly xml: X,
 		opts: GuitarProOptions = {},
@@ -142,7 +152,7 @@ export class GuitarProDocumentReader {
 			const previousNotes = new Map<string, Note>();
 			for (const [measureIndex, master] of masters.entries()) {
 				const measure = part.addMeasure();
-				this.readMaster(master, measure);
+				const tempos = this.readMaster(master, measure);
 				measure.setStaveCount(staves.length);
 				const barIds = X.refs(master.child('Bars'));
 				if (barIds.length !== totalStaves) {
@@ -153,7 +163,11 @@ export class GuitarProDocumentReader {
 				const bars = staves.map((_, i) =>
 					this.xml.get('Bars', barIds[barOffset + i]!),
 				);
-				measure.setDivisions(this.divisions(bars));
+				const divisions = this.divisions(bars);
+				measure.setDivisions(divisions);
+				const barBeats =
+					(Number(measure.getTime()!.beats) * 4) /
+					Number(measure.getTime()!.beatType);
 				let cursor = 0;
 				for (const [staffIndex, staff] of staves.entries()) {
 					const bar = bars[staffIndex]!;
@@ -186,6 +200,9 @@ export class GuitarProDocumentReader {
 						cursor = 0;
 						const voice = String(staffIndex * 4 + slot + 1);
 						if (!beats.length) {
+							if (staffIndex === 0 && slot === 0) {
+								this.addTempos(measure, tempos, 0, barBeats);
+							}
 							cursor = this.readBeat(
 								null,
 								measure,
@@ -196,6 +213,9 @@ export class GuitarProDocumentReader {
 							);
 						}
 						for (const beat of beats) {
+							if (staffIndex === 0 && slot === 0) {
+								this.addTempos(measure, tempos, cursor / divisions, barBeats);
+							}
 							const fullRest =
 								beats.length === 1 &&
 								!X.refs(beat.child('Notes')).length &&
@@ -210,6 +230,9 @@ export class GuitarProDocumentReader {
 							);
 						}
 					}
+				}
+				if (tempos.length) {
+					this.values.unsupported('mid-measure or gradual tempo changes');
 				}
 				const repeat = master.child('Repeat');
 				if (
@@ -284,7 +307,7 @@ export class GuitarProDocumentReader {
 		}
 		return { id, tuning, capo, tablature: show ?? tuning.length > 0 };
 	}
-	private readMaster(master: MElement, measure: Measure): void {
+	private readMaster(master: MElement, measure: Measure): TempoChange[] {
 		const time = required(
 			master.child('Time')?.text,
 			'GPIF time signature',
@@ -323,20 +346,28 @@ export class GuitarProDocumentReader {
 		) {
 			this.values.unsupported('alternate endings, jumps, free time or swing');
 		}
+		return this.tempoTable().filter((c) => c.bar === measure.index);
+	}
+	private tempoTable(): TempoChange[] {
+		if (this.tempoChanges) {
+			return this.tempoChanges;
+		}
+		const changes: TempoChange[] = [];
 		for (const a of this.xml.root
 			.child('MasterTrack')
 			?.child('Automations')
 			?.childrenNamed('Automation') ?? []) {
-			if (Number(a.child('Bar')?.text ?? 0) !== measure.index) {
-				continue;
-			}
 			if (a.child('Type')?.text !== 'Tempo') {
 				this.values.unsupported('master automation');
 				continue;
 			}
+			const bar = Number(a.child('Bar')?.text ?? 0);
+			const position = Number(a.child('Position')?.text ?? 0);
 			if (
-				Number(a.child('Position')?.text ?? 0) !== 0 ||
-				a.child('Linear')?.text === 'true'
+				!Number.isInteger(bar) ||
+				!Number.isFinite(position) ||
+				position < 0 ||
+				position >= 1
 			) {
 				this.values.unsupported('mid-measure or gradual tempo changes');
 				continue;
@@ -354,9 +385,37 @@ export class GuitarProDocumentReader {
 			if (!Number.isFinite(tempo) || tempo <= 0) {
 				throw new Error('Invalid GPIF tempo');
 			}
-			measure.addDirection({
-				metronome: { beatUnit: 'quarter', perMinute: tempo },
+			changes.push({
+				bar,
+				position,
 				tempo,
+				linear: a.child('Linear')?.text === 'true',
+			});
+		}
+		changes.sort((a, b) => a.bar - b.bar || a.position - b.position);
+		for (const [index, change] of changes.entries()) {
+			change.target = changes[index + 1]?.tempo;
+		}
+		this.tempoChanges = changes;
+		return changes;
+	}
+	/** Add the tempo changes whose onset the cursor (in beats) has reached. */
+	private addTempos(
+		measure: Measure,
+		pending: TempoChange[],
+		cursor: number,
+		barBeats: number,
+	): void {
+		while (pending.length && pending[0]!.position * barBeats <= cursor + 1e-8) {
+			const change = pending.shift()!;
+			// A linear change ramps to the next automation, which may be in a later bar.
+			const faster = change.target != null && change.target > change.tempo;
+			if (change.linear && change.target != null) {
+				measure.addDirection({ words: faster ? 'accel.' : 'rit.' });
+			}
+			measure.addDirection({
+				metronome: { beatUnit: 'quarter', perMinute: change.tempo },
+				tempo: change.tempo,
 			});
 		}
 	}

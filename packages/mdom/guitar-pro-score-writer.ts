@@ -13,7 +13,18 @@ import { MElement } from './m-node';
 import type { Measure } from './measure';
 import type { Note } from './note';
 import type { Part } from './part';
+import { divisionsBackFrom } from './signature';
 import { onsetOf } from './timeline';
+
+/** A tempo automation at a fraction of its bar; linear ramps to the next one. */
+interface TempoChange {
+	position: number;
+	tempo: number;
+	linear: boolean;
+}
+
+/** Words that mark a gradual tempo change, like accel. or rit. */
+const GRADUAL_TEMPO = /^(accel|rit|rall|ritard|allarg)/i;
 
 interface StaffContext {
 	id: string;
@@ -97,8 +108,15 @@ export class GuitarProScoreWriter {
 			const master = this.masterBar(measure);
 			this.tables.get('MasterBars')!.append(master);
 			X.add(master, 'Bars', '');
-			for (const tempo of this.tempos(measure)) {
-				this.automation(tempos, 'Tempo', measure.index, `${tempo} 2`);
+			for (const change of this.tempos(measure)) {
+				this.automation(
+					tempos,
+					'Tempo',
+					measure.index,
+					`${change.tempo} 2`,
+					change.position,
+					change.linear,
+				);
 			}
 		}
 		for (const [index, part] of parts.entries()) {
@@ -213,13 +231,15 @@ export class GuitarProScoreWriter {
 		type: string,
 		bar: number,
 		value: string,
+		position = 0,
+		linear = false,
 	): void {
 		const node = X.add(parent, 'Automation');
 		for (const [tag, text] of Object.entries({
 			Type: type,
-			Linear: 'false',
+			Linear: String(linear),
 			Bar: String(bar),
-			Position: '0',
+			Position: String(position),
 			Visible: 'true',
 			Value: value,
 		})) {
@@ -293,24 +313,45 @@ export class GuitarProScoreWriter {
 		X.add(node, 'Mode', mode === 'minor' ? 'Minor' : 'Major');
 		X.add(node, 'TransposeAs', (key?.fifths ?? 0) < 0 ? 'Flats' : 'Sharps');
 	}
-	private tempos(measure: Measure): number[] {
-		const result: number[] = [];
+	private tempos(measure: Measure): TempoChange[] {
+		const result: TempoChange[] = [];
+		const barBeats =
+			(Number(measure.getTime()?.beats ?? 4) * 4) /
+			Number(measure.getTime()?.beatType ?? 4);
+		const gradual = new Set<number>();
+		for (const direction of measure.directions) {
+			if (direction.words.some((text) => GRADUAL_TEMPO.test(text.trim()))) {
+				gradual.add(direction.measureBeat ?? 0);
+			}
+		}
+		const add = (beat: number | null, tempo: number): void => {
+			if (beat == null || beat < 0 || beat >= barBeats) {
+				this.values.unsupported('mid-measure tempo changes');
+				return;
+			}
+			result.push({
+				position: beat / barBeats,
+				tempo,
+				linear: gradual.has(beat),
+			});
+		};
 		for (const sound of measure.sounds) {
 			if (sound.tempo == null) {
-				continue;
-			}
-			if (
-				(sound.parent instanceof Direction
-					? sound.parent.measureBeat
-					: onsetOf(measure, sound)) !== 0
-			) {
-				this.values.unsupported('mid-measure tempo changes');
 				continue;
 			}
 			if (!Number.isFinite(sound.tempo) || sound.tempo <= 0) {
 				throw new Error(`Invalid tempo: ${sound.tempo}`);
 			}
-			result.push(sound.tempo);
+			if (sound.parent instanceof Direction) {
+				add(sound.parent.measureBeat, sound.tempo);
+				continue;
+			}
+			const onset = onsetOf(measure, sound);
+			const divisions = divisionsBackFrom(
+				measure,
+				measure.children.indexOf(sound),
+			);
+			add(onset == null || !divisions ? null : onset / divisions, sound.tempo);
 		}
 		for (const direction of measure.directions) {
 			if (direction.sound?.tempo != null) {
@@ -327,21 +368,18 @@ export class GuitarProScoreWriter {
 					this.values.unsupported('non-numeric or compound metronome marks');
 					continue;
 				}
-				if (direction.measureBeat !== 0) {
-					this.values.unsupported('mid-measure tempo changes');
-					continue;
-				}
 				const duration = GuitarProValues.durations[unit.type];
 				if (duration == null) {
 					throw new Error(`Unsupported metronome beat unit: ${unit.type}`);
 				}
-				result.push(
+				add(
+					direction.measureBeat,
 					Number(mark.perMinute) *
 						GuitarProValues.beats(duration, { dots: unit.dots }),
 				);
 			}
 		}
-		return result;
+		return result.toSorted((a, b) => a.position - b.position);
 	}
 	private writeStaff(part: Part, staves: MElement, id: string): void {
 		const first = part.measures[0]!;
@@ -679,7 +717,9 @@ export class GuitarProScoreWriter {
 						dynamic = mark.toUpperCase();
 					}
 				}
-				const words = direction.words.filter(Boolean).join(' ');
+				const words = direction.words
+					.filter((text) => text && !GRADUAL_TEMPO.test(text.trim()))
+					.join(' ');
 				if (
 					words &&
 					measure === note.measure &&

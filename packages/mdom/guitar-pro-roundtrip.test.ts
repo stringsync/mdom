@@ -197,6 +197,45 @@ describe('Guitar Pro round trips', () => {
 		expect(schemaErrors(result)).toEqual([]);
 	});
 
+	it('keeps a mid-measure gradual tempo change', async () => {
+		const voice = measure.getOrCreateVoice('1');
+		voice.addNote({ step: 'C', octave: 4, type: 'half' });
+		measure.addDirection({ words: 'accel.' });
+		measure.addDirection({
+			metronome: { beatUnit: 'quarter', perMinute: 100 },
+			tempo: 100,
+		});
+		voice.addNote({ step: 'D', octave: 4, type: 'half' });
+		const next = document.score.parts[0]!.addMeasure();
+		next.addDirection({
+			metronome: { beatUnit: 'quarter', perMinute: 140 },
+			tempo: 140,
+		});
+		next.getOrCreateVoice('1').addNote({ step: 'E', octave: 4, type: 'whole' });
+		const result = await parser.parseFromBytes(
+			await serializer.serializeToBytes(document),
+		);
+		const [first, second] = result.score.parts[0]!.measures;
+
+		expect(
+			first!.directions
+				.filter(
+					(direction) =>
+						direction.sound?.tempo != null || direction.words.length,
+				)
+				.map((direction) => [
+					direction.measureBeat,
+					direction.words,
+					direction.sound?.tempo ?? null,
+				]),
+		).toEqual([
+			[2, ['accel.'], null],
+			[2, [], 100],
+		]);
+		expect(second!.sounds.map((sound) => sound.tempo)).toEqual([140]);
+		expect(schemaErrors(result)).toEqual([]);
+	});
+
 	it('keeps tempo, dynamics and simple articulations', async () => {
 		measure.addDirection({
 			tempo: 84,

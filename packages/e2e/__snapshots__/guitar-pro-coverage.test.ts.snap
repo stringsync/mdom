@@ -1,13 +1,13 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
 exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
-"## Import: 24 of 45 ok
+"## Import: 25 of 45 ok
 
 | File | Result |
 | --- | --- |
 | \`anacrusis.gp\` | ok |
 | \`beat-lyrics.gp\` | omits \`beat effects or annotations\`, \`lyrics\` |
-| \`beat-tempo-change.gp\` | omits \`mid-measure or gradual tempo changes\` |
+| \`beat-tempo-change.gp\` | ok |
 | \`bends.gp\` | omits \`note techniques\` |
 | \`chords.gp\` | omits \`beat effects or annotations\` |
 | \`dead.gp\` | omits \`note techniques\` |
@@ -58,7 +58,6 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 | \`alternate endings, jumps, free time or swing\` | 3 |
 | \`lyrics\` | 2 |
 | \`instrument changes or track automation\` | 1 |
-| \`mid-measure or gradual tempo changes\` | 1 |
 | \`octave clefs\` | 1 |"
 `;
 
@@ -143,7 +142,7 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/24h-GraceNote-Simultaneous.xml\` | omits \`dynamic fp\` |
 | \`lilypond/31a-Directions.xml\` | omits \`<accordion-registration>\`, \`<bracket>\`, \`<coda>\`, \`<damp-all>\`, \`<damp>\`, \`<dashes>\`, \`<eyeglasses>\`, \`<harp-pedals>\`, \`<image>\`, \`<lyric>\`, \`<octave-shift>\`, \`<pedal>\`, \`<percussion>\`, \`<principal-voice>\`, \`<rehearsal>\`, \`<scordatura>\`, \`<segno>\`, \`<staff-divide>\`, \`<string-mute>\`, \`<symbol>\`, \`<wedge>\`, \`dynamic ffff\`, \`dynamic fffff\`, \`dynamic ffffff\`, \`dynamic ffz\`, \`dynamic fp\`, \`dynamic fz\`, \`dynamic pppp\`, \`dynamic ppppp\`, \`dynamic pppppp\`, \`dynamic rf\`, \`dynamic rfz\`, \`dynamic sf\`, \`dynamic sffz\`, \`dynamic sfp\`, \`dynamic sfpp\`, \`dynamic sfz\` |
 | \`lilypond/31b-Directions-Order.xml\` | omits \`<wedge>\` |
-| \`lilypond/31c-MetronomeMarks.xml\` | omits \`mid-measure tempo changes\`, \`non-numeric or compound metronome marks\` |
+| \`lilypond/31c-MetronomeMarks.xml\` | omits \`non-numeric or compound metronome marks\` |
 | \`lilypond/31d-Directions-Compounds.xml\` | omits \`<coda>\`, \`<dashes>\`, \`<lyric>\`, \`<rehearsal>\`, \`<segno>\`, \`<wedge>\`; error: Unsupported metronome beat unit: long |
 | \`lilypond/31f-Direction-Multiline-Compounds.xml\` | ok |
 | \`lilypond/32a-Notations.xml\` | omits \`<accidental-mark>\`, \`<arpeggiate>\`, \`<bend>\`, \`<breath-mark>\`, \`<caesura>\`, \`<detached-legato>\`, \`<doit>\`, \`<double-tongue>\`, \`<down-bow>\`, \`<dynamics>\`, \`<falloff>\`, \`<fermata>\`, \`<fingering>\`, \`<fingernails>\`, \`<hammer-on>\`, \`<harmonic>\`, \`<heel>\`, \`<lyric>\`, \`<non-arpeggiate>\`, \`<open-string>\`, \`<ornaments>\`, \`<plop>\`, \`<pluck>\`, \`<pull-off>\`, \`<scoop>\`, \`<snap-pizzicato>\`, \`<soft-accent>\`, \`<spiccato>\`, \`<staccatissimo>\`, \`<stopped>\`, \`<stress>\`, \`<tap>\`, \`<tenuto>\`, \`<thumb-position>\`, \`<toe>\`, \`<tremolo>\`, \`<triple-tongue>\`, \`<unstress>\`, \`<up-bow>\`; error: Guitar Pro tablature requires tuning, string and fret |
@@ -363,6 +362,5 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`key mode locrian\` | 1 |
 | \`key mode none\` | 1 |
 | \`key mode phrygian\` | 1 |
-| \`mid-measure tempo changes\` | 1 |
 | \`non-numeric or compound metronome marks\` | 1 |"
 `;
