@@ -85,6 +85,13 @@ The first supported subset includes:
 - Lyrics: each track's lyric lines become verses on its first staff's first voice, one syllable per sounded note (rests, chord extras, grace notes and tie
   continuations are skipped). Text splits on spaces and `-`, `+` elides words on
   one beat, `_` is a space inside a syllable, and a lone `-` skips a beat.
+- Chord diagrams: each becomes a `<harmony>` over the beat that names it, with
+  root, kind, altered/added/omitted degrees and slash bass from the diagram's
+  chord (or, in Guitar Pro 6, parsed from its name, kept as the kind's `text`
+  when it differs from the usual suffix), and a `<frame>` with strings, frets,
+  fingering, barres and the first fret. Export writes each distinct harmony
+  once to the staff's diagram collection; one without a frame shows its name
+  only. Harmonies between beats, Roman numerals and polychords are unsupported.
 
 This is a musical conversion, not a lossless file round trip. Layout, engraving,
 Guitar Pro application settings, and metadata outside the list above are not
@@ -103,8 +110,8 @@ tuning as MusicXML tablature only for staves with tablature enabled in the file.
 
 Bends (a rise, a release, or a pre-bend), natural, artificial, pinch and tap
 harmonics, dead and ghost notes, palm mutes and let ring round-trip as
-MusicXML technicals. Unsupported techniques and annotations, such as slides,
-chord diagrams, and alternate endings, throw by default. To deliberately
+MusicXML technicals. Unsupported techniques and annotations, such as slides
+and alternate endings, throw by default. To deliberately
 discard unsupported annotations, pass `{ unsupported: 'omit' }` as the last
 argument to either parser or serializer methods, and add
 `onUnsupported: (feature) => ...` to hear each feature it drops. Invalid core

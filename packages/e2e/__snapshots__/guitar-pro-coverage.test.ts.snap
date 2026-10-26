@@ -1,7 +1,7 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
 exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
-"## Import: 26 of 45 ok
+"## Import: 27 of 45 ok
 
 | File | Result |
 | --- | --- |
@@ -9,7 +9,7 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 | \`beat-lyrics.gp\` | omits \`beat effects or annotations\` |
 | \`beat-tempo-change.gp\` | ok |
 | \`bends.gp\` | omits \`bend curves\` |
-| \`chords.gp\` | omits \`beat effects or annotations\` |
+| \`chords.gp\` | ok |
 | \`dead.gp\` | ok |
 | \`directions.gp\` | omits \`alternate endings, jumps, free time or swing\` |
 | \`drum-tabs.gp\` | error: Guitar Pro percussion tracks are not supported |
@@ -54,7 +54,7 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 | Omitted feature | Files |
 | --- | --- |
 | \`note techniques\` | 7 |
-| \`beat effects or annotations\` | 6 |
+| \`beat effects or annotations\` | 5 |
 | \`alternate endings, jumps, free time or swing\` | 3 |
 | \`bend curves\` | 2 |
 | \`Semi harmonics\` | 2 |
@@ -64,7 +64,7 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 `;
 
 exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpus 1`] = `
-"## Export: 84 of 199 ok
+"## Export: 91 of 199 ok
 
 | File | Result |
 | --- | --- |
@@ -77,7 +77,7 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`concert_score_and_for_part.xml\` | ok |
 | \`dorico_4_notations.musicxml\` | omits \`<slur>\` |
 | \`drum_tuplet_beams_measure.xml\` | omits \`<other-notation>\`, \`<unpitched>\`; error: Unsupported Guitar Pro clef: percussionnull |
-| \`flat_la_cucaracha.musicxml\` | omits \`<harmony>\` |
+| \`flat_la_cucaracha.musicxml\` | ok |
 | \`hello_world.xml\` | ok |
 | \`invalid_root.xml\` | error: Unmatched closing tag: score-partwise |
 | \`lilypond/01a-Pitches-Pitches.xml\` | ok |
@@ -202,14 +202,14 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/45h-Repeats-Partial.xml\` | omits \`pickups after the first measure\` |
 | \`lilypond/45i-Repeats-Nested.xml\` | omits \`<ending>\` |
 | \`lilypond/45j-SimpleRepeat-Start.xml\` | ok |
-| \`lilypond/45k-Repeats-Chords-FiguredBass.xml\` | omits \`<ending>\`, \`<harmony>\` |
+| \`lilypond/45k-Repeats-Chords-FiguredBass.xml\` | omits \`<ending>\` |
 | \`lilypond/46a-Barlines.xml\` | ok |
 | \`lilypond/46b-MidmeasureBarline.xml\` | ok |
 | \`lilypond/46c-Midmeasure-Clef.xml\` | omits \`pickups after the first measure\`; error: Unsupported Guitar Pro clef: C2 |
 | \`lilypond/46d-PickupMeasure-ImplicitMeasures.xml\` | omits \`pickups after the first measure\` |
 | \`lilypond/46e-PickupMeasure-SecondVoiceStartsLater.xml\` | ok |
 | \`lilypond/46f-IncompleteMeasures.xml\` | ok |
-| \`lilypond/46g-PickupMeasure-Chordnames-FiguredBass.xml\` | omits \`<harmony>\` |
+| \`lilypond/46g-PickupMeasure-Chordnames-FiguredBass.xml\` | ok |
 | \`lilypond/46h-Barline-Fermata.xml\` | omits \`<fermata>\` |
 | \`lilypond/46i-OverfullMeasures.xml\` | ok |
 | \`lilypond/46j-EmptyMeasure.xml\` | ok |
@@ -230,13 +230,13 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/61i-Lyrics-Chords.xml\` | ok |
 | \`lilypond/61j-Lyrics-Elisions.xml\` | ok |
 | \`lilypond/61k-Lyrics-SpannersExtenders.xml\` | ok |
-| \`lilypond/71a-Chordnames.xml\` | omits \`<harmony>\` |
-| \`lilypond/71b-Chordnames-Kinds.xml\` | omits \`<harmony>\` |
-| \`lilypond/71c-ChordsFrets.xml\` | omits \`<fingering>\`, \`<harmony>\` |
-| \`lilypond/71d-ChordsFrets-Multistaff.xml\` | omits \`<harmony>\` |
+| \`lilypond/71a-Chordnames.xml\` | ok |
+| \`lilypond/71b-Chordnames-Kinds.xml\` | ok |
+| \`lilypond/71c-ChordsFrets.xml\` | ok |
+| \`lilypond/71d-ChordsFrets-Multistaff.xml\` | ok |
 | \`lilypond/71e-TabStaves.xml\` | ok |
-| \`lilypond/71f-AllChordTypes.xml\` | omits \`<harmony>\` |
-| \`lilypond/71g-MultipleChordnames.xml\` | omits \`<harmony>\` |
+| \`lilypond/71f-AllChordTypes.xml\` | ok |
+| \`lilypond/71g-MultipleChordnames.xml\` | omits \`chord symbols between beats\` |
 | \`lilypond/72a-TransposingInstruments.xml\` | omits \`different keys across staves or parts\` |
 | \`lilypond/72b-TransposingInstruments-Full.xml\` | omits \`different keys across staves or parts\`, \`octave clefs\` |
 | \`lilypond/72c-TransposingInstruments-Change.xml\` | error: Guitar Pro export needs one transposition per part, but this part changes it across measures or staves |
@@ -261,7 +261,7 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`note_variations.xml\` | omits \`<accidental-mark>\`, \`<ornaments>\`; error: Note duration disagrees with its notation in measure 1 |
 | \`octave_shift_simple_piano.xml\` | omits \`<octave-shift>\`, \`<slur>\` |
 | \`partially_invalid.xml\` | error: Overlapping or invalid note timing in measure 1 |
-| \`rehearsal_marks_bolivia.xml\` | omits \`<harmony>\`, \`<notehead> slash\`, \`<rehearsal>\` |
+| \`rehearsal_marks_bolivia.xml\` | omits \`<notehead> slash\`, \`<rehearsal>\` |
 | \`sibelius_2023_tab.musicxml\` | ok |
 | \`sorted_notes_chord_vexflow_keys_order.xml\` | omits \`different keys across staves or parts\`, \`key mode none\` |
 | \`stave_repetitions_coda_etc.xml\` | omits \`<coda>\`, \`<segno>\`, \`mid-measure clef changes\` |
@@ -272,7 +272,6 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | --- | --- |
 | \`<slur>\` | 24 |
 | \`<ornaments>\` | 12 |
-| \`<harmony>\` | 10 |
 | \`<octave-shift>\` | 9 |
 | \`<ending>\` | 8 |
 | \`<tremolo>\` | 8 |
@@ -288,7 +287,6 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`<arpeggiate>\` | 4 |
 | \`<down-bow>\` | 4 |
 | \`<fermata>\` | 4 |
-| \`<fingering>\` | 4 |
 | \`<glissando>\` | 4 |
 | \`<pedal>\` | 4 |
 | \`<segno>\` | 4 |
@@ -297,6 +295,7 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`<breath-mark>\` | 3 |
 | \`<coda>\` | 3 |
 | \`<dynamics>\` | 3 |
+| \`<fingering>\` | 3 |
 | \`<notehead> diamond\` | 3 |
 | \`<notehead> slash\` | 3 |
 | \`<pluck>\` | 3 |
@@ -362,6 +361,7 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`<toe>\` | 1 |
 | \`<triple-tongue>\` | 1 |
 | \`<unstress>\` | 1 |
+| \`chord symbols between beats\` | 1 |
 | \`dynamic fffff\` | 1 |
 | \`dynamic ffffff\` | 1 |
 | \`dynamic ffz\` | 1 |

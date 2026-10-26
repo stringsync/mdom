@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MPL-2.0
 // GPIF field interpretation adapted from alphaTab's GpifParser. See THIRD_PARTY.md.
 // Copyright © 2025 Daniel Kuschny and Contributors.
+import { readDiagram } from './guitar-pro-diagrams';
 import { GuitarProLyrics } from './guitar-pro-lyrics';
 import type { GuitarProOptions } from './guitar-pro-options';
 import { GuitarProValues } from './guitar-pro-values';
 import { GuitarProXml as X } from './guitar-pro-xml';
+import type { HarmonySpec } from './harmony';
 import { MDocument } from './m-document';
 import { MElement, required } from './m-node';
 import { appendValue, type Measure } from './measure';
@@ -26,6 +28,9 @@ interface StaffContext {
 	tuning: number[];
 	capo: number;
 	tablature: boolean;
+	/** `DiagramCollection` items by id, read on first reference. */
+	diagrams: Map<string, MElement>;
+	chords: Map<string, HarmonySpec | null>;
 }
 interface Rhythm {
 	type: string;
@@ -147,7 +152,7 @@ export class GuitarProDocumentReader {
 				throw new Error('Guitar Pro track has no staves');
 			}
 			const staves = staffNodes.map((node, i) =>
-				this.staff(node, String(i + 1), tablature[index]),
+				this.staff(node, track, String(i + 1), tablature[index]),
 			);
 			// Tie destinations identify their predecessor by string, or pitch for notation-only data.
 			const previousNotes = new Map<string, Note>();
@@ -281,7 +286,12 @@ export class GuitarProDocumentReader {
 			this.values.unsupported('instrument changes or track automation');
 		}
 	}
-	private staff(node: MElement, id: string, show?: boolean): StaffContext {
+	private staff(
+		node: MElement,
+		track: MElement,
+		id: string,
+		show?: boolean,
+	): StaffContext {
 		const tuning = X.refs(X.property(node, 'Tuning')?.child('Pitches')).map(
 			(n) => GuitarProValues.integer(Number(n), 'tuning pitch', 0, 127),
 		);
@@ -297,7 +307,24 @@ export class GuitarProDocumentReader {
 		) {
 			this.values.unsupported('partial capo');
 		}
-		return { id, tuning, capo, tablature: show ?? tuning.length > 0 };
+		// Guitar Pro 7+ keeps diagrams per staff, Guitar Pro 6 per track.
+		const collection =
+			X.property(node, 'DiagramCollection') ??
+			X.property(track, 'DiagramCollection');
+		const diagrams = new Map(
+			(collection?.child('Items')?.childrenNamed('Item') ?? []).map((item) => [
+				required(item.getAttribute('id'), 'GPIF diagram id'),
+				item,
+			]),
+		);
+		return {
+			id,
+			tuning,
+			capo,
+			tablature: show ?? tuning.length > 0,
+			diagrams,
+			chords: new Map(),
+		};
 	}
 	private readMaster(master: MElement, measure: Measure): TempoChange[] {
 		const time = required(
@@ -565,6 +592,13 @@ export class GuitarProDocumentReader {
 			if (text) {
 				measure.addDirection({ words: text, staff: staff.id });
 			}
+			const chord = beat.child('Chord')?.text?.trim();
+			if (chord && !grace) {
+				const harmony = this.chord(staff, chord);
+				if (harmony) {
+					measure.addHarmony({ ...harmony, staff: staff.id });
+				}
+			}
 		}
 		const sources = beat
 			? X.refs(beat.child('Notes')).map((id) => this.xml.get('Notes', id))
@@ -630,6 +664,16 @@ export class GuitarProDocumentReader {
 			}
 		}
 		return duration;
+	}
+	private chord(staff: StaffContext, id: string): HarmonySpec | null {
+		if (!staff.chords.has(id)) {
+			const item = required(
+				staff.diagrams.get(id),
+				`GPIF diagram reference ${id}`,
+			);
+			staff.chords.set(id, readDiagram(item, this.values));
+		}
+		return staff.chords.get(id)!;
 	}
 	private pitch(note: MElement, staff: StaffContext): number {
 		const string = X.property(note, 'String')?.child('String')?.text;
@@ -781,7 +825,6 @@ export class GuitarProDocumentReader {
 			'Hairpin',
 			'Arpeggio',
 			'Brush',
-			'Chord',
 			'Lyrics',
 			'Legato',
 			'Tremolo',

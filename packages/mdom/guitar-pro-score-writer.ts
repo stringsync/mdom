@@ -3,6 +3,7 @@
 // Copyright © 2025 Daniel Kuschny and Contributors.
 import { groupChords } from './chord';
 import { Direction } from './direction';
+import { writeDiagram } from './guitar-pro-diagrams';
 import { GuitarProLyrics } from './guitar-pro-lyrics';
 import type { GuitarProOptions } from './guitar-pro-options';
 import { GuitarProPitchWriter } from './guitar-pro-pitch-writer';
@@ -12,6 +13,7 @@ import {
 } from './guitar-pro-playback';
 import { GuitarProValues } from './guitar-pro-values';
 import { GuitarProXml as X } from './guitar-pro-xml';
+import type { Harmony } from './harmony';
 import { MDocument } from './m-document';
 import { MElement } from './m-node';
 import type { Measure } from './measure';
@@ -470,6 +472,9 @@ export class GuitarProScoreWriter {
 		);
 		X.add(tuningNode, 'Instrument', 'Guitar');
 		X.add(tuningNode, 'LabelVisible', 'false');
+		// Identical chord symbols share one diagram, as Guitar Pro's own do.
+		const diagrams = new Map<string, string | null>();
+		const diagramItems = new MElement('Items');
 		const voiceIds = [
 			...new Set(
 				part.measures.flatMap((m) =>
@@ -531,6 +536,7 @@ export class GuitarProScoreWriter {
 				[...X.refs(masterBars), bar.getAttribute('id')!].join(' '),
 			);
 			const voices: string[] = [];
+			const harmonies = measure.harmonies.filter((h) => h.staff === id);
 			for (const voiceId of voiceIds) {
 				const voice = this.entry('Voices', 'Voice');
 				voices.push(voice.getAttribute('id')!);
@@ -576,6 +582,20 @@ export class GuitarProScoreWriter {
 						X.add(beat, 'Notes', notes.join(' '));
 					}
 					this.directions(beat, lead);
+					const harmony = harmonies.findIndex(
+						(h) => Math.abs((h.measureBeat ?? 0) - onset) < 1e-8,
+					);
+					if (harmony >= 0 && !lead.isGrace) {
+						const diagram = this.diagram(
+							harmonies.splice(harmony, 1)[0]!,
+							diagrams,
+							diagramItems,
+							tuning.length || 6,
+						);
+						if (diagram != null) {
+							X.add(beat, 'Chord', diagram);
+						}
+					}
 					cursor = onset + (lead.isGrace ? 0 : lead.beats!);
 				}
 				if (!chords.length) {
@@ -584,7 +604,40 @@ export class GuitarProScoreWriter {
 				X.add(voice, 'Beats', beats.join(' '));
 			}
 			X.add(bar, 'Voices', voices.join(' '));
+			for (const _ of harmonies) {
+				this.values.unsupported('chord symbols between beats');
+			}
 		}
+		if (diagramItems.children.length) {
+			const props = node.child('Properties')!;
+			X.add(props, 'Property', undefined, {
+				name: 'DiagramCollection',
+			}).append(diagramItems);
+		}
+	}
+	/** The id of the staff diagram for a harmony, adding it on first use; null when it cannot be written. */
+	private diagram(
+		harmony: Harmony,
+		diagrams: Map<string, string | null>,
+		items: MElement,
+		strings: number,
+	): string | null {
+		const frame = harmony.frame;
+		const key = JSON.stringify([
+			harmony.chords,
+			harmony.printFrame,
+			frame && [frame.strings, frame.frets, frame.firstFret],
+			frame?.frameNotes.map((n) => [n.string, n.fret, n.fingering, n.barre]),
+		]);
+		if (!diagrams.has(key)) {
+			const id = String(items.children.length);
+			const item = writeDiagram(harmony, id, strings, this.values);
+			if (item) {
+				items.append(item);
+			}
+			diagrams.set(key, item ? id : null);
+		}
+		return diagrams.get(key)!;
 	}
 	private rhythmBeat(
 		type: string,
@@ -866,6 +919,10 @@ export class GuitarProScoreWriter {
 		}
 	}
 	private checkAnnotations(element: MElement): void {
+		// Measure harmonies are checked as they are written to chord diagrams.
+		if (element.tag === 'harmony' && element.parent?.tag === 'measure') {
+			return;
+		}
 		const unsupported = new Set([
 			'hammer-on',
 			'pull-off',
@@ -873,9 +930,9 @@ export class GuitarProScoreWriter {
 			'glissando',
 			'slur',
 			'ornaments',
+			'harmony',
 			'fingering',
 			'pluck',
-			'harmony',
 			'wedge',
 			'pedal',
 			'octave-shift',
