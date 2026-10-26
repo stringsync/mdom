@@ -26,6 +26,7 @@ export const operations = [
 	'edit-insert-read',
 	'edit-remove-read',
 	'edit-set-read',
+	'span-add',
 	'history',
 ] as const;
 export type Operation = (typeof operations)[number];
@@ -267,6 +268,24 @@ export async function measureOperation(
 					});
 				}
 				checksum += Number(!!sentinel.getKey());
+			}
+			break;
+		}
+		case 'span-add': {
+			// A slur, tuplet and tie between each pair of neighboring notes in a
+			// part: three interleaved kinds, each number allocated against the
+			// spans already added.
+			workUnits = 0;
+			for (const part of document.score.parts) {
+				const partNotes = part.measures.flatMap((measure) => measure.notes);
+				for (let index = 1; index < partNotes.length; index++) {
+					const first = partNotes[index - 1]!;
+					const last = partNotes[index]!;
+					checksum += Number(first.addSlur(last).number);
+					checksum += Number(first.addTuplet(last).number);
+					checksum += Number(first.addTie(last).number);
+					workUnits += 3;
+				}
 			}
 			break;
 		}

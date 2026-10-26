@@ -29,6 +29,7 @@ const linearOperations = [
 	'edit-insert-read',
 	'edit-remove-read',
 	'edit-set-read',
+	'span-add',
 	'serialize-gp',
 	'gp-parse',
 ] as const satisfies readonly Operation[];
@@ -130,7 +131,9 @@ describe('bounded-density measure scaling guards (64 → 256)', () => {
 			guardRatio(
 				operation,
 				inputs,
-				sizes.map((measures) => measures * 4),
+				sizes.map((measures) =>
+					operation === 'span-add' ? (measures * 4 - 1) * 3 : measures * 4,
+				),
 				{ sizes },
 			));
 	}
@@ -162,8 +165,6 @@ describe('bounded-density measure scaling guards (64 → 256)', () => {
 			expect(large / small, evidence).toBeLessThan(fixedEntries ? 2 : 6);
 		});
 	}
-
-	it.todo('spanner creation: #49 indexed-spanner-numbers (static audit evidence; needs a span workload)', () => {});
 });
 
 // Notes per measure grow at a fixed 16 measures: the audit's dense cursor walk

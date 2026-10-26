@@ -78,6 +78,8 @@ different musical content from XML cases. JSON records actual counts for every c
   or setPitch, followed by one getKey read at the far end of that same part.
   Default k is the initial total note count; `--edits` holds it fixed. Removals
   cap k at the available notes. Raw samples record the actual `workUnits`.
+- `span-add`: a slur, tuplet and tie from each note to the next in its part,
+  each numbered against the spans already added. `workUnits` counts the spans.
 - `history`: k individual named pitch edits, undo all, redo all. Raw samples
   include separate edit/undo/redo timings and actual history entry counts.
 

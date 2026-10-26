@@ -25,6 +25,7 @@ import { buildPitch, Note } from './note';
 import type { Part } from './part';
 import { StaffDetails } from './staff-details';
 import { StaffTuning } from './staff-tuning';
+import type { WavyLine } from './wavy-line';
 
 /** A GPIF tempo automation, with the tempo of the next one it ramps toward. */
 interface TempoChange {
@@ -133,6 +134,14 @@ export class GuitarProDocumentReader {
 	private effects: GuitarProBeatEffectReader;
 	/** Notes that start a hammer-on, pull-off or slide, by their GPIF source, until the next note on their string arrives. */
 	private readonly legatoOrigins = new Map<Note, MElement>();
+	/**
+	 * The part's ties, legato marks and vibratos, added once its notes are all in
+	 * place: each add then extends the part's spanner number index rather than
+	 * rescanning a part that grew since the last one.
+	 */
+	private spans: (() => void)[] = [];
+	/** Wide vibratos among `spans`, marked after them so no add sees a write between. */
+	private wideVibratos: WavyLine[] = [];
 	constructor(
 		private readonly xml: X,
 		opts: GuitarProOptions = {},
@@ -397,6 +406,14 @@ export class GuitarProDocumentReader {
 					measure.setAttribute('implicit', 'yes');
 				}
 			}
+			for (const add of this.spans) {
+				add();
+			}
+			this.spans = [];
+			for (const line of this.wideVibratos) {
+				line.setAttribute('smufl', GuitarProValues.wideVibrato);
+			}
+			this.wideVibratos = [];
 			// A hammer-on with nothing after it on its string joins nothing; a slide still draws.
 			const slides = [...this.legatoOrigins.values()].filter(
 				(source) =>
@@ -915,7 +932,7 @@ export class GuitarProDocumentReader {
 							'Guitar Pro ties must connect matching pitches in the same voice and staff',
 						);
 					}
-					origin.addTie(note);
+					this.spans.push(() => origin.addTie(note));
 				}
 				previous.set(key, note);
 				const slide = Number(
@@ -1206,21 +1223,26 @@ export class GuitarProDocumentReader {
 		if (X.property(source, 'HopoOrigin')) {
 			const rises =
 				GuitarProValues.midi(note.pitch!) > GuitarProValues.midi(before.pitch!);
-			if (rises) {
-				before.addHammerOn(note);
-			} else {
-				before.addPullOff(note);
-			}
-			before.addSlur(note);
+			this.spans.push(() => {
+				if (rises) {
+					before.addHammerOn(note);
+				} else {
+					before.addPullOff(note);
+				}
+				before.addSlur(note);
+			});
 		}
 		const slide = Number(
 			X.property(source, 'Slide')?.child('Flags')?.text ?? 0,
 		);
 		if (slide & 3) {
-			before.addSlide(note);
-			if (slide & 2 && !X.property(source, 'HopoOrigin')) {
-				before.addSlur(note);
-			}
+			const slur = slide & 2 && !X.property(source, 'HopoOrigin');
+			this.spans.push(() => {
+				before.addSlide(note);
+				if (slur) {
+					before.addSlur(note);
+				}
+			});
 		}
 	}
 	/** A GPIF vibrato (Slight or Wide) as a wavy line over the one note. */
@@ -1232,10 +1254,12 @@ export class GuitarProDocumentReader {
 			this.values.unsupported(`${vibrato} vibrato`);
 			return;
 		}
-		const line = note.addVibrato(note);
-		if (vibrato === 'Wide') {
-			line.setAttribute('smufl', GuitarProValues.wideVibrato);
-		}
+		this.spans.push(() => {
+			const line = note.addVibrato(note);
+			if (vibrato === 'Wide') {
+				this.wideVibratos.push(line);
+			}
+		});
 	}
 	private checkBeat(beat: MElement): void {
 		const tags = [

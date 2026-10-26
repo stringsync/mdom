@@ -155,6 +155,9 @@ describe('scaling benchmark', () => {
 				expect(result.phasesMs).toBeDefined();
 			} else if (operation === 'cursor') {
 				expect(result.checksum).toBe(2);
+			} else if (operation === 'span-add') {
+				expect(result.workUnits).toBe(3);
+				expect(result.checksum).toBeGreaterThanOrEqual(3);
 			} else if (operation.startsWith('edit-')) {
 				expect(result.workUnits).toBe(operation === 'edit-remove-read' ? 2 : 4);
 				expect(result.checksum).toBe(result.workUnits);

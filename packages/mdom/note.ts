@@ -46,6 +46,7 @@ import {
 } from './signature';
 import { Slide } from './slide';
 import { Slur } from './slur';
+import { allocateSpanNumber } from './spanner-numbers';
 import {
 	type BendShape,
 	type ClosedLocation,
@@ -1157,12 +1158,18 @@ export class Note extends MElement {
 
 	/** Pair printed tuplet endpoints. Performed ratios are set separately on each note. */
 	addTuplet(other: Note, spec: TupletSpec = {}): Tuplet {
-		const number = nextNumber(this, other, (note) => note.tuplets);
-		const start = buildTuplet('start', number, spec);
-		const stop = buildTuplet('stop', number, {});
-		this.notations().append(start);
-		other.notations().append(stop);
-		return start;
+		return allocateSpanNumber(
+			this,
+			other,
+			Tuplet,
+			(note) => note.tuplets,
+			(number) => {
+				const start = buildTuplet('start', number, spec);
+				this.notations().append(start);
+				other.notations().append(buildTuplet('stop', number, {}));
+				return start;
+			},
+		);
 	}
 
 	/** The `<lyric>` verses attached to this note, in document order (one per verse). */
@@ -1458,10 +1465,12 @@ export class Note extends MElement {
 	 * the print, and the matching `<tie>` elements for playback.
 	 */
 	addTie(other: Note): Tie {
-		const tie = this.spanTo(other, Tie, (note) => note.ties);
-		this.setPlaybackTie('start', true);
-		other.setPlaybackTie('stop', true);
-		return tie;
+		return this.spanTo(other, Tie, (note) => note.ties, {
+			finish: () => {
+				this.setPlaybackTie('start', true);
+				other.setPlaybackTie('stop', true);
+			},
+		});
 	}
 
 	/**
@@ -1476,7 +1485,9 @@ export class Note extends MElement {
 
 	/** Slide this note to `other` (a fretboard slide), with an optional `line-type` stroke. */
 	addSlide(other: Note, spec: { lineType?: LineType } = {}): Slide {
-		return this.spanTo(other, Slide, (note) => note.slides, spec.lineType);
+		return this.spanTo(other, Slide, (note) => note.slides, {
+			lineType: spec.lineType,
+		});
 	}
 
 	/** Remove the slide between this note and `other`, either direction; no-op when none. */
@@ -1486,12 +1497,9 @@ export class Note extends MElement {
 
 	/** Glissando from this note to `other`, with an optional `line-type` stroke. */
 	addGlissando(other: Note, spec: { lineType?: LineType } = {}): Glissando {
-		return this.spanTo(
-			other,
-			Glissando,
-			(note) => note.glissandos,
-			spec.lineType,
-		);
+		return this.spanTo(other, Glissando, (note) => note.glissandos, {
+			lineType: spec.lineType,
+		});
 	}
 
 	/** Remove the glissando between this note and `other`, either direction; no-op when none. */
@@ -1503,15 +1511,10 @@ export class Note extends MElement {
 
 	/** Hammer on from this note to `other`; the start carries the conventional "H" text. */
 	addHammerOn(other: Note): HammerOn {
-		const start = this.spanTo(
-			other,
-			HammerOn,
-			(note) => note.hammerOns,
-			undefined,
-			'technical',
-		);
-		start.setText('H');
-		return start;
+		return this.spanTo(other, HammerOn, (note) => note.hammerOns, {
+			block: 'technical',
+			finish: (start) => start.setText('H'),
+		});
 	}
 
 	/** Remove the hammer-on between this note and `other`, either direction; no-op when none. */
@@ -1521,15 +1524,10 @@ export class Note extends MElement {
 
 	/** Pull off from this note to `other`; the start carries the conventional "P" text. */
 	addPullOff(other: Note): PullOff {
-		const start = this.spanTo(
-			other,
-			PullOff,
-			(note) => note.pullOffs,
-			undefined,
-			'technical',
-		);
-		start.setText('P');
-		return start;
+		return this.spanTo(other, PullOff, (note) => note.pullOffs, {
+			block: 'technical',
+			finish: (start) => start.setText('P'),
+		});
 	}
 
 	/** Remove the pull-off between this note and `other`, either direction; no-op when none. */
@@ -1542,13 +1540,9 @@ export class Note extends MElement {
 	 * vibrato over one note. Placed in `<notations><ornaments>`.
 	 */
 	addVibrato(other: Note): WavyLine {
-		return this.spanTo(
-			other,
-			WavyLine,
-			(note) => note.wavyLines,
-			undefined,
-			'ornaments',
-		);
+		return this.spanTo(other, WavyLine, (note) => note.wavyLines, {
+			block: 'ornaments',
+		});
 	}
 
 	/** Remove the vibrato from this note to `other`, either direction; no-op when none. */
@@ -2051,30 +2045,37 @@ export class Note extends MElement {
 
 	/**
 	 * Add a note-attached spanner from this note to `other`, picking a number
-	 * free across the span so the caller never manages pairing keys.
+	 * free across the span so the caller never manages pairing keys. `finish`
+	 * makes the add's other writes to the two notes, inside the allocation so the
+	 * part's number index survives them.
 	 */
 	private spanTo<T extends MElement & { number: string }>(
 		other: Note,
 		Marker: new () => T,
 		existing: (note: Note) => T[],
-		lineType?: LineType,
-		block?: 'technical' | 'ornaments',
+		options: {
+			lineType?: LineType;
+			block?: 'technical' | 'ornaments';
+			finish?: (start: T) => void;
+		} = {},
 	): T {
-		const number = nextNumber(this, other, existing);
-		const start = new Marker();
-		start.setAttribute('type', 'start');
-		start.setAttribute('number', number);
-		if (lineType !== undefined) {
-			start.setAttribute('line-type', lineType);
-		}
-		this.blockOf(block).append(start);
+		return allocateSpanNumber(this, other, Marker, existing, (number) => {
+			const start = new Marker();
+			start.setAttribute('type', 'start');
+			start.setAttribute('number', number);
+			if (options.lineType !== undefined) {
+				start.setAttribute('line-type', options.lineType);
+			}
+			this.blockOf(options.block).append(start);
 
-		const stop = new Marker();
-		stop.setAttribute('type', 'stop');
-		stop.setAttribute('number', number);
-		other.blockOf(block).append(stop);
+			const stop = new Marker();
+			stop.setAttribute('type', 'stop');
+			stop.setAttribute('number', number);
+			other.blockOf(options.block).append(stop);
 
-		return start;
+			options.finish?.(start);
+			return start;
+		});
 	}
 
 	/** The `<notations>` child markers of this kind live under: itself, or a technical/ornaments block. */
@@ -2265,53 +2266,9 @@ const afterInstrument = new Set([
 	'listen',
 ]);
 
-/**
- * The lowest spanner number whose existing spans of this kind in the part all
- * end before `first` or start after `last`, so numbers are reused across
- * sequential spans and stay within MusicXML's 1-16. A start without a stop
- * stays open to the end of the part.
- */
 /** A point in a part as one comparable number: measure index, then beat. */
 function timePosition(measure: Measure | null, beat: number | null): number {
 	return (measure?.index ?? 0) * 1_000_000 + (beat ?? 0);
-}
-
-function nextNumber(
-	first: Note,
-	last: Note,
-	existing: (note: Note) => (MElement & { number: string })[],
-): string {
-	const part = first.closest(Part);
-	const notes = part ? part.measures.flatMap((measure) => measure.notes) : [];
-	const from = notes.indexOf(first);
-	const to = notes.indexOf(last);
-	const blocked = new Set<string>();
-	const open = new Map<string, number>();
-	notes.forEach((note, position) => {
-		for (const marker of existing(note)) {
-			const number = marker.number;
-			const type = marker.getAttribute('type');
-			if (type === 'start') {
-				open.set(number, position);
-			} else if (type === 'stop') {
-				const start = open.get(number) ?? -Infinity;
-				open.delete(number);
-				if (start <= to && position >= from) {
-					blocked.add(number);
-				}
-			}
-		}
-	});
-	for (const [number, start] of open) {
-		if (start <= to) {
-			blocked.add(number);
-		}
-	}
-	let candidate = 1;
-	while (blocked.has(String(candidate))) {
-		candidate++;
-	}
-	return String(candidate);
 }
 
 /**
