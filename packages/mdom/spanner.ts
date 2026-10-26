@@ -3,7 +3,7 @@ import type { MElement } from './m-node';
 import { Measure } from './measure';
 import type { Note } from './note';
 import { measuresOf, Part } from './part';
-import { memo } from './read-cache';
+import { memo, stampOf } from './read-cache';
 import { onsetsIn } from './timeline';
 
 /**
@@ -127,7 +127,7 @@ function soundsLater(candidate: OnsetKey, incumbent: OnsetKey): boolean {
  * members, all slurring under number 1.
  *
  * Cached against the frozen sibling list it pairs, which is itself cached until
- * the next document change, so a renderer asking every marker for its partner
+ * the next change in the part, so a renderer asking every marker for its partner
  * pairs the part once.
  */
 function pairingOf<T extends MElement>(spec: SpannerSpec<T>): Pairing<T> {
@@ -160,7 +160,7 @@ function cachedMarkers<T extends MElement>(
 	key: string,
 	collect: () => T[],
 ): readonly T[] {
-	return memo(part, key, () => {
+	return memo(part, key, stampOf(part, 'subtree'), () => {
 		const markers = Object.freeze(collect());
 		markerLists.add(markers);
 		return markers;

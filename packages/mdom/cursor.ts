@@ -2,7 +2,7 @@ import { required } from './m-node';
 import { Measure } from './measure';
 import { Note } from './note';
 import { measureIndexIn, measuresOf, Part } from './part';
-import { memo } from './read-cache';
+import { memo, stampOf } from './read-cache';
 import type { Voice } from './voice';
 
 /**
@@ -100,7 +100,13 @@ export class Cursor {
 
 	/** The lead notes (chord heads) of this voice in `measure`, indexed by onset. */
 	private stopsIn(measure: Measure): Stops {
-		return memo(measure, `cursor-stops:${this.voiceId}`, () =>
+		// Beats divide by the divisions carried in from earlier measures.
+		const part = measure.closest(Part);
+		const stamp = Math.max(
+			stampOf(measure, 'subtree'),
+			part ? stampOf(part, 'children', 'attributes') : 0,
+		);
+		return memo(measure, `cursor-stops:${this.voiceId}`, stamp, () =>
 			indexStops(
 				measure
 					.getOrCreateVoice(this.voiceId, { staff: this.staff })

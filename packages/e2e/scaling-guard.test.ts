@@ -26,6 +26,11 @@ const linearOperations = [
 	'read-walk',
 	'cursor',
 	'history',
+	'edit-insert-read',
+	'edit-remove-read',
+	'edit-set-read',
+	'serialize-gp',
+	'gp-parse',
 ] as const satisfies readonly Operation[];
 
 // A global, observable root prevents JIT liveness from dropping the input at
@@ -158,8 +163,6 @@ describe('bounded-density measure scaling guards (64 → 256)', () => {
 		});
 	}
 
-	it.todo('edit-insert/read, edit-remove/read, edit-set/read: #45 scoped-read-caches', () => {});
-	it.todo('GP export/import: #45 scoped-read-caches (GPIF parsing is guarded; reading it and export source reads are not)', () => {});
 	it.todo('spanner creation: #49 indexed-spanner-numbers (static audit evidence; needs a span workload)', () => {});
 });
 

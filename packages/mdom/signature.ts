@@ -1,7 +1,7 @@
 import { MElement, type MNode } from './m-node';
 import type { Measure } from './measure';
 import { measureIndexIn, measuresOf, Part } from './part';
-import { memo } from './read-cache';
+import { memo, stampOf } from './read-cache';
 
 /**
  * `<attributes>` in effect, nearest first: scan backward from `fromIndex`
@@ -44,10 +44,12 @@ export function attributesBackFrom(
 /**
  * The first `pick` match over {@link attributesBackFrom}`(measure, fromIndex)`,
  * without building that list. Earlier measures are answered from a per-part
- * carry table filled forward once per `key` and document change, so a walk that
- * asks at every measure stays linear. `key` must identify `pick` exactly (include
- * the staff a pick filters on): answers are shared by key. An array answer is
- * shared too, so callers copy it before returning it.
+ * carry table filled forward once per `key` and change to the part's measure
+ * list or `<attributes>` (other edits keep it), so a walk that asks at every
+ * measure stays linear. `key` must identify `pick` exactly (include the staff a
+ * pick filters on), and `pick` must read only inside the `<attributes>` it gets:
+ * answers are shared by key. An array answer is shared too, so callers copy it
+ * before returning it.
  */
 export function attributeBackFrom<T>(
 	measure: Measure,
@@ -73,6 +75,7 @@ export function childIndexIn(measure: Measure, child: MNode): number {
 	const indexes = memo(
 		measure,
 		'child-indexes',
+		stampOf(measure, 'children'),
 		() =>
 			new Map(measure.children.map((each, index) => [each, index] as const)),
 	);
@@ -86,7 +89,7 @@ interface LocalAttributes {
 
 /** `measure`'s own `<attributes>` children with their child indexes, in order. */
 function localAttributes(measure: Measure): readonly LocalAttributes[] {
-	return memo(measure, 'local-attributes', () => {
+	return memo(measure, 'local-attributes', stampOf(measure, 'children'), () => {
 		const found: LocalAttributes[] = [];
 		measure.children.forEach((node, index) => {
 			if (node instanceof MElement && node.tag === 'attributes') {
@@ -129,7 +132,12 @@ function carriedInto<T>(
 	if (index <= 0) {
 		return null;
 	}
-	const before = memo(part, `carry:${key}`, (): Array<T | null> => [null]);
+	const before = memo(
+		part,
+		`carry:${key}`,
+		stampOf(part, 'children', 'attributes'),
+		(): Array<T | null> => [null],
+	);
 	const measures = measuresOf(part);
 	while (before.length <= index) {
 		const previous = before.length - 1;

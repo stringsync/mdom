@@ -7,7 +7,7 @@ import type { Note } from './note';
 import type { Part } from './part';
 import type { Slur } from './slur';
 
-// Reads are cached until the next document change. Each test reads first, so a
+// Reads are cached until a change they depend on. Each test reads first, so a
 // cache is warm, then edits and reads again: a stale cache shows up as the old
 // answer.
 

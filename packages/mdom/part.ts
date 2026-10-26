@@ -14,7 +14,7 @@ import {
 } from './instrument';
 import { MElement, required } from './m-node';
 import { Measure } from './measure';
-import { memo } from './read-cache';
+import { memo, stampOf } from './read-cache';
 import { Score } from './score';
 import {
 	ensureMetadata,
@@ -48,7 +48,7 @@ export class Part extends MElement {
 	}
 
 	/**
-	 * The part's measures, frozen and shared until the next document change, so
+	 * The part's measures, frozen and shared until its child list changes, so
 	 * indexing it per measure is O(1). Copy it before sorting or splicing.
 	 */
 	get measures(): readonly Measure[] {
@@ -379,9 +379,9 @@ export class Part extends MElement {
 	}
 }
 
-/** The part's measures, cached until the next document change. Never mutate it. */
+/** The part's measures, cached until its child list changes. Never mutate it. */
 export function measuresOf(part: Part): readonly Measure[] {
-	return memo(part, 'measures', () =>
+	return memo(part, 'measures', stampOf(part, 'children'), () =>
 		Object.freeze(part.childrenOfType(Measure)),
 	);
 }
@@ -391,6 +391,7 @@ export function measureIndexIn(part: Part, measure: Measure): number {
 	const indexes = memo(
 		part,
 		'measure-indexes',
+		stampOf(part, 'children'),
 		() =>
 			new Map(measuresOf(part).map((each, index) => [each, index] as const)),
 	);
