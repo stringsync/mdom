@@ -1,4 +1,9 @@
 import { MElement } from './m-node';
+import { Measure } from './measure';
+import { type Offset, offsetOf } from './offset';
+import { setYesNo, yesNoOf } from './print-style';
+import { divisionsBackFrom } from './signature';
+import { onsetOf } from './timeline';
 
 /** Quarter-note beats per swing unit; MusicXML's default swing type is the eighth. */
 const SWING_UNITS: Record<string, number> = {
@@ -29,6 +34,10 @@ export interface SoundSpec {
 	forwardRepeat?: boolean;
 	/** The passes through a repeat this applies on, overriding the defaults above. */
 	timeOnly?: number[];
+	/** Playback loudness as a percent of a forte velocity (90 MIDI). */
+	dynamics?: number;
+	/** Play pizzicato (true) or arco again (false). */
+	pizzicato?: boolean;
 }
 
 /**
@@ -104,6 +113,66 @@ export class Sound extends MElement {
 	}
 
 	/**
+	 * {@link timeOnly} parsed into pass numbers (`[1, 3]`); null when it applies
+	 * every time.
+	 */
+	get passes(): number[] | null {
+		const timeOnly = this.timeOnly;
+		return timeOnly == null
+			? null
+			: timeOnly.split(',').map((pass) => Number(pass.trim()));
+	}
+
+	/**
+	 * `pizzicato`: true from here on plays pizzicato, false returns to arco; null
+	 * when this sound says neither.
+	 */
+	get pizzicato(): boolean | null {
+		return this.getAttribute('pizzicato') == null
+			? null
+			: yesNoOf(this, 'pizzicato', false);
+	}
+
+	/**
+	 * The `<sound>`'s own `<offset>`: how far from where it sits playback takes
+	 * it. Its `sound` is true unless stated, since a sound has no printed
+	 * position for the offset to move instead.
+	 */
+	get offset(): Offset | null {
+		return offsetOf(this, true);
+	}
+
+	/**
+	 * Where in the measure playback takes this sound, in quarter-note beats: its
+	 * cursor position, moved by the offset of the direction holding it when that
+	 * offset says `sound="yes"`, and by its own {@link offset}. Null outside a
+	 * measure or with no `<divisions>` in effect.
+	 */
+	get playbackBeat(): number | null {
+		const measure = this.closest(Measure);
+		const parent = this.parent;
+		if (!measure || !parent) {
+			return null;
+		}
+		const host = parent === measure ? this : parent;
+		const divisions = divisionsBackFrom(
+			measure,
+			measure.children.indexOf(host),
+		);
+		const onset = onsetOf(measure, host);
+		if (divisions == null || onset == null) {
+			return null;
+		}
+		const hostOffset = host === this ? null : offsetOf(host, false);
+		const ownOffset = this.offset;
+		return (
+			onset / divisions +
+			(hostOffset?.sound ? (hostOffset.beats ?? 0) : 0) +
+			(ownOffset?.sound ? (ownOffset.beats ?? 0) : 0)
+		);
+	}
+
+	/**
 	 * `<swing>`: the on-beat:off-beat ratio and the note value it divides.
 	 * `<straight/>` reads as an even 1:1 so it cancels a carried swing rather than
 	 * reading as "no instruction". `unit` is in quarter-note beats — eighth = 0.5,
@@ -139,10 +208,14 @@ export function writeSound(sound: Sound, spec: SoundSpec): void {
 		['fine', spec.fine ? 'yes' : undefined],
 		['forward-repeat', spec.forwardRepeat ? 'yes' : undefined],
 		['time-only', spec.timeOnly?.join(',')],
+		['dynamics', spec.dynamics?.toString()],
 	];
 	for (const [name, value] of attributes) {
 		if (value != null) {
 			sound.setAttribute(name, value);
 		}
+	}
+	if (spec.pizzicato != null) {
+		setYesNo(sound, 'pizzicato', spec.pizzicato);
 	}
 }

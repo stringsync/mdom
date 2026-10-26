@@ -43,6 +43,7 @@ import {
 	type HarmonicPitch,
 	Technical,
 } from './technical';
+import { setOrRemove } from './text-format';
 import { Tie } from './tie';
 import { Time } from './time';
 import {
@@ -123,6 +124,50 @@ const QUARTER_BEATS: Record<NoteType, number> = {
 // Fixed PPQ supports up to triple dots and ratios with factors 3, 5 and 7.
 // Imported scores retain their divisions; unrepresentable durations throw.
 export const WRITE_DIVISIONS = 256 * 3 * 5 * 7;
+
+/** How a note plays, read from its `<note>` attributes; see {@link Note.performance}. */
+export interface NotePerformance {
+	/** `dynamics`: loudness at the attack, as a percent of a forte velocity (90 MIDI). */
+	dynamics: number | null;
+	/** `end-dynamics`: loudness at the release, as the same percent. */
+	endDynamics: number | null;
+	/** `attack`: how far the attack moves from the onset, in quarter-note beats. */
+	attack: number | null;
+	/** `release`: how far the release moves from the note's end, in quarter-note beats. */
+	release: number | null;
+	/** `pizzicato`: whether a string note plays plucked (true) or bowed (false). */
+	pizzicato: boolean | null;
+}
+
+/** How a note plays, to write: {@link NotePerformance} with every field optional. */
+export interface NotePerformanceSpec {
+	dynamics?: number;
+	endDynamics?: number;
+	attack?: number;
+	release?: number;
+	pizzicato?: boolean;
+}
+
+/** `<note>` children that follow its `<tie>`s, in schema order. */
+const AFTER_TIE = new Set([
+	'instrument',
+	'footnote',
+	'level',
+	'voice',
+	'type',
+	'dot',
+	'accidental',
+	'time-modification',
+	'stem',
+	'notehead',
+	'notehead-text',
+	'staff',
+	'beam',
+	'notations',
+	'lyric',
+	'play',
+	'listen',
+]);
 
 /**
  * A single note. Chords, ties, beams, slurs, voice/staff grouping, and the
@@ -296,6 +341,55 @@ export class Note extends MElement {
 	}
 
 	/**
+	 * How the note plays, as its `<note>` attributes state it: each field null
+	 * when unstated, leaving it to the player's defaults.
+	 */
+	get performance(): NotePerformance {
+		const divisions = this.divisions;
+		const percent = (name: string): number | null => {
+			const value = this.getAttribute(name);
+			return value == null ? null : Number(value);
+		};
+		const beats = (name: string): number | null => {
+			const value = percent(name);
+			return value == null || divisions == null ? null : value / divisions;
+		};
+		return {
+			dynamics: percent('dynamics'),
+			endDynamics: percent('end-dynamics'),
+			attack: beats('attack'),
+			release: beats('release'),
+			pizzicato:
+				this.getAttribute('pizzicato') == null
+					? null
+					: yesNoOf(this, 'pizzicato', false),
+		};
+	}
+
+	/**
+	 * Replace how the note plays: each field given is written, each omitted (or
+	 * all, with null) removed. `attack` and `release` convert from beats with the
+	 * divisions in effect, which must then be declared.
+	 */
+	setPerformance(spec: NotePerformanceSpec | null): void {
+		const timing = (beats: number | undefined): string | null =>
+			beats == null
+				? null
+				: String(
+						beats *
+							required(
+								this.divisions,
+								'divisions to write a note attack or release',
+							),
+					);
+		setOrRemove(this, 'dynamics', spec?.dynamics?.toString() ?? null);
+		setOrRemove(this, 'end-dynamics', spec?.endDynamics?.toString() ?? null);
+		setOrRemove(this, 'attack', timing(spec?.attack));
+		setOrRemove(this, 'release', timing(spec?.release));
+		setYesNo(this, 'pizzicato', spec?.pizzicato ?? null);
+	}
+
+	/**
 	 * The `<voice>` this note belongs to; '1' when omitted, matching {@link staff}.
 	 * A `<chord/>` member stacks on the note it follows and so shares its voice —
 	 * exporters routinely leave `<voice>` off chord members, and bucketing those
@@ -333,6 +427,53 @@ export class Note extends MElement {
 	get ties(): Tie[] {
 		return this.childrenNamed('notations').flatMap((notations) =>
 			notations.childrenOfType(Tie),
+		);
+	}
+
+	/**
+	 * The `<tie>` elements on this note, document order: the tie as playback
+	 * hears it, a `'start'` holding the note into the next and a `'stop'`
+	 * continuing the one before. Distinct from {@link ties}, the notated
+	 * `<tied>` curves — an exporter may write either without the other.
+	 */
+	get playbackTies(): Array<'start' | 'stop'> {
+		return this.childrenNamed('tie').flatMap((tie) => {
+			const type = tie.getAttribute('type');
+			return type === 'start' || type === 'stop' ? [type] : [];
+		});
+	}
+
+	/**
+	 * Add or remove the playback `<tie>` of `type`, in schema order, without
+	 * touching the notated `<tied>`. {@link addTie} and {@link removeTie} keep
+	 * the two in step; this is for a tie that plays but does not print. A cue
+	 * note sounds nothing, so it takes no `<tie>`.
+	 */
+	setPlaybackTie(type: 'start' | 'stop', present: boolean): void {
+		const existing = this.childrenNamed('tie');
+		const matching = existing.filter(
+			(tie) => tie.getAttribute('type') === type,
+		);
+		if (!present) {
+			for (const tie of matching) {
+				tie.remove();
+			}
+			return;
+		}
+		if (matching.length > 0 || this.child('cue')) {
+			return;
+		}
+		const tie = new MElement('tie');
+		tie.setAttribute('type', type);
+		const afterTies =
+			this.children.find(
+				(child): child is MElement =>
+					child instanceof MElement && AFTER_TIE.has(child.tag),
+			) ?? null;
+		// A stop continues the tie before, so it reads first.
+		this.insertBefore(
+			tie,
+			type === 'stop' ? (existing[0] ?? afterTies) : afterTies,
 		);
 	}
 
@@ -1205,14 +1346,20 @@ export class Note extends MElement {
 		return this.spanTo(other, Slur, (note) => note.slurs);
 	}
 
-	/** Tie this note to `other`, added as paired `<tied start>`/`<tied stop>` markers. */
+	/**
+	 * Tie this note to `other`: paired `<tied start>`/`<tied stop>` markers for
+	 * the print, and the matching `<tie>` elements for playback.
+	 */
 	addTie(other: Note): Tie {
-		return this.spanTo(other, Tie, (note) => note.ties);
+		const tie = this.spanTo(other, Tie, (note) => note.ties);
+		this.setPlaybackTie('start', true);
+		other.setPlaybackTie('stop', true);
+		return tie;
 	}
 
 	/**
 	 * Remove the tie between this note and `other`, detaching both `<tied>` markers
-	 * so neither end dangles. Works in either direction and is a no-op when they
+	 * so neither end dangles, and the playback `<tie>` with each. Works in either direction and is a no-op when they
 	 * aren't tied. The inverse of {@link addTie}; to drop an unpaired (let-ring) tie,
 	 * call {@link Tie.unlink} on the marker itself.
 	 */

@@ -568,6 +568,9 @@ export class Measure extends MElement {
 	addDirection(spec: DirectionSpec): Direction {
 		const direction = buildDirection(spec);
 		this.append(direction);
+		if (spec.offset) {
+			direction.setOffset(spec.offset);
+		}
 		return direction;
 	}
 

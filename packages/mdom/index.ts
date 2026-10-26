@@ -117,9 +117,12 @@ export {
 	type FermataShape,
 	Note,
 	type NoteheadValue,
+	type NotePerformance,
+	type NotePerformanceSpec,
 	type SymbolSize,
 } from './note';
 export { OctaveShift, type Ottava } from './octave-shift';
+export type { Offset, OffsetSpec } from './offset';
 export { Ornament, type OrnamentType } from './ornament';
 export {
 	type MarginType,

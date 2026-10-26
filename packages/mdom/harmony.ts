@@ -2,6 +2,7 @@ import { buildFrame, Frame, type FrameSpec } from './frame';
 import { MElement, required } from './m-node';
 import { appendValue, Measure } from './measure';
 import { adjacentNote, type Note } from './note';
+import { type Offset, type OffsetSpec, offsetOf, writeOffset } from './offset';
 import { placementOf, setYesNo, yesNoOf } from './print-style';
 import { divisionsBackFrom } from './signature';
 import {
@@ -262,17 +263,7 @@ export type HarmonyChordSpec = HarmonyChordBase & {
 export type HarmonyType = 'explicit' | 'implied' | 'alternate';
 
 /** A harmony's `<offset>`: how far from its cursor position it applies. */
-export interface HarmonyOffset {
-	/** The offset in quarter-note beats; null when no `<divisions>` is in effect. */
-	beats: number | null;
-	/** The offset in divisions, as written. */
-	divisions: number;
-	/**
-	 * `sound`: whether playback moves with the offset too, not just the printed
-	 * position; false when unstated, as MusicXML defaults it.
-	 */
-	sound: boolean;
-}
+export type HarmonyOffset = Offset;
 
 /** A `<harmony>` to write: the chord symbol, and optionally the diagram under it. */
 export type HarmonySpec = HarmonyChordSpec & {
@@ -425,21 +416,7 @@ export class Harmony extends MElement {
 
 	/** The `<offset>` from the harmony's position, or null when it applies where it sits. */
 	get offset(): HarmonyOffset | null {
-		const offset = this.child('offset');
-		const text = offset?.text;
-		if (text == null || text.trim() === '') {
-			return null;
-		}
-		const divisions = Number(text);
-		const measure = this.closest(Measure);
-		const perQuarter = measure
-			? divisionsBackFrom(measure, measure.children.indexOf(this))
-			: null;
-		return {
-			divisions,
-			beats: perQuarter ? divisions / perQuarter : null,
-			sound: yesNoOf(offset!, 'sound', false),
-		};
+		return offsetOf(this, false);
 	}
 
 	/**
@@ -447,22 +424,8 @@ export class Harmony extends MElement {
 	 * at this harmony, or remove it with null. The harmony must be in a measure
 	 * with `<divisions>` declared.
 	 */
-	setOffset(offset: { beats: number; sound?: boolean } | null): void {
-		this.child('offset')?.remove();
-		if (offset == null) {
-			return;
-		}
-		const measure = this.measure;
-		const perQuarter = required(
-			divisionsBackFrom(measure, measure.children.indexOf(this)),
-			'divisions to write a <harmony> offset',
-		);
-		const element = new MElement('offset');
-		element.setText(String(offset.beats * perQuarter));
-		if (offset.sound != null) {
-			setYesNo(element, 'sound', offset.sound);
-		}
-		this.insertBefore(element, this.firstChildIn(AFTER_OFFSET));
+	setOffset(offset: OffsetSpec | null): void {
+		writeOffset(this, offset, () => this.firstChildIn(AFTER_OFFSET));
 	}
 
 	/**

@@ -122,10 +122,24 @@ export class Tie extends MElement {
 
 	/**
 	 * Remove this tie: detach both ends (`<tied start>` and its `<tied stop>`) so the
-	 * partner isn't orphaned. A let-ring tie, having no partner, just removes itself.
+	 * partner isn't orphaned, and the playback `<tie>` of each end whose note has
+	 * no other `<tied>` of that type left. A let-ring tie, having no partner, just
+	 * removes itself.
 	 */
 	unlink(): void {
+		const ends = [this, this.partner].flatMap((end) => {
+			const note = end?.closest(Note);
+			const type = end?.getAttribute('type');
+			return note && (type === 'start' || type === 'stop')
+				? [{ note, type: type as 'start' | 'stop' }]
+				: [];
+		});
 		new Spanner(this.spec()).removeSpan(this);
+		for (const { note, type } of ends) {
+			if (!note.ties.some((tie) => tie.getAttribute('type') === type)) {
+				note.setPlaybackTie(type, false);
+			}
+		}
 	}
 
 	/** Onset of this end within its measure, in beats. */

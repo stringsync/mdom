@@ -9,8 +9,9 @@ export type { MetronomeSpec } from './metronome';
 
 import { adjacentNote, type Note, type NoteType } from './note';
 import { OctaveShift } from './octave-shift';
+import { type Offset, type OffsetSpec, offsetOf, writeOffset } from './offset';
 import { Pedal } from './pedal';
-import { colorOf, placementOf } from './print-style';
+import { colorOf, placementOf, setYesNo, yesNoOf } from './print-style';
 import { Rehearsal } from './rehearsal';
 import { divisionsBackFrom } from './signature';
 import { Sound, type SoundSpec, writeSound } from './sound';
@@ -57,7 +58,27 @@ export interface DirectionSpec {
 	sound?: SoundSpec;
 	placement?: 'above' | 'below';
 	staff?: string;
+	/**
+	 * Print it where the system's first-measure attributes go — `directive="yes"`,
+	 * as a tempo or style heading is — rather than over the note it starts at.
+	 */
+	directive?: boolean;
+	/**
+	 * An `<offset>` from the cursor position, in quarter-note beats; `sound`
+	 * says whether playback moves with it or only the print does.
+	 */
+	offset?: OffsetSpec;
 }
+
+/** `<direction>` children that follow `<offset>`. */
+const AFTER_OFFSET = new Set([
+	'footnote',
+	'level',
+	'voice',
+	'staff',
+	'sound',
+	'listening',
+]);
 
 /**
  * A repeat-structure mark to write, printed and played: a segno or coda sign a
@@ -235,6 +256,59 @@ export class Direction extends MElement {
 		return colorOf(this);
 	}
 
+	/**
+	 * `directive`: printed where the system's first-measure attributes go, as a
+	 * tempo or style heading is, rather than over the note it starts at. A
+	 * layout instruction only; playback is unchanged.
+	 */
+	get isDirective(): boolean {
+		return yesNoOf(this, 'directive', false);
+	}
+
+	/** Set `directive`, or remove it with null. */
+	setDirective(value: boolean | null): void {
+		setYesNo(this, 'directive', value);
+	}
+
+	/**
+	 * The `<offset>` from this direction's cursor position, or null when it
+	 * applies where it sits. Its `sound` is false unless stated: the print moves
+	 * and playback stays at {@link measureBeat}.
+	 */
+	get offset(): Offset | null {
+		return offsetOf(this, false);
+	}
+
+	/**
+	 * Replace the `<offset>` from a beat count, converted with the divisions in
+	 * effect here, or remove it with null. The direction must be in a measure
+	 * with `<divisions>` declared.
+	 */
+	setOffset(offset: OffsetSpec | null): void {
+		writeOffset(
+			this,
+			offset,
+			() =>
+				this.children.find(
+					(child): child is MElement =>
+						child instanceof MElement && AFTER_OFFSET.has(child.tag),
+				) ?? null,
+		);
+	}
+
+	/**
+	 * Where in the measure playback takes this direction, in quarter-note beats:
+	 * {@link measureBeat}, moved by an {@link offset} that says `sound="yes"`.
+	 */
+	get playbackBeat(): number | null {
+		const beat = this.measureBeat;
+		const offset = this.offset;
+		if (beat == null || !offset?.sound) {
+			return beat;
+		}
+		return offset.beats == null ? null : beat + offset.beats;
+	}
+
 	/** The nearest non-chord note after this direction in its measure (a pedal start binds here). */
 	get nextNote(): Note | null {
 		return adjacentNote(this, 1);
@@ -252,7 +326,7 @@ export class Direction extends MElement {
 
 	/**
 	 * Onset within the measure, in beats — the cursor position where this
-	 * `<direction>` sits in the backup/forward fold.
+	 * `<direction>` sits in the backup/forward fold, before any {@link offset}.
 	 */
 	get measureBeat(): number | null {
 		const measure = this.closest(Measure);
@@ -289,6 +363,9 @@ export function buildDirection(spec: DirectionSpec): Direction {
 	const direction = new Direction();
 	if (spec.placement != null) {
 		direction.setAttribute('placement', spec.placement);
+	}
+	if (spec.directive) {
+		direction.setDirective(true);
 	}
 	if (spec.metronome) {
 		directionType(direction).append(buildMetronome(spec.metronome));
