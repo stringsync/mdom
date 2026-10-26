@@ -35,7 +35,7 @@ export interface WordsSpec {
 
 /**
  * A `<direction>` to write. At least one printable — a metronome, a segno or
- * coda sign, words or dynamics — is required, since that is what a
+ * coda sign, words, dynamics or an other-direction — is required, since that is what a
  * `<direction-type>` holds; each gets its own block, in the order listed here.
  * `tempo` and `sound` add the silent `<sound>` that makes the mark actually play
  * back.
@@ -52,6 +52,11 @@ export interface DirectionSpec {
 	 * a name is written through as a tag — spell it the way MusicXML does.
 	 */
 	dynamics?: string | string[];
+	/**
+	 * An `<other-direction>`: a direction MusicXML has no element for. A string
+	 * is its text; `smufl` names the glyph that draws it.
+	 */
+	otherDirection?: string | { text?: string; smufl?: string };
 	/** The `<sound>` `tempo` attribute, in quarter notes per minute. */
 	tempo?: number;
 	/** The repeat-structure playback — segno, coda and jump — on the `<sound>`. */
@@ -407,9 +412,26 @@ export function buildDirection(spec: DirectionSpec): Direction {
 		}
 		directionType(direction).append(dynamics);
 	}
+	if (spec.otherDirection != null) {
+		const other =
+			typeof spec.otherDirection === 'string'
+				? { text: spec.otherDirection }
+				: spec.otherDirection;
+		if (other.text == null && other.smufl == null) {
+			throw new Error('mdom: an other-direction needs text or a smufl glyph');
+		}
+		const element = new MElement('other-direction');
+		if (other.smufl != null) {
+			element.setAttribute('smufl', other.smufl);
+		}
+		if (other.text != null) {
+			element.setText(other.text);
+		}
+		directionType(direction).append(element);
+	}
 	if (direction.children.length === 0) {
 		throw new Error(
-			'mdom: a <direction> needs at least one of metronome, segno, coda, words or dynamics',
+			'mdom: a <direction> needs at least one of metronome, segno, coda, words, dynamics or otherDirection',
 		);
 	}
 	if (spec.staff != null) {

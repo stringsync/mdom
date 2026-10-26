@@ -1499,6 +1499,72 @@ export class Note extends MElement {
 	}
 
 	/**
+	 * Make this a cue note or a played one again: `<cue/>`, after any `<grace>`.
+	 * A cue note keeps its duration in the timeline but is silent, so making one
+	 * drops its playback `<tie>`s, which MusicXML does not allow on a cue note;
+	 * the notated `<tied>` stays. The write side of {@link isCue}.
+	 */
+	setCue(value: boolean): void {
+		if (value === this.isCue) {
+			return;
+		}
+		if (!value) {
+			this.child('cue')?.remove();
+			return;
+		}
+		const grace = this.child('grace');
+		this.insertBefore(
+			new MElement('cue'),
+			this.children[grace ? this.children.indexOf(grace) + 1 : 0] ?? null,
+		);
+		for (const tie of this.childrenNamed('tie')) {
+			tie.remove();
+		}
+	}
+
+	/**
+	 * Add an `<other-notation>`: a mark MusicXML has no element for. `smufl`
+	 * names the glyph that draws it, `text` is free text; give either or both.
+	 * `type` defaults to 'single'; a 'start' pairs with a 'stop' of the same
+	 * `number`. The write side of {@link otherNotations}.
+	 */
+	addOtherNotation(spec: {
+		text?: string;
+		smufl?: string;
+		type?: 'start' | 'stop' | 'single';
+		number?: number;
+		placement?: 'above' | 'below';
+	}): void {
+		if (spec.text == null && spec.smufl == null) {
+			throw new Error('mdom: an other-notation needs text or a smufl glyph');
+		}
+		const mark = new MElement('other-notation');
+		mark.setAttribute('type', spec.type ?? 'single');
+		if (spec.number != null) {
+			mark.setAttribute('number', String(spec.number));
+		}
+		if (spec.placement != null) {
+			mark.setAttribute('placement', spec.placement);
+		}
+		if (spec.smufl != null) {
+			mark.setAttribute('smufl', spec.smufl);
+		}
+		if (spec.text != null) {
+			mark.setText(spec.text);
+		}
+		this.notations().append(mark);
+	}
+
+	/** Remove every `<other-notation>` from this note. */
+	removeOtherNotations(): void {
+		for (const notations of this.childrenNamed('notations')) {
+			for (const node of notations.childrenNamed('other-notation')) {
+				node.remove();
+			}
+		}
+	}
+
+	/**
 	 * Place this note on a guitar string at a fret — the core of tablature,
 	 * `<notations><technical><string>/<fret>`. Upserts both (creating
 	 * `<notations>`/`<technical>` as needed), leaving pitch and timeline alone: a

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { MDocument } from './m-document';
 import { MDOMParser } from './m-dom-parser';
+import { MElement } from './m-node';
 import { schemaErrors } from './music-xml-schema';
 import { MusicXMLSerializer } from './music-xml-serializer';
 import type { Note } from './note';
@@ -263,5 +264,94 @@ describe('nested mark writers', () => {
 			'<fermata type="upright"/>',
 		);
 		expect(note.fermataShape).toBe('normal');
+	});
+
+	it('writes a cue note, keeping its duration and dropping playback ties, schema-valid', () => {
+		const { doc, voice } = build();
+		const first = voice.addNote({ step: 'C', octave: 5, type: 'half' });
+		const second = voice.addNote({ step: 'C', octave: 5, type: 'half' });
+		first.addTie(second);
+		first.setCue(true);
+		expect(first.isCue).toBe(true);
+		expect(first.childrenNamed('tie')).toEqual([]);
+		expect(first.duration).toBe(8);
+		expect(first.ties.length).toBe(1);
+		expect(schemaErrors(doc)).toEqual([]);
+		expect(firstNote(roundTrip(doc)).isCue).toBe(true);
+
+		first.setCue(false);
+		expect(first.isCue).toBe(false);
+		expect(schemaErrors(doc)).toEqual([]);
+	});
+
+	it('writes a grace cue note with <cue> after <grace>', () => {
+		const { doc, voice } = build();
+		const note = voice.addNote({ step: 'D', octave: 5, type: 'eighth' });
+		voice.addNote({ step: 'C', octave: 5, type: 'whole' });
+		note.convertToGrace();
+		note.setCue(true);
+		expect(
+			note
+				.childrenOfType(MElement)
+				.slice(0, 2)
+				.map((child) => child.tag),
+		).toEqual(['grace', 'cue']);
+		expect(schemaErrors(doc)).toEqual([]);
+	});
+
+	it('adds and removes other-notations, schema-valid', () => {
+		const { doc, voice } = build();
+		const note = voice.addNote({ step: 'G', octave: 4, type: 'whole' });
+		note.addOtherNotation({ smufl: 'pictBeaterSoftXylophoneUp' });
+		note.addOtherNotation({
+			text: 'swell',
+			type: 'start',
+			number: 2,
+			placement: 'below',
+		});
+		expect(() => note.addOtherNotation({})).toThrow(
+			'other-notation needs text or a smufl glyph',
+		);
+		expect(schemaErrors(doc)).toEqual([]);
+		expect(firstNote(roundTrip(doc)).otherNotations).toEqual([
+			{
+				type: 'single',
+				number: 1,
+				text: '',
+				smufl: 'pictBeaterSoftXylophoneUp',
+				placement: null,
+			},
+			{
+				type: 'start',
+				number: 2,
+				text: 'swell',
+				smufl: null,
+				placement: 'below',
+			},
+		]);
+
+		note.removeOtherNotations();
+		expect(note.otherNotations).toEqual([]);
+	});
+
+	it('writes an other-direction from a DirectionSpec, schema-valid', () => {
+		const { doc, measure, voice } = build();
+		measure.addDirection({ otherDirection: 'sotto voce' });
+		measure.addDirection({
+			otherDirection: { text: 'breath', smufl: 'breathMarkComma' },
+		});
+		voice.addNote({ step: 'G', octave: 4, type: 'whole' });
+		expect(() => measure.addDirection({ otherDirection: {} })).toThrow(
+			'other-direction needs text or a smufl glyph',
+		);
+		expect(schemaErrors(doc)).toEqual([]);
+		const directions = roundTrip(doc)
+			.score.getPart('P1')!
+			.getMeasure('1')!
+			.directions.map((direction) => direction.otherDirections);
+		expect(directions).toEqual([
+			[{ text: 'sotto voce', smufl: null }],
+			[{ text: 'breath', smufl: 'breathMarkComma' }],
+		]);
 	});
 });

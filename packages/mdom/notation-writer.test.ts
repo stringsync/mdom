@@ -132,7 +132,7 @@ describe('measure and note — writing common notation', () => {
 	it('refuses a direction with nothing printable on it', () => {
 		const { measure } = build();
 		expect(() => measure.addDirection({ tempo: 90 })).toThrow(
-			'a <direction> needs at least one of metronome, segno, coda, words or dynamics',
+			'a <direction> needs at least one of metronome, segno, coda, words, dynamics or otherDirection',
 		);
 	});
 
