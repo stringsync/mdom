@@ -31,6 +31,7 @@ import { Technical } from './technical';
 import { Tie } from './tie';
 import { Time } from './time';
 import { onsetOf, repairTimelineAfter } from './timeline';
+import { Transpose } from './transpose';
 import { Tuplet } from './tuplet';
 import { WavyLine } from './wavy-line';
 
@@ -165,6 +166,20 @@ export class Note extends MElement {
 		const staff = this.staff;
 		return this.attributeBack(`key:${staff}`, (attrs) =>
 			attrs.childrenOfType(Key).find((key) => appliesToStaff(key, staff)),
+		);
+	}
+
+	/**
+	 * `<transpose>` in effect for this note's staff, a mid-measure change
+	 * included: what to add to this note's written pitch to get the sounding one.
+	 * Null when none has been declared (written is sounding).
+	 */
+	get transpose(): Transpose | null {
+		const staff = this.staff;
+		return this.attributeBack(`transpose:${staff}`, (attrs) =>
+			attrs
+				.childrenOfType(Transpose)
+				.find((transpose) => appliesToStaff(transpose, staff)),
 		);
 	}
 

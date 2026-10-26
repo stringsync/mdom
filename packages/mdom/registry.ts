@@ -39,6 +39,7 @@ import { SystemLayout } from './system-layout';
 import { TECHNICAL_TAGS, Technical } from './technical';
 import { Tie } from './tie';
 import { Time } from './time';
+import { ForPart, PartClef, PartTranspose, Transpose } from './transpose';
 import { Tuplet } from './tuplet';
 import { WavyLine } from './wavy-line';
 import { Wedge } from './wedge';
@@ -108,6 +109,10 @@ function tags(): Record<string, ElementCtor> {
 		'system-layout': SystemLayout,
 		'staff-layout': StaffLayout,
 		appearance: Appearance,
+		transpose: Transpose,
+		'for-part': ForPart,
+		'part-clef': PartClef,
+		'part-transpose': PartTranspose,
 	};
 	for (const tag of ORNAMENT_TAGS) {
 		registry[tag] = Ornament;

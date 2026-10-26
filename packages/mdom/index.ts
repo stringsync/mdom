@@ -136,6 +136,17 @@ export type {
 } from './text-format';
 export { Tie } from './tie';
 export { Time } from './time';
+export {
+	ForPart,
+	type ForPartSpec,
+	PartClef,
+	type PartClefSpec,
+	PartTranspose,
+	Transpose,
+	type TransposeDouble,
+	TransposeGroup,
+	type TransposeSpec,
+} from './transpose';
 export { Tuplet, type TupletDisplay } from './tuplet';
 export { Voice } from './voice';
 export { WavyLine } from './wavy-line';

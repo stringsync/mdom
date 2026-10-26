@@ -1,5 +1,5 @@
 import { Appearance } from './appearance';
-import { MElement } from './m-node';
+import { descendants, MElement } from './m-node';
 import { appendValue } from './measure';
 import { PageLayout } from './page-layout';
 import { Part } from './part';
@@ -39,6 +39,7 @@ import {
 	lyricDefaultFor,
 	setFontOf,
 } from './text-format';
+import { ForPart, shiftsPitchClass, Transpose } from './transpose';
 
 /** Canonical child order of the MusicXML `<defaults>` sequence. */
 const defaultsOrder = [
@@ -392,6 +393,46 @@ export class Score extends MElement {
 	/** Get or create the `<defaults><staff-layout>` for `staff`, keeping `<defaults>` and staff order. */
 	getOrCreateStaffLayout(staff?: string): StaffLayout {
 		return getOrCreateStaffLayoutIn(this.defaults(), staff, defaultsOrder);
+	}
+
+	/**
+	 * Whether this is a concert score (`<defaults><concert-score>`): every part
+	 * written at sounding pitch, octave transpositions aside, with any transposed
+	 * parts declared by `<for-part>` (see {@link Measure.getForPart}).
+	 */
+	get isConcertScore(): boolean {
+		return this.child('defaults')?.child('concert-score') != null;
+	}
+
+	/**
+	 * Mark this score as a concert score, or not. This only declares how the
+	 * notes are already written — no `<pitch>` is rewritten — so it throws where
+	 * the declaration would contradict them: turning it on while a `<transpose>`
+	 * shifts pitch class (those notes are not at sounding pitch), or off while a
+	 * `<for-part>` remains (only a concert score may hold one).
+	 */
+	setConcertScore(value: boolean): void {
+		if (value === this.isConcertScore) {
+			return;
+		}
+		const nodes = descendants(this);
+		if (value) {
+			if (
+				nodes.some(
+					(node) => node instanceof Transpose && shiftsPitchClass(node),
+				)
+			) {
+				throw new Error(
+					'A concert score may only transpose by octaves; this score transposes by another interval',
+				);
+			}
+			ensureMetadata(this.defaults(), 'concert-score', defaultsOrder);
+			return;
+		}
+		if (nodes.some((node) => node instanceof ForPart)) {
+			throw new Error('Remove the <for-part> declarations first');
+		}
+		this.child('defaults')?.child('concert-score')?.remove();
 	}
 
 	/**
