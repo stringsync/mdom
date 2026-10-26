@@ -157,7 +157,7 @@ describe('bounded-density measure scaling guards (64 → 256)', () => {
 	}
 
 	it.todo('edit-insert/read, edit-remove/read, edit-set/read: #45 scoped-read-caches', () => {});
-	it.todo('GP export/import: #66 indexed-gp-events, #46 bulk-tree-construction, #45 scoped-read-caches', () => {});
+	it.todo('GP export/import: #46 bulk-tree-construction, #45 scoped-read-caches', () => {});
 	it.todo('wide XML/GPIF parsing: #46 bulk-tree-construction (measure and density axes)', () => {});
 	it.todo('spanner creation: #49 indexed-spanner-numbers (static audit evidence; needs a span workload)', () => {});
 });

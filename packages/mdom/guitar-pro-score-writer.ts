@@ -5,6 +5,7 @@ import { groupChords } from './chord';
 import { Direction } from './direction';
 import { GuitarProBeatEffectWriter } from './guitar-pro-beat-effects';
 import { writeDiagram } from './guitar-pro-diagrams';
+import { GuitarProDirectionIndex } from './guitar-pro-direction-index';
 import {
 	drumGlyph,
 	type GuitarProDrumArticulation,
@@ -114,6 +115,11 @@ export class GuitarProScoreWriter {
 	};
 	/** The GPIF vibrato (Slight or Wide) of each note a wavy line covers. */
 	private readonly vibratos = new Map<Note, string>();
+	/** Each measure's MasterBar, by measure index. */
+	private readonly masterBars: MElement[] = [];
+	private readonly directionIndex = new GuitarProDirectionIndex((feature) =>
+		this.values.unsupported(feature),
+	);
 	constructor(opts: GuitarProOptions = {}) {
 		this.values = new GuitarProValues(opts);
 		this.effects = new GuitarProBeatEffectWriter(this.values);
@@ -189,6 +195,7 @@ export class GuitarProScoreWriter {
 		for (const measure of first.measures) {
 			const master = this.masterBar(measure);
 			this.tables.get('MasterBars')!.append(master);
+			this.masterBars.push(master);
 			if (passes[measure.index]!.length) {
 				X.add(master, 'AlternateEndings', passes[measure.index]!.join(' '));
 			}
@@ -810,10 +817,7 @@ export class GuitarProScoreWriter {
 			const bar = this.entry('Bars', 'Bar');
 			X.add(bar, 'Clef', clefName);
 			// GPIF stores the shared key in MasterBar; different staff keys cannot be encoded faithfully.
-			const sharedKey = this.tables
-				.get('MasterBars')!
-				.childrenNamed('MasterBar')
-				[measure.index]!.child('Key')!;
+			const sharedKey = this.masterBars[measure.index]!.child('Key')!;
 			if (
 				Number(sharedKey.child('AccidentalCount')!.text) !==
 					(measure.getKey(id)?.fifths ?? 0) ||
@@ -822,10 +826,7 @@ export class GuitarProScoreWriter {
 			) {
 				this.values.unsupported('different keys across staves or parts');
 			}
-			const masterBars = this.tables
-				.get('MasterBars')!
-				.childrenNamed('MasterBar')
-				[measure.index]!.child('Bars')!;
+			const masterBars = this.masterBars[measure.index]!.child('Bars')!;
 			masterBars.setText(
 				[...X.refs(masterBars), bar.getAttribute('id')!].join(' '),
 			);
@@ -889,9 +890,7 @@ export class GuitarProScoreWriter {
 							this.directions(beat, lead);
 							this.effects.write(beat, chord.notes, ottavas);
 							this.effects.writeFermata(
-								this.tables.get('MasterBars')!.childrenNamed('MasterBar')[
-									measure.index
-								]!,
+								this.masterBars[measure.index]!,
 								chord.notes,
 							);
 						}
@@ -1503,36 +1502,22 @@ export class GuitarProScoreWriter {
 		}
 	}
 	private directions(beat: MElement, note: Note): void {
-		let dynamic = 'F';
-		for (const measure of note.part.measures.slice(0, note.measure.index + 1)) {
-			for (const direction of measure.directions) {
-				if (
-					direction.staff !== note.staff ||
-					(measure === note.measure &&
-						(direction.measureBeat ?? 0) > note.measureBeat!)
-				) {
-					continue;
-				}
-				for (const mark of direction.dynamics.flatMap((d) => d.marks)) {
-					if (
-						!['ppp', 'pp', 'p', 'mp', 'mf', 'f', 'ff', 'fff'].includes(mark)
-					) {
-						this.values.unsupported(`dynamic ${mark}`);
-					} else {
-						dynamic = mark.toUpperCase();
-					}
-				}
-				const words = direction.words
-					.filter((text) => text && !GRADUAL_TEMPO.test(text.trim()))
-					.join(' ');
-				if (
-					words &&
-					!this.isNavigation(direction) &&
-					measure === note.measure &&
-					direction.measureBeat === note.measureBeat
-				) {
-					X.add(beat, 'FreeText', words);
-				}
+		const onset = note.measureBeat!;
+		const dynamic = this.directionIndex.dynamicAt(
+			note.measure,
+			note.staff,
+			onset,
+		);
+		for (const direction of this.directionIndex.directionsAt(
+			note.measure,
+			note.staff,
+			onset,
+		)) {
+			const words = direction.words
+				.filter((text) => text && !GRADUAL_TEMPO.test(text.trim()))
+				.join(' ');
+			if (words && !this.isNavigation(direction)) {
+				X.add(beat, 'FreeText', words);
 			}
 		}
 		X.add(beat, 'Dynamic', dynamic);

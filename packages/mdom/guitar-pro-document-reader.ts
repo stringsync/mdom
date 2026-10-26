@@ -128,7 +128,8 @@ const TRIPLET_FEELS: Record<
 /** Resolves GPIF tables straight into the MusicXML-backed mdom tree. */
 export class GuitarProDocumentReader {
 	private readonly values: GuitarProValues;
-	private tempoChanges: TempoChange[] | null = null;
+	/** The parsed tempo automations of each bar, in order; null until first read. */
+	private tempoChanges: Map<number, TempoChange[]> | null = null;
 	private effects: GuitarProBeatEffectReader;
 	/** Notes that start a hammer-on, pull-off or slide, by their GPIF source, until the next note on their string arrives. */
 	private readonly legatoOrigins = new Map<Note, MElement>();
@@ -505,7 +506,7 @@ export class GuitarProDocumentReader {
 		if (master.child('FreeTime')) {
 			this.values.unsupported('free time');
 		}
-		return this.tempoTable().filter((c) => c.bar === measure.index);
+		return [...(this.tempoTable().get(measure.index) ?? [])];
 	}
 	/** A swing `<sound>` where the bar's triplet feel differs from the bar before. */
 	private readFeel(
@@ -535,7 +536,7 @@ export class GuitarProDocumentReader {
 		}
 		return feel;
 	}
-	private tempoTable(): TempoChange[] {
+	private tempoTable(): Map<number, TempoChange[]> {
 		if (this.tempoChanges) {
 			return this.tempoChanges;
 		}
@@ -583,8 +584,14 @@ export class GuitarProDocumentReader {
 		for (const [index, change] of changes.entries()) {
 			change.target = changes[index + 1]?.tempo;
 		}
-		this.tempoChanges = changes;
-		return changes;
+		const byBar = new Map<number, TempoChange[]>();
+		for (const change of changes) {
+			const bar = byBar.get(change.bar) ?? [];
+			bar.push(change);
+			byBar.set(change.bar, bar);
+		}
+		this.tempoChanges = byBar;
+		return byBar;
 	}
 	/** Add the tempo changes whose onset the cursor (in beats) has reached. */
 	private addTempos(
