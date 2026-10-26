@@ -1,15 +1,23 @@
 import {
 	checkRange,
 	decimals,
+	type InstrumentChange,
+	type InstrumentChangeSpec,
 	type MidiDevice,
 	type MidiDeviceSpec,
 	type MidiInstrument,
 	type MidiInstrumentSpec,
 	numberIn,
+	type Play,
+	type PlaySpec,
+	readInstrumentChange,
 	readMidiDevice,
 	readMidiInstrument,
+	readPlay,
+	writeInstrumentChange,
 	writeMidiDevice,
 	writeMidiInstrument,
+	writePlay,
 } from './instrument';
 import { MElement } from './m-node';
 import { Measure } from './measure';
@@ -69,6 +77,10 @@ export interface SoundSpec {
 	midiDevices?: Array<MidiDeviceSpec & { id?: string }>;
 	/** MIDI playback to switch to from here, each for the score-instrument its `id` names. */
 	midiInstruments?: Array<MidiInstrumentSpec & { id: string }>;
+	/** Sounds, ensembles or virtual instruments to switch to from here, each for the score-instrument its `id` names. */
+	instrumentChanges?: Array<InstrumentChangeSpec & { id: string }>;
+	/** How each named score-instrument sounds from here (mute, IPA, semi-pitched range). */
+	plays?: Array<PlaySpec & { id: string }>;
 }
 
 /**
@@ -219,6 +231,20 @@ export class Sound extends MElement {
 		return this.childrenNamed('midi-instrument').map(readMidiInstrument);
 	}
 
+	/**
+	 * The `<instrument-change>`s this sound makes, in document order: the
+	 * score-instrument each `id` names switches sound, ensemble or virtual
+	 * instrument from here.
+	 */
+	get instrumentChanges(): InstrumentChange[] {
+		return this.childrenNamed('instrument-change').map(readInstrumentChange);
+	}
+
+	/** The `<play>`s this sound carries, in document order, each for the instrument its `id` names. */
+	get plays(): Play[] {
+		return this.childrenNamed('play').map(readPlay);
+	}
+
 	/** The `<midi-device>`s this sound switches to, in document order. */
 	get midiDevices(): MidiDevice[] {
 		return this.childrenNamed('midi-device').map(readMidiDevice);
@@ -354,15 +380,27 @@ export function writeSound(sound: Sound, spec: SoundSpec): void {
 		) ?? null;
 	const instruments = spec.midiInstruments ?? [];
 	const devices = spec.midiDevices ?? [];
+	const changes = spec.instrumentChanges ?? [];
+	const plays = spec.plays ?? [];
 	// A part-wide device (no id) leads, as on the <score-part>.
 	const ids = [
 		...new Set([
 			...devices.filter((device) => device.id == null).map(() => null),
 			...devices.map((device) => device.id ?? null),
+			...changes.map((change) => change.id),
 			...instruments.map((instrument) => instrument.id),
+			...plays.map((play) => play.id),
 		]),
 	];
 	for (const id of ids) {
+		for (const { id: changeId, ...change } of changes) {
+			if (changeId === id) {
+				const node = new MElement('instrument-change');
+				node.setAttribute('id', changeId);
+				writeInstrumentChange(node, change);
+				sound.insertBefore(node, before);
+			}
+		}
 		for (const { id: deviceId, ...device } of devices) {
 			if ((deviceId ?? null) === id) {
 				const node = new MElement('midi-device');
@@ -378,6 +416,14 @@ export function writeSound(sound: Sound, spec: SoundSpec): void {
 				const node = new MElement('midi-instrument');
 				node.setAttribute('id', instrumentId);
 				writeMidiInstrument(node, instrument);
+				sound.insertBefore(node, before);
+			}
+		}
+		for (const { id: playId, ...play } of plays) {
+			if (playId === id) {
+				const node = new MElement('play');
+				node.setAttribute('id', playId);
+				writePlay(node, play);
 				sound.insertBefore(node, before);
 			}
 		}

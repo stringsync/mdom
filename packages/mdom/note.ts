@@ -4,6 +4,16 @@ import { Beam } from './beam';
 import { Clef } from './clef';
 import { Glissando } from './glissando';
 import { HammerOn } from './hammer-on';
+import {
+	type Listen,
+	type ListenSpec,
+	type Play,
+	type PlaySpec,
+	readListen,
+	readPlay,
+	writeListen,
+	writePlay,
+} from './instrument';
 import { Key } from './key';
 import { buildLyric, Lyric, type LyricSpec } from './lyric';
 import { MElement, required } from './m-node';
@@ -366,6 +376,43 @@ export class Note extends MElement {
 					? null
 					: yesNoOf(this, 'pizzicato', false),
 		};
+	}
+
+	/** The note's `<play>` (mute, IPA, semi-pitched range), or null when it has none. */
+	get play(): Play | null {
+		const node = this.child('play');
+		return node ? readPlay(node) : null;
+	}
+
+	/**
+	 * Replace the note's `<play>`; null removes it. It goes ahead of `<listen>`,
+	 * last among the note's other children.
+	 */
+	setPlay(spec: PlaySpec | null): void {
+		this.child('play')?.remove();
+		if (spec == null) {
+			return;
+		}
+		const node = new MElement('play');
+		writePlay(node, spec);
+		this.insertBefore(node, this.child('listen'));
+	}
+
+	/** The note's `<listen>` actions, or null when it has none. */
+	get listen(): Listen | null {
+		const node = this.child('listen');
+		return node ? readListen(node) : null;
+	}
+
+	/** Replace the note's `<listen>`, last among its children; null removes it. */
+	setListen(spec: ListenSpec | null): void {
+		this.child('listen')?.remove();
+		if (spec == null) {
+			return;
+		}
+		const node = new MElement('listen');
+		writeListen(node, spec);
+		this.append(node);
 	}
 
 	/**

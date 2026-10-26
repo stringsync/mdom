@@ -69,10 +69,18 @@ export {
 	type HarmonyType,
 } from './harmony';
 export type {
+	InstrumentChange,
+	InstrumentChangeSpec,
+	Listen,
+	ListenSpec,
 	MidiDevice,
 	MidiDeviceSpec,
 	MidiInstrument,
 	MidiInstrumentSpec,
+	Play,
+	PlayMute,
+	PlaySemiPitched,
+	PlaySpec,
 	ScoreInstrument,
 	ScoreInstrumentSpec,
 	VirtualInstrument,

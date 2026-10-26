@@ -38,6 +38,91 @@ export interface ScoreInstrumentSpec {
 }
 
 /**
+ * An `<instrument-change>` in a `<sound>`: the score-instrument `id` names
+ * switches to this sound, ensemble or virtual instrument from here. The name
+ * and abbreviation stay the score-instrument's own.
+ */
+export type InstrumentChange = Omit<ScoreInstrument, 'name' | 'abbreviation'>;
+export type InstrumentChangeSpec = Omit<
+	ScoreInstrumentSpec,
+	'id' | 'name' | 'abbreviation'
+>;
+
+export type PlayMute =
+	| 'on'
+	| 'off'
+	| 'straight'
+	| 'cup'
+	| 'harmon-no-stem'
+	| 'harmon-stem'
+	| 'bucket'
+	| 'plunger'
+	| 'hat'
+	| 'solotone'
+	| 'practice'
+	| 'stop-mute'
+	| 'stop-hand'
+	| 'echo'
+	| 'palm';
+export type PlaySemiPitched =
+	| 'high'
+	| 'medium-high'
+	| 'medium'
+	| 'medium-low'
+	| 'low'
+	| 'very-low';
+
+/**
+ * A `<play>`: how an instrument sounds a note or from a point on. `id` names
+ * the score-instrument in a `<sound>`, and is null on a note. Each field is null
+ * when unstated; `other` lists the `<other-play>` entries, by type.
+ */
+export interface Play {
+	id: string | null;
+	ipa: string | null;
+	mute: PlayMute | null;
+	semiPitched: PlaySemiPitched | null;
+	other: Array<{ type: string; text: string }>;
+}
+export interface PlaySpec {
+	/** Pronunciation in the International Phonetic Alphabet. */
+	ipa?: string;
+	mute?: PlayMute;
+	semiPitched?: PlaySemiPitched;
+	other?: Array<{ type: string; text: string }>;
+}
+
+/** Whom and which passes a `<listen>` action applies to; null when unrestricted. */
+interface ListenScope {
+	player: string | null;
+	timeOnly: number[] | null;
+}
+/**
+ * A `<listen>`: what a listening player does at a note, in document order.
+ * `assess` says whether the performance is scored (true) or not (false).
+ */
+export interface Listen {
+	actions: Array<
+		| ({ kind: 'assess'; assess: boolean } & ListenScope)
+		| ({ kind: 'wait' } & ListenScope)
+		| ({ kind: 'other'; type: string; text: string } & ListenScope)
+	>;
+}
+export interface ListenSpec {
+	actions: Array<
+		| { kind: 'assess'; assess: boolean; player?: string; timeOnly?: number[] }
+		| { kind: 'wait'; player?: string; timeOnly?: number[] }
+		| {
+				kind: 'other';
+				type: string;
+				text: string;
+				player?: string;
+				timeOnly?: number[];
+		  }
+	>;
+}
+
+/**
  * A `<midi-instrument>`: MIDI 1.0 playback for the score-instrument `id` names.
  * Numbers are as MusicXML writes them: channel 1-16, bank 1-16384, program and
  * unpitched 1-128, volume 0-100 (percent), pan and elevation -180 to 180
@@ -162,13 +247,7 @@ export function writeScoreInstrument(
 	node: MElement,
 	spec: ScoreInstrumentSpec,
 ): void {
-	if (spec.solo && spec.ensemble) {
-		throw new Error('An instrument is either solo or an ensemble, not both');
-	}
-	const size = spec.ensemble?.size;
-	if (size !== undefined && (!Number.isInteger(size) || size < 1)) {
-		throw new Error(`Ensemble size must be a positive integer, got ${size}`);
-	}
+	checkInstrumentSound(spec);
 	for (const child of [...node.children]) {
 		child.remove();
 	}
@@ -176,6 +255,24 @@ export function writeScoreInstrument(
 	if (spec.abbreviation !== undefined) {
 		appendValue(node, 'instrument-abbreviation', spec.abbreviation);
 	}
+	appendInstrumentSound(node, spec);
+}
+
+function checkInstrumentSound(spec: InstrumentChangeSpec): void {
+	if (spec.solo && spec.ensemble) {
+		throw new Error('An instrument is either solo or an ensemble, not both');
+	}
+	const size = spec.ensemble?.size;
+	if (size !== undefined && (!Number.isInteger(size) || size < 1)) {
+		throw new Error(`Ensemble size must be a positive integer, got ${size}`);
+	}
+}
+
+/** Append the sound, solo/ensemble and virtual-instrument children, in schema order. */
+function appendInstrumentSound(
+	node: MElement,
+	spec: InstrumentChangeSpec,
+): void {
 	if (spec.sound !== undefined) {
 		appendValue(node, 'instrument-sound', spec.sound);
 	}
@@ -184,8 +281,8 @@ export function writeScoreInstrument(
 	}
 	if (spec.ensemble) {
 		const ensemble = new MElement('ensemble');
-		if (size !== undefined) {
-			ensemble.setText(String(size));
+		if (spec.ensemble.size !== undefined) {
+			ensemble.setText(String(spec.ensemble.size));
 		}
 		node.append(ensemble);
 	}
@@ -198,6 +295,171 @@ export function writeScoreInstrument(
 			appendValue(virtual, 'virtual-name', spec.virtualInstrument.name);
 		}
 		node.append(virtual);
+	}
+}
+
+export function readInstrumentChange(node: MElement): InstrumentChange {
+	const { name, abbreviation, ...change } = readScoreInstrument(node);
+	return change;
+}
+
+/** Replace `node`'s content with `spec`, in schema order. */
+export function writeInstrumentChange(
+	node: MElement,
+	spec: InstrumentChangeSpec,
+): void {
+	checkInstrumentSound(spec);
+	for (const child of [...node.children]) {
+		child.remove();
+	}
+	appendInstrumentSound(node, spec);
+}
+
+const mutes: readonly PlayMute[] = [
+	'on',
+	'off',
+	'straight',
+	'cup',
+	'harmon-no-stem',
+	'harmon-stem',
+	'bucket',
+	'plunger',
+	'hat',
+	'solotone',
+	'practice',
+	'stop-mute',
+	'stop-hand',
+	'echo',
+	'palm',
+];
+const semiPitches: readonly PlaySemiPitched[] = [
+	'high',
+	'medium-high',
+	'medium',
+	'medium-low',
+	'low',
+	'very-low',
+];
+
+/** `text` when it is one of `allowed`, else null. */
+function oneOf<Value extends string>(
+	text: string | null | undefined,
+	allowed: readonly Value[],
+): Value | null {
+	const trimmed = text?.trim();
+	return allowed.find((value) => value === trimmed) ?? null;
+}
+
+export function readPlay(node: MElement): Play {
+	return {
+		id: node.getAttribute('id'),
+		ipa: node.child('ipa')?.text ?? null,
+		mute: oneOf(node.child('mute')?.text, mutes),
+		semiPitched: oneOf(node.child('semi-pitched')?.text, semiPitches),
+		other: node.childrenNamed('other-play').map((other) => ({
+			type: other.getAttribute('type') ?? '',
+			text: other.text ?? '',
+		})),
+	};
+}
+
+/** Replace `node`'s content with `spec`, in schema order, checking the enumerations. */
+export function writePlay(node: MElement, spec: PlaySpec): void {
+	if (spec.mute != null && !mutes.includes(spec.mute)) {
+		throw new Error(
+			`mute must be one of ${mutes.join(', ')}, got ${spec.mute}`,
+		);
+	}
+	if (spec.semiPitched != null && !semiPitches.includes(spec.semiPitched)) {
+		throw new Error(
+			`semiPitched must be one of ${semiPitches.join(', ')}, got ${spec.semiPitched}`,
+		);
+	}
+	for (const child of [...node.children]) {
+		child.remove();
+	}
+	if (spec.ipa != null) {
+		appendValue(node, 'ipa', spec.ipa);
+	}
+	if (spec.mute != null) {
+		appendValue(node, 'mute', spec.mute);
+	}
+	if (spec.semiPitched != null) {
+		appendValue(node, 'semi-pitched', spec.semiPitched);
+	}
+	for (const other of spec.other ?? []) {
+		appendValue(node, 'other-play', other.text).setAttribute(
+			'type',
+			other.type,
+		);
+	}
+}
+
+export function readListen(node: MElement): Listen {
+	const read = (child: MElement) => {
+		const timeOnly = child.getAttribute('time-only');
+		return {
+			player: child.getAttribute('player'),
+			timeOnly:
+				timeOnly == null || !/^\s*\d+(\s*,\s*\d+)*\s*$/.test(timeOnly)
+					? null
+					: timeOnly.split(',').map((pass) => Number(pass)),
+		};
+	};
+	return {
+		actions: node.children.flatMap((child): Listen['actions'] => {
+			if (!(child instanceof MElement)) {
+				return [];
+			}
+			if (child.tag === 'assess') {
+				return [
+					{
+						kind: 'assess',
+						...read(child),
+						assess: child.getAttribute('type') !== 'no',
+					},
+				];
+			}
+			if (child.tag === 'wait') {
+				return [{ kind: 'wait', ...read(child) }];
+			}
+			if (child.tag === 'other-listen') {
+				return [
+					{
+						kind: 'other',
+						...read(child),
+						type: child.getAttribute('type') ?? '',
+						text: child.text ?? '',
+					},
+				];
+			}
+			return [];
+		}),
+	};
+}
+
+/** Replace `node`'s content with `spec`, in order. */
+export function writeListen(node: MElement, spec: ListenSpec): void {
+	for (const child of [...node.children]) {
+		child.remove();
+	}
+	for (const action of spec.actions) {
+		const element = new MElement(
+			{ wait: 'wait', assess: 'assess', other: 'other-listen' }[action.kind],
+		);
+		if (action.kind === 'assess') {
+			element.setAttribute('type', action.assess ? 'yes' : 'no');
+		} else if (action.kind === 'other') {
+			element.setAttribute('type', action.type);
+			element.setText(action.text);
+		}
+		if (action.player != null) {
+			element.setAttribute('player', action.player);
+		}
+		if (action.timeOnly != null) {
+			element.setAttribute('time-only', action.timeOnly.join(','));
+		}
+		node.append(element);
 	}
 }
 
