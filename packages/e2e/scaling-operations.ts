@@ -121,9 +121,7 @@ interface ImportInput {
 // Import inputs depend only on the operation and score, and building them (a
 // full Guitar Pro export for gpif-parse) costs far more than the timed import,
 // so repeated samples of one score reuse them. Guards alternate two scores;
-// keeping a few bounds what a bench sweep retains. gp-parse still builds per
-// sample: its tie numbering is quadratic until #49 lands, and the guard only
-// stays under 6x while a fresh export slows its small sample.
+// keeping a few bounds what a bench sweep retains.
 const importInputs = new Map<string, Promise<ImportInput>>();
 const importInputLimit = 4;
 
@@ -132,10 +130,11 @@ function importInput(
 	xml: string,
 	document: MDocument,
 ): Promise<ImportInput> {
-	if (operation === 'gp-parse') {
-		return buildImportInput(operation, document);
-	}
-	if (operation !== 'mxl-unzip' && operation !== 'gpif-parse') {
+	if (
+		operation !== 'mxl-unzip' &&
+		operation !== 'gp-parse' &&
+		operation !== 'gpif-parse'
+	) {
 		return Promise.resolve({});
 	}
 	const key = `${operation}\0${xml}`;
