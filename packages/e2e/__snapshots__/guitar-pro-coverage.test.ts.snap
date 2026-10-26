@@ -63,7 +63,7 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 `;
 
 exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpus 1`] = `
-"## Export: 55 of 199 ok
+"## Export: 67 of 199 ok
 
 | File | Result |
 | --- | --- |
@@ -87,13 +87,13 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/01f-Pitches-ParenthesizedMicrotoneAccidentals.xml\` | error: Invalid MIDI pitch: 61.5; expected an integer from 0 to 127 |
 | \`lilypond/02a-Rests-Durations.xml\` | error: Guitar Pro export requires a supported note type, got 256th |
 | \`lilypond/02b-Rests-PitchedRests.xml\` | ok |
-| \`lilypond/02c-Rests-MultiMeasureRests.xml\` | error: Guitar Pro export requires a supported note type, got null |
-| \`lilypond/02d-Rests-Multimeasure-TimeSignatures.xml\` | error: Guitar Pro export requires a supported note type, got null |
-| \`lilypond/02e-Rests-NoType.xml\` | error: Guitar Pro export requires a supported note type, got null |
+| \`lilypond/02c-Rests-MultiMeasureRests.xml\` | ok |
+| \`lilypond/02d-Rests-Multimeasure-TimeSignatures.xml\` | ok |
+| \`lilypond/02e-Rests-NoType.xml\` | error: Note duration disagrees with its notation in measure 0 |
 | \`lilypond/03a-Rhythm-Durations.xml\` | error: Guitar Pro export requires a supported note type, got maxima |
 | \`lilypond/03b-Rhythm-Backup.xml\` | ok |
 | \`lilypond/03c-Rhythm-DivisionChange.xml\` | error: Overlapping or invalid note timing in measure 1 |
-| \`lilypond/03d-Rhythm-DottedDurations-Factors.xml\` | error: Guitar Pro export requires a supported note type, got null |
+| \`lilypond/03d-Rhythm-DottedDurations-Factors.xml\` | ok |
 | \`lilypond/03e-Rhythm-No-Divisions.xml\` | error: Overlapping or invalid note timing in measure 1 |
 | \`lilypond/03f-Rhythm-Forward.xml\` | ok |
 | \`lilypond/11a-TimeSignatures.xml\` | ok |
@@ -125,7 +125,7 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/21i-Chord-DifferentVoices.xml\` | ok |
 | \`lilypond/22a-Noteheads.xml\` | omits \`<lyric>\`, \`<notehead>\` |
 | \`lilypond/22b-Staff-Notestyles.xml\` | omits \`<lyric>\` |
-| \`lilypond/22c-Noteheads-Chords.xml\` | omits \`<lyric>\`, \`<notehead>\`; error: Guitar Pro export requires a supported note type, got null |
+| \`lilypond/22c-Noteheads-Chords.xml\` | omits \`<lyric>\`, \`<notehead>\` |
 | \`lilypond/22d-Parenthesized-Noteheads.xml\` | omits \`<notehead>\` |
 | \`lilypond/23a-Tuplets.xml\` | ok |
 | \`lilypond/23b-Tuplets-Styles.xml\` | ok |
@@ -170,41 +170,41 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/41a-MultiParts-Partorder.xml\` | ok |
 | \`lilypond/41b-MultiParts-MoreThan10.xml\` | ok |
 | \`lilypond/41c-StaffGroups.xml\` | omits \`<transpose>\`, \`<unpitched>\`, \`different keys across staves or parts\`, \`octave clefs\`; error: Unsupported Guitar Pro clef: percussionnull |
-| \`lilypond/41d-StaffGroups-Nested.xml\` | error: Guitar Pro export requires a supported note type, got null |
-| \`lilypond/41e-StaffGroups-InstrumentNames-Linebroken.xml\` | error: Guitar Pro export requires a supported note type, got null |
-| \`lilypond/41f-StaffGroups-Overlapping.xml\` | error: Guitar Pro export requires a supported note type, got null |
-| \`lilypond/41g-StaffGroups-NestingOrder.xml\` | error: Guitar Pro export requires a supported note type, got null |
+| \`lilypond/41d-StaffGroups-Nested.xml\` | ok |
+| \`lilypond/41e-StaffGroups-InstrumentNames-Linebroken.xml\` | ok |
+| \`lilypond/41f-StaffGroups-Overlapping.xml\` | ok |
+| \`lilypond/41g-StaffGroups-NestingOrder.xml\` | ok |
 | \`lilypond/41h-TooManyParts.xml\` | error: Overlapping or invalid note timing in measure 1 |
 | \`lilypond/41i-PartNameDisplay-Override.xml\` | ok |
 | \`lilypond/41j-PartNameDisplay-Multiple-DisplayText-Children.xml\` | ok |
 | \`lilypond/41k-PartName-Print.xml\` | ok |
 | \`lilypond/41l-GroupNameDisplay-Override.xml\` | ok |
-| \`lilypond/42a-MultiVoice-TwoVoicesOnStaff-Lyrics.xml\` | omits \`<fermata>\`, \`<lyric>\`, \`<slur>\`; error: Guitar Pro export requires a supported note type, got null |
+| \`lilypond/42a-MultiVoice-TwoVoicesOnStaff-Lyrics.xml\` | omits \`<fermata>\`, \`<lyric>\`, \`<slur>\` |
 | \`lilypond/42b-MultiVoice-MidMeasureClefChange.xml\` | omits \`<dynamics>\`, \`<slur>\`, \`mid-measure clef changes\` |
 | \`lilypond/43a-PianoStaff.xml\` | ok |
 | \`lilypond/43b-MultiStaff-DifferentKeys.xml\` | omits \`different keys across staves or parts\` |
 | \`lilypond/43c-MultiStaff-DifferentKeysAfterBackup.xml\` | omits \`mid-measure clef changes\`, \`mid-measure key or time changes\` |
-| \`lilypond/43d-MultiStaff-StaffChange.xml\` | error: Guitar Pro export requires a supported note type, got null |
+| \`lilypond/43d-MultiStaff-StaffChange.xml\` | ok |
 | \`lilypond/43e-Multistaff-ClefDynamics.xml\` | omits \`<wedge>\`, \`dynamic ffff\`; error: Unsupported Guitar Pro clef: C2 |
-| \`lilypond/43f-MultiStaff-Lyrics.xml\` | omits \`<lyric>\`, \`<slur>\`; error: Guitar Pro export requires a supported note type, got null |
+| \`lilypond/43f-MultiStaff-Lyrics.xml\` | omits \`<lyric>\`, \`<slur>\` |
 | \`lilypond/43g-MultiStaff-PartSymbol.xml\` | error: Invalid staff count: 4; expected an integer from 1 to 2 |
 | \`lilypond/43h-MultiStaff-Chords.xml\` | error: Invalid staff count: 3; expected an integer from 1 to 2 |
 | \`lilypond/43i-MultiStaff-StaffChange-SingleVoice.xml\` | ok |
 | \`lilypond/43j-MultiStaff-TimeSignatureAfterBackup.xml\` | omits \`mid-measure clef changes\`, \`mid-measure key or time changes\` |
-| \`lilypond/45a-SimpleRepeat.xml\` | error: Guitar Pro export requires a supported note type, got null |
+| \`lilypond/45a-SimpleRepeat.xml\` | ok |
 | \`lilypond/45b-RepeatWithAlternatives.xml\` | omits \`<ending>\` |
 | \`lilypond/45c-SimpleRepeat-Nested.xml\` | error: Invalid repeat count: 1; expected an integer from 2 to 100 |
-| \`lilypond/45d-Repeats-MultipleEndings.xml\` | omits \`<ending>\`; error: Guitar Pro export requires a supported note type, got null |
-| \`lilypond/45e-Repeats-Combination.xml\` | omits \`<ending>\`; error: Guitar Pro export requires a supported note type, got null |
-| \`lilypond/45f-Repeats-InvalidEndings.xml\` | omits \`<ending>\`; error: Guitar Pro export requires a supported note type, got null |
+| \`lilypond/45d-Repeats-MultipleEndings.xml\` | omits \`<ending>\` |
+| \`lilypond/45e-Repeats-Combination.xml\` | omits \`<ending>\` |
+| \`lilypond/45f-Repeats-InvalidEndings.xml\` | omits \`<ending>\` |
 | \`lilypond/45g-Repeats-NotEnded.xml\` | ok |
 | \`lilypond/45h-Repeats-Partial.xml\` | omits \`pickups after the first measure\` |
 | \`lilypond/45i-Repeats-Nested.xml\` | omits \`<ending>\` |
-| \`lilypond/45j-SimpleRepeat-Start.xml\` | error: Guitar Pro export requires a supported note type, got null |
+| \`lilypond/45j-SimpleRepeat-Start.xml\` | ok |
 | \`lilypond/45k-Repeats-Chords-FiguredBass.xml\` | omits \`<ending>\`, \`<harmony>\` |
-| \`lilypond/46a-Barlines.xml\` | error: Guitar Pro export requires a supported note type, got null |
+| \`lilypond/46a-Barlines.xml\` | ok |
 | \`lilypond/46b-MidmeasureBarline.xml\` | ok |
-| \`lilypond/46c-Midmeasure-Clef.xml\` | omits \`pickups after the first measure\`; error: Guitar Pro export requires a supported note type, got null |
+| \`lilypond/46c-Midmeasure-Clef.xml\` | omits \`pickups after the first measure\`; error: Unsupported Guitar Pro clef: C2 |
 | \`lilypond/46d-PickupMeasure-ImplicitMeasures.xml\` | omits \`pickups after the first measure\` |
 | \`lilypond/46e-PickupMeasure-SecondVoiceStartsLater.xml\` | ok |
 | \`lilypond/46f-IncompleteMeasures.xml\` | ok |
@@ -216,7 +216,7 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/51b-Header-Quotes.xml\` | error: Overlapping or invalid note timing in measure 1 |
 | \`lilypond/51c-MultipleMetadata.xml\` | error: Overlapping or invalid note timing in measure 1 |
 | \`lilypond/51d-EmptyTitle.xml\` | error: Overlapping or invalid note timing in measure 1 |
-| \`lilypond/52a-PageLayout.xml\` | error: Guitar Pro export requires a supported note type, got null |
+| \`lilypond/52a-PageLayout.xml\` | ok |
 | \`lilypond/52b-Breaks.xml\` | ok |
 | \`lilypond/61a-Lyrics.xml\` | omits \`<lyric>\` |
 | \`lilypond/61b-MultipleLyrics.xml\` | omits \`<lyric>\` |
@@ -251,7 +251,7 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond_33e-Spanners-OctaveShifts-InvalidSize.xml\` | omits \`<octave-shift>\`; error: Note duration disagrees with its notation in measure 1 |
 | \`lilypond_41h-TooManyParts.xml\` | error: Overlapping or invalid note timing in measure 1 |
 | \`lilypond_43c-MultiStaff-DifferentKeysAfterBackup.xml\` | omits \`mid-measure clef changes\`, \`mid-measure key or time changes\` |
-| \`lilypond_45f-Repeats-InvalidEndings.xml\` | omits \`<ending>\`; error: Guitar Pro export requires a supported note type, got null |
+| \`lilypond_45f-Repeats-InvalidEndings.xml\` | omits \`<ending>\` |
 | \`lilypond_46f-IncompleteMeasures.xml\` | ok |
 | \`lilypond_61j-Lyrics-Elisions.xml\` | omits \`<lyric>\` |
 | \`lilypond_99a-Sibelius5-IgnoreBeaming.xml\` | omits \`<slur>\` |

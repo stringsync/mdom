@@ -505,7 +505,7 @@ export class GuitarProScoreWriter {
 		const fullRest =
 			note.isRest &&
 			(note.child('rest')?.getAttribute('measure') === 'yes' ||
-				(note.type === 'whole' &&
+				((note.type === 'whole' || note.type == null) &&
 					note.measure.notes.filter(
 						(n) => n.voice === note.voice && n.staff === note.staff,
 					).length === 1));
