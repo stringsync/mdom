@@ -36,6 +36,24 @@ describe('Finale + Dolet — a 22-part orchestral score', () => {
 		expect(prints[0]!.measureNumbering?.value).toBe('system');
 	});
 
+	it('reads engraving defaults and resolves staff distance overrides per system', () => {
+		const appearance = score.appearance!;
+		expect(appearance.lineWidths).toHaveLength(10);
+		expect(appearance.getLineWidth('heavy barline')).toBe(5.0391);
+		expect(appearance.getLineWidth('tuplet bracket')).toBe(0.957);
+		expect(appearance.noteSizes).toEqual([
+			{ type: 'grace', value: 60 },
+			{ type: 'cue', value: 60 },
+		]);
+		expect(score.getStaffLayout()!.distance).toBe(93);
+
+		const oboe = score.getPart('P2')!;
+		expect(oboe.measures[0]!.print!.getStaffLayout('1')!.distance).toBe(95);
+		// Measure 2 opens no system, so the override from measure 1 still holds.
+		expect(oboe.measures[1]!.getStaffDistance()).toBe(95);
+		expect(score.parts[0]!.measures[1]!.getStaffDistance()).toBe(93);
+	});
+
 	it('reads per-note instrument assignments and the percussion MIDI keys', () => {
 		const cymbal = score.getPart('P15')!;
 		expect(cymbal.instruments.map((each) => each.name)).toEqual([

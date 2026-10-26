@@ -1,6 +1,11 @@
 import { MElement, required } from './m-node';
 import { PageLayout } from './page-layout';
 import { insertMetadata } from './score-metadata';
+import {
+	getOrCreateStaffLayoutIn,
+	StaffLayout,
+	staffLayoutIn,
+} from './staff-layout';
 import { SystemLayout } from './system-layout';
 
 /** Canonical child order of the MusicXML `<print>` sequence. */
@@ -61,10 +66,10 @@ function yesNo(value: string | null): 'yes' | 'no' | null {
 /**
  * A `<print>`: layout instructions for the measure it leads. Carries the
  * system/page break flags, the page number and blank pages of a new page,
- * `<page-layout>` and `<system-layout>` overrides for the page and system
- * starting here, and `<measure-numbering>`. Other layout children (staff-layout,
- * measure-layout, part-name-display) are left as plain elements and still
- * round-trip. Writers keep the schema's child order.
+ * `<page-layout>`, `<system-layout>` and per-staff `<staff-layout>` overrides
+ * for the page and system starting here, and `<measure-numbering>`. Other
+ * layout children (measure-layout, part-name-display) are left as plain
+ * elements and still round-trip. Writers keep the schema's child order.
  */
 export class Print extends MElement {
 	constructor() {
@@ -216,6 +221,25 @@ export class Print extends MElement {
 				node.setAttribute(name, String(value));
 			}
 		}
+	}
+
+	/** Every `<staff-layout>` override for the system starting here, in document order. */
+	get staffLayouts(): StaffLayout[] {
+		return this.childrenOfType(StaffLayout);
+	}
+
+	/**
+	 * The `<staff-layout>` override for `staff` (default '1'; a numberless one is
+	 * staff 1); null when unset. {@link Measure.getStaffDistance} resolves it
+	 * against the score defaults.
+	 */
+	getStaffLayout(staff = '1'): StaffLayout | null {
+		return staffLayoutIn(this, staff);
+	}
+
+	/** Get or create the `<staff-layout>` override for `staff`, kept in schema and staff order. */
+	getOrCreateStaffLayout(staff?: string): StaffLayout {
+		return getOrCreateStaffLayoutIn(this, staff, ORDER);
 	}
 
 	/** The `<system-layout>` override for the system starting here; null when unset. */

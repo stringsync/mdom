@@ -1,3 +1,4 @@
+import { Appearance } from './appearance';
 import { MElement } from './m-node';
 import { appendValue } from './measure';
 import { PageLayout } from './page-layout';
@@ -22,6 +23,11 @@ import {
 	type TypedTextSpec,
 	typedTexts,
 } from './score-metadata';
+import {
+	getOrCreateStaffLayoutIn,
+	StaffLayout,
+	staffLayoutIn,
+} from './staff-layout';
 import { SystemLayout } from './system-layout';
 
 /** Canonical child order of the MusicXML `<defaults>` sequence. */
@@ -357,6 +363,44 @@ export class Score extends MElement {
 		const layout = new PageLayout();
 		insertMetadata(this.defaults(), layout, defaultsOrder);
 		return layout;
+	}
+
+	/** Every `<defaults><staff-layout>`: the score-wide gap above each staff, in document order. */
+	get staffLayouts(): StaffLayout[] {
+		return this.child('defaults')?.childrenOfType(StaffLayout) ?? [];
+	}
+
+	/**
+	 * The `<defaults><staff-layout>` for `staff` (default '1'; a numberless one
+	 * is staff 1); null when unset. A measure's `<print>` can override it for one
+	 * system: {@link Measure.getStaffDistance} resolves the two.
+	 */
+	getStaffLayout(staff = '1'): StaffLayout | null {
+		return staffLayoutIn(this.child('defaults'), staff);
+	}
+
+	/** Get or create the `<defaults><staff-layout>` for `staff`, keeping `<defaults>` and staff order. */
+	getOrCreateStaffLayout(staff?: string): StaffLayout {
+		return getOrCreateStaffLayoutIn(this.defaults(), staff, defaultsOrder);
+	}
+
+	/**
+	 * The `<defaults><appearance>`: score-wide line widths, note sizes and
+	 * distances. Null when unset, which leaves them to the application.
+	 */
+	get appearance(): Appearance | null {
+		return this.child('defaults')?.childrenOfType(Appearance)[0] ?? null;
+	}
+
+	/** Get or create the `<defaults><appearance>` (both created if absent), keeping `<defaults>` order. */
+	getOrCreateAppearance(): Appearance {
+		const existing = this.appearance;
+		if (existing) {
+			return existing;
+		}
+		const appearance = new Appearance();
+		insertMetadata(this.defaults(), appearance, defaultsOrder);
+		return appearance;
 	}
 
 	private defaults(): MElement {

@@ -1,4 +1,16 @@
 import { MElement, required } from './m-node';
+import { colorOf } from './print-style';
+
+/** What `setLineDetail` writes onto a `<line-detail>`; `line` comes from the call. */
+export interface LineDetailSpec {
+	/** Line thickness in tenths. */
+	width?: number;
+	/** MusicXML `#RRGGBB` or `#AARRGGBB`. */
+	color?: string;
+	lineType?: 'solid' | 'dashed' | 'dotted' | 'wavy';
+	/** False hides the line while it still counts for clef and pitch positions. */
+	printObject?: boolean;
+}
 
 /**
  * A `<line-detail>` inside `<staff-details>`: overrides one staff line's
@@ -28,5 +40,20 @@ export class LineDetail extends MElement {
 
 	set width(tenths: number) {
 		this.setAttribute('width', String(tenths));
+	}
+
+	/** The line's `color` as a CSS color; null when unset. */
+	get color(): string | null {
+		return colorOf(this);
+	}
+
+	/** `line-type` (solid/dashed/dotted/wavy); null when unstated. */
+	get lineType(): string | null {
+		return this.getAttribute('line-type');
+	}
+
+	/** Whether the line is drawn (`print-object`); true when unstated. */
+	get printObject(): boolean {
+		return this.getAttribute('print-object') !== 'no';
 	}
 }

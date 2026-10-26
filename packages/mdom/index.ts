@@ -1,5 +1,10 @@
 export { Accidental } from './accidental';
 export {
+	Appearance,
+	type AppearanceValue,
+	type NoteSizeType,
+} from './appearance';
+export {
 	type ArchiveOptions,
 	DEFAULT_MAX_UNCOMPRESSED_BYTES,
 } from './archive-reader';
@@ -47,7 +52,7 @@ export type {
 	VirtualInstrumentSpec,
 } from './instrument';
 export { Key } from './key';
-export { LineDetail } from './line-detail';
+export { LineDetail, type LineDetailSpec } from './line-detail';
 export { Lyric } from './lyric';
 export { MDocument } from './m-document';
 export { MDOMParser } from './m-dom-parser';
@@ -99,7 +104,12 @@ export type {
 export { Slide } from './slide';
 export { Slur } from './slur';
 export { Sound } from './sound';
-export { StaffDetails } from './staff-details';
+export {
+	StaffDetails,
+	type StaffTuningSpec,
+	type StaffType,
+} from './staff-details';
+export { StaffLayout } from './staff-layout';
 export { StaffTuning } from './staff-tuning';
 export { SystemLayout } from './system-layout';
 export { Technical } from './technical';

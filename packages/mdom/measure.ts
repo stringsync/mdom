@@ -142,6 +142,54 @@ export class Measure extends MElement {
 	}
 
 	/**
+	 * Get or create the `<staff-details>` for `staff` in this measure's leading
+	 * `<attributes>`, to declare how the staff is drawn from here on (its type,
+	 * lines, tunings, capo, size). `number` is written only when `staff` is given,
+	 * as with {@link setClef}; without it this is the numberless block, which
+	 * applies to every staff.
+	 */
+	getOrCreateStaffDetails(staff?: string): StaffDetails {
+		const attrs = attributesOf(this);
+		const number = staff ?? null;
+		const existing = attrs
+			.childrenOfType(StaffDetails)
+			.find((details) => details.getAttribute('number') === number);
+		if (existing) {
+			return existing;
+		}
+		const details = new StaffDetails();
+		if (staff != null) {
+			details.setAttribute('number', staff);
+		}
+		return placeInAttributes(attrs, details);
+	}
+
+	/**
+	 * The `<staff-distance>` in effect above `staff` (default '1') in the system
+	 * holding this measure, in tenths: a `<print>` override from this measure back
+	 * to the one that starts the system (`new-system`/`new-page`, or the part's
+	 * first measure), else the score's `<defaults>`. Null when neither states one,
+	 * which leaves it to the application. MusicXML ignores it for a system's first
+	 * staff. A system break the application made on its own is not visible here,
+	 * so an override only reaches as far back as the last explicit break.
+	 */
+	getStaffDistance(staff = '1'): number | null {
+		const part = this.part;
+		const measures = part.measures;
+		for (let index = this.index; index >= 0; index--) {
+			const print = measures[index]?.print;
+			const distance = print?.getStaffLayout(staff)?.distance;
+			if (distance != null) {
+				return distance;
+			}
+			if (print?.newSystem || print?.newPage) {
+				break;
+			}
+		}
+		return part.score.getStaffLayout(staff)?.distance ?? null;
+	}
+
+	/**
 	 * The `<line-detail>` overrides in effect for `staff` (default '1'): the
 	 * per-line appearance from the nearest `<staff-details>`. Empty when that block
 	 * sets none, or when no `<staff-details>` applies.

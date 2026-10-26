@@ -1,4 +1,5 @@
 import { Accidental } from './accidental';
+import { Appearance } from './appearance';
 import { Barline } from './barline';
 import { Beam } from './beam';
 import { Bracket } from './bracket';
@@ -32,6 +33,7 @@ import { Slide } from './slide';
 import { Slur } from './slur';
 import { Sound } from './sound';
 import { StaffDetails } from './staff-details';
+import { StaffLayout } from './staff-layout';
 import { StaffTuning } from './staff-tuning';
 import { SystemLayout } from './system-layout';
 import { TECHNICAL_TAGS, Technical } from './technical';
@@ -104,6 +106,8 @@ function tags(): Record<string, ElementCtor> {
 		print: Print,
 		'page-layout': PageLayout,
 		'system-layout': SystemLayout,
+		'staff-layout': StaffLayout,
+		appearance: Appearance,
 	};
 	for (const tag of ORNAMENT_TAGS) {
 		registry[tag] = Ornament;

@@ -15,14 +15,13 @@ const TAB = `
         <staff-details number="1">
           <staff-tuning line="1"><tuning-step>E</tuning-step><tuning-octave>2</tuning-octave></staff-tuning>
         </staff-details>
-        <staff-details number="2" print-object="no">
+        <staff-details number="2" print-object="no" show-frets="letters">
           <staff-lines>6</staff-lines>
-          <staff-size>80</staff-size>
-          <show-frets>letters</show-frets>
-          <capo>2</capo>
           <line-detail line="1" width="0.5"/>
           <staff-tuning line="1"><tuning-step>E</tuning-step><tuning-octave>2</tuning-octave></staff-tuning>
           <staff-tuning line="2"><tuning-step>A</tuning-step><tuning-octave>2</tuning-octave></staff-tuning>
+          <capo>2</capo>
+          <staff-size>80</staff-size>
         </staff-details>
       </attributes>
     </measure>
