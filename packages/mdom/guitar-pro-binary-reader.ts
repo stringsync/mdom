@@ -15,7 +15,6 @@ const STRING_SLOTS = 7;
 const BASS_CLEF_TUNING = 35;
 const NOTE_TECHNIQUES = 'note techniques';
 const BEAT_EFFECTS = 'beat effects or annotations';
-const BAR_NAVIGATION = 'alternate endings, jumps, free time or swing';
 
 const DURATIONS = [
 	'whole',
@@ -207,7 +206,7 @@ export class GuitarProBinaryReader {
 		return infos;
 	}
 
-	/** Jump and target markers are navigation the mdom tree cannot express. */
+	/** Jump and target markers; reading them waits on the GP5 effects work. */
 	private readDirections(): void {
 		let found = false;
 		for (let direction = 0; direction < 19; direction++) {
@@ -215,7 +214,7 @@ export class GuitarProBinaryReader {
 		}
 		this.cursor.skip(4);
 		if (found) {
-			this.values.unsupported(BAR_NAVIGATION);
+			this.values.unsupported('jumps');
 		}
 	}
 
@@ -261,8 +260,11 @@ export class GuitarProBinaryReader {
 			const endings = this.cursor.byte();
 			const tripletFeel = this.cursor.byte();
 			this.cursor.byte();
-			if (endings || tripletFeel) {
-				this.values.unsupported(BAR_NAVIGATION);
+			if (endings) {
+				this.values.unsupported('alternate endings');
+			}
+			if (tripletFeel) {
+				this.values.unsupported('triplet feel');
 			}
 			masters.push(master);
 			previous = master;

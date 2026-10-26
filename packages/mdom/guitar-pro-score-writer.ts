@@ -32,6 +32,17 @@ interface TempoChange {
 /** Words that mark a gradual tempo change, like accel. or rit. */
 const GRADUAL_TEMPO = /^(accel|rit|rall|ritard|allarg)/i;
 
+/** The GPIF jump suffix ("AlFine", "AlDoubleCoda", "AlCoda") a D.C. or D.S.'s words spell, or none. */
+function jumpUntil(words: string): string {
+	const until = /al\s+(fine|double\s+coda|coda)/i.exec(words)?.[1];
+	return until ? JUMP_UNTIL[until.toLowerCase().replace(/\s+/, ' ')]! : '';
+}
+const JUMP_UNTIL: Record<string, string> = {
+	fine: 'AlFine',
+	'double coda': 'AlDoubleCoda',
+	coda: 'AlCoda',
+};
+
 interface StaffContext {
 	id: string;
 	tuning: number[];
@@ -46,6 +57,11 @@ export class GuitarProScoreWriter {
 	private readonly values: GuitarProValues;
 	private readonly root = new MElement('GPIF');
 	private readonly tables = new Map<string, MElement>();
+	/** Segno and coda ids by the GPIF target each was given, two of each. */
+	private readonly landmarks = {
+		segno: new Map<string, string>(),
+		coda: new Map<string, string>(),
+	};
 	constructor(opts: GuitarProOptions = {}) {
 		this.values = new GuitarProValues(opts);
 	}
@@ -112,9 +128,14 @@ export class GuitarProScoreWriter {
 		]) {
 			this.tables.set(name, X.add(this.root, name));
 		}
+		const passes = this.endingPasses(first);
 		for (const measure of first.measures) {
 			const master = this.masterBar(measure);
 			this.tables.get('MasterBars')!.append(master);
+			if (passes[measure.index]!.length) {
+				X.add(master, 'AlternateEndings', passes[measure.index]!.join(' '));
+			}
+			this.navigation(master, measure);
 			X.add(master, 'Bars', '');
 			for (const change of this.tempos(measure)) {
 				this.automation(
@@ -309,6 +330,123 @@ export class GuitarProScoreWriter {
 			X.add(node, 'DoubleBar');
 		}
 		return node;
+	}
+	/**
+	 * The passes each measure's volta plays on, from the brackets' `start`
+	 * edges to their `stop`/`discontinue` ones; empty outside a volta.
+	 */
+	private endingPasses(part: Part): number[][] {
+		let open: number[] = [];
+		return part.measures.map((measure) => {
+			const endings = measure.barlines.flatMap((barline) =>
+				barline.ending ? [barline.ending] : [],
+			);
+			const start = endings.find((ending) => ending.type === 'start');
+			if (start) {
+				open = start.numbers;
+				if (!open.length) {
+					this.values.unsupported('endings with no pass numbers');
+				} else if (open.some((pass) => pass > 32)) {
+					this.values.unsupported('endings past pass 32');
+					open = [];
+				}
+			}
+			const passes = open;
+			if (endings.some((ending) => ending.type !== 'start')) {
+				open = [];
+			}
+			return passes;
+		});
+	}
+	/**
+	 * A measure's segno, coda, fine and jump marks as GPIF `Directions`, read
+	 * from their `<sound>` attributes (and a printed segno or coda with none).
+	 * Guitar Pro has two of each landmark: ids `segno-segno` and `double-coda`
+	 * claim the second, any other id the first one free.
+	 */
+	private navigation(master: MElement, measure: Measure): void {
+		const targets: string[] = [];
+		const jumps: string[] = [];
+		const add = (list: string[], name: string | null) => {
+			if (name && !list.includes(name)) {
+				list.push(name);
+			}
+		};
+		for (const sound of measure.sounds) {
+			const words =
+				sound.parent instanceof Direction ? sound.parent.words.join(' ') : '';
+			if (sound.segno != null) {
+				add(targets, this.landmark('segno', sound.segno));
+			}
+			if (sound.coda != null) {
+				add(targets, this.landmark('coda', sound.coda));
+			}
+			if (sound.fine != null) {
+				add(targets, 'Fine');
+			}
+			if (sound.toCoda != null) {
+				const coda = this.landmark('coda', sound.toCoda);
+				add(jumps, coda && (coda === 'Coda' ? 'DaCoda' : 'DaDoubleCoda'));
+			}
+			const segno =
+				sound.dalSegno == null ? null : this.landmark('segno', sound.dalSegno);
+			const from = sound.daCapo ? 'DaCapo' : segno && `Da${segno}`;
+			if (from) {
+				add(jumps, from + jumpUntil(words));
+			}
+			if (
+				sound.timeOnly != null &&
+				(sound.daCapo || sound.dalSegno != null || sound.toCoda != null)
+			) {
+				this.values.unsupported('jumps on chosen passes');
+			}
+		}
+		for (const direction of measure.directions) {
+			if (
+				direction.sound?.segno == null &&
+				direction.navigations.includes('segno')
+			) {
+				add(targets, this.landmark('segno', 'segno'));
+			}
+			if (
+				direction.sound?.coda == null &&
+				direction.navigations.includes('coda')
+			) {
+				add(targets, this.landmark('coda', 'coda'));
+			}
+		}
+		if (!targets.length && !jumps.length) {
+			return;
+		}
+		const node = X.add(master, 'Directions');
+		for (const target of targets) {
+			X.add(node, 'Target', target);
+		}
+		for (const jump of jumps) {
+			X.add(node, 'Jump', jump);
+		}
+	}
+	/** The GPIF target (`Segno`/`SegnoSegno`, `Coda`/`DoubleCoda`) a landmark id names; null past two. */
+	private landmark(kind: 'segno' | 'coda', id: string): string | null {
+		const names =
+			kind === 'segno' ? ['Segno', 'SegnoSegno'] : ['Coda', 'DoubleCoda'];
+		const ids = this.landmarks[kind];
+		const known = ids.get(id);
+		if (known) {
+			return known;
+		}
+		const second = kind === 'segno' ? 'segno-segno' : 'double-coda';
+		const taken = new Set(ids.values());
+		const name =
+			id === second
+				? names[1]!
+				: names.find((candidate) => !taken.has(candidate));
+		if (!name || (id === second && taken.has(name))) {
+			this.values.unsupported(`more than two ${kind}s`);
+			return null;
+		}
+		ids.set(id, name);
+		return name;
 	}
 	private key(parent: MElement, measure: Measure, staff: string): void {
 		const key = measure.getKey(staff);
@@ -894,6 +1032,7 @@ export class GuitarProScoreWriter {
 					.join(' ');
 				if (
 					words &&
+					!this.isNavigation(direction) &&
 					measure === note.measure &&
 					direction.measureBeat === note.measureBeat
 				) {
@@ -902,6 +1041,20 @@ export class GuitarProScoreWriter {
 			}
 		}
 		X.add(beat, 'Dynamic', dynamic);
+	}
+	/** A segno, coda or jump, which GPIF keeps on its MasterBar rather than as beat text. */
+	private isNavigation(direction: Direction): boolean {
+		const sound = direction.sound;
+		return (
+			direction.navigations.length > 0 ||
+			(sound != null &&
+				(sound.segno != null ||
+					sound.coda != null ||
+					sound.fine != null ||
+					sound.toCoda != null ||
+					sound.dalSegno != null ||
+					sound.daCapo))
+		);
 	}
 	private rests(beats: string[], gap: number): void {
 		let remaining = gap;
@@ -936,7 +1089,6 @@ export class GuitarProScoreWriter {
 			'wedge',
 			'pedal',
 			'octave-shift',
-			'ending',
 			'unpitched',
 			'tremolo',
 			'fermata',
@@ -968,7 +1120,7 @@ export class GuitarProScoreWriter {
 		const supportedChildren: Record<string, string[]> = {
 			notations: ['tied', 'tuplet', 'technical', 'articulations'],
 			technical: ['string', 'fret', 'harmonic', 'bend', 'other-technical'],
-			'direction-type': ['metronome', 'dynamics', 'words'],
+			'direction-type': ['metronome', 'dynamics', 'words', 'segno', 'coda'],
 		};
 		const allowed = supportedChildren[element.tag];
 		if (allowed) {

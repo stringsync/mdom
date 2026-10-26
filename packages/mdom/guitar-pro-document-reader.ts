@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // GPIF field interpretation adapted from alphaTab's GpifParser. See THIRD_PARTY.md.
 // Copyright © 2025 Daniel Kuschny and Contributors.
+import type { NavigationSpec } from './direction';
 import { readDiagram } from './guitar-pro-diagrams';
 import { GuitarProLyrics } from './guitar-pro-lyrics';
 import type { GuitarProOptions } from './guitar-pro-options';
@@ -37,6 +38,56 @@ interface Rhythm {
 	dots: number;
 	actual: number;
 	normal: number;
+}
+
+/** GPIF `Target` names as the landmarks they write; Fine goes where a jump would, at the bar's end. */
+const TARGETS: Record<string, NavigationSpec> = {
+	Segno: { kind: 'segno', id: 'segno' },
+	SegnoSegno: { kind: 'segno', id: 'segno-segno' },
+	Coda: { kind: 'coda', id: 'coda' },
+	DoubleCoda: { kind: 'coda', id: 'double-coda' },
+	Fine: { kind: 'fine' },
+};
+
+/** What a GPIF jump's `Al...` ending plays to and prints. */
+const JUMP_UNTIL: Record<string, { until: 'fine' | 'coda'; suffix: string }> = {
+	AlCoda: { until: 'coda', suffix: ' al Coda' },
+	AlDoubleCoda: { until: 'coda', suffix: ' al Double Coda' },
+	AlFine: { until: 'fine', suffix: ' al Fine' },
+};
+
+/**
+ * A GPIF `Jump` name (`DaSegnoSegnoAlDoubleCoda`, `DaCoda`) as the jump it
+ * writes, or null for one Guitar Pro does not define.
+ */
+function jumpSpec(name: string): NavigationSpec | null {
+	if (name === 'DaCoda' || name === 'DaDoubleCoda') {
+		const double = name === 'DaDoubleCoda';
+		return {
+			kind: 'to-coda',
+			id: double ? 'double-coda' : 'coda',
+			text: double ? 'To Double Coda' : 'To Coda',
+		};
+	}
+	const match = /^Da(Capo|Segno|SegnoSegno)(AlCoda|AlDoubleCoda|AlFine)?$/.exec(
+		name,
+	);
+	if (!match) {
+		return null;
+	}
+	const [, from, al] = match;
+	const { until, suffix } = al
+		? JUMP_UNTIL[al]!
+		: { until: undefined, suffix: '' };
+	const text = `${{ Capo: 'D.C.', Segno: 'D.S.', SegnoSegno: 'D.S.S.' }[from!]}${suffix}`;
+	return from === 'Capo'
+		? { kind: 'da-capo', until, text }
+		: {
+				kind: 'dal-segno',
+				id: from === 'Segno' ? 'segno' : 'segno-segno',
+				until,
+				text,
+			};
 }
 
 /** Resolves GPIF tables straight into the MusicXML-backed mdom tree. */
@@ -159,6 +210,18 @@ export class GuitarProDocumentReader {
 			for (const [measureIndex, master] of masters.entries()) {
 				const measure = part.addMeasure();
 				const tempos = this.readMaster(master, measure);
+				const passes = this.endingPasses(master);
+				if (
+					passes.length &&
+					String(passes) !==
+						String(this.endingPasses(masters[measureIndex - 1]))
+				) {
+					measure.addEnding({ type: 'start', number: passes });
+				}
+				const directions = this.directions(master);
+				for (const spec of directions.targets) {
+					measure.addNavigation(spec);
+				}
 				measure.setStaveCount(staves.length);
 				const barIds = X.refs(master.child('Bars'));
 				if (barIds.length !== totalStaves) {
@@ -240,6 +303,9 @@ export class GuitarProDocumentReader {
 				if (tempos.length) {
 					this.values.unsupported('mid-measure or gradual tempo changes');
 				}
+				for (const spec of directions.jumps) {
+					measure.addNavigation({ ...spec, onset: barBeats });
+				}
 				const repeat = master.child('Repeat');
 				if (
 					repeat?.getAttribute('end') === 'true' ||
@@ -257,6 +323,16 @@ export class GuitarProDocumentReader {
 					measure.addBarline({
 						barStyle: times ? 'light-heavy' : 'light-light',
 						repeat: times ? { direction: 'backward', times } : undefined,
+					});
+				}
+				const nextPasses = this.endingPasses(masters[measureIndex + 1]);
+				if (passes.length && String(passes) !== String(nextPasses)) {
+					measure.addEnding({
+						type:
+							repeat?.getAttribute('end') === 'true' || nextPasses.length
+								? 'stop'
+								: 'discontinue',
+						number: passes,
 					});
 				}
 				if (
@@ -356,14 +432,15 @@ export class GuitarProDocumentReader {
 				repeat: { direction: 'forward' },
 			});
 		}
-		if (
-			['AlternateEndings', 'Directions', 'FreeTime', 'Fermatas'].some((tag) =>
-				master.child(tag),
-			) ||
-			(master.child('TripletFeel')?.text &&
-				master.child('TripletFeel')?.text !== 'NoTripletFeel')
-		) {
-			this.values.unsupported('alternate endings, jumps, free time or swing');
+		if (master.child('FreeTime')) {
+			this.values.unsupported('free time');
+		}
+		if (master.child('Fermatas')) {
+			this.values.unsupported('fermatas');
+		}
+		const feel = master.child('TripletFeel')?.text;
+		if (feel && feel !== 'NoTripletFeel') {
+			this.values.unsupported('triplet feel');
 		}
 		return this.tempoTable().filter((c) => c.bar === measure.index);
 	}
@@ -437,6 +514,56 @@ export class GuitarProDocumentReader {
 				tempo: change.tempo,
 			});
 		}
+	}
+	/** The passes a bar's `AlternateEndings` ("1 3") plays on, ascending; none outside a volta. */
+	private endingPasses(master: MElement | undefined): number[] {
+		const text = master?.child('AlternateEndings')?.text?.trim();
+		if (!text) {
+			return [];
+		}
+		return [
+			...new Set(
+				text
+					.split(/\s+/)
+					.map((pass) =>
+						GuitarProValues.integer(Number(pass), 'alternate ending', 1, 32),
+					),
+			),
+		].sort((left, right) => left - right);
+	}
+	/**
+	 * A bar's `Directions`: its targets (segno, coda, fine), which mark the bar's
+	 * start, and its jumps, which Guitar Pro takes at the bar's end. A double coda
+	 * and segno-segno keep their own ids so their jumps pair with them.
+	 */
+	private directions(master: MElement): {
+		targets: NavigationSpec[];
+		jumps: NavigationSpec[];
+	} {
+		const targets: NavigationSpec[] = [];
+		const jumps: NavigationSpec[] = [];
+		const node = master.child('Directions');
+		for (const target of node?.childrenNamed('Target') ?? []) {
+			const name = target.text?.trim() ?? '';
+			const spec = TARGETS[name];
+			if (!spec) {
+				this.values.unsupported(`direction ${name}`);
+			} else if (spec.kind === 'fine') {
+				jumps.push(spec);
+			} else {
+				targets.push(spec);
+			}
+		}
+		for (const jump of node?.childrenNamed('Jump') ?? []) {
+			const name = jump.text?.trim() ?? '';
+			const spec = jumpSpec(name);
+			if (!spec) {
+				this.values.unsupported(`direction ${name}`);
+			} else {
+				jumps.push(spec);
+			}
+		}
+		return { targets, jumps };
 	}
 	private readStaff(
 		staff: StaffContext,

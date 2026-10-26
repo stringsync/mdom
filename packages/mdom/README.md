@@ -80,6 +80,13 @@ The first supported subset includes:
 - String/fret positions, open strings, nonstandard tuning, and a fixed capo.
 - Simple time signatures, major/minor keys, treble/bass/alto/tenor clefs,
   pickups, repeats, and double barlines.
+- Alternate endings as volta brackets (passes 1 to 32), and segno, segno-segno,
+  coda, double coda and Fine targets with every D.C./D.S./D.S.S. jump (al Coda,
+  al Double Coda, al Fine) and To Coda/To Double Coda, written as MusicXML
+  `<direction>`s whose `<sound>` plays them: targets at the bar's start, jumps
+  and Fine at its end. On export a third distinct segno or coda id, a jump with
+  `time-only` passes, and an ending with no pass numbers are unsupported; free
+  time and triplet feel stay unsupported on import.
 - Title, composer, lyricist, artist, copyright, part names, MIDI program/channel,
   tempo (including mid-measure and gradual changes), basic dynamics, text, staccato, and accents.
 - Lyrics: each track's lyric lines become verses on its first staff's first voice, one syllable per sounded note (rests, chord extras, grace notes and tie
@@ -110,8 +117,8 @@ tuning as MusicXML tablature only for staves with tablature enabled in the file.
 
 Bends (a rise, a release, or a pre-bend), natural, artificial, pinch and tap
 harmonics, dead and ghost notes, palm mutes and let ring round-trip as
-MusicXML technicals. Unsupported techniques and annotations, such as slides
-and alternate endings, throw by default. To deliberately
+MusicXML technicals. Unsupported techniques and annotations, such as slides,
+throw by default. To deliberately
 discard unsupported annotations, pass `{ unsupported: 'omit' }` as the last
 argument to either parser or serializer methods, and add
 `onUnsupported: (feature) => ...` to hear each feature it drops. Invalid core
