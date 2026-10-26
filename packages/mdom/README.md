@@ -99,6 +99,13 @@ The first supported subset includes:
   fingering, barres and the first fret. Export writes each distinct harmony
   once to the staff's diagram collection; one without a frame shows its name
   only. Harmonies between beats, Roman numerals and polychords are unsupported.
+- Beat effects: fermatas (short, medium and long as angled, normal and square;
+  their playback length is not kept), brushes and arpeggios as `<arpeggiate>`
+  (a down stroke strikes the low string first, so it rolls `up`; export writes
+  a brush), tremolo picking as a one- to three-slash `<tremolo>`, beat ottavas
+  (8va, 8vb, 15ma, 15mb) as `<octave-shift>` spans over each run of beats, pick
+  strokes as `<down-bow>`/`<up-bow>`, and tapping as `<tap hand="right">`.
+  Slap, pop and the whammy bar are unsupported.
 
 This is a musical conversion, not a lossless file round trip. Layout, engraving,
 Guitar Pro application settings, and metadata outside the list above are not

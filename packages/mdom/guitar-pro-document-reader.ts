@@ -2,6 +2,7 @@
 // GPIF field interpretation adapted from alphaTab's GpifParser. See THIRD_PARTY.md.
 // Copyright © 2025 Daniel Kuschny and Contributors.
 import type { NavigationSpec } from './direction';
+import { GuitarProBeatEffectReader } from './guitar-pro-beat-effects';
 import { readDiagram } from './guitar-pro-diagrams';
 import { GuitarProLyrics } from './guitar-pro-lyrics';
 import type { GuitarProOptions } from './guitar-pro-options';
@@ -94,11 +95,13 @@ function jumpSpec(name: string): NavigationSpec | null {
 export class GuitarProDocumentReader {
 	private readonly values: GuitarProValues;
 	private tempoChanges: TempoChange[] | null = null;
+	private effects: GuitarProBeatEffectReader;
 	constructor(
 		private readonly xml: X,
 		opts: GuitarProOptions = {},
 	) {
 		this.values = new GuitarProValues(opts);
+		this.effects = new GuitarProBeatEffectReader(this.values);
 	}
 	read(tablature: boolean[] = []): MDocument {
 		const root = this.xml.root;
@@ -205,6 +208,7 @@ export class GuitarProDocumentReader {
 			const staves = staffNodes.map((node, i) =>
 				this.staff(node, track, String(i + 1), tablature[index]),
 			);
+			this.effects = new GuitarProBeatEffectReader(this.values);
 			// Tie destinations identify their predecessor by string, or pitch for notation-only data.
 			const previousNotes = new Map<string, Note>();
 			for (const [measureIndex, master] of masters.entries()) {
@@ -306,6 +310,7 @@ export class GuitarProDocumentReader {
 				for (const spec of directions.jumps) {
 					measure.addNavigation({ ...spec, onset: barBeats });
 				}
+				this.effects.readFermatas(master, measure);
 				const repeat = master.child('Repeat');
 				if (
 					repeat?.getAttribute('end') === 'true' ||
@@ -342,6 +347,7 @@ export class GuitarProDocumentReader {
 					measure.setAttribute('implicit', 'yes');
 				}
 			}
+			this.effects.finish();
 			GuitarProLyrics.read(track, part);
 
 			barOffset += staves.length;
@@ -434,9 +440,6 @@ export class GuitarProDocumentReader {
 		}
 		if (master.child('FreeTime')) {
 			this.values.unsupported('free time');
-		}
-		if (master.child('Fermatas')) {
-			this.values.unsupported('fermatas');
 		}
 		const feel = master.child('TripletFeel')?.text;
 		if (feel && feel !== 'NoTripletFeel') {
@@ -731,8 +734,10 @@ export class GuitarProDocumentReader {
 			? X.refs(beat.child('Notes')).map((id) => this.xml.get('Notes', id))
 			: [];
 		const notes: (MElement | null)[] = sources.length ? sources : [null];
+		const chord: Note[] = [];
 		for (const [index, source] of notes.entries()) {
 			const note = new Note();
+			chord.push(note);
 			if (grace) {
 				X.add(
 					note,
@@ -789,6 +794,9 @@ export class GuitarProDocumentReader {
 				}
 				previous.set(key, note);
 			}
+		}
+		if (beat) {
+			this.effects.read(beat, chord, voice);
 		}
 		return duration;
 	}
@@ -950,28 +958,16 @@ export class GuitarProDocumentReader {
 			'Fade',
 			'Fadding',
 			'Hairpin',
-			'Arpeggio',
 			'Brush',
 			'Lyrics',
 			'Legato',
-			'Tremolo',
-			'Ottavia',
 			'Fermata',
 			'Slap',
 			'Pop',
 			'Tap',
 			'Wah',
 		];
-		const props = [
-			'Whammy',
-			'Brush',
-			'PickStroke',
-			'Slapped',
-			'Popped',
-			'Tapped',
-			'PalmMuted',
-			'LetRing',
-		];
+		const props = ['Whammy', 'Slapped', 'Popped', 'PalmMuted', 'LetRing'];
 		if (
 			tags.some((tag) => beat.child(tag)) ||
 			beat

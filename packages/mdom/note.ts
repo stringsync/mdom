@@ -1348,11 +1348,29 @@ export class Note extends MElement {
 	 * `other`'s, with an unused number, on this note's staff.
 	 */
 	addOctaveShift(other: Note, ottava: Ottava): OctaveShift {
-		const part = this.closest(Part);
+		// Numbers only need to differ among ottavas that overlap this one, so a
+		// long score reuses them within MusicXML's 1-16.
+		const from = timePosition(this.closest(Measure), this.measureBeat);
+		const to = timePosition(
+			other.closest(Measure),
+			(other.measureBeat ?? 0) + (other.beats ?? 0),
+		);
 		const used = new Set(
-			(part?.measures ?? []).flatMap((measure) =>
+			(this.closest(Part)?.measures ?? []).flatMap((measure) =>
 				measure.directions.flatMap((direction) =>
-					direction.octaveShifts.map((shift) => shift.number),
+					direction.octaveShifts
+						.filter((shift) => {
+							if (shift.octaveShiftType === 'stop') {
+								return false;
+							}
+							const end = shift.partner;
+							return (
+								timePosition(measure, shift.measureBeat) <= to &&
+								(!end ||
+									timePosition(end.closest(Measure), end.measureBeat) >= from)
+							);
+						})
+						.map((shift) => shift.number),
 				),
 			),
 		);
@@ -1752,6 +1770,48 @@ export class Note extends MElement {
 		const closed = appendValue(mute, 'harmon-closed', spec.closed);
 		if (spec.location != null) {
 			closed.setAttribute('location', spec.location);
+		}
+	}
+
+	/**
+	 * The `<up-bow>`/`<down-bow>` stroke on this note, a bowing or a guitar pick
+	 * stroke; null when it has neither.
+	 */
+	get bowing(): 'up' | 'down' | null {
+		if (this.technicalChild('down-bow')) {
+			return 'down';
+		}
+		return this.technicalChild('up-bow') ? 'up' : null;
+	}
+
+	/** Set or clear this note's `<up-bow>`/`<down-bow>` stroke; null removes it. The write side of {@link bowing}. */
+	setBowing(direction: 'up' | 'down' | null): void {
+		this.replaceTechnical('up-bow', null);
+		this.replaceTechnical('down-bow', null);
+		this.replaceTechnical(
+			direction === 'up' ? 'up-bow' : 'down-bow',
+			direction,
+		);
+	}
+
+	/**
+	 * The `<tap>` on this note, with the tapping `hand` when stated; null when
+	 * the note is not tapped.
+	 */
+	get tap(): { hand: 'left' | 'right' | null } | null {
+		const tap = this.technicalChild('tap');
+		if (!tap) {
+			return null;
+		}
+		const hand = tap.getAttribute('hand');
+		return { hand: hand === 'left' || hand === 'right' ? hand : null };
+	}
+
+	/** Set or clear this note's `<tap>`; `hand` states which hand taps. The write side of {@link tap}. */
+	setTap(spec: { hand?: 'left' | 'right' } | null): void {
+		const tap = this.replaceTechnical('tap', spec);
+		if (tap && spec?.hand) {
+			tap.setAttribute('hand', spec.hand);
 		}
 	}
 
@@ -2155,6 +2215,11 @@ const afterInstrument = new Set([
  * The lowest spanner number not already used by markers of this kind anywhere in
  * the part, so a generated start/stop pair can't collide with an existing span.
  */
+/** A point in a part as one comparable number: measure index, then beat. */
+function timePosition(measure: Measure | null, beat: number | null): number {
+	return (measure?.index ?? 0) * 1_000_000 + (beat ?? 0);
+}
+
 function nextNumber(
 	note: Note,
 	existing: (note: Note) => { number: string }[],

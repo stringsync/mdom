@@ -3,6 +3,7 @@
 // Copyright © 2025 Daniel Kuschny and Contributors.
 import { groupChords } from './chord';
 import { Direction } from './direction';
+import { GuitarProBeatEffectWriter } from './guitar-pro-beat-effects';
 import { writeDiagram } from './guitar-pro-diagrams';
 import { GuitarProLyrics } from './guitar-pro-lyrics';
 import type { GuitarProOptions } from './guitar-pro-options';
@@ -56,6 +57,7 @@ interface StaffContext {
 export class GuitarProScoreWriter {
 	private readonly values: GuitarProValues;
 	private readonly root = new MElement('GPIF');
+	private readonly effects: GuitarProBeatEffectWriter;
 	private readonly tables = new Map<string, MElement>();
 	/** Segno and coda ids by the GPIF target each was given, two of each. */
 	private readonly landmarks = {
@@ -64,6 +66,7 @@ export class GuitarProScoreWriter {
 	};
 	constructor(opts: GuitarProOptions = {}) {
 		this.values = new GuitarProValues(opts);
+		this.effects = new GuitarProBeatEffectWriter(this.values);
 	}
 
 	write(document: MDocument): MDocument {
@@ -599,6 +602,7 @@ export class GuitarProScoreWriter {
 		);
 		const pitches = new GuitarProPitchWriter(part, id, shift);
 		const ctx: StaffContext = { id, tuning, capo, pitches, shift };
+		const ottavas = this.effects.ottavas(part, id);
 		const node = X.add(staves, 'Staff');
 		X.addProperty(node, 'CapoFret', 'Fret', tuning.length ? capo : 0);
 		X.addProperty(node, 'FretCount', 'Number', 24);
@@ -734,6 +738,13 @@ export class GuitarProScoreWriter {
 							X.add(beat, 'Chord', diagram);
 						}
 					}
+					this.effects.write(beat, chord.notes, ottavas);
+					this.effects.writeFermata(
+						this.tables.get('MasterBars')!.childrenNamed('MasterBar')[
+							measure.index
+						]!,
+						chord.notes,
+					);
 					cursor = onset + (lead.isGrace ? 0 : lead.beats!);
 				}
 				if (!chords.length) {
@@ -1082,17 +1093,12 @@ export class GuitarProScoreWriter {
 			'slide',
 			'glissando',
 			'slur',
-			'ornaments',
 			'harmony',
 			'fingering',
 			'pluck',
 			'wedge',
 			'pedal',
-			'octave-shift',
 			'unpitched',
-			'tremolo',
-			'fermata',
-			'arpeggiate',
 			'non-arpeggiate',
 			'senza-misura',
 			'swing',
@@ -1110,6 +1116,15 @@ export class GuitarProScoreWriter {
 				this.values.unsupported('<other-technical>');
 			}
 		}
+		if (element.tag === 'fermata' && element.parent?.tag !== 'notations') {
+			this.values.unsupported(`<${element.parent?.tag}> fermatas`);
+		}
+		if (element.tag === 'tremolo') {
+			const type = element.getAttribute('type') ?? 'single';
+			if (type !== 'single') {
+				this.values.unsupported(`<tremolo> ${type}`);
+			}
+		}
 		if (element.tag === 'articulations') {
 			for (const mark of element.childrenOfType(MElement)) {
 				if (!['staccato', 'accent', 'strong-accent'].includes(mark.tag)) {
@@ -1118,9 +1133,34 @@ export class GuitarProScoreWriter {
 			}
 		}
 		const supportedChildren: Record<string, string[]> = {
-			notations: ['tied', 'tuplet', 'technical', 'articulations'],
-			technical: ['string', 'fret', 'harmonic', 'bend', 'other-technical'],
-			'direction-type': ['metronome', 'dynamics', 'words', 'segno', 'coda'],
+			notations: [
+				'tied',
+				'tuplet',
+				'technical',
+				'articulations',
+				'fermata',
+				'arpeggiate',
+				'ornaments',
+			],
+			ornaments: ['tremolo'],
+			technical: [
+				'string',
+				'fret',
+				'harmonic',
+				'bend',
+				'other-technical',
+				'up-bow',
+				'down-bow',
+				'tap',
+			],
+			'direction-type': [
+				'metronome',
+				'dynamics',
+				'words',
+				'segno',
+				'coda',
+				'octave-shift',
+			],
 		};
 		const allowed = supportedChildren[element.tag];
 		if (allowed) {

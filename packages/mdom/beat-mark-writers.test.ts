@@ -81,4 +81,23 @@ describe('beat mark writers', () => {
 		expect(two.number).toBe('2');
 		expect(two.ottava).toBe('8vb');
 	});
+
+	it('writes and clears bowings and taps', () => {
+		const { doc, voice } = build();
+		const note = voice.addNote({ step: 'C', octave: 4, type: 'whole' });
+		note.setBowing('down');
+		note.setBowing('up');
+		note.setTap({ hand: 'left' });
+		expect(note.bowing).toBe('up');
+		expect(note.technicals.map((technical) => technical.tag)).toEqual([
+			'up-bow',
+			'tap',
+		]);
+		expect(note.tap).toEqual({ hand: 'left' });
+		expect(schemaErrors(doc)).toEqual([]);
+		note.setBowing(null);
+		note.setTap(null);
+		expect(note.bowing).toBeNull();
+		expect(note.tap).toBeNull();
+	});
 });

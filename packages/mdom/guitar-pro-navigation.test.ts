@@ -143,7 +143,7 @@ describe('Guitar Pro endings and jumps', () => {
 			},
 		);
 
-		expect(omitted).toContain('fermatas');
+		expect(omitted).toContain('fermatas between beats');
 		expect(omitted.join()).not.toContain('jumps');
 	});
 
