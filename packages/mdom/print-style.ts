@@ -92,6 +92,39 @@ export interface LineStyleSpec {
 	spaceLength?: number;
 }
 
+/**
+ * The dash and space lengths of a dashed stroke, in tenths, for elements whose
+ * schema has no `line-type` (`<octave-shift>`, `<dashes>`). Each is null
+ * when unstated.
+ */
+export interface DashStyle {
+	dashLength: number | null;
+	spaceLength: number | null;
+}
+
+/** The dash lengths to write; an omitted field is left unstated. */
+export interface DashStyleSpec {
+	dashLength?: number;
+	spaceLength?: number;
+}
+
+/** The dash and space lengths of `element`. */
+export function dashStyleOf(element: MElement): DashStyle {
+	return {
+		dashLength: numberOf(element, 'dash-length'),
+		spaceLength: numberOf(element, 'space-length'),
+	};
+}
+
+/** Replace the dash lengths of `element`; null removes them. */
+export function setDashStyleOf(
+	element: MElement,
+	spec: DashStyleSpec | null,
+): void {
+	setNumber(element, 'dash-length', spec?.dashLength);
+	setNumber(element, 'space-length', spec?.spaceLength);
+}
+
 /** The `line-type` of `element`; null when absent or unrecognized. */
 export function lineTypeOf(
 	element: MElement | null | undefined,

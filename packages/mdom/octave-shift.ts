@@ -1,6 +1,16 @@
 import { Direction } from './direction';
 import { MElement, required } from './m-node';
 import { Measure } from './measure';
+import {
+	type DashStyle,
+	type DashStyleSpec,
+	dashStyleOf,
+	type Position,
+	type PositionSpec,
+	positionOf,
+	setDashStyleOf,
+	setPositionOf,
+} from './print-style';
 import { directionMarkers, Spanner, type SpannerSpec } from './spanner';
 
 export type OctaveShiftType = 'up' | 'down' | 'stop' | 'continue';
@@ -81,5 +91,24 @@ export class OctaveShift extends MElement {
 				shift.getAttribute('type') === 'down',
 			isClose: (shift) => shift.getAttribute('type') === 'stop',
 		};
+	}
+	/** Where this is drawn, in tenths. Layout only: it never moves the onset. */
+	get position(): Position {
+		return positionOf(this);
+	}
+
+	/** Replace the position attributes; null removes them all. */
+	setPosition(spec: PositionSpec | null): void {
+		setPositionOf(this, spec);
+	}
+
+	/** The dash and space lengths of a dashed stroke, in tenths. */
+	get dashStyle(): DashStyle {
+		return dashStyleOf(this);
+	}
+
+	/** Replace the dash lengths; omitted fields (or all, with null) are removed. */
+	setDashStyle(spec: DashStyleSpec | null): void {
+		setDashStyleOf(this, spec);
 	}
 }

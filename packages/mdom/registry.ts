@@ -1,5 +1,6 @@
 import { Accidental } from './accidental';
 import { Appearance } from './appearance';
+import { ARTICULATION_TAGS, Articulation } from './articulation';
 import { Barline } from './barline';
 import { Beam } from './beam';
 import { Bracket } from './bracket';
@@ -48,7 +49,7 @@ import { Words } from './words';
 
 /**
  * Tag -> typed node. Classes with a fixed tag take no constructor argument;
- * {@link Ornament} and {@link Technical} stand in for a whole family of tags, so
+ * {@link Ornament}, {@link Technical} and {@link Articulation} stand in for a whole family of tags, so
  * the tag is passed in — which is why the map's value type takes one.
  */
 type ElementCtor = new (tag: string) => MElement;
@@ -118,6 +119,9 @@ function tags(): Record<string, ElementCtor> {
 	};
 	for (const tag of ORNAMENT_TAGS) {
 		registry[tag] = Ornament;
+	}
+	for (const tag of ARTICULATION_TAGS) {
+		registry[tag] = Articulation;
 	}
 	for (const tag of TECHNICAL_TAGS) {
 		registry[tag] = Technical;

@@ -1,6 +1,12 @@
 import { Direction } from './direction';
 import { MElement, required } from './m-node';
 import { Measure } from './measure';
+import {
+	type DashStyle,
+	type DashStyleSpec,
+	dashStyleOf,
+	setDashStyleOf,
+} from './print-style';
 import { directionMarkers, Spanner, type SpannerSpec } from './spanner';
 
 export type DashesType = 'start' | 'stop' | 'continue';
@@ -68,5 +74,14 @@ export class Dashes extends MElement {
 			isOpen: (marker) => marker.getAttribute('type') === 'start',
 			isClose: (marker) => marker.getAttribute('type') === 'stop',
 		};
+	}
+	/** The dash and space lengths of a dashed stroke, in tenths. */
+	get dashStyle(): DashStyle {
+		return dashStyleOf(this);
+	}
+
+	/** Replace the dash lengths; omitted fields (or all, with null) are removed. */
+	setDashStyle(spec: DashStyleSpec | null): void {
+		setDashStyleOf(this, spec);
 	}
 }

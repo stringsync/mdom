@@ -2,7 +2,13 @@ import { MElement, required } from './m-node';
 import { appendValue } from './measure';
 import { Note, type NoteType } from './note';
 import { Part } from './part';
-import { placementOf } from './print-style';
+import {
+	type Position,
+	type PositionSpec,
+	placementOf,
+	positionOf,
+	setPositionOf,
+} from './print-style';
 import { noteMarkers, Spanner, type SpannerSpec } from './spanner';
 import { validateDots } from './time-modification';
 
@@ -66,6 +72,16 @@ export class Tuplet extends MElement {
 	/** The part this marker belongs to. An attached marker always has one. */
 	get part(): Part {
 		return required(this.closest(Part), '<part> ancestor of <tuplet>');
+	}
+
+	/** Where this is drawn, in tenths. Layout only: it never moves the onset. */
+	get position(): Position {
+		return positionOf(this);
+	}
+
+	/** Replace the position attributes; null removes them all. */
+	setPosition(spec: PositionSpec | null): void {
+		setPositionOf(this, spec);
 	}
 
 	/** `placement`; null when unstated. */

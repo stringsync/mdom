@@ -8,6 +8,7 @@ export {
 	type ArchiveOptions,
 	DEFAULT_MAX_UNCOMPRESSED_BYTES,
 } from './archive-reader';
+export { Articulation } from './articulation';
 export { Barline, type BarlineSpec } from './barline';
 export {
 	Beam,

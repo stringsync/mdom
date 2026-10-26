@@ -1,6 +1,12 @@
 import { Direction } from './direction';
 import { MElement, required } from './m-node';
 import { Measure } from './measure';
+import {
+	type Position,
+	type PositionSpec,
+	positionOf,
+	setPositionOf,
+} from './print-style';
 import { directionMarkers, Spanner, type SpannerSpec } from './spanner';
 
 export type PedalType = 'start' | 'stop' | 'change' | 'continue' | 'sostenuto';
@@ -64,5 +70,14 @@ export class Pedal extends MElement {
 				pedal.getAttribute('type') === 'sostenuto',
 			isClose: (pedal) => pedal.getAttribute('type') === 'stop',
 		};
+	}
+	/** Where this is drawn, in tenths. Layout only: it never moves the onset. */
+	get position(): Position {
+		return positionOf(this);
+	}
+
+	/** Replace the position attributes; null removes them all. */
+	setPosition(spec: PositionSpec | null): void {
+		setPositionOf(this, spec);
 	}
 }

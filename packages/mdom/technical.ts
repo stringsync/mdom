@@ -1,5 +1,11 @@
 import { MElement } from './m-node';
-import { placementOf } from './print-style';
+import {
+	type Position,
+	type PositionSpec,
+	placementOf,
+	positionOf,
+	setPositionOf,
+} from './print-style';
 
 /**
  * Every tag this class is registered for — the `<technical>` children that carry
@@ -68,5 +74,14 @@ export class Technical extends MElement {
 	/** `<fingering substitution="yes">` — change fingers while the key is held, printed "5-3". */
 	get substitution(): boolean {
 		return this.getAttribute('substitution') === 'yes';
+	}
+	/** Where this is drawn, in tenths. Layout only: it never moves the onset. */
+	get position(): Position {
+		return positionOf(this);
+	}
+
+	/** Replace the position attributes; null removes them all. */
+	setPosition(spec: PositionSpec | null): void {
+		setPositionOf(this, spec);
 	}
 }

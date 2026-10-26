@@ -1,4 +1,5 @@
 import { Accidental } from './accidental';
+import { Articulation } from './articulation';
 import { Beam } from './beam';
 import { Clef } from './clef';
 import { Glissando } from './glissando';
@@ -497,6 +498,17 @@ export class Note extends MElement {
 		return this.childrenNamed('notations')
 			.flatMap((notations) => notations.childrenNamed('ornaments'))
 			.flatMap((ornaments) => ornaments.childrenOfType(Ornament));
+	}
+
+	/**
+	 * Every child across this note's `<notations><articulations>` blocks,
+	 * document order, as typed marks carrying placement and position. The bare
+	 * names stay on {@link articulations}.
+	 */
+	get articulationMarks(): Articulation[] {
+		return this.childrenNamed('notations')
+			.flatMap((notations) => notations.childrenNamed('articulations'))
+			.flatMap((block) => block.childrenOfType(Articulation));
 	}
 
 	/**

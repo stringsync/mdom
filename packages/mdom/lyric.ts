@@ -1,5 +1,13 @@
 import { MElement } from './m-node';
-import { colorOf, setYesNo, yesNoOf } from './print-style';
+import {
+	colorOf,
+	type Position,
+	type PositionSpec,
+	positionOf,
+	setPositionOf,
+	setYesNo,
+	yesNoOf,
+} from './print-style';
 import { Score } from './score';
 import {
 	type Font,
@@ -124,5 +132,14 @@ export class Lyric extends MElement {
 	/** Set `print-object`, or remove it with null to restore the default. */
 	setPrintObject(value: boolean | null): void {
 		setYesNo(this, 'print-object', value);
+	}
+	/** Where this is drawn, in tenths. Layout only: it never moves the onset. */
+	get position(): Position {
+		return positionOf(this);
+	}
+
+	/** Replace the position attributes; null removes them all. */
+	setPosition(spec: PositionSpec | null): void {
+		setPositionOf(this, spec);
 	}
 }

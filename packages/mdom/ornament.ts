@@ -1,5 +1,11 @@
 import { MElement } from './m-node';
-import { placementOf } from './print-style';
+import {
+	type Position,
+	type PositionSpec,
+	placementOf,
+	positionOf,
+	setPositionOf,
+} from './print-style';
 
 /**
  * The tag of an `<ornaments>` child — a closed union so a renderer can switch on
@@ -88,5 +94,14 @@ export class Ornament extends MElement {
 	/** An `<accidental-mark>`'s glyph name (its text); null otherwise. */
 	get accidentalMark(): string | null {
 		return this.tag === 'accidental-mark' ? this.text : null;
+	}
+	/** Where this is drawn, in tenths. Layout only: it never moves the onset. */
+	get position(): Position {
+		return positionOf(this);
+	}
+
+	/** Replace the position attributes; null removes them all. */
+	setPosition(spec: PositionSpec | null): void {
+		setPositionOf(this, spec);
 	}
 }

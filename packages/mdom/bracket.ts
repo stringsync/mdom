@@ -1,6 +1,12 @@
 import { Direction } from './direction';
 import { MElement, required } from './m-node';
 import { Measure } from './measure';
+import {
+	type LineStyle,
+	type LineStyleSpec,
+	lineStyleOf,
+	setLineStyleOf,
+} from './print-style';
 import { directionMarkers, Spanner, type SpannerSpec } from './spanner';
 
 export type BracketType = 'start' | 'stop' | 'continue';
@@ -87,5 +93,14 @@ export class Bracket extends MElement {
 			isOpen: (marker) => marker.getAttribute('type') === 'start',
 			isClose: (marker) => marker.getAttribute('type') === 'stop',
 		};
+	}
+	/** The stroke: `line-type` and the dash and space lengths in tenths. */
+	get lineStyle(): LineStyle {
+		return lineStyleOf(this);
+	}
+
+	/** Replace the stroke attributes; omitted fields (or all, with null) are removed. */
+	setLineStyle(spec: LineStyleSpec | null): void {
+		setLineStyleOf(this, spec);
 	}
 }

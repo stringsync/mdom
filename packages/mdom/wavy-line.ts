@@ -1,5 +1,11 @@
 import { MElement, required } from './m-node';
 import { Note } from './note';
+import {
+	type Position,
+	type PositionSpec,
+	positionOf,
+	setPositionOf,
+} from './print-style';
 import { noteMarkers, Spanner, type SpannerSpec } from './spanner';
 
 export type WavyLineType = 'start' | 'stop' | 'continue';
@@ -53,5 +59,14 @@ export class WavyLine extends MElement {
 			isOpen: (wavyLine) => wavyLine.getAttribute('type') === 'start',
 			isClose: (wavyLine) => wavyLine.getAttribute('type') === 'stop',
 		};
+	}
+	/** Where this is drawn, in tenths. Layout only: it never moves the onset. */
+	get position(): Position {
+		return positionOf(this);
+	}
+
+	/** Replace the position attributes; null removes them all. */
+	setPosition(spec: PositionSpec | null): void {
+		setPositionOf(this, spec);
 	}
 }

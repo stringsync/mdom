@@ -3,6 +3,12 @@ import { MElement } from './m-node';
 import { appendValue } from './measure';
 import type { NoteType } from './note';
 import {
+	type Position,
+	type PositionSpec,
+	positionOf,
+	setPositionOf,
+} from './print-style';
+import {
 	buildTimeModification,
 	readTimeModification,
 	type TimeModificationSpec,
@@ -89,6 +95,16 @@ export class MetronomeNote extends MElement {
 export class Metronome extends MElement {
 	constructor() {
 		super('metronome');
+	}
+
+	/** Where this mark is drawn, in tenths. Layout only: it never moves the onset. */
+	get position(): Position {
+		return positionOf(this);
+	}
+
+	/** Replace the position attributes; null removes them all. */
+	setPosition(spec: PositionSpec | null): void {
+		setPositionOf(this, spec);
 	}
 
 	/**
