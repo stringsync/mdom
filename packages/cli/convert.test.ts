@@ -309,12 +309,12 @@ describe('convert', () => {
 			new TextEncoder().encode(
 				xml.replace(
 					'</note>',
-					'<harmony><root><root-step>C</root-step></root></harmony></note>',
+					'</note><direction><direction-type><wedge type="crescendo"/></direction-type></direction>',
 				),
 			),
 		);
 
-		await expect(convert(opts)).rejects.toThrow('<harmony>');
+		await expect(convert(opts)).rejects.toThrow('<wedge>');
 		expect(files.contents.has('/scores/song.gp')).toBe(false);
 	});
 
@@ -324,7 +324,7 @@ describe('convert', () => {
 			new TextEncoder().encode(
 				xml.replace(
 					'</note>',
-					'<harmony><root><root-step>C</root-step></root></harmony></note>',
+					'</note><direction><direction-type><wedge type="crescendo"/></direction-type></direction>',
 				),
 			),
 		);
