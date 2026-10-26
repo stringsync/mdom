@@ -10,12 +10,14 @@ import {
 } from '@stringsync/mdom';
 import { SystemClock } from 'webappwiz/time';
 import { ArchiveReader } from '../mdom/archive-reader';
+import { required } from '../mdom/m-node';
 import { onsetsIn } from '../mdom/timeline';
 
 export const operations = [
 	'parse',
 	'mxl-unzip',
 	'gp-parse',
+	'gpif-parse',
 	'serialize-xml',
 	'serialize-mxl',
 	'serialize-gp',
@@ -121,14 +123,23 @@ export async function measureOperation(
 	const documentHeapBytes = heapUsed() - emptyHeap;
 	// All input construction (including compression for import cases) is untimed.
 	let archiveBytes: Uint8Array | undefined;
+	let gpif: string | undefined;
 	if (operation === 'mxl-unzip') {
 		archiveBytes = new Uint8Array(
 			await (await new MXLSerializer().serializeToBlob(document)).arrayBuffer(),
 		);
-	} else if (operation === 'gp-parse') {
+	} else if (operation === 'gp-parse' || operation === 'gpif-parse') {
 		archiveBytes = await new GuitarProSerializer().serializeToBytes(document, {
 			unsupported: 'omit',
 		});
+		if (operation === 'gpif-parse') {
+			gpif = required(
+				await (await ArchiveReader.load(archiveBytes)).text(
+					'Content/score.gpif',
+				),
+				'GP archive score.gpif',
+			);
+		}
 	}
 	const measures = document.score.parts.flatMap((part) => [...part.measures]);
 	const notes = measures.flatMap((measure) => measure.notes);
@@ -157,6 +168,9 @@ export async function measureOperation(
 		}
 		case 'gp-parse':
 			retained = await new GuitarProParser().parseFromBytes(archiveBytes!);
+			break;
+		case 'gpif-parse':
+			retained = parser.parseFromString(gpif!);
 			break;
 		case 'serialize-xml':
 			retained = new MusicXMLSerializer().serializeToString(document);
@@ -271,6 +285,8 @@ export async function measureOperation(
 		checksum += retained.byteLength;
 	} else if (retained instanceof Blob) {
 		checksum += retained.size;
+	} else if (operation === 'gpif-parse') {
+		checksum += (retained as MDocument).root.children.length;
 	} else if (retained) {
 		checksum += (retained as MDocument).score.parts.length;
 	}

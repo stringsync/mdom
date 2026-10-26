@@ -1,7 +1,7 @@
 import { xml2js } from 'xml-js';
 import { type ArchiveOptions, ArchiveReader } from './archive-reader';
 import { MDocument } from './m-document';
-import { MCData, type MElement, MText } from './m-node';
+import { appendChildren, MCData, MElement, type MNode, MText } from './m-node';
 import { elementFor } from './registry';
 import type { XmlNode } from './xml';
 import { isSafeDoctype } from './xml-syntax';
@@ -82,28 +82,39 @@ function build(node: XmlNode): MElement {
 		el.setAttribute(key, value);
 	}
 
+	// Children are collected and appended at once: one at a time would copy the
+	// growing child list per sibling, quadratic for wide parts and GPIF tables.
+	const children: MNode[] = [];
 	for (const child of node.elements ?? []) {
 		if (child.type === 'element') {
 			const built = build(child);
 			// Some exporters put a barline's ending after its repeat. Repair this
 			// on import so the tree itself has the order MusicXML requires.
-			if (el.tag === 'barline' && built.tag === 'ending') {
-				el.insertBefore(built, el.child('repeat'));
+			const repeat =
+				el.tag === 'barline' && built.tag === 'ending'
+					? children.findIndex(
+							(sibling) =>
+								sibling instanceof MElement && sibling.tag === 'repeat',
+						)
+					: -1;
+			if (repeat < 0) {
+				children.push(built);
 			} else {
-				el.append(built);
+				children.splice(repeat, 0, built);
 			}
 		} else if (
 			child.type === 'text' &&
 			typeof child.text === 'string' &&
 			child.text.trim() !== ''
 		) {
-			el.append(new MText(child.text));
+			children.push(new MText(child.text));
 		} else if (child.type === 'cdata' && typeof child.cdata === 'string') {
-			el.append(new MCData(child.cdata));
+			children.push(new MCData(child.cdata));
 		}
 		// Whitespace-only text and comments are dropped so serialization stays
 		// idempotent; add an MComment node if a real document needs them preserved.
 	}
+	appendChildren(el, children);
 
 	return el;
 }

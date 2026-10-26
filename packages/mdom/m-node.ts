@@ -73,8 +73,28 @@ export class MCData extends MNode {
 	}
 }
 
+let appendAll: (parent: MElement, children: readonly MNode[]) => void;
+
+/**
+ * Append nodes in order, as if by {@link MElement.append} on each, publishing
+ * the parent's frozen children once instead of copying them per child. For
+ * construction of wide child lists (parsing, GPIF tables), where appending one
+ * at a time copies the growing list quadratically. Internal: not exported from
+ * the package.
+ */
+export function appendChildren(
+	parent: MElement,
+	children: readonly MNode[],
+): void {
+	appendAll(parent, children);
+}
+
 /** An element: a tag with attributes, child nodes, and the tree-query axes. */
 export class MElement extends MNode {
+	static {
+		appendAll = (parent, children) => parent.appendAll(children);
+	}
+
 	private attrs: Record<string, string> = {};
 	private _children: readonly MNode[] = Object.freeze([]);
 
@@ -167,6 +187,39 @@ export class MElement extends MNode {
 	/** Append a child, detaching it from its previous parent. */
 	append(child: MNode): void {
 		this.insertBefore(child, null);
+	}
+
+	private appendAll(children: readonly MNode[]): void {
+		if (children.length === 0) {
+			return;
+		}
+		// Attached or repeated nodes move as they would one append at a time.
+		if (
+			new Set(children).size !== children.length ||
+			children.some((child) => child.parent)
+		) {
+			for (const child of children) {
+				this.append(child);
+			}
+			return;
+		}
+		// A detached node can only contain this element by being its top ancestor.
+		const ancestors = new Set<MNode>();
+		for (
+			let ancestor: MNode | null = this;
+			ancestor;
+			ancestor = ancestor.parent
+		) {
+			ancestors.add(ancestor);
+		}
+		if (children.some((child) => ancestors.has(child))) {
+			throw new Error('mdom: a node cannot contain itself');
+		}
+		MMutation.adopt(this, children.flatMap(descendants));
+		this.setChildren([...this._children, ...children]);
+		for (const child of children) {
+			this.reparent(child, this);
+		}
 	}
 
 	/** Remove a direct child, clearing its parent link. */

@@ -18,6 +18,8 @@ const inputs = sizes.map((measures) =>
 	syntheticScore(seed, { measures, parts: 1, voices: 1, notes: 4 }),
 );
 const linearOperations = [
+	'parse',
+	'gpif-parse',
 	'mxl-unzip',
 	'serialize-xml',
 	'serialize-mxl',
@@ -157,8 +159,7 @@ describe('bounded-density measure scaling guards (64 → 256)', () => {
 	}
 
 	it.todo('edit-insert/read, edit-remove/read, edit-set/read: #45 scoped-read-caches', () => {});
-	it.todo('GP export/import: #46 bulk-tree-construction, #45 scoped-read-caches', () => {});
-	it.todo('wide XML/GPIF parsing: #46 bulk-tree-construction (measure and density axes)', () => {});
+	it.todo('GP export/import: #45 scoped-read-caches (GPIF parsing is guarded; reading it and export source reads are not)', () => {});
 	it.todo('spanner creation: #49 indexed-spanner-numbers (static audit evidence; needs a span workload)', () => {});
 });
 
@@ -170,7 +171,7 @@ const denseInputs = densities.map((notes) =>
 );
 
 describe('notes-per-measure scaling guards (32 → 128)', () => {
-	for (const operation of ['cursor', 'read-walk'] as const) {
+	for (const operation of ['cursor', 'read-walk', 'parse'] as const) {
 		it(`${operation} time grows less than 6x for 4x notes per measure`, () =>
 			guardRatio(
 				operation,

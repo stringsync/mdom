@@ -8,7 +8,7 @@ under `/tmp` or a downloaded corpus is required. The former
 # Small development smoke case; single operation + size runs in this process.
 bun packages/e2e/scaling.bench.ts --operation read-walk --size 1 --samples 1
 
-# Full audit: 100, 200, 400, 800 measures, twelve operations, three samples each.
+# Full audit: 100, 200, 400, 800 measures, thirteen operations, three samples each.
 # This is heavy: obtain the splates run-command permission before running it.
 bun packages/e2e/scaling.bench.ts --json scaling.json
 
@@ -51,7 +51,7 @@ clef/key/time/transpose/divisions declared only at the start. `--size` replaces
 the selected axis. `--parts`, `--voices`, `--notes` and `--measures` configure the
 other synthetic dimensions; they do not reshape the real-measure mode.
 
-`gp-parse` and `serialize-gp` instead start from the real
+`gp-parse`, `gpif-parse` and `serialize-gp` instead start from the real
 `packages/mdom/fixtures/guitar-pro/notes.gp` fixture (`--gp-seed` overrides it).
 The imported score is repeated through MusicXML with the same generator, then
 re-exported outside the timer for GP import. GP export explicitly omits unsupported
@@ -66,6 +66,8 @@ different musical content from XML cases. JSON records actual counts for every c
 - `mxl-unzip`: ArchiveReader load and decompression of score.musicxml, excluding
   XML parsing. Archive construction is outside the timer.
 - `gp-parse`: GuitarProParser over the generated GP archive, including unzip.
+- `gpif-parse`: MDOMParser over the archive's score.gpif, excluding unzip and
+  reading the GPIF into a score: the wide GPIF tables alone.
 - `serialize-xml`, `serialize-mxl`, `serialize-gp`: complete serializer calls,
   including compression where applicable.
 - `read-walk`: every note's measureBeat/beats/divisions and slur/tie partner;

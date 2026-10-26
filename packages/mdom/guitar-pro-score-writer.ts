@@ -25,7 +25,7 @@ import { GuitarProValues } from './guitar-pro-values';
 import { GuitarProXml as X } from './guitar-pro-xml';
 import type { Harmony } from './harmony';
 import { MDocument } from './m-document';
-import { MElement } from './m-node';
+import { appendChildren, MElement } from './m-node';
 import type { Measure } from './measure';
 import type { Note } from './note';
 import type { Part } from './part';
@@ -108,6 +108,11 @@ export class GuitarProScoreWriter {
 	private readonly root = new MElement('GPIF');
 	private readonly effects: GuitarProBeatEffectWriter;
 	private readonly tables = new Map<string, MElement>();
+	/**
+	 * Each table's entries, by id, attached to the table at the end of the
+	 * write: appending one at a time would copy the table per entry.
+	 */
+	private readonly entries = new Map<string, MElement[]>();
 	/** Segno and coda ids by the GPIF target each was given, two of each. */
 	private readonly landmarks = {
 		segno: new Map<string, string>(),
@@ -189,12 +194,13 @@ export class GuitarProScoreWriter {
 			'Rhythms',
 		]) {
 			this.tables.set(name, X.add(this.root, name));
+			this.entries.set(name, []);
 		}
 		const passes = this.endingPasses(first);
 		let feel: string | null = null;
 		for (const measure of first.measures) {
 			const master = this.masterBar(measure);
-			this.tables.get('MasterBars')!.append(master);
+			this.entries.get('MasterBars')!.push(master);
 			this.masterBars.push(master);
 			if (passes[measure.index]!.length) {
 				X.add(master, 'AlternateEndings', passes[measure.index]!.join(' '));
@@ -332,20 +338,23 @@ export class GuitarProScoreWriter {
 			}
 		}
 		masterTracks.setText(
-			this.tables
+			this.entries
 				.get('Tracks')!
-				.childrenNamed('Track')
 				.map((track) => track.getAttribute('id'))
 				.join(' '),
 		);
+		for (const [name, entries] of this.entries) {
+			appendChildren(this.tables.get(name)!, entries);
+		}
 		return new MDocument(this.root, { version: '1.0', encoding: 'utf-8' });
 	}
 
 	private entry(table: string, tag: string): MElement {
-		const parent = this.tables.get(table)!;
-		return X.add(parent, tag, undefined, {
-			id: String(parent.children.length),
-		});
+		const entries = this.entries.get(table)!;
+		const node = new MElement(tag);
+		node.setAttribute('id', String(entries.length));
+		entries.push(node);
+		return node;
 	}
 	private automation(
 		parent: MElement,

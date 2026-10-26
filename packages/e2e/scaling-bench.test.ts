@@ -130,7 +130,9 @@ describe('scaling benchmark', () => {
 		it(`runs ${operation} on a tiny fixture and reports finite metrics`, async () => {
 			const files = new NodeFs();
 			const seed =
-				operation === 'gp-parse' || operation === 'serialize-gp'
+				operation === 'gp-parse' ||
+				operation === 'gpif-parse' ||
+				operation === 'serialize-gp'
 					? await new GuitarProParser().parseFromBytes(
 							await files.readBytes(
 								`${import.meta.dir}/../mdom/fixtures/guitar-pro/notes.gp`,

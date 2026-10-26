@@ -140,7 +140,9 @@ program
 							// GP operations use a real GP import, repeated in MusicXML then
 							// re-exported untimed. Other operations share the real XML seed.
 							const seed =
-								operation === 'gp-parse' || operation === 'serialize-gp'
+								operation === 'gp-parse' ||
+								operation === 'gpif-parse' ||
+								operation === 'serialize-gp'
 									? await new GuitarProParser().parseFromBytes(
 											await files.readBytes(options['gp-seed']),
 										)
