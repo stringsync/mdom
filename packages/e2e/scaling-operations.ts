@@ -112,6 +112,72 @@ export function cursorWalk(document: MDocument): number {
 	return checksum;
 }
 
+interface ImportInput {
+	archiveBytes?: Uint8Array;
+	gpif?: string;
+}
+
+// Import inputs depend only on the operation and score, and building them (a
+// full Guitar Pro export for gpif-parse) costs far more than the timed import,
+// so repeated samples of one score reuse them. Guards alternate two scores;
+// keeping a few bounds what a bench sweep retains. gp-parse still builds per
+// sample: its tie numbering is quadratic until #49 lands, and the guard only
+// stays under 6x while a fresh export slows its small sample.
+const importInputs = new Map<string, Promise<ImportInput>>();
+const importInputLimit = 4;
+
+function importInput(
+	operation: Operation,
+	xml: string,
+	document: MDocument,
+): Promise<ImportInput> {
+	if (operation === 'gp-parse') {
+		return buildImportInput(operation, document);
+	}
+	if (operation !== 'mxl-unzip' && operation !== 'gpif-parse') {
+		return Promise.resolve({});
+	}
+	const key = `${operation}\0${xml}`;
+	let input = importInputs.get(key);
+	if (!input) {
+		input = buildImportInput(operation, document);
+		input.catch(() => importInputs.delete(key));
+		importInputs.set(key, input);
+		if (importInputs.size > importInputLimit) {
+			importInputs.delete(importInputs.keys().next().value!);
+		}
+	}
+	return input;
+}
+
+async function buildImportInput(
+	operation: 'mxl-unzip' | 'gp-parse' | 'gpif-parse',
+	document: MDocument,
+): Promise<ImportInput> {
+	if (operation === 'mxl-unzip') {
+		return {
+			archiveBytes: new Uint8Array(
+				await (
+					await new MXLSerializer().serializeToBlob(document)
+				).arrayBuffer(),
+			),
+		};
+	}
+	const archiveBytes = await new GuitarProSerializer().serializeToBytes(
+		document,
+		{ unsupported: 'omit' },
+	);
+	if (operation === 'gp-parse') {
+		return { archiveBytes };
+	}
+	return {
+		gpif: required(
+			await (await ArchiveReader.load(archiveBytes)).text('Content/score.gpif'),
+			'GP archive score.gpif',
+		),
+	};
+}
+
 export async function measureOperation(
 	operation: Operation,
 	xml: string,
@@ -122,25 +188,7 @@ export async function measureOperation(
 	const document = parser.parseFromString(xml);
 	const documentHeapBytes = heapUsed() - emptyHeap;
 	// All input construction (including compression for import cases) is untimed.
-	let archiveBytes: Uint8Array | undefined;
-	let gpif: string | undefined;
-	if (operation === 'mxl-unzip') {
-		archiveBytes = new Uint8Array(
-			await (await new MXLSerializer().serializeToBlob(document)).arrayBuffer(),
-		);
-	} else if (operation === 'gp-parse' || operation === 'gpif-parse') {
-		archiveBytes = await new GuitarProSerializer().serializeToBytes(document, {
-			unsupported: 'omit',
-		});
-		if (operation === 'gpif-parse') {
-			gpif = required(
-				await (await ArchiveReader.load(archiveBytes)).text(
-					'Content/score.gpif',
-				),
-				'GP archive score.gpif',
-			);
-		}
-	}
+	const { archiveBytes, gpif } = await importInput(operation, xml, document);
 	const measures = document.score.parts.flatMap((part) => [...part.measures]);
 	const notes = measures.flatMap((measure) => measure.notes);
 	if (!notes.length) {
