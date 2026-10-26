@@ -56,6 +56,23 @@ export class Articulation extends MElement {
 		return this.getAttribute('smufl');
 	}
 
+	/** `line-shape` of a scoop, plop, doit or falloff; null when unstated. */
+	get lineShape(): 'straight' | 'curved' | null {
+		const shape = this.getAttribute('line-shape');
+		return shape === 'straight' || shape === 'curved' ? shape : null;
+	}
+
+	/** `line-type` of a scoop, plop, doit or falloff; null when unstated. */
+	get lineType(): 'solid' | 'dashed' | 'dotted' | 'wavy' | null {
+		const type = this.getAttribute('line-type');
+		return type === 'solid' ||
+			type === 'dashed' ||
+			type === 'dotted' ||
+			type === 'wavy'
+			? type
+			: null;
+	}
+
 	/** Where this is drawn, in tenths. Layout only: it never moves the onset. */
 	get position(): Position {
 		return positionOf(this);

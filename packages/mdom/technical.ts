@@ -68,6 +68,36 @@ export interface HarmonicDetail {
 	pitch: HarmonicPitch | null;
 }
 
+/** Which side of the instrument a `<hole-closed>`/`<harmon-closed>` is placed on. */
+export type ClosedLocation = 'right' | 'bottom' | 'left' | 'top';
+
+/** How closed a hole or a harmon mute's stem is. */
+export type ClosedValue = 'yes' | 'no' | 'half';
+
+/** The payload of one `<hole>`. */
+export interface HoleDetail {
+	holeType: string | null;
+	closed: ClosedValue | null;
+	location: ClosedLocation | null;
+	shape: string | null;
+}
+
+/** The payload of one `<arrow>`: a direction arrow, or a circular one. */
+export interface ArrowDetail {
+	/** `<arrow-direction>` (left, up, northeast, …); null for a circular arrow. */
+	direction: string | null;
+	style: string | null;
+	head: string | null;
+	/** `<circular-arrow>` (clockwise or anticlockwise); null for a direction arrow. */
+	circular: string | null;
+}
+
+/** The payload of one `<harmon-mute>`. */
+export interface HarmonMuteDetail {
+	closed: ClosedValue | null;
+	location: ClosedLocation | null;
+}
+
 /** The payload of one `<bend>`. */
 export interface BendDetail {
 	/** `<bend-alter>` in semitones; negative for a release. */
@@ -134,6 +164,50 @@ export class Technical extends MElement {
 		};
 	}
 
+	/** The `<hole>` payload; null when this is no hole. */
+	get hole(): HoleDetail | null {
+		if (this.tag !== 'hole') {
+			return null;
+		}
+		const closed = this.child('hole-closed');
+		return {
+			holeType: this.child('hole-type')?.text ?? null,
+			closed: closedValueOf(closed),
+			location: closedLocationOf(closed),
+			shape: this.child('hole-shape')?.text ?? null,
+		};
+	}
+
+	/** The `<arrow>` payload; null when this is no arrow. */
+	get arrow(): ArrowDetail | null {
+		if (this.tag !== 'arrow') {
+			return null;
+		}
+		return {
+			direction: this.child('arrow-direction')?.text ?? null,
+			style: this.child('arrow-style')?.text ?? null,
+			head: this.child('arrowhead') ? 'arrowhead' : null,
+			circular: this.child('circular-arrow')?.text ?? null,
+		};
+	}
+
+	/** The `<handbell>` technique text (damp, martellato, …); null when this is no handbell. */
+	get handbell(): string | null {
+		return this.tag === 'handbell' ? this.text : null;
+	}
+
+	/** The `<harmon-mute>` payload; null when this is no harmon mute. */
+	get harmonMute(): HarmonMuteDetail | null {
+		if (this.tag !== 'harmon-mute') {
+			return null;
+		}
+		const closed = this.child('harmon-closed');
+		return {
+			closed: closedValueOf(closed),
+			location: closedLocationOf(closed),
+		};
+	}
+
 	/**
 	 * The `smufl` glyph name, which an `<other-technical>` (or any mark) may give
 	 * to say how its free text draws; null when unset.
@@ -175,4 +249,19 @@ function numberAttribute(element: MElement, name: string): number | null {
 	}
 	const value = Number(raw);
 	return Number.isFinite(value) ? value : null;
+}
+
+function closedValueOf(element: MElement | null): ClosedValue | null {
+	const text = element?.text;
+	return text === 'yes' || text === 'no' || text === 'half' ? text : null;
+}
+
+function closedLocationOf(element: MElement | null): ClosedLocation | null {
+	const location = element?.getAttribute('location');
+	return location === 'right' ||
+		location === 'bottom' ||
+		location === 'left' ||
+		location === 'top'
+		? location
+		: null;
 }

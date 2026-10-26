@@ -37,6 +37,8 @@ import { Slide } from './slide';
 import { Slur } from './slur';
 import {
 	type BendShape,
+	type ClosedLocation,
+	type ClosedValue,
 	HARMONIC_KINDS,
 	HARMONIC_PITCHES,
 	type HarmonicKind,
@@ -1194,9 +1196,19 @@ export class Note extends MElement {
 	 */
 	addArticulation(
 		name: string,
-		options: { placement?: 'above' | 'below' } = {},
+		options: {
+			placement?: 'above' | 'below';
+			lineShape?: 'straight' | 'curved';
+			lineType?: 'solid' | 'dashed' | 'dotted' | 'wavy';
+		} = {},
 	): MElement {
-		const mark = new MElement(name);
+		const mark = new Articulation(name);
+		if (options.lineShape != null) {
+			mark.setAttribute('line-shape', options.lineShape);
+		}
+		if (options.lineType != null) {
+			mark.setAttribute('line-type', options.lineType);
+		}
 		if (options.placement != null) {
 			mark.setAttribute('placement', options.placement);
 		}
@@ -1625,6 +1637,88 @@ export class Note extends MElement {
 			}
 			technical.append(release);
 		}
+	}
+
+	/** Set or clear this note's `<hole>`; null removes it. The write side of {@link Technical.hole}. */
+	setHole(
+		spec: {
+			holeType?: string;
+			closed: ClosedValue;
+			location?: ClosedLocation;
+			shape?: string;
+		} | null,
+	): void {
+		const hole = this.replaceTechnical('hole', spec);
+		if (!hole || !spec) {
+			return;
+		}
+		if (spec.holeType != null) {
+			appendValue(hole, 'hole-type', spec.holeType);
+		}
+		const closed = appendValue(hole, 'hole-closed', spec.closed);
+		if (spec.location != null) {
+			closed.setAttribute('location', spec.location);
+		}
+		if (spec.shape != null) {
+			appendValue(hole, 'hole-shape', spec.shape);
+		}
+	}
+
+	/** Set or clear this note's `<arrow>`; `circular` or `direction` (with style) draws it. */
+	setArrow(
+		spec:
+			| { circular: string }
+			| { direction: string; style?: string; arrowhead?: boolean }
+			| null,
+	): void {
+		const arrow = this.replaceTechnical('arrow', spec);
+		if (!arrow || !spec) {
+			return;
+		}
+		if ('circular' in spec) {
+			appendValue(arrow, 'circular-arrow', spec.circular);
+			return;
+		}
+		appendValue(arrow, 'arrow-direction', spec.direction);
+		if (spec.style != null) {
+			appendValue(arrow, 'arrow-style', spec.style);
+		}
+		if (spec.arrowhead) {
+			arrow.append(new MElement('arrowhead'));
+		}
+	}
+
+	/** Set or clear this note's `<handbell>` technique (damp, martellato, …); null removes it. */
+	setHandbell(value: string | null): void {
+		const bell = this.replaceTechnical('handbell', value);
+		bell?.setText(value as string);
+	}
+
+	/** Set or clear this note's `<harmon-mute>`; null removes it. */
+	setHarmonMute(
+		spec: { closed: ClosedValue; location?: ClosedLocation } | null,
+	): void {
+		const mute = this.replaceTechnical('harmon-mute', spec);
+		if (!mute || !spec) {
+			return;
+		}
+		const closed = appendValue(mute, 'harmon-closed', spec.closed);
+		if (spec.location != null) {
+			closed.setAttribute('location', spec.location);
+		}
+	}
+
+	/** Remove every technical named `tag`; when `spec` is set, append and return a fresh one. */
+	private replaceTechnical(tag: string, spec: unknown): Technical | null {
+		for (const existing of this.technicalChildrenNamed(tag)) {
+			existing.remove();
+		}
+		if (spec == null) {
+			return null;
+		}
+		const fresh = new Technical(tag);
+		this.technical().append(fresh);
+		return fresh;
 	}
 
 	/**
