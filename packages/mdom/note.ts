@@ -1127,7 +1127,7 @@ export class Note extends MElement {
 
 	/** Pair printed tuplet endpoints. Performed ratios are set separately on each note. */
 	addTuplet(other: Note, spec: TupletSpec = {}): Tuplet {
-		const number = nextNumber(this, (note) => note.tuplets);
+		const number = nextNumber(this, other, (note) => note.tuplets);
 		const start = buildTuplet('start', number, spec);
 		const stop = buildTuplet('stop', number, {});
 		this.notations().append(start);
@@ -1996,8 +1996,8 @@ export class Note extends MElement {
 	}
 
 	/**
-	 * Add a note-attached spanner from this note to `other`, picking an unused
-	 * number across the part so the caller never manages pairing keys.
+	 * Add a note-attached spanner from this note to `other`, picking a number
+	 * free across the span so the caller never manages pairing keys.
 	 */
 	private spanTo<T extends MElement & { number: string }>(
 		other: Note,
@@ -2006,7 +2006,7 @@ export class Note extends MElement {
 		lineType?: LineType,
 		block?: 'technical' | 'ornaments',
 	): T {
-		const number = nextNumber(this, existing);
+		const number = nextNumber(this, other, existing);
 		const start = new Marker();
 		start.setAttribute('type', 'start');
 		start.setAttribute('number', number);
@@ -2212,8 +2212,10 @@ const afterInstrument = new Set([
 ]);
 
 /**
- * The lowest spanner number not already used by markers of this kind anywhere in
- * the part, so a generated start/stop pair can't collide with an existing span.
+ * The lowest spanner number whose existing spans of this kind in the part all
+ * end before `first` or start after `last`, so numbers are reused across
+ * sequential spans and stay within MusicXML's 1-16. A start without a stop
+ * stays open to the end of the part.
  */
 /** A point in a part as one comparable number: measure index, then beat. */
 function timePosition(measure: Measure | null, beat: number | null): number {
@@ -2221,22 +2223,38 @@ function timePosition(measure: Measure | null, beat: number | null): number {
 }
 
 function nextNumber(
-	note: Note,
-	existing: (note: Note) => { number: string }[],
+	first: Note,
+	last: Note,
+	existing: (note: Note) => (MElement & { number: string })[],
 ): string {
-	const part = note.closest(Part);
-	const used = new Set<string>();
-	if (part) {
-		for (const measure of part.measures) {
-			for (const sibling of measure.notes) {
-				for (const marker of existing(sibling)) {
-					used.add(marker.number);
+	const part = first.closest(Part);
+	const notes = part ? part.measures.flatMap((measure) => measure.notes) : [];
+	const from = notes.indexOf(first);
+	const to = notes.indexOf(last);
+	const blocked = new Set<string>();
+	const open = new Map<string, number>();
+	notes.forEach((note, position) => {
+		for (const marker of existing(note)) {
+			const number = marker.number;
+			const type = marker.getAttribute('type');
+			if (type === 'start') {
+				open.set(number, position);
+			} else if (type === 'stop') {
+				const start = open.get(number) ?? -Infinity;
+				open.delete(number);
+				if (start <= to && position >= from) {
+					blocked.add(number);
 				}
 			}
 		}
+	});
+	for (const [number, start] of open) {
+		if (start <= to) {
+			blocked.add(number);
+		}
 	}
 	let candidate = 1;
-	while (used.has(String(candidate))) {
+	while (blocked.has(String(candidate))) {
 		candidate++;
 	}
 	return String(candidate);

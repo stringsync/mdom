@@ -102,3 +102,32 @@ describe('Note', () => {
 		expect(plain!.dots).toBe(0);
 	});
 });
+
+describe('Note spanner numbers', () => {
+	const note = '<note><rest/><duration>4</duration><type>quarter</type></note>';
+	const xml = `<score-partwise><part-list><score-part id="P1"><part-name>M</part-name></score-part></part-list><part id="P1"><measure number="1">${note.repeat(41)}</measure></part></score-partwise>`;
+
+	it('reuses numbers across 20 sequential slurs, within 1-16', () => {
+		const notes =
+			new MDOMParser()
+				.parseFromString(xml)
+				.score?.getPart('P1')
+				?.getMeasure('1')?.notes ?? [];
+		for (let index = 0; index < 20; index++) {
+			notes[index * 2]!.addSlur(notes[index * 2 + 1]!);
+		}
+		const numbers = notes.flatMap((each) => each.slurs.map((s) => s.number));
+		expect(new Set(numbers)).toEqual(new Set(['1']));
+	});
+
+	it('gives overlapping slurs distinct numbers', () => {
+		const notes =
+			new MDOMParser()
+				.parseFromString(xml)
+				.score?.getPart('P1')
+				?.getMeasure('1')?.notes ?? [];
+		const outer = notes[0]!.addSlur(notes[5]!);
+		const inner = notes[2]!.addSlur(notes[3]!);
+		expect(outer.number).not.toBe(inner.number);
+	});
+});
