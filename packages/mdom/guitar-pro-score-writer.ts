@@ -756,6 +756,7 @@ export class GuitarProScoreWriter {
 							X.add(beat, 'Notes', notes.join(' '));
 						}
 						if (index === 0) {
+							this.whammy(beat, lead);
 							this.directions(beat, lead);
 							this.effects.write(beat, chord.notes, ottavas);
 							this.effects.writeFermata(
@@ -931,6 +932,23 @@ export class GuitarProScoreWriter {
 		}
 		return beat;
 	}
+	private whammy(beat: MElement, lead: Note): void {
+		const bend = lead.bend;
+		if (!bend || bend.withBar == null) {
+			return;
+		}
+		const peak = (bend.semitones * 50).toFixed(6);
+		const zero = (0).toFixed(6);
+		X.add(beat, 'Whammy', undefined, {
+			originValue: bend.preBend ? peak : zero,
+			middleValue: peak,
+			destinationValue: bend.release ? zero : peak,
+			originOffset: zero,
+			middleOffset1: (50).toFixed(6),
+			middleOffset2: (50).toFixed(6),
+			destinationOffset: (100).toFixed(6),
+		});
+	}
 	private note(
 		source: Note,
 		staff: StaffContext,
@@ -1083,7 +1101,7 @@ export class GuitarProScoreWriter {
 			X.addProperty(node, 'HarmonicFret', 'HFret', '12.000000');
 		}
 		const bend = source.bend;
-		if (bend) {
+		if (bend && bend.withBar == null) {
 			const peak = bend.semitones * 50;
 			const float = (name: string, value: number) =>
 				X.addProperty(node, name, 'Float', value.toFixed(6));

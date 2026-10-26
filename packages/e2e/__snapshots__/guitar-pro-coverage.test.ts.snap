@@ -13,7 +13,7 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 | \`dead.gp\` | ok |
 | \`directions.gp\` | ok |
 | \`drum-tabs.gp\` | error: Guitar Pro percussion tracks are not supported |
-| \`effects.gp\` | omits \`Semi harmonics\`, \`beat effects or annotations\`, \`bend curves\`, \`instrument changes or track automation\`, \`note techniques\` |
+| \`effects.gp\` | omits \`Semi harmonics\`, \`beat effects or annotations\`, \`bend curves\`, \`instrument changes or track automation\`, \`note techniques\`, \`whammy bar curves\` |
 | \`fermata.gp\` | omits \`fermatas between beats\` |
 | \`grace.gp\` | omits \`note techniques\` |
 | \`grace.gp5\` | omits \`note techniques\` |
@@ -45,7 +45,7 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 | \`time-signatures.gp\` | ok |
 | \`time-signatures.gp5\` | ok |
 | \`time-signatures.gpx\` | ok |
-| \`tremolo.gp\` | omits \`beat effects or annotations\` |
+| \`tremolo.gp\` | omits \`whammy bar curves\` |
 | \`tuplets.gp\` | ok |
 | \`tuplets.gp5\` | ok |
 | \`tuplets.gpx\` | ok |
@@ -54,9 +54,10 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 | Omitted feature | Files |
 | --- | --- |
 | \`note techniques\` | 7 |
-| \`beat effects or annotations\` | 3 |
+| \`beat effects or annotations\` | 2 |
 | \`bend curves\` | 2 |
 | \`Semi harmonics\` | 2 |
+| \`whammy bar curves\` | 2 |
 | \`fermatas between beats\` | 1 |
 | \`instrument changes or track automation\` | 1 |
 | \`lyrics\` | 1 |

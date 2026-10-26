@@ -162,6 +162,41 @@ export class GuitarProValues {
 		};
 	}
 
+	/**
+	 * A GPIF whammy bar curve as a bend with the bar: a dip (values at or below
+	 * zero, negative semitones) or a rise (at or above zero), shaped as
+	 * {@link bend} reads a string bend. 'none' when it never leaves zero; null
+	 * for a curve that crosses zero or that a single bend cannot state.
+	 */
+	static whammy(
+		origin: number,
+		middles: number[],
+		destination: number,
+	):
+		| 'none'
+		| { semitones: number; preBend: boolean; release: boolean; withBar: string }
+		| null {
+		const values = [origin, ...middles, destination];
+		const dip = values.every((value) => value <= 0);
+		if (!dip && values.some((value) => value < 0)) {
+			return null;
+		}
+		const sign = dip ? -1 : 1;
+		const bend = GuitarProValues.bend(
+			origin * sign,
+			middles.map((value) => value * sign),
+			destination * sign,
+		);
+		if (bend == null || bend === 'none') {
+			return bend;
+		}
+		return {
+			...bend,
+			semitones: bend.semitones * sign,
+			withBar: dip ? 'dip' : 'scoop',
+		};
+	}
+
 	private static readonly semitones: Record<string, number> = {
 		C: 0,
 		D: 2,

@@ -781,6 +781,7 @@ export class GuitarProDocumentReader {
 			measure.append(note);
 			if (source) {
 				this.readNote(source, note, staff);
+				this.readWhammy(beat, note);
 				const string = X.property(source, 'String')?.child('String')?.text;
 				const key = `${voice}:${string == null ? `pitch${pitch}` : `string${string}`}`;
 				if (source.child('Tie')?.getAttribute('destination') === 'true') {
@@ -950,9 +951,28 @@ export class GuitarProDocumentReader {
 			}
 		}
 	}
+	private readWhammy(beat: MElement | null, note: Note): void {
+		const whammy = beat?.child('Whammy');
+		if (!whammy) {
+			return;
+		}
+		const value = (name: string) => Number(whammy.getAttribute(name) ?? 0);
+		const bar = GuitarProValues.whammy(
+			value('originValue'),
+			[value('middleValue')],
+			value('destinationValue'),
+		);
+		if (bar === 'none') {
+			return;
+		}
+		if (bar) {
+			note.setBend(bar);
+		} else {
+			this.values.unsupported('whammy bar curves');
+		}
+	}
 	private checkBeat(beat: MElement): void {
 		const tags = [
-			'Whammy',
 			'WhammyBar',
 			'Vibrato',
 			'Fade',
@@ -967,7 +987,7 @@ export class GuitarProDocumentReader {
 			'Tap',
 			'Wah',
 		];
-		const props = ['Whammy', 'Slapped', 'Popped', 'PalmMuted', 'LetRing'];
+		const props = ['WhammyBar', 'Slapped', 'Popped', 'PalmMuted', 'LetRing'];
 		if (
 			tags.some((tag) => beat.child(tag)) ||
 			beat

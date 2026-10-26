@@ -36,6 +36,28 @@ describe('Guitar Pro note techniques', () => {
 		).toBeGreaterThan(0);
 	});
 
+	it('round trips a whammy bar dip through the beat', async () => {
+		const document = MDocument.empty();
+		const measure = document.score.addPart({ name: 'Piano' }).addMeasure();
+		measure.setTime({ beats: 4, beatType: 4 });
+		measure.setClef({ sign: 'G', line: 2 });
+		const voice = measure.getOrCreateVoice('v');
+		const dip = voice.addNote({ step: 'C', octave: 4, type: 'half' });
+		dip.setBend({ semitones: -2, release: true, withBar: 'dip' });
+		voice.addNote({ step: 'D', octave: 4, type: 'half' });
+
+		const bytes = await new GuitarProSerializer().serializeToBytes(document);
+		const restored = (await parser.parseFromBytes(bytes)).score.parts[0]!
+			.measures[0]!.notes;
+
+		expect(restored[0]!.bend).toMatchObject({
+			semitones: -2,
+			release: true,
+			withBar: 'dip',
+		});
+		expect(restored[1]!.bend).toBeNull();
+	});
+
 	it('round trips every technique through GPIF', async () => {
 		const document = MDocument.empty();
 		const measure = document.score.addPart({ name: 'Piano' }).addMeasure();
