@@ -23,6 +23,11 @@ export class FrameNote extends MElement {
 		return Number(required(this.child('fret')?.text, '<fret> in <frame-note>'));
 	}
 
+	/** `<fingering>`: the finger that stops this dot (`1`–`4`, `T`); null when unmarked. */
+	get fingering(): string | null {
+		return this.child('fingering')?.text ?? null;
+	}
+
 	/** The `type` of the `<barre>` child (a barre spanning strings), or null when there is none. */
 	get barre(): 'start' | 'stop' | null {
 		const type = this.child('barre')?.getAttribute('type');
@@ -34,6 +39,8 @@ export class FrameNote extends MElement {
 export interface FrameNoteSpec {
 	string: number;
 	fret: number;
+	/** `<fingering>`: the finger printed on the dot. */
+	fingering?: string;
 	barre?: 'start' | 'stop';
 }
 
@@ -44,6 +51,10 @@ export interface FrameSpec {
 	/** `<frame-frets>`; 4 when omitted, matching {@link Frame.frets}. */
 	frets?: number;
 	firstFret?: number;
+	/** `<first-fret text>`: how the start fret prints, such as `VII`; needs {@link firstFret}. */
+	firstFretText?: string;
+	/** `<first-fret location>`: which side of the box it prints on. */
+	firstFretLocation?: 'left' | 'right';
 	notes: FrameNoteSpec[];
 }
 
@@ -78,6 +89,20 @@ export class Frame extends MElement {
 		return firstFret == null ? null : Number(firstFret);
 	}
 
+	/**
+	 * `<first-fret text>`: the start fret as printed (`VII`, `7fr`) when it
+	 * differs from the plain number; null when unset.
+	 */
+	get firstFretText(): string | null {
+		return this.child('first-fret')?.getAttribute('text') ?? null;
+	}
+
+	/** `<first-fret location>`: the side the start fret prints on; null when unstated. */
+	get firstFretLocation(): 'left' | 'right' | null {
+		const location = this.child('first-fret')?.getAttribute('location');
+		return location === 'left' || location === 'right' ? location : null;
+	}
+
 	/** The `<frame-note>` dots (each a string/fret), in document order. */
 	get frameNotes(): FrameNote[] {
 		return this.childrenOfType(FrameNote);
@@ -92,6 +117,9 @@ export class Frame extends MElement {
 		const note = new FrameNote();
 		appendValue(note, 'string', String(spec.string));
 		appendValue(note, 'fret', String(spec.fret));
+		if (spec.fingering != null) {
+			appendValue(note, 'fingering', spec.fingering);
+		}
 		if (spec.barre != null) {
 			const barre = new MElement('barre');
 			barre.setAttribute('type', spec.barre);
@@ -128,7 +156,15 @@ export function buildFrame(spec: FrameSpec): Frame {
 	appendValue(frame, 'frame-strings', String(spec.strings ?? 6));
 	appendValue(frame, 'frame-frets', String(spec.frets ?? 4));
 	if (spec.firstFret != null) {
-		appendValue(frame, 'first-fret', String(spec.firstFret));
+		const firstFret = appendValue(frame, 'first-fret', String(spec.firstFret));
+		if (spec.firstFretText != null) {
+			firstFret.setAttribute('text', spec.firstFretText);
+		}
+		if (spec.firstFretLocation != null) {
+			firstFret.setAttribute('location', spec.firstFretLocation);
+		}
+	} else if (spec.firstFretText != null || spec.firstFretLocation != null) {
+		throw new Error('mdom: a first-fret text or location needs firstFret');
 	}
 	for (const note of spec.notes) {
 		frame.addFrameNote(note);

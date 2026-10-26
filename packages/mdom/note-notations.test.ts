@@ -48,8 +48,8 @@ describe('note — notation and technical reader getters', () => {
 	});
 
 	it('keeps a directed roll distinct from an undirected one, both distinct from none', () => {
-		expect(fancy!.arpeggiate).toEqual({ direction: 'down' });
-		expect(grace!.arpeggiate).toEqual({ direction: null }); // present, no direction
+		expect(fancy!.arpeggiate).toEqual({ direction: 'down', number: null });
+		expect(grace!.arpeggiate).toEqual({ direction: null, number: null }); // present, no direction
 		expect(plain!.arpeggiate).toBeNull();
 	});
 
@@ -65,6 +65,8 @@ describe('note — notation and technical reader getters', () => {
 			semitones: 2,
 			preBend: false,
 			release: true,
+			withBar: null,
+			shape: null,
 		});
 		expect(fancy!.harmonic).toEqual({ kind: null, pitch: null });
 		expect(plain!.harmonic).toBeNull();

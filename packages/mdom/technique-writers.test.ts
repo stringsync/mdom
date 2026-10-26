@@ -43,16 +43,22 @@ describe('note technique writers', () => {
 			semitones: 2,
 			preBend: false,
 			release: false,
+			withBar: null,
+			shape: null,
 		});
 		expect(released.bend).toEqual({
 			semitones: 1,
 			preBend: false,
 			release: true,
+			withBar: null,
+			shape: null,
 		});
 		expect(preBent.bend).toEqual({
 			semitones: 2,
 			preBend: true,
 			release: true,
+			withBar: null,
+			shape: null,
 		});
 		expect(cleared.bend).toBeNull();
 		expect(
@@ -76,7 +82,13 @@ describe('note technique writers', () => {
 		note.setBend({ semitones: 1, release: true });
 		note.setBend({ semitones: 2 });
 		expect(note.technicals.map((mark) => mark.technicalType)).toEqual(['bend']);
-		expect(note.bend).toEqual({ semitones: 2, preBend: false, release: false });
+		expect(note.bend).toEqual({
+			semitones: 2,
+			preBend: false,
+			release: false,
+			withBar: null,
+			shape: null,
+		});
 	});
 
 	it('rejects a bend of no distance', () => {
@@ -243,6 +255,8 @@ describe('note technique writers', () => {
 			semitones: 0.5,
 			preBend: false,
 			release: true,
+			withBar: null,
+			shape: null,
 		});
 		expect(back!.harmonic).toEqual({ kind: 'natural', pitch: 'base' });
 		expect(back!.isPalmMuted).toBe(true);

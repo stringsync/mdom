@@ -114,8 +114,7 @@ export {
 export { MusicXMLSerializer } from './music-xml-serializer';
 export { MXLSerializer } from './mxl-serializer';
 export {
-	type HarmonicKind,
-	type HarmonicPitch,
+	type FermataShape,
 	Note,
 	type NoteheadValue,
 	type SymbolSize,
@@ -178,7 +177,14 @@ export {
 export { StaffLayout } from './staff-layout';
 export { StaffTuning } from './staff-tuning';
 export { SystemLayout } from './system-layout';
-export { Technical } from './technical';
+export {
+	type BendDetail,
+	type BendShape,
+	type HarmonicDetail,
+	type HarmonicKind,
+	type HarmonicPitch,
+	Technical,
+} from './technical';
 export type {
 	CssFontSize,
 	Font,

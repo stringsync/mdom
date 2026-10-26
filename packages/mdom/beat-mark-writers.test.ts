@@ -28,7 +28,7 @@ describe('beat mark writers', () => {
 		note.setArpeggiate({ direction: 'down' });
 		note.setTremolo(3);
 		expect(note.fermata).toBe('inverted');
-		expect(note.arpeggiate).toEqual({ direction: 'down' });
+		expect(note.arpeggiate).toEqual({ direction: 'down', number: null });
 		const tremolo = note.ornaments.find((o) => o.tag === 'tremolo');
 		expect(tremolo?.tremoloMarks).toBe(3);
 		expect(tremolo?.tremoloType).toBe('single');

@@ -152,6 +152,20 @@ export class Direction extends MElement {
 	}
 
 	/**
+	 * Every `<direction-type><other-direction>`, document order: a direction
+	 * MusicXML has no element for. `text` is its free text, kept apart from
+	 * `smufl`, the glyph name that says how it draws.
+	 */
+	get otherDirections(): Array<{ text: string; smufl: string | null }> {
+		return this.directionTypeElements()
+			.filter((element) => element.tag === 'other-direction')
+			.map((element) => ({
+				text: element.text ?? '',
+				smufl: element.getAttribute('smufl'),
+			}));
+	}
+
+	/**
 	 * `<segno/>` and `<coda/>` markers under this direction, document order — the
 	 * landmarks a D.S./D.C. jumps to.
 	 */

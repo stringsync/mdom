@@ -95,6 +95,14 @@ export class Ornament extends MElement {
 	get accidentalMark(): string | null {
 		return this.tag === 'accidental-mark' ? this.text : null;
 	}
+	/**
+	 * The `smufl` glyph name, which an `other-*` mark gives to say how its free
+	 * text draws; null when unset.
+	 */
+	get smufl(): string | null {
+		return this.getAttribute('smufl');
+	}
+
 	/** Where this is drawn, in tenths. Layout only: it never moves the onset. */
 	get position(): Position {
 		return positionOf(this);

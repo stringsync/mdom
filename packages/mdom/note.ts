@@ -21,6 +21,7 @@ import {
 	type LineType,
 	type Position,
 	type PositionSpec,
+	placementOf,
 	positionOf,
 	setPositionOf,
 	setYesNo,
@@ -34,7 +35,14 @@ import {
 } from './signature';
 import { Slide } from './slide';
 import { Slur } from './slur';
-import { Technical } from './technical';
+import {
+	type BendShape,
+	HARMONIC_KINDS,
+	HARMONIC_PITCHES,
+	type HarmonicKind,
+	type HarmonicPitch,
+	Technical,
+} from './technical';
 import { Tie } from './tie';
 import { Time } from './time';
 import {
@@ -417,11 +425,30 @@ export class Note extends MElement {
 	}
 
 	/**
+	 * The `<notations><fermata>` shape, its text: 'normal' (also an empty
+	 * element), 'angled', 'square', and the rest of {@link FermataShape}; null
+	 * when there is no fermata. An unknown shape reads as written.
+	 */
+	get fermataShape(): FermataShape | null {
+		const fermata = this.notationsChild('fermata');
+		if (!fermata) {
+			return null;
+		}
+		const shape = fermata.text?.trim();
+		return (shape ? shape : 'normal') as FermataShape;
+	}
+
+	/**
 	 * The `<notations><arpeggiate>` roll: outer null = no element; inner
 	 * `direction: null` = an undirected roll (element present, no `direction`
 	 * attribute) — a distinct rendering, so the two nulls stay separate.
+	 * `number` tells apart simultaneous rolls across the parts or staves they
+	 * join; null when unstated.
 	 */
-	get arpeggiate(): { direction: 'up' | 'down' | null } | null {
+	get arpeggiate(): {
+		direction: 'up' | 'down' | null;
+		number: number | null;
+	} | null {
 		const arpeggiate = this.notationsChild('arpeggiate');
 		if (!arpeggiate) {
 			return null;
@@ -429,6 +456,7 @@ export class Note extends MElement {
 		const direction = arpeggiate.getAttribute('direction');
 		return {
 			direction: direction === 'up' || direction === 'down' ? direction : null,
+			number: integerAttribute(arpeggiate, 'number'),
 		};
 	}
 
@@ -493,6 +521,50 @@ export class Note extends MElement {
 	get nonArpeggiate(): 'top' | 'bottom' | null {
 		const type = this.notationsChild('non-arpeggiate')?.getAttribute('type');
 		return type === 'top' || type === 'bottom' ? type : null;
+	}
+
+	/**
+	 * The `<non-arpeggiate number>` pairing this end with its other one when
+	 * several brackets overlap; null when unstated or there is none.
+	 */
+	get nonArpeggiateNumber(): number | null {
+		const nonArpeggiate = this.notationsChild('non-arpeggiate');
+		return nonArpeggiate ? integerAttribute(nonArpeggiate, 'number') : null;
+	}
+
+	/**
+	 * Whether this is a cue note (`<cue/>`): printed small and not played. A cue
+	 * note's duration still counts in its voice's timeline.
+	 */
+	get isCue(): boolean {
+		return this.child('cue') !== null;
+	}
+
+	/**
+	 * Every `<notations><other-notation>`, document order: a mark MusicXML has no
+	 * element for. `text` is its free text, kept apart from `smufl`, the glyph
+	 * name that says how it draws; `type` is 'start', 'stop' or 'single' and
+	 * `number` pairs a start with its stop.
+	 */
+	get otherNotations(): Array<{
+		type: 'start' | 'stop' | 'single';
+		number: number;
+		text: string;
+		smufl: string | null;
+		placement: 'above' | 'below' | null;
+	}> {
+		return this.childrenNamed('notations')
+			.flatMap((notations) => notations.childrenNamed('other-notation'))
+			.map((node) => {
+				const type = node.getAttribute('type');
+				return {
+					type: type === 'start' || type === 'stop' ? type : 'single',
+					number: integerAttribute(node, 'number') ?? 1,
+					text: node.text ?? '',
+					smufl: node.getAttribute('smufl'),
+					placement: placementOf(node),
+				};
+			});
 	}
 
 	/**
@@ -616,18 +688,31 @@ export class Note extends MElement {
 	 * `semitones` from the first one's `<bend-alter>` (2 = whole step), `preBend`
 	 * when the string is bent before it is struck, `release` when the bend is let
 	 * back down. MusicXML writes a bend and release as two `<bend>`s, the second
-	 * a negative release; one `<bend>` carrying `<release/>` reads the same. Null
-	 * when there is no bend.
+	 * a negative release; one `<bend>` carrying `<release/>` reads the same.
+	 * `withBar` (a whammy-bar `scoop` or `dip`) and `shape` come from the first
+	 * `<bend>`, null when it states none; {@link Technical.bend} reads each
+	 * `<bend>` in full. Null when there is no bend.
 	 */
-	get bend(): { semitones: number; preBend: boolean; release: boolean } | null {
-		const bends = this.technicalChildrenNamed('bend');
-		if (bends.length === 0) {
+	get bend(): {
+		semitones: number;
+		preBend: boolean;
+		release: boolean;
+		withBar: string | null;
+		shape: BendShape | null;
+	} | null {
+		const bends = this.technicalMarkers(Technical).flatMap(
+			(technical) => technical.bend ?? [],
+		);
+		const first = bends[0];
+		if (!first) {
 			return null;
 		}
 		return {
-			semitones: Number(bends[0]!.child('bend-alter')?.text ?? 0),
-			preBend: bends.some((bend) => bend.child('pre-bend') !== null),
-			release: bends.some((bend) => bend.child('release') !== null),
+			semitones: first.alter,
+			preBend: bends.some((bend) => bend.preBend),
+			release: bends.some((bend) => bend.release !== null),
+			withBar: first.withBar,
+			shape: first.shape,
 		};
 	}
 
@@ -963,19 +1048,27 @@ export class Note extends MElement {
 	 * Add an articulation mark (staccato, accent, tenuto, …), creating
 	 * `<notations><articulations>` as needed. MusicXML names the mark by its TAG,
 	 * so `name` is written through as one — the write side of {@link articulations},
-	 * spelled the way MusicXML spells it.
+	 * spelled the way MusicXML spells it. `placement` pins it above or below the
+	 * note; left out, the renderer chooses.
 	 */
-	addArticulation(name: string): MElement {
+	addArticulation(
+		name: string,
+		options: { placement?: 'above' | 'below' } = {},
+	): MElement {
 		const mark = new MElement(name);
+		if (options.placement != null) {
+			mark.setAttribute('placement', options.placement);
+		}
 		this.articulationsBlock().append(mark);
 		return mark;
 	}
 
 	/**
 	 * Set or clear the fermata on this note ('upright' or 'inverted'); null
-	 * removes it. The write side of {@link fermata}.
+	 * removes it. `shape` writes a {@link FermataShape} other than the default
+	 * normal one. The write side of {@link fermata} and {@link fermataShape}.
 	 */
-	setFermata(type: 'upright' | 'inverted' | null): void {
+	setFermata(type: 'upright' | 'inverted' | null, shape?: FermataShape): void {
 		for (const notations of this.childrenNamed('notations')) {
 			for (const node of notations.childrenNamed('fermata')) {
 				node.remove();
@@ -984,6 +1077,9 @@ export class Note extends MElement {
 		if (type) {
 			const fermata = new MElement('fermata');
 			fermata.setAttribute('type', type);
+			if (shape != null && shape !== 'normal') {
+				fermata.setText(shape);
+			}
 			this.notations().append(fermata);
 		}
 	}
@@ -991,9 +1087,12 @@ export class Note extends MElement {
 	/**
 	 * Set or clear the arpeggio roll on this note. `{ direction }` rolls up or
 	 * down (a Guitar Pro brush); `{ direction: null }` is a plain wavy roll; null
-	 * removes it. The write side of {@link arpeggiate}.
+	 * removes it. `number` groups rolls struck together across staves or parts.
+	 * The write side of {@link arpeggiate}.
 	 */
-	setArpeggiate(spec: { direction: 'up' | 'down' | null } | null): void {
+	setArpeggiate(
+		spec: { direction: 'up' | 'down' | null; number?: number } | null,
+	): void {
 		for (const notations of this.childrenNamed('notations')) {
 			for (const node of notations.childrenNamed('arpeggiate')) {
 				node.remove();
@@ -1003,6 +1102,9 @@ export class Note extends MElement {
 			const arpeggiate = new MElement('arpeggiate');
 			if (spec.direction) {
 				arpeggiate.setAttribute('direction', spec.direction);
+			}
+			if (spec.number != null) {
+				arpeggiate.setAttribute('number', String(spec.number));
 			}
 			this.notations().append(arpeggiate);
 		}
@@ -1264,11 +1366,18 @@ export class Note extends MElement {
 	 * Set or clear this note's bend; null removes every `<bend>`. `semitones` is
 	 * how far the string is bent (2 = whole step, 0.5 = quarter tone). `preBend`
 	 * bends it before it is struck; `release` lets it back down, written as a
-	 * second `<bend>` with the negative alter MusicXML gives a release. The write
-	 * side of {@link bend}.
+	 * second `<bend>` with the negative alter MusicXML gives a release. `withBar`
+	 * marks a whammy-bar bend (`scoop`, `dip`) and `shape` draws the line angled
+	 * or curved. The write side of {@link bend}.
 	 */
 	setBend(
-		spec: { semitones: number; preBend?: boolean; release?: boolean } | null,
+		spec: {
+			semitones: number;
+			preBend?: boolean;
+			release?: boolean;
+			withBar?: string;
+			shape?: BendShape;
+		} | null,
 	): void {
 		for (const bend of this.technicalChildrenNamed('bend')) {
 			bend.remove();
@@ -1287,11 +1396,20 @@ export class Note extends MElement {
 		if (spec.preBend) {
 			bend.append(new MElement('pre-bend'));
 		}
+		if (spec.withBar != null) {
+			appendValue(bend, 'with-bar', spec.withBar);
+		}
+		if (spec.shape != null) {
+			bend.setAttribute('shape', spec.shape);
+		}
 		technical.append(bend);
 		if (spec.release) {
 			const release = new Technical('bend');
 			appendValue(release, 'bend-alter', String(-spec.semitones));
 			release.append(new MElement('release'));
+			if (spec.shape != null) {
+				release.setAttribute('shape', spec.shape);
+			}
 			technical.append(release);
 		}
 	}
@@ -1568,7 +1686,9 @@ export class Note extends MElement {
 	}
 
 	/** Typed markers inside this note's `<notations><technical>` (e.g. hammer-ons, pull-offs). */
-	private technicalMarkers<T extends MElement>(type: new () => T): T[] {
+	private technicalMarkers<T extends MElement>(
+		type: new (...args: never[]) => T,
+	): T[] {
 		return this.childrenNamed('notations')
 			.flatMap((notations) => notations.childrenNamed('technical'))
 			.flatMap((technical) => technical.childrenOfType(type));
@@ -1616,18 +1736,29 @@ function compareVerses(left: string, right: string): number {
 		: left.localeCompare(right);
 }
 
-/** How a harmonic is produced: on the open string's node, or stopped (pinch included). */
-export type HarmonicKind = 'natural' | 'artificial';
+/**
+ * The shape of a fermata, its text in MusicXML 4.0. 'normal' is the usual arc;
+ * the angled and square ones ask for shorter and longer holds.
+ */
+export type FermataShape =
+	| 'normal'
+	| 'angled'
+	| 'square'
+	| 'double-angled'
+	| 'double-square'
+	| 'double-dot'
+	| 'half-curve'
+	| 'curlew';
 
-/** Which pitch a harmonic's note is written at: the played, touched or heard one. */
-export type HarmonicPitch = 'base' | 'touching' | 'sounding';
-
-const HARMONIC_KINDS: readonly HarmonicKind[] = ['natural', 'artificial'];
-const HARMONIC_PITCHES: readonly HarmonicPitch[] = [
-	'base',
-	'touching',
-	'sounding',
-];
+/** A whole-number attribute, leniently: null unless an integer. */
+function integerAttribute(element: MElement, name: string): number | null {
+	const raw = element.getAttribute(name);
+	if (raw == null || raw.trim() === '') {
+		return null;
+	}
+	const value = Number(raw);
+	return Number.isInteger(value) ? value : null;
+}
 
 /** `<other-technical>` text read as let ring: `let ring`, `let-ring`, `l.r.`. */
 const LET_RING_TEXT = /^\s*(let[\s-]*ring|l\.\s*r\.?)\s*$/i;

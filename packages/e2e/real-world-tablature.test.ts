@@ -31,6 +31,8 @@ describe('Guitar Tab Creator — a tablature part', () => {
 			semitones: 4,
 			preBend: false,
 			release: false,
+			withBar: null,
+			shape: null,
 		});
 		expect([
 			...new Set(

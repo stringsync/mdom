@@ -1,3 +1,4 @@
+import type { LyricExtend } from './lyric';
 import { MElement } from './m-node';
 import { adjacentNote, type Note } from './note';
 import { placementOf } from './print-style';
@@ -29,6 +30,14 @@ export class Figure extends MElement {
 	/** Whether an `<extend>` line trails this figure (it holds through the next bass notes). */
 	get extend(): boolean {
 		return this.child('extend') !== null;
+	}
+
+	/** Which end of the extend line the `<extend>` marks; null when it states none or there is none. */
+	get extendType(): LyricExtend | null {
+		const type = this.child('extend')?.getAttribute('type');
+		return type === 'start' || type === 'stop' || type === 'continue'
+			? type
+			: null;
 	}
 }
 
