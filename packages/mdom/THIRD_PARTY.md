@@ -12,7 +12,7 @@ by Daniel Kuschny and Contributors and are distributed under MPL-2.0:
   `src/exporter/GpifSoundMapper.ts`; built-in soundbank assignments are retained from mdom.
 - `guitar-pro-gpx-file-system.ts`: BCFZ decompression and BCFS file-system reading,
   based on `src/importer/GpxFileSystem.ts` and `src/io/BitReader.ts`.
-- `guitar-pro-binary-reader.ts`: Guitar Pro 5 record layout (score header, master bars,
+- `guitar-pro-binary-reader.ts`: Guitar Pro 3-5 record layout (score header, master bars,
   tracks, beats, notes and effect fields), based on `src/importer/Gp3To5Importer.ts`.
 - `guitar-pro-drum-kit.ts`: Guitar Pro's standard drum kit articulations and the GP6
   element/variation table, based on `src/model/PercussionMapper.ts` and the kit stored in

@@ -8,7 +8,7 @@ import { GuitarProXml } from './guitar-pro-xml';
 import type { MDocument } from './m-document';
 import { MDOMParser } from './m-dom-parser';
 
-/** Imports core notation and tablature from Guitar Pro 7/8 `.gp` archives and Guitar Pro 6 `.gpx` containers, and Guitar Pro 5 `.gp5` files. */
+/** Imports core notation and tablature from Guitar Pro 7/8 `.gp` archives and Guitar Pro 6 `.gpx` containers, and Guitar Pro 3-5 `.gp3`, `.gp4` and `.gp5` files. */
 export class GuitarProParser {
 	async parseFromBlob(
 		blob: Blob,
@@ -17,7 +17,7 @@ export class GuitarProParser {
 		return this.parseFromBytes(new Uint8Array(await blob.arrayBuffer()), opts);
 	}
 
-	/** Throws for malformed archives, Guitar Pro 4 and older, unsupported musical features, or archives that inflate past `opts.maxUncompressedBytes`. */
+	/** Throws for malformed archives, Guitar Pro 2 and older, unsupported musical features, or archives that inflate past `opts.maxUncompressedBytes`. */
 	async parseFromBytes(
 		bytes: Uint8Array,
 		opts: GuitarProOptions = {},
@@ -35,7 +35,7 @@ export class GuitarProParser {
 		}
 		if (bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
 			throw new Error(
-				'Expected a Guitar Pro 6 .gpx container or a 7/8 .gp ZIP archive, or a Guitar Pro 5 .gp5 file; .gp3 and .gp4 are not supported',
+				'Expected a Guitar Pro 6 .gpx container, a 7/8 .gp ZIP archive, or a Guitar Pro 3-5 .gp3, .gp4 or .gp5 file',
 			);
 		}
 		const archive = await ArchiveReader.load(bytes, opts);

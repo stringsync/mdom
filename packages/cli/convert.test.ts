@@ -159,6 +159,35 @@ describe('convert', () => {
 		});
 	});
 
+	for (const extension of ['gp3', 'gp4']) {
+		it(`converts a .${extension} fixture to MusicXML`, async () => {
+			files.contents.set(
+				`/scores/source.${extension}`,
+				new Uint8Array(
+					await Bun.file(
+						new URL(
+							`../mdom/fixtures/guitar-pro/strings.${extension}`,
+							import.meta.url,
+						),
+					).arrayBuffer(),
+				),
+			);
+			await convert({
+				...opts,
+				input: `source.${extension}`,
+				output: 'result.musicxml',
+			});
+			const doc = new MDOMParser().parseFromString(
+				new TextDecoder().decode(await files.read('/scores/result.musicxml')),
+			);
+
+			expect(doc.score.parts[0]!.measures[0]!.notes[0]).toMatchObject({
+				string: 1,
+				fret: 1,
+			});
+		});
+	}
+
 	it('refuses to write .gp5', async () => {
 		files.contents.set(
 			'/scores/song.musicxml',
@@ -229,8 +258,8 @@ describe('convert', () => {
 	});
 
 	it('rejects an unsupported input extension before reading', async () => {
-		await expect(convert({ ...opts, input: 'legacy.gp4' })).rejects.toThrow(
-			'Unsupported score extension: .gp4',
+		await expect(convert({ ...opts, input: 'legacy.gtp' })).rejects.toThrow(
+			'Unsupported score extension: .gtp',
 		);
 		expect(files.contents.has('/scores/song.gp')).toBe(false);
 	});

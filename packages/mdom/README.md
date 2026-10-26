@@ -47,7 +47,7 @@ raw, unescaped text the score holds. Treat them as untrusted: render them with
 
 ## Guitar Pro
 
-Import and export core notation and tablature in Guitar Pro 7/8 `.gp` archives. Guitar Pro 6 `.gpx` and Guitar Pro 5 `.gp5` files import only; `GuitarProParser` detects them by their header:
+Import and export core notation and tablature in Guitar Pro 7/8 `.gp` archives. Guitar Pro 6 `.gpx` and Guitar Pro 3-5 `.gp3`, `.gp4` and `.gp5` files import only; `GuitarProParser` detects them by their header:
 
 ```ts
 import { GuitarProParser, GuitarProSerializer } from '@stringsync/mdom';
@@ -162,8 +162,8 @@ argument to either parser or serializer methods, and add
 `onUnsupported: (feature) => ...` to hear each feature it drops. Invalid core
 data still throws:
 for example, missing string assignments on a tuned staff, pitch/fret mismatches,
-inconsistent durations, or mismatched meters across parts. Older
-`.gp3`/`.gp4` input, `.gpx` output, and mid-score tuning changes are not supported.
+inconsistent durations, or mismatched meters across parts. `.gpx`
+and `.gp3`-`.gp5` output, and mid-score tuning changes are not supported.
 
 The tests use committed, independently produced GP7 and GP8 fixtures with
 [provenance and licensing](fixtures/guitar-pro/README.md), direct assertions on

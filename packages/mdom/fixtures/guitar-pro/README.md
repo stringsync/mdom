@@ -28,6 +28,14 @@ The same directory supplies `bends`, `dead`, `directions`, `effects`, `hammer`,
 `repeat-close-alternate-endings` and `beat-text-lyrics` as `.gp5`, which tests
 compare with the GP7 file of the same name (`directions.gp` is Guitar Pro 8).
 
+The `.gp3` and `.gp4` files are unmodified Guitar Pro 3 and 4 fixtures from the
+same commit's `packages/alphatab/test-data/guitarpro3` and `guitarpro4`
+directories (`notes`, `strings`, `dead`, `grace`, `vibrato`, `time-signatures`,
+`score-info` and `effects` in both; `tuplets`, `hammer`, `slides`, `strokes`,
+`bends`, `tremolo` and `harmonics` as `.gp4`). Tests compare them with the GP7 or
+GP5 file of the same name; the older formats lack effects later versions added,
+such as GP3's per-note vibrato and pick strokes and GP4's ottavas.
+
 `hide-tuning.gp` comes from the same commit's
 `packages/alphatab/test-data/guitarpro8` directory and covers a GP8 empty bar.
 

@@ -1,7 +1,7 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
 exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
-"## Import: 48 of 59 ok
+"## Import: 66 of 82 ok
 
 | File | Result |
 | --- | --- |
@@ -10,23 +10,32 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 | \`beat-tempo-change.gp\` | ok |
 | \`beat-text-lyrics.gp5\` | ok |
 | \`bends.gp\` | omits \`bend curves\` |
+| \`bends.gp4\` | omits \`bend curves\` |
 | \`bends.gp5\` | omits \`bend curves\` |
 | \`chords.gp\` | ok |
 | \`chords.gp5\` | ok |
 | \`dead.gp\` | ok |
+| \`dead.gp3\` | ok |
+| \`dead.gp4\` | ok |
 | \`dead.gp5\` | ok |
 | \`directions.gp\` | ok |
 | \`directions.gp5\` | ok |
 | \`drum-tabs.gp\` | ok |
 | \`effects.gp\` | omits \`Semi harmonics\`, \`beat effects or annotations\`, \`bend curves\`, \`instrument changes or track automation\`, \`note techniques\`, \`whammy bar curves\` |
+| \`effects.gp3\` | omits \`beat effects or annotations\`, \`bend curves\`, \`instrument changes or track automation\` |
+| \`effects.gp4\` | omits \`Semi harmonics\`, \`beat effects or annotations\`, \`bend curves\`, \`instrument changes or track automation\`, \`note techniques\`, \`whammy bar curves\` |
 | \`effects.gp5\` | omits \`Semi harmonics\`, \`beat effects or annotations\`, \`bend curves\`, \`instrument changes or track automation\`, \`note techniques\`, \`whammy bar curves\` |
 | \`fermata.gp\` | omits \`fermatas between beats\` |
 | \`grace.gp\` | ok |
+| \`grace.gp3\` | ok |
+| \`grace.gp4\` | ok |
 | \`grace.gp5\` | ok |
 | \`grace.gpx\` | ok |
 | \`hammer.gp\` | ok |
+| \`hammer.gp4\` | ok |
 | \`hammer.gp5\` | ok |
 | \`harmonics.gp\` | omits \`Semi harmonics\` |
+| \`harmonics.gp4\` | omits \`Semi harmonics\` |
 | \`harmonics.gp5\` | omits \`Semi harmonics\` |
 | \`hide-tuning.gp\` | ok |
 | \`key-signatures.gp\` | ok |
@@ -34,6 +43,8 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 | \`key-signatures.gpx\` | ok |
 | \`lyrics-template.gp\` | ok |
 | \`notes.gp\` | ok |
+| \`notes.gp3\` | ok |
+| \`notes.gp4\` | ok |
 | \`notes.gp5\` | ok |
 | \`notes.gpx\` | ok |
 | \`ottavia.gp\` | omits \`octave clefs\` |
@@ -45,34 +56,46 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 | \`repeat-close.gp5\` | ok |
 | \`repeat-close.gpx\` | ok |
 | \`score-info.gp\` | ok |
+| \`score-info.gp3\` | ok |
+| \`score-info.gp4\` | ok |
 | \`score-info.gp5\` | ok |
 | \`score-info.gpx\` | ok |
 | \`slides.gp\` | ok |
+| \`slides.gp4\` | ok |
 | \`slides.gp5\` | ok |
 | \`strings.gp\` | ok |
+| \`strings.gp3\` | ok |
+| \`strings.gp4\` | ok |
 | \`strings.gp5\` | ok |
 | \`strings.gpx\` | ok |
 | \`strokes.gp\` | ok |
+| \`strokes.gp4\` | ok |
 | \`strokes.gp5\` | ok |
 | \`time-signatures.gp\` | ok |
+| \`time-signatures.gp3\` | ok |
+| \`time-signatures.gp4\` | ok |
 | \`time-signatures.gp5\` | ok |
 | \`time-signatures.gpx\` | ok |
 | \`tremolo.gp\` | omits \`whammy bar curves\` |
+| \`tremolo.gp4\` | omits \`whammy bar curves\` |
 | \`tremolo.gp5\` | omits \`whammy bar curves\` |
 | \`tuplets.gp\` | ok |
+| \`tuplets.gp4\` | ok |
 | \`tuplets.gp5\` | ok |
 | \`tuplets.gpx\` | ok |
 | \`vibrato.gp\` | ok |
+| \`vibrato.gp3\` | ok |
+| \`vibrato.gp4\` | ok |
 | \`vibrato.gp5\` | ok |
 
 | Omitted feature | Files |
 | --- | --- |
-| \`bend curves\` | 4 |
-| \`Semi harmonics\` | 4 |
-| \`whammy bar curves\` | 4 |
-| \`beat effects or annotations\` | 3 |
-| \`instrument changes or track automation\` | 2 |
-| \`note techniques\` | 2 |
+| \`bend curves\` | 7 |
+| \`Semi harmonics\` | 6 |
+| \`whammy bar curves\` | 6 |
+| \`beat effects or annotations\` | 5 |
+| \`instrument changes or track automation\` | 4 |
+| \`note techniques\` | 3 |
 | \`fermatas between beats\` | 1 |
 | \`octave clefs\` | 1 |"
 `;

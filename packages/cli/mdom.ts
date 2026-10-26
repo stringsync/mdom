@@ -43,7 +43,7 @@ mdom
 mdom
 	.command('convert')
 	.description(
-		'convert between MusicXML (.musicxml/.xml), MXL (.mxl), and Guitar Pro 7/8 (.gp)',
+		'convert between MusicXML (.musicxml/.xml), MXL (.mxl), and Guitar Pro 7/8 (.gp); reads Guitar Pro 3-6 (.gp3/.gp4/.gp5/.gpx)',
 	)
 	.option('input', z.string(), {
 		description: 'input score path; extension selects the format',

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MPL-2.0
-// Guitar Pro 5 record layout adapted from alphaTab's Gp3To5Importer. See THIRD_PARTY.md.
+// Guitar Pro 3-5 record layout adapted from alphaTab's Gp3To5Importer. See THIRD_PARTY.md.
 // Copyright © 2025 Daniel Kuschny and Contributors.
 import { GuitarProBinaryCursor } from './guitar-pro-binary-cursor';
 import type { GuitarProOptions } from './guitar-pro-options';
 import { GuitarProValues } from './guitar-pro-values';
 
-const VERSION_PREFIX = 'FICHIER GUITAR PRO v';
+const VERSION_PREFIX = 'FICHIER GUITAR PRO ';
 const MAX_BARS = 1000;
 const MAX_TRACKS = 100;
 const MAX_BEATS_PER_VOICE = 1024;
@@ -52,6 +52,17 @@ const HARMONICS: Record<number, string> = {
 	4: 'Pinch',
 	5: 'Semi',
 };
+/** Guitar Pro 4 names an artificial harmonic by the frets above the played note it sounds. */
+const GP4_ARTIFICIAL_HARMONICS = [15, 17, 22];
+/** Guitar Pro 4 slide types as GPIF slide flags; GP5 stores the flags themselves. */
+const GP4_SLIDES: Record<number, number> = {
+	1: 1,
+	2: 2,
+	3: 4,
+	4: 8,
+	[-1]: 16,
+	[-2]: 32,
+};
 const TREMOLO_PICKING: Record<number, string> = {
 	1: '1/2',
 	2: '1/4',
@@ -92,7 +103,7 @@ const TUPLET_NORMAL: Record<number, number> = {
 	13: 8,
 };
 
-/** The GPIF XML and per-track tablature flags that a Guitar Pro 5 file is equivalent to. */
+/** The GPIF XML and per-track tablature flags that a Guitar Pro 3-5 file is equivalent to. */
 export interface GuitarProBinaryScore {
 	gpif: string;
 	tablature: boolean[];
@@ -142,6 +153,9 @@ interface LyricLine {
 interface BeatEffects {
 	tags: string;
 	properties: string;
+	/** Effects Guitar Pro 3 and 4 keep on the beat but GPIF keeps on each of its notes. */
+	noteTags: string;
+	noteProperties: string;
 }
 /** The GPIF a note's effects add. */
 interface NoteEffects {
@@ -159,8 +173,14 @@ interface TempoChange {
 interface PlaybackInfo {
 	program: number;
 }
+interface ChordDiagram {
+	name: string;
+	firstFret: number;
+	frets: number[];
+	fingers: number[];
+}
 
-/** Reads a Guitar Pro 5 file into the GPIF tables that `GuitarProDocumentReader` consumes. */
+/** Reads a Guitar Pro 3, 4 or 5 file into the GPIF tables that `GuitarProDocumentReader` consumes. */
 export class GuitarProBinaryReader {
 	private readonly values: GuitarProValues;
 	private cursor!: GuitarProBinaryCursor;
@@ -195,16 +215,21 @@ export class GuitarProBinaryReader {
 		this.cursor = new GuitarProBinaryCursor(bytes);
 		this.readVersion();
 		const info = this.readScoreInformation();
-		const lyrics = this.readLyrics();
+		const tripletFeel =
+			this.version < 500 && this.cursor.byte() !== 0 ? 'Triplet8th' : null;
+		const lyrics =
+			this.version >= 400 ? this.readLyrics() : { track: -1, lines: [] };
 		if (this.version >= 510) {
 			this.cursor.skip(19);
 		}
-		this.cursor.skip(28);
-		this.cursor.int16();
-		for (let field = 0; field < 10; field++) {
+		if (this.version >= 500) {
+			this.cursor.skip(28);
+			this.cursor.int16();
+			for (let field = 0; field < 10; field++) {
+				this.cursor.intByteString();
+			}
 			this.cursor.intByteString();
 		}
-		this.cursor.intByteString();
 		const tempo = this.cursor.int32();
 		if (tempo > 0) {
 			this.addTempo({ bar: 0, position: 0, tempo });
@@ -213,9 +238,11 @@ export class GuitarProBinaryReader {
 			this.cursor.byte();
 		}
 		this.cursor.int32();
-		this.cursor.byte();
+		if (this.version >= 400) {
+			this.cursor.byte();
+		}
 		const playback = this.readPlayback();
-		const directions = this.readDirections();
+		const directions = this.version >= 500 ? this.readDirections() : [];
 		const barCount = this.cursor.count(
 			this.cursor.int32(),
 			MAX_BARS,
@@ -226,7 +253,7 @@ export class GuitarProBinaryReader {
 			MAX_TRACKS,
 			'track count',
 		);
-		const masters = this.readMasterBars(barCount);
+		const masters = this.readMasterBars(barCount, tripletFeel);
 		for (const [bar, direction] of directions) {
 			const master = masters[bar];
 			if (!master) {
@@ -261,26 +288,38 @@ export class GuitarProBinaryReader {
 		if (!header.startsWith(VERSION_PREFIX)) {
 			throw new Error('Not a Guitar Pro 3-5 file');
 		}
-		const [major, minor] = header
-			.slice(VERSION_PREFIX.length)
-			.split('.')
-			.map(Number);
-		if (!Number.isInteger(major) || !Number.isInteger(minor)) {
+		// `v4.06`, or `L4.06` in some Guitar Pro 4 files.
+		const match = /^[vL](\d+)\.(\d+)/.exec(header.slice(VERSION_PREFIX.length));
+		if (!match) {
 			throw new Error(`Invalid Guitar Pro version: ${header}`);
 		}
-		this.version = major! * 100 + minor!;
-		if (this.version < 500 || major! > 5) {
+		const major = Number(match[1]);
+		const minor = Number(match[2]);
+		this.version = major * 100 + minor;
+		if (major < 3 || major > 5) {
 			throw new Error(
-				`Guitar Pro ${major}.${String(minor).padStart(2, '0')} files are not supported; only Guitar Pro 5 .gp5 files import`,
+				`Guitar Pro ${major}.${String(minor).padStart(2, '0')} files are not supported; only Guitar Pro 3, 4 and 5 .gp3, .gp4 and .gp5 files import`,
 			);
 		}
 	}
 
 	private readScoreInformation(): Record<string, string> {
-		const [title, , artist, , words, music, copyright] = Array.from(
-			{ length: 9 },
-			() => this.cursor.unusedIntString(),
-		) as [string, string, string, string, string, string, string];
+		const read = () => this.cursor.unusedIntString();
+		const title = read();
+		read();
+		const artist = read();
+		read();
+		// Guitar Pro 3 and 4 have one author field, which their GP7 re-saves keep as the music.
+		let words = read();
+		let music = words;
+		if (this.version >= 500) {
+			music = read();
+		} else {
+			words = '';
+		}
+		const copyright = read();
+		read();
+		read();
 		const notices = this.cursor.count(
 			this.cursor.int32(),
 			MAX_NOTICE_LINES,
@@ -325,7 +364,10 @@ export class GuitarProBinaryReader {
 		return found;
 	}
 
-	private readMasterBars(count: number): MasterBar[] {
+	private readMasterBars(
+		count: number,
+		tripletFeel: string | null,
+	): MasterBar[] {
 		const masters: MasterBar[] = [];
 		let previous: MasterBar = {
 			numerator: 4,
@@ -335,7 +377,7 @@ export class GuitarProBinaryReader {
 			repeatStart: false,
 			repeatCount: 0,
 			doubleBar: false,
-			tripletFeel: null,
+			tripletFeel,
 			endings: [],
 			targets: [],
 			jumps: [],
@@ -358,7 +400,12 @@ export class GuitarProBinaryReader {
 				master.denominator = this.cursor.byte();
 			}
 			if (flags & 0x08) {
-				master.repeatCount = Math.max(2, this.cursor.byte());
+				// Guitar Pro 3 and 4 count the repeats after the first pass.
+				const count = this.cursor.byte() + (this.version >= 500 ? 0 : 1);
+				master.repeatCount = Math.max(2, count);
+			}
+			if (flags & 0x10 && this.version < 500) {
+				master.endings = this.legacyEnding(masters, this.cursor.byte());
 			}
 			if (flags & 0x20) {
 				this.cursor.intByteString();
@@ -368,25 +415,55 @@ export class GuitarProBinaryReader {
 				master.fifths = this.cursor.signedByte();
 				master.minor = this.cursor.byte() === 1;
 			}
-			if (flags & 0x03) {
-				this.cursor.skip(4);
-			}
-			const endings = this.cursor.byte();
-			const tripletFeel = this.cursor.byte();
-			this.cursor.byte();
-			master.tripletFeel = TRIPLET_FEELS[tripletFeel] ?? null;
-			for (let pass = 0; pass < 8; pass++) {
-				if (endings & (1 << pass)) {
-					master.endings.push(pass + 1);
+			if (this.version >= 500) {
+				if (flags & 0x03) {
+					this.cursor.skip(4);
 				}
-			}
-			if (tripletFeel && !master.tripletFeel) {
-				this.values.unsupported('triplet feel');
+				const endings = this.cursor.byte();
+				const feel = this.cursor.byte();
+				this.cursor.byte();
+				master.tripletFeel = TRIPLET_FEELS[feel] ?? null;
+				for (let pass = 0; pass < 8; pass++) {
+					if (endings & (1 << pass)) {
+						master.endings.push(pass + 1);
+					}
+				}
+				if (feel && !master.tripletFeel) {
+					this.values.unsupported('triplet feel');
+				}
 			}
 			masters.push(master);
 			previous = master;
 		}
 		return masters;
+	}
+
+	/**
+	 * Guitar Pro 3 and 4 store an alternate ending as its last pass: the ending plays
+	 * every pass up to it that no earlier ending of the same repeat already plays.
+	 */
+	private legacyEnding(masters: MasterBar[], last: number): number[] {
+		const taken = new Set<number>();
+		for (let index = masters.length - 1; index >= 0; index--) {
+			const earlier = masters[index]!;
+			// A repeat close outside an ending ends an earlier repeat.
+			if (
+				earlier.repeatStart ||
+				(earlier.repeatCount && !earlier.endings.length)
+			) {
+				break;
+			}
+			for (const pass of earlier.endings) {
+				taken.add(pass);
+			}
+		}
+		const endings: number[] = [];
+		for (let pass = 1; pass <= Math.min(last, 8); pass++) {
+			if (!taken.has(pass)) {
+				endings.push(pass);
+			}
+		}
+		return endings;
 	}
 
 	private readTrack(playback: PlaybackInfo[]): Track {
@@ -410,12 +487,17 @@ export class GuitarProBinaryReader {
 		this.cursor.int32();
 		const capo = this.cursor.int32();
 		this.cursor.skip(4);
-		const staffFlags = this.cursor.byte();
-		this.cursor.skip(2);
-		this.cursor.byte();
-		this.cursor.byte();
-		const clefMode = this.cursor.int32();
-		this.cursor.skip(4 + 4 + 10 + 2 + 16);
+		// Guitar Pro 3 and 4 always show tablature beside the staff.
+		let tablature = true;
+		let clefMode = 0;
+		if (this.version >= 500) {
+			tablature = (this.cursor.byte() & 0x01) !== 0;
+			this.cursor.skip(2);
+			this.cursor.byte();
+			this.cursor.byte();
+			clefMode = this.cursor.int32();
+			this.cursor.skip(4 + 4 + 10 + 2 + 16);
+		}
 		if (this.version >= 510) {
 			this.cursor.skip(4);
 			this.cursor.intByteString();
@@ -427,9 +509,10 @@ export class GuitarProBinaryReader {
 			tuning,
 			capo,
 			percussion: (flags & 0x01) !== 0,
-			tablature: (staffFlags & 0x01) !== 0,
+			tablature,
 			program: validChannel ? playback[channelIndex]!.program : 0,
-			channel: validChannel ? channelIndex * 2 : 0,
+			// The 64 channels are four MIDI ports of 16.
+			channel: validChannel ? channelIndex % 16 : 0,
 			bassClef:
 				clefMode === 12 ||
 				(tuning.length > 0 && tuning[tuning.length - 1]! < BASS_CLEF_TUNING),
@@ -440,9 +523,14 @@ export class GuitarProBinaryReader {
 	}
 
 	private readBar(trackIndex: number, track: Track, master: MasterBar): void {
-		this.cursor.byte();
+		// Guitar Pro 3 and 4 bars have one voice.
+		let voiceCount = 1;
+		if (this.version >= 500) {
+			this.cursor.byte();
+			voiceCount = 2;
+		}
 		const voiceIds: string[] = [];
-		for (let voiceIndex = 0; voiceIndex < 2; voiceIndex++) {
+		for (let voiceIndex = 0; voiceIndex < voiceCount; voiceIndex++) {
 			const beatCount = this.cursor.count(
 				this.cursor.int32(),
 				MAX_BEATS_PER_VOICE,
@@ -507,8 +595,7 @@ export class GuitarProBinaryReader {
 		}
 		const chord = flags & 0x02 ? this.readChord(track) : null;
 		const text = flags & 0x04 ? this.cursor.unusedIntString() : '';
-		const effects: BeatEffects =
-			flags & 0x08 ? this.readBeatEffects() : { tags: '', properties: '' };
+		const effects = flags & 0x08 ? this.readBeatEffects() : emptyBeatEffects();
 		if (flags & 0x10) {
 			const tempo = this.readMixTableChange();
 			if (tempo != null) {
@@ -536,12 +623,13 @@ export class GuitarProBinaryReader {
 				track,
 				stringIndex,
 				graceBeats,
+				effects,
 			);
 			notes.push(note.id);
 			dynamic = note.dynamic ?? dynamic;
 			tremolo = note.tremolo ?? tremolo;
 		}
-		const ottava = this.readBeatFlags();
+		const ottava = this.version >= 500 ? this.readBeatFlags() : '';
 		if (placeholder && !notes.length) {
 			return { ids: [], length: [0, 1] };
 		}
@@ -592,21 +680,7 @@ export class GuitarProBinaryReader {
 
 	/** Reads a chord diagram into the track's diagram collection; returns its id. */
 	private readChord(track: Track): number {
-		this.cursor.skip(17);
-		const name = this.cursor.fixedString(21);
-		this.cursor.skip(4);
-		const firstFret = this.cursor.int32();
-		const frets: number[] = [];
-		for (let slot = 0; slot < STRING_SLOTS; slot++) {
-			frets.push(this.cursor.int32());
-		}
-		this.cursor.skip(16);
-		const fingers: number[] = [];
-		this.cursor.skip(8);
-		for (let slot = 0; slot < STRING_SLOTS; slot++) {
-			fingers.push(this.cursor.signedByte());
-		}
-		this.cursor.byte();
+		const { name, firstFret, frets, fingers } = this.readChordDiagram();
 		const strings = track.tuning.length;
 		const played = frets.slice(0, strings);
 		const key = `${name}|${firstFret}|${played.join(',')}|${fingers.slice(0, strings).join(',')}`;
@@ -619,6 +693,45 @@ export class GuitarProBinaryReader {
 			);
 		}
 		return id;
+	}
+
+	/**
+	 * Guitar Pro 4 and 5 diagrams share a layout, which GP4 marks with a leading
+	 * nonzero byte; GP3 has its own, and both have an older one with no fingering.
+	 */
+	private readChordDiagram(): ChordDiagram {
+		const modern = this.cursor.byte() !== 0 || this.version >= 500;
+		if (modern && this.version >= 400) {
+			this.cursor.skip(16);
+			const name = this.cursor.fixedString(21);
+			this.cursor.skip(4);
+			const firstFret = this.cursor.int32();
+			const frets = this.int32s(STRING_SLOTS);
+			this.cursor.skip(24);
+			const fingers: number[] = [];
+			for (let slot = 0; slot < STRING_SLOTS; slot++) {
+				fingers.push(this.cursor.signedByte());
+			}
+			this.cursor.byte();
+			return { name, firstFret, frets, fingers };
+		}
+		if (modern) {
+			this.cursor.skip(25);
+			const name = this.cursor.fixedString(34);
+			const firstFret = this.cursor.int32();
+			const frets = this.int32s(6);
+			this.cursor.skip(36);
+			return { name, firstFret, frets, fingers: [] };
+		}
+		const name = this.cursor.intByteString();
+		const firstFret = this.cursor.int32();
+		const frets =
+			firstFret > 0 ? this.int32s(this.version >= 406 ? STRING_SLOTS : 6) : [];
+		return { name, firstFret, frets, fingers: [] };
+	}
+
+	private int32s(count: number): number[] {
+		return Array.from({ length: count }, () => this.cursor.int32());
 	}
 
 	/** One `DiagramCollection` item; Guitar Pro lists strings from the highest, GPIF from the lowest. */
@@ -654,16 +767,32 @@ export class GuitarProBinaryReader {
 	}
 
 	private readBeatEffects(): BeatEffects {
-		const effects: BeatEffects = { tags: '', properties: '' };
+		const effects = emptyBeatEffects();
 		const flags = this.cursor.byte();
-		const flags2 = this.cursor.byte();
+		const flags2 = this.version >= 400 ? this.cursor.byte() : 0;
 		if (flags & 0x10) {
 			effects.tags += '<Fade>FadeIn</Fade>';
 		}
+		// Guitar Pro 3 has no note vibrato, so marks it on the beat.
+		if (this.version < 400 && flags & 0x01) {
+			effects.noteTags += '<Vibrato>Slight</Vibrato>';
+		}
+		if (flags & 0x02) {
+			effects.properties +=
+				'<Property name="VibratoWTremBar"><Strength>Slight</Strength></Property>';
+		}
 		if (flags & 0x20) {
-			const slap = SLAPS[this.cursor.signedByte()];
+			const type = this.cursor.signedByte();
+			const slap = SLAPS[type];
 			if (slap) {
 				effects.properties += `<Property name="${slap}"><Enable/></Property>`;
+			}
+			if (this.version < 400) {
+				// Type 0 is a tremolo bar dip, whose depth this value holds.
+				this.cursor.int32();
+				if (type === 0) {
+					this.values.unsupported(BEAT_EFFECTS);
+				}
 			}
 		}
 		if (flags2 & 0x04) {
@@ -674,8 +803,11 @@ export class GuitarProBinaryReader {
 			}
 		}
 		if (flags & 0x40) {
-			const up = this.cursor.signedByte();
-			const down = this.cursor.signedByte();
+			const first = this.cursor.signedByte();
+			const second = this.cursor.signedByte();
+			// Guitar Pro 3 and 4 store the down stroke first.
+			const [up, down] =
+				this.version >= 500 ? [first, second] : [second, first];
 			if (up > 0 || down > 0) {
 				effects.properties += `<Property name="Brush"><Direction>${up > 0 ? 'Up' : 'Down'}</Direction></Property>`;
 			}
@@ -685,6 +817,11 @@ export class GuitarProBinaryReader {
 			if (stroke === 1 || stroke === 2) {
 				effects.properties += `<Property name="PickStroke"><Direction>${stroke === 1 ? 'Up' : 'Down'}</Direction></Property>`;
 			}
+		}
+		// Guitar Pro 3 keeps harmonics on the beat, for every note it plays.
+		if (this.version < 400 && flags & 0x0c) {
+			const harmonic = flags & 0x04 ? 'Natural' : 'Artificial';
+			effects.noteProperties += `<Property name="HarmonicType"><HType>${harmonic}</HType></Property>`;
 		}
 		return effects;
 	}
@@ -710,14 +847,18 @@ export class GuitarProBinaryReader {
 	/** Reads a mix table change; returns the tempo it sets, if any. */
 	private readMixTableChange(): number | null {
 		const instrument = this.cursor.signedByte();
-		this.cursor.skip(16);
+		if (this.version >= 500) {
+			this.cursor.skip(16);
+		}
 		const volume = this.cursor.signedByte();
 		const balance = this.cursor.signedByte();
 		const chorus = this.cursor.signedByte();
 		const reverb = this.cursor.signedByte();
 		const phaser = this.cursor.signedByte();
 		const tremolo = this.cursor.signedByte();
-		this.cursor.intByteString();
+		if (this.version >= 500) {
+			this.cursor.intByteString();
+		}
 		const tempo = this.cursor.int32();
 		for (const level of [volume, balance, chorus, reverb, phaser, tremolo]) {
 			if (level >= 0) {
@@ -730,8 +871,10 @@ export class GuitarProBinaryReader {
 				this.cursor.byte();
 			}
 		}
-		this.cursor.byte();
-		const wah = this.cursor.signedByte();
+		if (this.version >= 400) {
+			this.cursor.byte();
+		}
+		const wah = this.version >= 500 ? this.cursor.signedByte() : -1;
 		if (this.version >= 510) {
 			this.cursor.intByteString();
 			this.cursor.intByteString();
@@ -755,11 +898,16 @@ export class GuitarProBinaryReader {
 		track: Track,
 		stringIndex: number,
 		graceBeats: number[],
+		beatEffects: BeatEffects,
 	): { id: string; dynamic?: string; tremolo: string | null } {
 		const flags = this.cursor.byte();
 		let noteType = 0;
 		if (flags & 0x20) {
 			noteType = this.cursor.byte();
+		}
+		if (flags & 0x01 && this.version < 500) {
+			// Guitar Pro 3 and 4 give the note its own duration and tuplet, which GP ignores.
+			this.cursor.skip(2);
 		}
 		let dynamic: string | undefined;
 		if (flags & 0x10) {
@@ -773,10 +921,12 @@ export class GuitarProBinaryReader {
 			this.cursor.skip(2);
 			this.values.unsupported(NOTE_TECHNIQUES);
 		}
-		if (flags & 0x01) {
-			this.cursor.skip(8);
+		if (this.version >= 500) {
+			if (flags & 0x01) {
+				this.cursor.skip(8);
+			}
+			this.cursor.byte();
 		}
-		this.cursor.byte();
 		let accent = (flags & 0x02 ? 4 : 0) | (flags & 0x40 ? 8 : 0);
 		let effects: NoteEffects = {
 			staccato: false,
@@ -787,6 +937,8 @@ export class GuitarProBinaryReader {
 		if (flags & 0x08) {
 			effects = this.readNoteEffects(track, graceBeats, stringIndex);
 		}
+		effects.tags += beatEffects.noteTags;
+		effects.properties += beatEffects.noteProperties;
 		if (effects.staccato) {
 			accent |= 1;
 		}
@@ -795,6 +947,8 @@ export class GuitarProBinaryReader {
 		}
 		if (noteType === 3) {
 			effects.properties += '<Property name="Muted"><Enable/></Property>';
+			// Older files may store a dead note with no fret as -1.
+			fret = Math.max(fret, 0);
 		}
 		const key = `${trackIndex}:${voiceIndex}:${stringIndex}`;
 		if (noteType === 2) {
@@ -823,7 +977,7 @@ export class GuitarProBinaryReader {
 			properties: '',
 		};
 		const flags = this.cursor.byte();
-		const flags2 = this.cursor.byte();
+		const flags2 = this.version >= 400 ? this.cursor.byte() : 0;
 		if (flags & 0x01) {
 			const points = this.readBend();
 			if (points.length) {
@@ -845,7 +999,16 @@ export class GuitarProBinaryReader {
 			effects.tremolo = tremolo ?? null;
 		}
 		if (flags2 & 0x08) {
-			effects.properties += `<Property name="Slide"><Flags>${this.cursor.byte()}</Flags></Property>`;
+			const slide =
+				this.version >= 500
+					? this.cursor.byte()
+					: GP4_SLIDES[this.cursor.signedByte()];
+			if (slide) {
+				effects.properties += `<Property name="Slide"><Flags>${slide}</Flags></Property>`;
+			}
+		} else if (this.version < 400 && flags & 0x04) {
+			effects.properties +=
+				'<Property name="Slide"><Flags>1</Flags></Property>';
 		}
 		if (flags2 & 0x10) {
 			const type = HARMONICS[this.readHarmonic()];
@@ -870,6 +1033,9 @@ export class GuitarProBinaryReader {
 	/** Reads a harmonic's type, skipping the pitch an artificial or tapped one names. */
 	private readHarmonic(): number {
 		const type = this.cursor.byte();
+		if (this.version < 500) {
+			return GP4_ARTIFICIAL_HARMONICS.includes(type) ? 2 : type;
+		}
 		if (type === 2) {
 			this.cursor.skip(3);
 		} else if (type === 3) {
@@ -883,13 +1049,15 @@ export class GuitarProBinaryReader {
 		graceBeats: number[],
 		stringIndex: number,
 	): void {
-		const fret = this.cursor.signedByte();
+		const stored = this.cursor.signedByte();
 		this.cursor.signedByte();
 		const transition = this.cursor.signedByte();
 		this.cursor.byte();
-		const flags = this.cursor.byte();
+		// Guitar Pro 3 and 4 graces are all before the beat, and a dead one has fret -1.
+		const flags = this.version >= 500 ? this.cursor.byte() : 0;
+		const fret = Math.max(stored, 0);
 		let properties = '';
-		if (flags & 0x01) {
+		if (flags & 0x01 || stored < 0) {
 			properties += '<Property name="Muted"><Enable/></Property>';
 		}
 		if (transition === 1) {
@@ -988,6 +1156,10 @@ export class GuitarProBinaryReader {
 			: '';
 		return `<GPIF><Score>${tag('Title', info.title!)}${tag('Artist', info.artist!)}${tag('Words', info.words!)}${tag('Music', info.music!)}${tag('Copyright', info.copyright!)}</Score><MasterTrack><Tracks>${tracks.map((_, index) => index).join(' ')}</Tracks>${tempoXml}</MasterTrack><Tracks>${trackXml.join('')}</Tracks><MasterBars>${masterXml.join('')}</MasterBars><Bars>${this.barXml.join('')}</Bars><Voices>${this.voiceXml.join('')}</Voices><Beats>${this.beatXml.join('')}</Beats><Notes>${this.noteXml.join('')}</Notes><Rhythms>${this.rhythmXml.join('')}</Rhythms></GPIF>`;
 	}
+}
+
+function emptyBeatEffects(): BeatEffects {
+	return { tags: '', properties: '', noteTags: '', noteProperties: '' };
 }
 
 /** An exact length in whole notes, as numerator and denominator. */

@@ -16,12 +16,12 @@ describe('Guitar Pro archives', () => {
 		serializer = new GuitarProSerializer();
 	});
 
-	it('rejects legacy binary formats with an actionable error', async () => {
+	it('rejects a binary file without a version header with an actionable error', async () => {
 		await expect(
 			parser.parseFromBytes(
 				new TextEncoder().encode('FICHIER GUITAR PRO v5.10'),
 			),
-		).rejects.toThrow('.gp3 and .gp4 are not supported');
+		).rejects.toThrow('or a Guitar Pro 3-5 .gp3, .gp4 or .gp5 file');
 	});
 
 	it('rejects an unrelated ZIP archive', async () => {

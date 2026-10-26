@@ -84,7 +84,7 @@ describe('Guitar Pro coverage scoreboard', () => {
 		const rows: Row[] = [];
 		for (const file of fs
 			.readdirSync(fixtures)
-			.filter((name) => /\.(gp|gp5|gpx)$/.test(name))
+			.filter((name) => /\.(gp|gp[3-5]|gpx)$/.test(name))
 			.sort()) {
 			const bytes = new Uint8Array(fs.readFileSync(path.join(fixtures, file)));
 			rows.push(
