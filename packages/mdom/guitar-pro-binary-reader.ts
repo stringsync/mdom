@@ -57,7 +57,15 @@ interface MasterBar {
 	repeatStart: boolean;
 	repeatCount: number;
 	doubleBar: boolean;
+	/** The GPIF `TripletFeel` the bar plays with; null when straight. */
+	tripletFeel: string | null;
 }
+
+/** The GP5 bar triplet-feel byte as the GPIF `TripletFeel` it means. */
+const TRIPLET_FEELS: Record<number, string> = {
+	1: 'Triplet8th',
+	2: 'Triplet16th',
+};
 interface Track {
 	name: string;
 	tuning: number[];
@@ -228,6 +236,7 @@ export class GuitarProBinaryReader {
 			repeatStart: false,
 			repeatCount: 0,
 			doubleBar: false,
+			tripletFeel: null,
 		};
 		for (let index = 0; index < count; index++) {
 			const flags = this.cursor.byte();
@@ -260,10 +269,11 @@ export class GuitarProBinaryReader {
 			const endings = this.cursor.byte();
 			const tripletFeel = this.cursor.byte();
 			this.cursor.byte();
+			master.tripletFeel = TRIPLET_FEELS[tripletFeel] ?? null;
 			if (endings) {
 				this.values.unsupported('alternate endings');
 			}
-			if (tripletFeel) {
+			if (tripletFeel && !master.tripletFeel) {
 				this.values.unsupported('triplet feel');
 			}
 			masters.push(master);
@@ -718,7 +728,11 @@ export class GuitarProBinaryReader {
 				master.repeatStart || master.repeatCount
 					? `<Repeat start="${master.repeatStart}" end="${master.repeatCount > 0}" count="${master.repeatCount || 1}"/>`
 					: ''
-			}${master.doubleBar ? '<DoubleBar/>' : ''}<Bars>${bars}</Bars></MasterBar>`;
+			}${master.doubleBar ? '<DoubleBar/>' : ''}${
+				master.tripletFeel
+					? `<TripletFeel>${master.tripletFeel}</TripletFeel>`
+					: ''
+			}<Bars>${bars}</Bars></MasterBar>`;
 		});
 		const tempoXml =
 			tempo > 0

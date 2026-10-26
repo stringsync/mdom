@@ -21,6 +21,7 @@ import type { Measure } from './measure';
 import type { Note } from './note';
 import type { Part } from './part';
 import { divisionsBackFrom } from './signature';
+import type { Sound } from './sound';
 import { onsetOf } from './timeline';
 
 /** One beat of a chord split at a harmony: where it starts and, when split, its note value. */
@@ -52,6 +53,16 @@ interface TempoChange {
 	tempo: number;
 	linear: boolean;
 }
+
+/** GPIF `TripletFeel` unit suffixes by the swing unit they divide, in quarter-note beats. */
+const SWING_UNITS: Record<number, string> = { 0.5: '8th', 0.25: '16th' };
+
+/** GPIF `TripletFeel` styles by the on-beat:off-beat ratio they play. */
+const SWING_STYLES: Array<[number, string]> = [
+	[2, 'Triplet'],
+	[3, 'Dotted'],
+	[1 / 3, 'Scottish'],
+];
 
 /** Words that mark a gradual tempo change, like accel. or rit. */
 const GRADUAL_TEMPO = /^(accel|rit|rall|ritard|allarg)/i;
@@ -155,6 +166,7 @@ export class GuitarProScoreWriter {
 			this.tables.set(name, X.add(this.root, name));
 		}
 		const passes = this.endingPasses(first);
+		let feel: string | null = null;
 		for (const measure of first.measures) {
 			const master = this.masterBar(measure);
 			this.tables.get('MasterBars')!.append(master);
@@ -162,6 +174,10 @@ export class GuitarProScoreWriter {
 				X.add(master, 'AlternateEndings', passes[measure.index]!.join(' '));
 			}
 			this.navigation(master, measure);
+			feel = this.feel(parts, measure.index, feel);
+			if (feel) {
+				X.add(master, 'TripletFeel', feel);
+			}
 			X.add(master, 'Bars', '');
 			for (const change of this.tempos(measure)) {
 				this.automation(
@@ -474,6 +490,68 @@ export class GuitarProScoreWriter {
 		ids.set(id, name);
 		return name;
 	}
+	/**
+	 * The `TripletFeel` a bar plays with: the last swing any part's `<sound>`
+	 * states in it, else the feel carried from the bar before. Guitar Pro sets
+	 * feel per bar, so a swing later in the bar applies from its start.
+	 */
+	private feel(
+		parts: Part[],
+		index: number,
+		carried: string | null,
+	): string | null {
+		const feels = new Set<string | null>();
+		for (const part of parts) {
+			const measure = part.measures[index];
+			const swings = (measure?.sounds ?? []).filter((sound) => sound.swing);
+			const last = swings.at(-1);
+			if (!measure || !last) {
+				continue;
+			}
+			if (swings.some((sound) => (this.soundBeat(measure, sound) ?? 0) > 0)) {
+				this.values.unsupported('mid-measure swing changes');
+			}
+			feels.add(this.tripletFeel(last.swing!));
+		}
+		if (feels.size > 1) {
+			this.values.unsupported('swing that differs across parts');
+		}
+		return feels.size ? [...feels][0]! : carried;
+	}
+	/** A swing as the GPIF `TripletFeel` that plays it; null for straight. */
+	private tripletFeel(swing: {
+		first: number;
+		second: number;
+		unit: number;
+	}): string | null {
+		if (swing.first === swing.second) {
+			return null;
+		}
+		const ratio = swing.first / swing.second;
+		const style = SWING_STYLES.find(
+			([styleRatio]) => styleRatio === ratio,
+		)?.[1];
+		const unit = SWING_UNITS[swing.unit];
+		if (!style || !unit) {
+			this.values.unsupported(
+				`swing ${swing.first}:${swing.second} on a ${swing.unit}-beat unit`,
+			);
+			return null;
+		}
+		return `${style}${unit}`;
+	}
+	/** Where a `<sound>` sits in its measure, in quarter-note beats; null when unknown. */
+	private soundBeat(measure: Measure, sound: Sound): number | null {
+		if (sound.parent instanceof Direction) {
+			return sound.parent.measureBeat;
+		}
+		const onset = onsetOf(measure, sound);
+		const divisions = divisionsBackFrom(
+			measure,
+			measure.children.indexOf(sound),
+		);
+		return onset == null || !divisions ? null : onset / divisions;
+	}
 	private key(parent: MElement, measure: Measure, staff: string): void {
 		const key = measure.getKey(staff);
 		const mode = key?.mode;
@@ -518,16 +596,7 @@ export class GuitarProScoreWriter {
 			if (!Number.isFinite(sound.tempo) || sound.tempo <= 0) {
 				throw new Error(`Invalid tempo: ${sound.tempo}`);
 			}
-			if (sound.parent instanceof Direction) {
-				add(sound.parent.measureBeat, sound.tempo);
-				continue;
-			}
-			const onset = onsetOf(measure, sound);
-			const divisions = divisionsBackFrom(
-				measure,
-				measure.children.indexOf(sound),
-			);
-			add(onset == null || !divisions ? null : onset / divisions, sound.tempo);
+			add(this.soundBeat(measure, sound), sound.tempo);
 		}
 		for (const direction of measure.directions) {
 			if (direction.sound?.tempo != null) {
@@ -1204,7 +1273,6 @@ export class GuitarProScoreWriter {
 			'unpitched',
 			'non-arpeggiate',
 			'senza-misura',
-			'swing',
 		]);
 		if (unsupported.has(element.tag)) {
 			this.values.unsupported(`<${element.tag}>`);

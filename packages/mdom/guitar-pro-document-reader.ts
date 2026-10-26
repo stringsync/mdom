@@ -91,6 +91,19 @@ function jumpSpec(name: string): NavigationSpec | null {
 			};
 }
 
+/** GPIF `TripletFeel` values as the swing each plays: on-beat:off-beat and the unit it divides. */
+const TRIPLET_FEELS: Record<
+	string,
+	{ first: number; second: number; unit: number }
+> = {
+	Triplet8th: { first: 2, second: 1, unit: 0.5 },
+	Triplet16th: { first: 2, second: 1, unit: 0.25 },
+	Dotted8th: { first: 3, second: 1, unit: 0.5 },
+	Dotted16th: { first: 3, second: 1, unit: 0.25 },
+	Scottish8th: { first: 1, second: 3, unit: 0.5 },
+	Scottish16th: { first: 1, second: 3, unit: 0.25 },
+};
+
 /** Resolves GPIF tables straight into the MusicXML-backed mdom tree. */
 export class GuitarProDocumentReader {
 	private readonly values: GuitarProValues;
@@ -226,6 +239,7 @@ export class GuitarProDocumentReader {
 				for (const spec of directions.targets) {
 					measure.addNavigation(spec);
 				}
+				this.readFeel(master, masters[measureIndex - 1], measure);
 				measure.setStaveCount(staves.length);
 				const barIds = X.refs(master.child('Bars'));
 				if (barIds.length !== totalStaves) {
@@ -441,11 +455,35 @@ export class GuitarProDocumentReader {
 		if (master.child('FreeTime')) {
 			this.values.unsupported('free time');
 		}
-		const feel = master.child('TripletFeel')?.text;
-		if (feel && feel !== 'NoTripletFeel') {
-			this.values.unsupported('triplet feel');
-		}
 		return this.tempoTable().filter((c) => c.bar === measure.index);
+	}
+	/** A swing `<sound>` where the bar's triplet feel differs from the bar before. */
+	private readFeel(
+		master: MElement,
+		previous: MElement | undefined,
+		measure: Measure,
+	): void {
+		const feel = this.feel(master);
+		const before = previous ? this.feel(previous) : null;
+		if (feel === before || (feel == null && !previous)) {
+			return;
+		}
+		measure.addSound({ swing: feel ?? { first: 1, second: 1 } });
+	}
+	/** A bar's `TripletFeel` as a swing; null when straight or unknown. */
+	private feel(
+		master: MElement,
+	): { first: number; second: number; unit: number } | null {
+		const text = master.child('TripletFeel')?.text ?? 'NoTripletFeel';
+		if (text === 'NoTripletFeel') {
+			return null;
+		}
+		const feel = TRIPLET_FEELS[text];
+		if (!feel) {
+			this.values.unsupported(`triplet feel ${text}`);
+			return null;
+		}
+		return feel;
 	}
 	private tempoTable(): TempoChange[] {
 		if (this.tempoChanges) {

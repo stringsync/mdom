@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'bun:test';
+import { MDocument } from './m-document';
 import { MDOMParser } from './m-dom-parser';
+import { MElement } from './m-node';
 
 // <sound> appears inside a <direction> AND as a direct <measure> child, with the
 // same meaning — here both spellings, plus a swing instruction and the
@@ -49,5 +51,61 @@ describe('sound — merged from the direction and the measure', () => {
 			second: 1,
 			unit: 0.25,
 		});
+	});
+});
+
+describe('sound — writing swing', () => {
+	it('writes a ratio and its unit, read back alike', () => {
+		const measure = MDocument.empty().score.addPart({ name: 'P' }).addMeasure();
+		const swung = measure.addSound({
+			swing: { first: 3, second: 1, unit: 0.25 },
+		});
+		const plain = measure.addSound({ swing: { first: 2, second: 1 } });
+
+		expect(
+			swung
+				.child('swing')!
+				.childrenOfType(MElement)
+				.map((child) => [child.tag, child.text]),
+		).toEqual([
+			['first', '3'],
+			['second', '1'],
+			['swing-type', '16th'],
+		]);
+		expect(plain.child('swing')!.child('swing-type')).toBeNull();
+		expect(swung.swing).toEqual({ first: 3, second: 1, unit: 0.25 });
+		expect(plain.swing).toEqual({ first: 2, second: 1, unit: 0.5 });
+	});
+
+	it('writes an even ratio as <straight/>, after any MIDI change', () => {
+		const sound = MDocument.empty()
+			.score.addPart({ name: 'P' })
+			.addMeasure()
+			.addSound({
+				swing: { first: 2, second: 2, unit: 0.25 },
+				midiInstruments: [{ id: 'P1-I1', program: 25 }],
+			});
+
+		expect(sound.childrenOfType(MElement).map((child) => child.tag)).toEqual([
+			'midi-instrument',
+			'swing',
+		]);
+		expect(
+			sound
+				.child('swing')!
+				.childrenOfType(MElement)
+				.map((child) => child.tag),
+		).toEqual(['straight']);
+	});
+
+	it('rejects ratios and units MusicXML cannot write', () => {
+		const measure = MDocument.empty().score.addPart({ name: 'P' }).addMeasure();
+
+		expect(() =>
+			measure.addSound({ swing: { first: 1.5, second: 1 } }),
+		).toThrow('positive integers');
+		expect(() =>
+			measure.addSound({ swing: { first: 2, second: 1, unit: 1 } }),
+		).toThrow('swing unit');
 	});
 });

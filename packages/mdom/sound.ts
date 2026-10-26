@@ -27,10 +27,10 @@ import { setYesNo, yesNoOf } from './print-style';
 import { divisionsBackFrom } from './signature';
 import { onsetOf } from './timeline';
 
-/** Quarter-note beats per swing unit; MusicXML's default swing type is the eighth. */
 const rotationRange = decimals(-180, 180);
 const pedalRange = decimals(0, 100);
 
+/** Quarter-note beats per swing unit; MusicXML's default swing type is the eighth. */
 const SWING_UNITS: Record<string, number> = {
 	eighth: 0.5,
 	'16th': 0.25,
@@ -73,6 +73,13 @@ export interface SoundSpec {
 	softPedal?: boolean | number;
 	/** Sostenuto pedal, as {@link damperPedal}. */
 	sostenutoPedal?: boolean | number;
+	/**
+	 * Swing from here: the on-beat:off-beat ratio (`first`:`second`) and the
+	 * note value it divides, in quarter-note beats (eighth = 0.5, the default;
+	 * 16th = 0.25; 32nd = 0.125), as {@link Sound.swing} reads it. An even ratio
+	 * writes `<straight/>`, cancelling a swing carried from earlier.
+	 */
+	swing?: { first: number; second: number; unit?: number };
 	/** MIDI devices to switch to from here; an entry with no `id` applies to the whole part. */
 	midiDevices?: Array<MidiDeviceSpec & { id?: string }>;
 	/** MIDI playback to switch to from here, each for the score-instrument its `id` names. */
@@ -428,4 +435,45 @@ export function writeSound(sound: Sound, spec: SoundSpec): void {
 			}
 		}
 	}
+	if (spec.swing) {
+		sound.insertBefore(buildSwing(spec.swing), sound.child('offset'));
+	}
+}
+
+function buildSwing(spec: NonNullable<SoundSpec['swing']>): MElement {
+	const swing = new MElement('swing');
+	for (const value of [spec.first, spec.second]) {
+		if (!Number.isInteger(value) || value < 1) {
+			throw new Error(
+				`mdom: swing ratio parts must be positive integers, got ${value}`,
+			);
+		}
+	}
+	const unit = spec.unit ?? 0.5;
+	const type = Object.keys(SWING_UNITS).find(
+		(name) => SWING_UNITS[name] === unit,
+	);
+	if (type == null) {
+		throw new Error(
+			`mdom: swing unit must be 0.5, 0.25 or 0.125 beats, got ${unit}`,
+		);
+	}
+	// <straight/> takes no swing-type: an even swing is even at any value.
+	if (spec.first === spec.second) {
+		swing.append(new MElement('straight'));
+		return swing;
+	}
+	const parts: Array<[string, string]> = [
+		['first', String(spec.first)],
+		['second', String(spec.second)],
+	];
+	if (type !== 'eighth') {
+		parts.push(['swing-type', type]);
+	}
+	for (const [tag, value] of parts) {
+		const element = new MElement(tag);
+		element.setText(value);
+		swing.append(element);
+	}
+	return swing;
 }

@@ -86,7 +86,12 @@ The first supported subset includes:
   `<direction>`s whose `<sound>` plays them: targets at the bar's start, jumps
   and Fine at its end. On export a third distinct segno or coda id, a jump with
   `time-only` passes, and an ending with no pass numbers are unsupported; free
-  time and triplet feel stay unsupported on import.
+  time stays unsupported on import.
+- Triplet feel (triplet, dotted and Scottish, on eighths or 16ths) as a
+  standalone swing `<sound>` (2:1, 3:1 or 1:3) where a bar's feel changes, and
+  `<straight/>` where it ends; nothing is printed. Export carries the last swing
+  across bars; a swing mid-bar applies from the bar's start, and other ratios
+  or units are unsupported. Guitar Pro 5 bars import triplet eighths and 16ths.
 - Title, composer, lyricist, artist, copyright, part names, MIDI program/channel,
   tempo (including mid-measure and gradual changes), basic dynamics, text, staccato, and accents.
 - Lyrics: each track's lyric lines become verses on its first staff's first voice, one syllable per sounded note (rests, chord extras, grace notes and tie
@@ -186,6 +191,7 @@ measure.setClef({ sign: 'F', line: 4, staff: '2' });
 
 measure.addDirection({ metronome: { beatUnit: 'quarter', dots: 1, perMinute: 120 }, tempo: 180 });
 measure.addHarmony({ root: { step: 'E', alter: -1 }, kind: 'major-seventh' });
+measure.addSound({ swing: { first: 2, second: 1 } }); // swung eighths, nothing printed
 
 const note = measure.getOrCreateVoice('1').addNote({ step: 'C', octave: 4, type: 'quarter' });
 note.addArticulation('staccato');

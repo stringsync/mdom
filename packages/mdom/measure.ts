@@ -38,7 +38,7 @@ import {
 	attributesBackFrom,
 	divisionsBackFrom,
 } from './signature';
-import { Sound } from './sound';
+import { Sound, type SoundSpec, writeSound } from './sound';
 import { StaffDetails } from './staff-details';
 import { StaffTuning } from './staff-tuning';
 import { buildTime, Time, type TimeSpec } from './time';
@@ -572,6 +572,17 @@ export class Measure extends MElement {
 			direction.setOffset(spec.offset);
 		}
 		return direction;
+	}
+
+	/**
+	 * Append a standalone `<sound>` at the write cursor: playback with nothing
+	 * printed, such as a swing feel. Add it before the notes it applies to.
+	 */
+	addSound(spec: SoundSpec): Sound {
+		const sound = new Sound();
+		writeSound(sound, spec);
+		this.append(sound);
+		return sound;
 	}
 
 	/**
