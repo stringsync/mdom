@@ -927,6 +927,21 @@ export class Note extends MElement {
 		);
 	}
 
+	/** The `smufl` glyph name of each `<other-technical>` that gives one, document order. */
+	get otherTechnicalGlyphs(): string[] {
+		return this.technicalChildrenNamed('other-technical').flatMap((node) => {
+			const glyph = node.getAttribute('smufl');
+			return glyph == null ? [] : [glyph];
+		});
+	}
+
+	/** Add an `<other-technical>` drawn as the SMuFL glyph `smufl`. The write side of {@link otherTechnicalGlyphs}. */
+	addOtherTechnicalGlyph(smufl: string): void {
+		const mark = new Technical('other-technical');
+		mark.setAttribute('smufl', smufl);
+		this.technical().append(mark);
+	}
+
 	/**
 	 * Whether the note rings on, undamped: a `<tied type="let-ring">`, or the
 	 * `let ring` text some exporters write as `<other-technical>`.

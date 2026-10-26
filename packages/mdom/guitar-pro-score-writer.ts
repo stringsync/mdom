@@ -1096,6 +1096,12 @@ export class GuitarProScoreWriter {
 		const key = unpitched == null ? null : unpitched - 1;
 		const line = source.unpitched ? staffLineOf(source.unpitched) : null;
 		const notehead = source.notehead?.value ?? 'normal';
+		const symbols = [
+			...source.otherTechnicalGlyphs,
+			...(source.bowing
+				? [`strings${source.bowing === 'up' ? 'Up' : 'Down'}Bow`]
+				: []),
+		];
 		let best = -1;
 		let bestScore = -1;
 		for (const [index, drum] of guitarProDrumKit.entries()) {
@@ -1108,7 +1114,10 @@ export class GuitarProScoreWriter {
 				(named ? 8 : 0) +
 				(drum.id === key ? 4 : 0) +
 				(drum.staffLine === line ? 2 : 0) +
-				(glyph === notehead ? 1 : 0);
+				(glyph === notehead ? 1 : 0) +
+				(drum.techniqueSymbol && symbols.includes(drum.techniqueSymbol)
+					? 0.5
+					: 0);
 			if (score > bestScore) {
 				best = index;
 				bestScore = score;
@@ -1533,7 +1542,11 @@ export class GuitarProScoreWriter {
 			}
 		}
 		if (element.tag === 'other-technical') {
-			if (!/^(P\.?M\.?|palm mute)/i.test(element.text ?? '')) {
+			// A drum's glyph is the symbol of its kit articulation.
+			const drumGlyph =
+				element.getAttribute('smufl') != null &&
+				element.parent?.parent?.parent?.child('unpitched') != null;
+			if (!drumGlyph && !/^(P\.?M\.?|palm mute)/i.test(element.text ?? '')) {
 				this.values.unsupported('<other-technical>');
 			}
 		}

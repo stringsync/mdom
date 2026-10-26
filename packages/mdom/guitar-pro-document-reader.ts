@@ -1008,6 +1008,16 @@ export class GuitarProDocumentReader {
 		if (notehead) {
 			note.setNotehead(notehead);
 		}
+		// A kit symbol (choke, golpe, bowing) rides the note as a technical;
+		// the parenthesis around a muted drum is already part of its notehead.
+		const symbol = drum.techniqueSymbol;
+		if (symbol === 'stringsUpBow') {
+			note.setBowing('up');
+		} else if (symbol === 'stringsDownBow') {
+			note.setBowing('down');
+		} else if (symbol && !symbol.startsWith('notehead')) {
+			note.addOtherTechnicalGlyph(symbol);
+		}
 	}
 	private pitch(note: MElement, staff: StaffContext): number {
 		const string = X.property(note, 'String')?.child('String')?.text;

@@ -273,6 +273,49 @@ describe('Guitar Pro percussion export', () => {
 		);
 	});
 
+	it('carries a kit drum’s technique symbol as a technical and back to that drum', async () => {
+		const symbols = [
+			'stringsUpBow',
+			'stringsDownBow',
+			'articStaccatoAbove',
+			'guitarGolpe',
+		];
+		const indexes = symbols.map((symbol) =>
+			guitarProDrumKit.findIndex((drum) => drum.techniqueSymbol === symbol),
+		);
+		const gpif = percussionGpif(
+			'<GeneralMidi table="Percussion"><Program>0</Program><PrimaryChannel>9</PrimaryChannel></GeneralMidi>',
+			indexes.map(
+				(index) =>
+					`<Properties><Property name="Midi"><Number>${guitarProDrumKit[index]!.id}</Number></Property></Properties>`,
+			),
+		);
+		const imported = await new GuitarProParser().parseFromBytes(
+			await archive(gpif),
+		);
+		const notes = imported.score.parts[0]!.measures[0]!.notes;
+
+		expect(notes[0]!.bowing).toBe('up');
+		expect(notes[1]!.bowing).toBe('down');
+		expect(notes[2]!.otherTechnicalGlyphs).toEqual(['articStaccatoAbove']);
+		expect(notes[3]!.otherTechnicalGlyphs).toEqual(['guitarGolpe']);
+
+		const exported = await gpifOf(
+			await new GuitarProSerializer().serializeToBytes(imported),
+		);
+		expect(
+			exported
+				.child('Notes')!
+				.childrenNamed('Note')
+				.map(
+					(note) =>
+						guitarProDrumKit[
+							Number(note.child('InstrumentArticulation')!.text)
+						]!.techniqueSymbol,
+				),
+		).toEqual(symbols);
+	});
+
 	it('rejects a part mixing pitched and unpitched notes', async () => {
 		const document = drumScore();
 		document.score.parts[0]!.measures[0]!.notes[0]!.setPitch({
