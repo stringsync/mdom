@@ -247,6 +247,22 @@ describe('GuitarProSerializer', () => {
 		expect(gpif.child('Notes')?.childrenNamed('Note')).toHaveLength(1);
 	});
 
+	it('reports each omitted feature to onUnsupported', async () => {
+		const voice = measure.getOrCreateVoice('1');
+		for (const _ of [1, 2]) {
+			voice
+				.addNote({ step: 'C', octave: 4, type: 'half' })
+				.append(new MElement('lyric'));
+		}
+		const features: string[] = [];
+		await serializer.serializeToBlob(document, {
+			unsupported: 'omit',
+			onUnsupported: (feature) => features.push(feature),
+		});
+
+		expect(features).toEqual(['<lyric>', '<lyric>']);
+	});
+
 	it('rejects malformed core notation even when omission is requested', async () => {
 		const note = measure
 			.getOrCreateVoice('1')

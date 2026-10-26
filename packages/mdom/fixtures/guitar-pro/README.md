@@ -26,6 +26,14 @@ dynamic and a bar's trailing rest differently from its GP7 counterpart.
 `hide-tuning.gp` comes from the same commit's
 `packages/alphatab/test-data/guitarpro8` directory and covers a GP8 empty bar.
 
+These unmodified files from the same commit back the Guitar Pro coverage
+scoreboard (`packages/e2e/guitar-pro-coverage.test.ts`) and give each feature
+still missing an import fixture: from `guitarpro7`, `bends`, `harmonics`, `dead`,
+`effects`, `hammer`, `slides`, `vibrato`, `beat-lyrics`, `lyrics-template`,
+`repeat-close-alternate-endings`, `fermata`, `strokes`, `tremolo`, `ottavia`,
+`chords` and `drum-tabs`; from `guitarpro8`, `directions` and
+`beat-tempo-change`.
+
 `piano-playback.gpif` contains only the first track's AudioEngineState, Sounds,
 and Automations nodes from alphaTab's
 `packages/alphatab/test-data/guitarpro8/header-footer.gp` at the same pinned

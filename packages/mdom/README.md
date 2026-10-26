@@ -99,7 +99,9 @@ tuning as MusicXML tablature only for staves with tablature enabled in the file.
 Unsupported techniques and annotations, such as bends, harmonics, slides,
 lyrics, chord diagrams, and alternate endings, throw by default. To deliberately
 discard unsupported annotations, pass `{ unsupported: 'omit' }` as the last
-argument to either parser or serializer methods. Invalid core data still throws:
+argument to either parser or serializer methods, and add
+`onUnsupported: (feature) => ...` to hear each feature it drops. Invalid core
+data still throws:
 for example, missing string assignments on a tuned staff, pitch/fret mismatches,
 inconsistent durations, or mismatched meters across parts. Percussion, older
 `.gp3`/`.gp4` input, `.gpx` output, and mid-score tuning changes are not supported.

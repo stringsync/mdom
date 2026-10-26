@@ -20,6 +20,7 @@ export class GuitarProValues {
 				`Guitar Pro conversion does not support ${feature}. Use { unsupported: 'omit' } to omit it.`,
 			);
 		}
+		this.opts.onUnsupported?.(feature);
 	}
 
 	static readonly durations: Record<string, number> = {
