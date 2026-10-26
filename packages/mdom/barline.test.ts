@@ -49,7 +49,12 @@ describe('Barline', () => {
 		const [voltaStart] = measureWith(
 			`<barline location="left"><ending number="1,2" type="start"/></barline>`,
 		).barlines;
-		expect(voltaStart!.ending).toEqual({ type: 'start', number: '1,2' });
+		expect(voltaStart!.ending).toEqual({
+			type: 'start',
+			number: '1,2',
+			numbers: [1, 2],
+			text: '1,2',
+		});
 		const [plain] = measureWith(
 			`<barline location="right"><repeat direction="backward"/></barline>`,
 		).barlines;

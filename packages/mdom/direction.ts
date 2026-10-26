@@ -13,7 +13,7 @@ import { Pedal } from './pedal';
 import { colorOf, placementOf } from './print-style';
 import { Rehearsal } from './rehearsal';
 import { divisionsBackFrom } from './signature';
-import { Sound } from './sound';
+import { Sound, type SoundSpec, writeSound } from './sound';
 import type { FontSize, TextAlign, TextVerticalAlign } from './text-format';
 import { onsetOf } from './timeline';
 import { Wedge } from './wedge';
@@ -33,13 +33,18 @@ export interface WordsSpec {
 }
 
 /**
- * A `<direction>` to write. At least one printable — words, dynamics or a
- * metronome — is required, since that is what a `<direction-type>` holds; each
- * gets its own block, in the order listed here. `tempo` adds the silent
- * `<sound tempo>` that makes the mark actually play back.
+ * A `<direction>` to write. At least one printable — a metronome, a segno or
+ * coda sign, words or dynamics — is required, since that is what a
+ * `<direction-type>` holds; each gets its own block, in the order listed here.
+ * `tempo` and `sound` add the silent `<sound>` that makes the mark actually play
+ * back.
  */
 export interface DirectionSpec {
 	metronome?: MetronomeSpec;
+	/** Print a segno sign. Pair it with `sound.segno` so playback finds it. */
+	segno?: boolean;
+	/** Print a coda sign. Pair it with `sound.coda` so playback finds it. */
+	coda?: boolean;
 	words?: string | WordsSpec;
 	/**
 	 * Dynamic marking names. MusicXML names these by TAG (`<dynamics><sfz/>`), so
@@ -48,9 +53,39 @@ export interface DirectionSpec {
 	dynamics?: string | string[];
 	/** The `<sound>` `tempo` attribute, in quarter notes per minute. */
 	tempo?: number;
+	/** The repeat-structure playback — segno, coda and jump — on the `<sound>`. */
+	sound?: SoundSpec;
 	placement?: 'above' | 'below';
 	staff?: string;
 }
+
+/**
+ * A repeat-structure mark to write, printed and played: a segno or coda sign a
+ * jump lands on, or the jump itself. Each prints what a reader expects (`D.S.
+ * al Coda`, `To Coda`) unless `text` says otherwise, and carries the `<sound>`
+ * attribute that makes playback take it. `id` pairs a jump with its landmark
+ * when a score has several; the default pairs the one D.S. with the one segno
+ * and the one to-coda with the one coda.
+ */
+export type NavigationSpec = (
+	| { kind: 'segno'; id?: string }
+	| { kind: 'coda'; id?: string }
+	| { kind: 'to-coda'; id?: string; text?: string }
+	| { kind: 'da-capo'; until?: 'fine' | 'coda'; text?: string }
+	| {
+			kind: 'dal-segno';
+			id?: string;
+			until?: 'fine' | 'coda';
+			text?: string;
+	  }
+	| { kind: 'fine'; text?: string }
+) & {
+	/** Where in the measure, in quarter-note beats; the write cursor when omitted. */
+	onset?: number;
+	/** 'above' when omitted, where these marks print. */
+	placement?: 'above' | 'below';
+	staff?: string;
+};
 
 /**
  * A `<direction>`: an instruction attached to a point in the timeline, with no
@@ -244,6 +279,12 @@ export function buildDirection(spec: DirectionSpec): Direction {
 	if (spec.metronome) {
 		directionType(direction).append(buildMetronome(spec.metronome));
 	}
+	if (spec.segno) {
+		directionType(direction).append(new MElement('segno'));
+	}
+	if (spec.coda) {
+		directionType(direction).append(new MElement('coda'));
+	}
 	if (spec.words != null) {
 		const words =
 			typeof spec.words === 'string' ? { text: spec.words } : spec.words;
@@ -277,18 +318,80 @@ export function buildDirection(spec: DirectionSpec): Direction {
 	}
 	if (direction.children.length === 0) {
 		throw new Error(
-			'mdom: a <direction> needs at least one of metronome, words or dynamics',
+			'mdom: a <direction> needs at least one of metronome, segno, coda, words or dynamics',
 		);
 	}
 	if (spec.staff != null) {
 		appendValue(direction, 'staff', spec.staff);
 	}
-	if (spec.tempo != null) {
+	if (spec.tempo != null || spec.sound) {
 		const sound = new Sound();
-		sound.setAttribute('tempo', String(spec.tempo));
+		if (spec.tempo != null) {
+			sound.setAttribute('tempo', String(spec.tempo));
+		}
+		writeSound(sound, spec.sound ?? {});
 		direction.append(sound);
 	}
 	return direction;
+}
+
+/** Build a detached `<direction>` for a segno, coda or jump. */
+export function buildNavigation(spec: NavigationSpec): Direction {
+	const placement = spec.placement ?? 'above';
+	const staff = spec.staff;
+	switch (spec.kind) {
+		case 'segno': {
+			const id = spec.id ?? 'segno';
+			return buildDirection({
+				segno: true,
+				sound: { segno: id },
+				placement,
+				staff,
+			});
+		}
+		case 'coda': {
+			const id = spec.id ?? 'coda';
+			return buildDirection({
+				coda: true,
+				sound: { coda: id },
+				placement,
+				staff,
+			});
+		}
+		case 'to-coda':
+			return buildDirection({
+				words: spec.text ?? 'To Coda',
+				sound: { toCoda: spec.id ?? 'coda' },
+				placement,
+				staff,
+			});
+		case 'da-capo':
+			return buildDirection({
+				words: spec.text ?? `D.C.${jumpUntil(spec.until)}`,
+				sound: { daCapo: true },
+				placement,
+				staff,
+			});
+		case 'dal-segno':
+			return buildDirection({
+				words: spec.text ?? `D.S.${jumpUntil(spec.until)}`,
+				sound: { dalSegno: spec.id ?? 'segno' },
+				placement,
+				staff,
+			});
+		case 'fine':
+			return buildDirection({
+				words: spec.text ?? 'Fine',
+				sound: { fine: true },
+				placement,
+				staff,
+			});
+	}
+}
+
+/** The ` al Fine`/` al Coda` a D.C. or D.S. prints after itself. */
+function jumpUntil(until: 'fine' | 'coda' | undefined): string {
+	return until == null ? '' : ` al ${until === 'fine' ? 'Fine' : 'Coda'}`;
 }
 
 /** Append a fresh `<direction-type>` — one per printable, which is how they print side by side. */

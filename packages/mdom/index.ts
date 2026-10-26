@@ -9,7 +9,12 @@ export {
 	DEFAULT_MAX_UNCOMPRESSED_BYTES,
 } from './archive-reader';
 export { Articulation } from './articulation';
-export { Barline, type BarlineSpec } from './barline';
+export {
+	Barline,
+	type BarlineSpec,
+	type Ending,
+	type EndingSpec,
+} from './barline';
 export {
 	Beam,
 	type BeamRun,
@@ -26,6 +31,7 @@ export {
 	Direction,
 	type DirectionSpec,
 	type MetronomeSpec,
+	type NavigationSpec,
 	type WordsSpec,
 } from './direction';
 export { Dynamics } from './dynamics';
@@ -163,7 +169,7 @@ export type {
 } from './score-metadata';
 export { Slide } from './slide';
 export { Slur } from './slur';
-export { Sound } from './sound';
+export { Sound, type SoundSpec } from './sound';
 export {
 	StaffDetails,
 	type StaffTuningSpec,

@@ -1,8 +1,20 @@
-import { Barline, type BarlineSpec, buildBarline } from './barline';
+import {
+	Barline,
+	type BarlineSpec,
+	buildBarline,
+	buildEnding,
+	type EndingSpec,
+} from './barline';
 import { type BeamRun, groupBeamRuns, groupBeams } from './beam';
 import { type Chord, groupChords } from './chord';
 import { Clef } from './clef';
-import { buildDirection, Direction, type DirectionSpec } from './direction';
+import {
+	buildDirection,
+	buildNavigation,
+	Direction,
+	type DirectionSpec,
+	type NavigationSpec,
+} from './direction';
 import { FiguredBass } from './figured-bass';
 import type { Frame } from './frame';
 import { buildHarmony, Harmony, type HarmonySpec } from './harmony';
@@ -523,12 +535,58 @@ export class Measure extends MElement {
 	}
 
 	/**
+	 * Open or close a volta bracket on this measure: a `start` goes on the left
+	 * barline, a `stop` or `discontinue` on the right, which is where MusicXML
+	 * draws them. A bracket over one measure takes both calls on it. When that
+	 * edge already has a barline with no ending (the backward repeat a first
+	 * ending closes on), the ending joins it; otherwise a new barline is added,
+	 * so close an ending once the measure's content is in.
+	 */
+	addEnding(spec: EndingSpec): Barline {
+		const location = spec.type === 'start' ? 'left' : 'right';
+		const edge =
+			location === 'left'
+				? this.barlines.filter((barline) => barline.location === 'left')
+				: [this.children.at(-1)].filter(
+						(node): node is Barline =>
+							node instanceof Barline && node.location === 'right',
+					);
+		const host = edge.find((barline) => !barline.child('ending'));
+		if (!host) {
+			return this.addBarline({ location, ending: spec });
+		}
+		// <ending> sits after everything a barline holds but its <repeat>.
+		host.insertBefore(buildEnding(spec), host.child('repeat'));
+		return host;
+	}
+
+	/**
 	 * Append a `<direction>` at the write cursor: a tempo mark, an expression, a
 	 * dynamic. Add it before the notes it applies to — a direction carries no
 	 * `<duration>`, so it sounds wherever the cursor stands.
 	 */
 	addDirection(spec: DirectionSpec): Direction {
 		const direction = buildDirection(spec);
+		this.append(direction);
+		return direction;
+	}
+
+	/**
+	 * Add a segno, coda or jump — D.S., D.C., to-coda, fine — printed and with
+	 * the `<sound>` that makes playback take it. It goes at the write cursor, so a
+	 * segno or coda is added before the notes it marks and a jump after the notes
+	 * it follows; with `onset` (in quarter-note beats) it goes at that beat
+	 * instead, `<backup>`/`<forward>` laid down to reach it.
+	 */
+	addNavigation(spec: NavigationSpec): Direction {
+		const direction = buildNavigation(spec);
+		if (spec.onset != null) {
+			const divisions = required(
+				divisionsBackFrom(this, this.children.length),
+				'divisions to place a navigation mark at an onset',
+			);
+			alignCursor(this, spec.onset * divisions);
+		}
 		this.append(direction);
 		return direction;
 	}

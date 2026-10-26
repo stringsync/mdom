@@ -11,15 +11,41 @@ export interface BarlineSpec {
 	/** `<bar-style>` (light-heavy, heavy-light, light-light, dotted, ...). */
 	barStyle?: string;
 	repeat?: { direction: 'forward' | 'backward'; times?: number };
+	/** The volta bracket; see {@link EndingSpec}. */
+	ending?: EndingSpec;
+}
+
+/**
+ * A volta bracket edge to write. `start` opens it on the first measure's left
+ * barline; `stop` (closing with a downward jog, as a first ending does) or
+ * `discontinue` (no jog, as a last ending does) closes it on the last measure's
+ * right barline.
+ */
+export interface EndingSpec {
+	type: 'start' | 'stop' | 'discontinue';
 	/**
-	 * The volta bracket. `number` is MusicXML's raw list/range spelling (`'1'`,
-	 * `'1,2'`); `text` is what is printed above it, defaulting to `number`.
+	 * Which times through the ending plays: a list of passes (`[1, 2]`), or
+	 * MusicXML's raw spelling (`'1, 2'`, or blanks for an ending whose passes are
+	 * unknown).
 	 */
-	ending?: {
-		type: 'start' | 'stop' | 'discontinue';
-		number: string;
-		text?: string;
-	};
+	number: number[] | string;
+	/** What is printed in the bracket when it differs from the numbers (`'1.–3.'`). */
+	text?: string;
+}
+
+/** A volta bracket edge as read: the raw `number`, the passes it lists, and its printed text. */
+export interface Ending {
+	type: 'start' | 'stop' | 'discontinue';
+	/** MusicXML's raw list spelling (`"1,2"`); see {@link numbers} for the passes. */
+	number: string;
+	/**
+	 * The passes it plays on, ascending, parsed from {@link number}. A `1-3` range
+	 * — invalid MusicXML some exporters write anyway — expands; blanks read as
+	 * no passes.
+	 */
+	numbers: number[];
+	/** The printed text: the element's own text, or {@link number} when it has none. */
+	text: string;
 }
 
 /**
@@ -49,20 +75,21 @@ export class Barline extends MElement {
 	}
 
 	/**
-	 * The `<ending>` (volta) bracket, or null when there is none. `number` stays a
-	 * raw string — it is a list/range like `"1,2"` or `"1-3"` that the consumer parses.
+	 * The `<ending>` (volta) bracket, or null when there is none: its raw
+	 * `number`, the passes that lists, and the text printed in it.
 	 */
-	get ending(): {
-		type: 'start' | 'stop' | 'discontinue';
-		number: string;
-	} | null {
+	get ending(): Ending | null {
 		const ending = this.child('ending');
 		if (!ending) {
 			return null;
 		}
+		const number = ending.getAttribute('number') ?? '';
+		const text = ending.text?.trim() ?? '';
 		return {
-			type: ending.getAttribute('type') as 'start' | 'stop' | 'discontinue',
-			number: ending.getAttribute('number') ?? '',
+			type: ending.getAttribute('type') as Ending['type'],
+			number,
+			numbers: endingPasses(number),
+			text: text === '' ? number : text,
 		};
 	}
 
@@ -114,15 +141,7 @@ export function buildBarline(spec: BarlineSpec): Barline {
 		appendValue(barline, 'bar-style', spec.barStyle);
 	}
 	if (spec.ending) {
-		// <ending> prints its own text content; MusicXML repeats the number there,
-		// so defaulting to it is what a caller passing just `number` means.
-		const ending = appendValue(
-			barline,
-			'ending',
-			spec.ending.text ?? spec.ending.number,
-		);
-		ending.setAttribute('number', spec.ending.number);
-		ending.setAttribute('type', spec.ending.type);
+		barline.append(buildEnding(spec.ending));
 	}
 	if (spec.repeat) {
 		const repeat = new MElement('repeat');
@@ -133,4 +152,47 @@ export function buildBarline(spec: BarlineSpec): Barline {
 		barline.append(repeat);
 	}
 	return barline;
+}
+
+/**
+ * Build a detached `<ending>`. It prints its own text content; MusicXML repeats
+ * the number there, so defaulting to it is what a caller passing just `number`
+ * means.
+ */
+export function buildEnding(spec: EndingSpec): MElement {
+	const number =
+		typeof spec.number === 'string' ? spec.number : spec.number.join(',');
+	if (
+		typeof spec.number !== 'string' &&
+		(spec.number.length === 0 ||
+			!spec.number.every((pass) => Number.isInteger(pass) && pass > 0))
+	) {
+		throw new Error(
+			`mdom: ending passes must be positive integers, got [${spec.number.join(', ')}]`,
+		);
+	}
+	const ending = new MElement('ending');
+	ending.setText(spec.text ?? number);
+	ending.setAttribute('number', number);
+	ending.setAttribute('type', spec.type);
+	return ending;
+}
+
+/** The passes an ending `number` lists, ascending: `"1, 2"`, and the invalid range `"1-3"`. */
+function endingPasses(number: string): number[] {
+	const passes = new Set<number>();
+	for (const piece of number.split(',')) {
+		const range = /^\s*(\d+)\s*(?:-\s*(\d+)\s*)?$/.exec(piece);
+		if (!range) {
+			continue;
+		}
+		const first = Number(range[1]);
+		const last = range[2] == null ? first : Number(range[2]);
+		for (let pass = first; pass <= last; pass++) {
+			if (pass > 0) {
+				passes.add(pass);
+			}
+		}
+	}
+	return [...passes].sort((left, right) => left - right);
 }

@@ -82,7 +82,7 @@ describe('measure and note — writing common notation', () => {
 		const [left, ending, right] = measure.barlines;
 		expect(left!.location).toBe('left');
 		expect(left!.repeat).toBe('forward');
-		expect(ending!.ending).toEqual({ type: 'start', number: '1' });
+		expect(ending!.ending).toMatchObject({ type: 'start', number: '1' });
 		expect(right!.location).toBe('right'); // the MusicXML default, so it is not written out
 		expect(right!.barStyle).toBe('light-heavy');
 		expect(right!.repeatTimes).toBe(3);
@@ -132,7 +132,7 @@ describe('measure and note — writing common notation', () => {
 	it('refuses a direction with nothing printable on it', () => {
 		const { measure } = build();
 		expect(() => measure.addDirection({ tempo: 90 })).toThrow(
-			'a <direction> needs at least one of metronome, words or dynamics',
+			'a <direction> needs at least one of metronome, segno, coda, words or dynamics',
 		);
 	});
 
