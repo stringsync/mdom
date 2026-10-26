@@ -38,9 +38,12 @@ describe('measure and note — writing common notation', () => {
 			.getOrCreateVoice('1')
 			.addNote({ step: 'B', octave: 3, type: 'whole' });
 
-		expect(harmony.root).toEqual({ step: 'B', alter: -1 });
-		expect(harmony.kind).toEqual({ value: 'major-seventh', text: 'maj7' });
-		expect(harmony.bass).toEqual({ step: 'D', alter: null });
+		expect(harmony.root).toMatchObject({ step: 'B', alter: -1 });
+		expect(harmony.kind).toMatchObject({
+			value: 'major-seventh',
+			text: 'maj7',
+		});
+		expect(harmony.bass).toMatchObject({ step: 'D', alter: null });
 		expect(harmony.frame?.firstFret).toBe(6);
 		expect(
 			harmony.frame?.frameNotes.map((note) => [

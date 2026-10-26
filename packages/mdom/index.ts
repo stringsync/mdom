@@ -38,9 +38,28 @@ export { GuitarProSerializer } from './guitar-pro-serializer';
 export { HammerOn } from './hammer-on';
 export {
 	Harmony,
+	type HarmonyArrangement,
+	type HarmonyBass,
+	type HarmonyBassSpec,
+	type HarmonyChord,
+	type HarmonyChordSpec,
+	type HarmonyDegree,
+	type HarmonyDegreeSpec,
+	type HarmonyDegreeSymbol,
+	type HarmonyDegreeType,
+	type HarmonyInversion,
+	type HarmonyKind,
+	type HarmonyKindSpec,
 	type HarmonyKindValue,
+	type HarmonyNumeral,
+	type HarmonyNumeralKey,
+	type HarmonyNumeralMode,
+	type HarmonyNumeralSpec,
+	type HarmonyOffset,
 	type HarmonySpec,
+	type HarmonyStep,
 	type HarmonyStepSpec,
+	type HarmonyType,
 } from './harmony';
 export type {
 	MidiDevice,

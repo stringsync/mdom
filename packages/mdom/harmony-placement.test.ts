@@ -22,7 +22,7 @@ describe('harmony and figured bass — placement and ancestry', () => {
 	});
 
 	it('returns null for a harmony that states no kind', () => {
-		expect(measure.harmonies[0]!.kind).toEqual({
+		expect(measure.harmonies[0]!.kind).toMatchObject({
 			value: 'major-seventh',
 			text: 'maj7',
 		});

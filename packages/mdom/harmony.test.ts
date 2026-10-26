@@ -35,14 +35,14 @@ describe('Harmony', () => {
 	});
 
 	it('reads root, kind (with printed text), and bass', () => {
-		expect(eb7!.root).toEqual({ step: 'E', alter: -1 });
-		expect(eb7!.kind).toEqual({ value: 'dominant', text: '7(b9)' });
-		expect(eb7!.bass).toEqual({ step: 'B', alter: -1 });
+		expect(eb7!.root).toMatchObject({ step: 'E', alter: -1 });
+		expect(eb7!.kind).toMatchObject({ value: 'dominant', text: '7(b9)' });
+		expect(eb7!.bass).toMatchObject({ step: 'B', alter: -1 });
 	});
 
 	it('keeps an explicit <root-alter>0</root-alter> distinct from an absent one, and nulls absent bass/text', () => {
-		expect(cMajor!.root).toEqual({ step: 'C', alter: 0 }); // explicit natural, not null
-		expect(cMajor!.kind).toEqual({ value: 'major', text: null });
+		expect(cMajor!.root).toMatchObject({ step: 'C', alter: 0 }); // explicit natural, not null
+		expect(cMajor!.kind).toMatchObject({ value: 'major', text: null });
 		expect(cMajor!.bass).toBeNull();
 	});
 

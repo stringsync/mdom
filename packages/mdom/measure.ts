@@ -437,11 +437,24 @@ export class Measure extends MElement {
 	/**
 	 * Append a `<harmony>` chord symbol at the write cursor — the point after
 	 * everything currently in the measure, so a symbol added before its notes sits
-	 * above them, which is how {@link Harmony.nextNote} binds the two.
+	 * above them, which is how {@link Harmony.nextNote} binds the two. With
+	 * `onset` (in quarter-note beats) it goes at that beat instead,
+	 * `<backup>`/`<forward>` laid down to reach it: a chord change in musical
+	 * time, whether or not a note starts there.
 	 */
 	addHarmony(spec: HarmonySpec): Harmony {
 		const harmony = buildHarmony(spec);
+		if (spec.onset != null) {
+			const divisions = required(
+				divisionsBackFrom(this, this.children.length),
+				'divisions to place <harmony> at an onset',
+			);
+			alignCursor(this, spec.onset * divisions);
+		}
 		this.append(harmony);
+		if (spec.offset) {
+			harmony.setOffset(spec.offset);
+		}
 		return harmony;
 	}
 
