@@ -846,7 +846,10 @@ export function attributesOf(measure: Measure): MElement {
  * append that happens to be in order for one call order is invalid for the next
  * — which is how `<divisions>` written after the signatures ended up last.
  */
-function placeInAttributes<T extends MElement>(attrs: MElement, child: T): T {
+export function placeInAttributes<T extends MElement>(
+	attrs: MElement,
+	child: T,
+): T {
 	attrs.append(child);
 	sortAttributeChildren(attrs);
 	return child;
@@ -1042,7 +1045,7 @@ function carrySignaturesInto(target: Measure, source: Measure): void {
  * directly after it, created there if needed. Nothing sits between the two, so
  * they share an onset and every carry-forward read sees both.
  */
-function transposeChoiceBlock(
+export function transposeChoiceBlock(
 	attrs: MElement,
 	tag: 'transpose' | 'for-part',
 ): MElement {

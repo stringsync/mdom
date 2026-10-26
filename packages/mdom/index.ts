@@ -131,7 +131,7 @@ export {
 export { Part } from './part';
 export type { PartGroupSpan } from './part-group';
 export { Pedal } from './pedal';
-export { Pitch } from './pitch';
+export { Pitch, type PitchInterval, transposePitch } from './pitch';
 export {
 	type MeasureNumbering,
 	type MeasureNumberingSpec,

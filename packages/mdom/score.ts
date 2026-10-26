@@ -1,4 +1,8 @@
 import { Appearance } from './appearance';
+import {
+	convertPartsToConcertPitch,
+	convertPartsToTransposedPitch,
+} from './concert-pitch';
 import { descendants, MElement } from './m-node';
 import { appendValue } from './measure';
 import { PageLayout } from './page-layout';
@@ -409,7 +413,9 @@ export class Score extends MElement {
 	 * notes are already written — no `<pitch>` is rewritten — so it throws where
 	 * the declaration would contradict them: turning it on while a `<transpose>`
 	 * shifts pitch class (those notes are not at sounding pitch), or off while a
-	 * `<for-part>` remains (only a concert score may hold one).
+	 * `<for-part>` remains (only a concert score may hold one). To rewrite the
+	 * pitches instead, use {@link convertToConcertScore} and
+	 * {@link convertToTransposedScore}.
 	 */
 	setConcertScore(value: boolean): void {
 		if (value === this.isConcertScore) {
@@ -432,6 +438,39 @@ export class Score extends MElement {
 		if (nodes.some((node) => node instanceof ForPart)) {
 			throw new Error('Remove the <for-part> declarations first');
 		}
+		this.child('defaults')?.child('concert-score')?.remove();
+	}
+
+	/**
+	 * Rewrite this score at concert pitch and mark it a concert score: every note
+	 * retuned to sound as written, its printed accidental and key signature moved
+	 * with it, and each part's transposition kept on a `<for-part>` (see
+	 * {@link Measure.getForPart}) so {@link convertToTransposedScore} can bring
+	 * the transposed parts back. Octave transpositions stay as they are, as a
+	 * concert score writes a piccolo or guitar. Nothing to do when it already is
+	 * one.
+	 */
+	convertToConcertScore(): void {
+		if (this.isConcertScore) {
+			return;
+		}
+		convertPartsToConcertPitch(this.parts);
+		ensureMetadata(this.defaults(), 'concert-score', defaultsOrder);
+	}
+
+	/**
+	 * Rewrite this concert score as its transposed parts and clear the concert
+	 * flag: every note retuned by the `<for-part>` in effect, keys moved back,
+	 * and each `<for-part>` turned into the `<transpose>` it declares, its
+	 * `<part-clef>` set as the staff's clef there. The reverse of
+	 * {@link convertToConcertScore}, except that a clef the transposed part
+	 * switched to stays. Nothing to do when this is not a concert score.
+	 */
+	convertToTransposedScore(): void {
+		if (!this.isConcertScore) {
+			return;
+		}
+		convertPartsToTransposedPitch(this.parts);
 		this.child('defaults')?.child('concert-score')?.remove();
 	}
 

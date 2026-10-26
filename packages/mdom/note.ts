@@ -15,7 +15,7 @@ import {
 } from './octave-shift';
 import { Ornament } from './ornament';
 import { Part } from './part';
-import { Pitch } from './pitch';
+import { Pitch, transposePitch } from './pitch';
 import {
 	colorOf,
 	type LineType,
@@ -195,6 +195,28 @@ export class Note extends MElement {
 				.childrenOfType(Transpose)
 				.find((transpose) => appliesToStaff(transpose, staff)),
 		);
+	}
+
+	/**
+	 * The pitch this note sounds at: its written {@link pitch} moved by the
+	 * {@link transpose} in effect, spelled by the transposition's diatonic steps,
+	 * so a B♭ clarinet's written D4 sounds C4. The written pitch when nothing
+	 * transposes; null for a rest or unpitched note. A clef's octave change and
+	 * an `<octave-shift>` are how the notes are drawn, not what they sound, so
+	 * neither is part of it.
+	 */
+	get soundingPitch(): Required<PitchSpec> | null {
+		const pitch = this.pitch;
+		if (!pitch) {
+			return null;
+		}
+		const written = {
+			step: pitch.step,
+			octave: pitch.octave,
+			alter: pitch.alter,
+		};
+		const transpose = this.transpose;
+		return transpose ? transposePitch(written, transpose) : written;
 	}
 
 	/** `<time>` in effect for this note's staff. */
