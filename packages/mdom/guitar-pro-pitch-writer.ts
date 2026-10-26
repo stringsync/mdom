@@ -19,7 +19,13 @@ export class GuitarProPitchWriter {
 				)) {
 					const used = new Set(held);
 					for (const note of chord.notes) {
-						const origin = note.ties.find((t) => t.tieType === 'stop')?.partner
+						// Ties, hammer-ons, pull-offs and slides join notes on one string.
+						const origin = [
+							...note.ties,
+							...note.hammerOns,
+							...note.pullOffs,
+							...note.slides,
+						].find((marker) => marker.getAttribute('type') === 'stop')?.partner
 							?.note;
 						const string = origin && this.strings.get(origin);
 						if (string != null) {

@@ -237,9 +237,11 @@ describe('GuitarProParser', () => {
 	it('rejects techniques outside the supported subset', async () => {
 		await expect(
 			parser.parseFromBlob(
-				Bun.file(new URL('./fixtures/guitar-pro/grace.gp', import.meta.url)),
+				Bun.file(
+					new URL('./fixtures/guitar-pro/harmonics.gp', import.meta.url),
+				),
 			),
-		).rejects.toThrow('note techniques');
+		).rejects.toThrow('Semi harmonics');
 	});
 
 	it('retains grace timing when unsupported techniques are explicitly omitted', async () => {

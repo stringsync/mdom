@@ -129,7 +129,13 @@ tuning as MusicXML tablature only for staves with tablature enabled in the file.
 
 Bends (a rise, a release, or a pre-bend), natural, artificial, pinch and tap
 harmonics, dead and ghost notes, palm mutes and let ring round-trip as
-MusicXML technicals. Unsupported techniques and annotations, such as slides,
+MusicXML technicals. Hammer-ons and pull-offs (Guitar Pro picks which from the
+pitch direction) round-trip as `<hammer-on>`/`<pull-off>` with a slur, shift
+slides as `<slide>`, legato slides as `<slide>` with a slur, and slides into and
+out of a note as `<scoop>`, `<plop>`, `<doit>` and `<falloff>`; a slur on export
+is kept only when it carries one of these. Slight and wide vibrato round-trip as
+a `<wavy-line>` over each note (a wide one names the `wiggleVibratoWide`
+glyph). Unsupported techniques and annotations, such as glissandos and trills,
 throw by default. To deliberately
 discard unsupported annotations, pass `{ unsupported: 'omit' }` as the last
 argument to either parser or serializer methods, and add

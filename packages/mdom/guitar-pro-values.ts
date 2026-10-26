@@ -93,6 +93,22 @@ export class GuitarProValues {
 		return value;
 	}
 
+	/**
+	 * GPIF `Slide` flags for a slide into or out of a note, by the MusicXML
+	 * articulation that draws it: out downward (falloff), out upward (doit), in
+	 * from below (scoop), in from above (plop). Flags 1 and 2, a shift or legato
+	 * slide to the next note, are `<slide>` spanners instead.
+	 */
+	static readonly slideMarks: ReadonlyArray<readonly [number, string]> = [
+		[4, 'falloff'],
+		[8, 'doit'],
+		[16, 'scoop'],
+		[32, 'plop'],
+	];
+
+	/** The SMuFL glyph a wavy line names to mark a wide vibrato. */
+	static readonly wideVibrato = 'wiggleVibratoWide';
+
 	/** GPIF bend values are 50 per semitone (100 is a whole step). */
 	private static readonly bendUnit = 50;
 

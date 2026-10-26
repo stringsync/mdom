@@ -21,6 +21,7 @@ import type { Measure } from './measure';
 import type { Note } from './note';
 import type { Part } from './part';
 import { divisionsBackFrom } from './signature';
+import { Slur } from './slur';
 import type { Sound } from './sound';
 import { onsetOf } from './timeline';
 
@@ -98,6 +99,8 @@ export class GuitarProScoreWriter {
 		segno: new Map<string, string>(),
 		coda: new Map<string, string>(),
 	};
+	/** The GPIF vibrato (Slight or Wide) of each note a wavy line covers. */
+	private readonly vibratos = new Map<Note, string>();
 	constructor(opts: GuitarProOptions = {}) {
 		this.values = new GuitarProValues(opts);
 		this.effects = new GuitarProBeatEffectWriter(this.values);
@@ -112,6 +115,9 @@ export class GuitarProScoreWriter {
 			);
 		}
 		this.checkAnnotations(document.score);
+		for (const part of parts) {
+			this.collectVibratos(part);
+		}
 		X.add(this.root, 'GPVersion', '7');
 		X.add(this.root, 'GPRevision', '12025');
 		X.add(X.add(this.root, 'Encoding'), 'EncodingDescription', 'GP7');
@@ -1189,6 +1195,89 @@ export class GuitarProScoreWriter {
 		if (source.isLetRing) {
 			X.add(node, 'LetRing');
 		}
+		for (const marker of [...source.hammerOns, ...source.pullOffs]) {
+			const start = marker.getAttribute('type') === 'start';
+			if (this.legatoPartner(source, marker.partner?.note, start)) {
+				flag(start ? 'HopoOrigin' : 'HopoDestination');
+			}
+		}
+		let slide = 0;
+		for (const marker of source.slides) {
+			const partner = marker.partner?.note;
+			if (
+				marker.slideType === 'start' &&
+				this.legatoPartner(source, partner, true)
+			) {
+				const slurred = source.slurs.some(
+					(slur) => slur.partner?.note === partner,
+				);
+				slide |= slurred ? 2 : 1;
+			}
+		}
+		for (const [bit, mark] of GuitarProValues.slideMarks) {
+			if (source.articulations.includes(mark)) {
+				slide |= bit;
+			}
+		}
+		if (slide) {
+			X.addProperty(node, 'Slide', 'Flags', slide);
+		}
+		const vibrato = this.vibratos.get(source);
+		if (vibrato) {
+			X.add(node, 'Vibrato', vibrato);
+		}
+	}
+	/**
+	 * Whether `partner` can be the other end of a GPIF hammer-on, pull-off or
+	 * slide from `note`: Guitar Pro joins a note only to the next one on its
+	 * string, so the two must share a voice and staff, and the one `starting`
+	 * the pair must come first.
+	 */
+	private legatoPartner(
+		note: Note,
+		partner: Note | undefined,
+		starting: boolean,
+	): boolean {
+		const [from, to] = starting ? [note, partner] : [partner, note];
+		if (
+			!from ||
+			!to ||
+			from.voice !== to.voice ||
+			from.staff !== to.staff ||
+			from.measure.index > to.measure.index ||
+			(from.measure === to.measure &&
+				from.measure.notes.indexOf(from) >= to.measure.notes.indexOf(to))
+		) {
+			this.values.unsupported(
+				'hammer-ons, pull-offs or slides that do not join consecutive notes of one voice',
+			);
+			return false;
+		}
+		return true;
+	}
+	/** Mark every note of a wavy line's voice, from its start to its stop, with its vibrato. */
+	private collectVibratos(part: Part): void {
+		const notes = part.measures.flatMap((measure) => measure.notes);
+		for (const [index, note] of notes.entries()) {
+			for (const line of note.wavyLines) {
+				// A trill's wavy line extends the trill, which is reported on its own.
+				if (line.wavyLineType !== 'start' || line.parent?.child('trill-mark')) {
+					continue;
+				}
+				const end = line.partner?.note;
+				const last = end ? notes.indexOf(end, index) : -1;
+				if (last < 0) {
+					this.values.unsupported('unpaired wavy lines');
+					continue;
+				}
+				const wide = /wide|large/i.test(line.getAttribute('smufl') ?? '');
+				for (const covered of notes.slice(index, last + 1)) {
+					if (covered.voice === note.voice && covered.staff === note.staff) {
+						this.vibratos.set(covered, wide ? 'Wide' : 'Slight');
+					}
+				}
+			}
+		}
 	}
 	private directions(beat: MElement, note: Note): void {
 		let dynamic = 'F';
@@ -1260,11 +1349,7 @@ export class GuitarProScoreWriter {
 			return;
 		}
 		const unsupported = new Set([
-			'hammer-on',
-			'pull-off',
-			'slide',
 			'glissando',
-			'slur',
 			'harmony',
 			'fingering',
 			'pluck',
@@ -1296,9 +1381,28 @@ export class GuitarProScoreWriter {
 				this.values.unsupported(`<tremolo> ${type}`);
 			}
 		}
+		if (element instanceof Slur) {
+			// Guitar Pro draws the slur of a hammer-on, pull-off or legato slide itself.
+			const partner = element.partner?.note;
+			const joined = [
+				...element.note.hammerOns,
+				...element.note.pullOffs,
+				...element.note.slides,
+			].some((marker) => partner && marker.partner?.note === partner);
+			if (!joined) {
+				this.values.unsupported('<slur>');
+			}
+		}
 		if (element.tag === 'articulations') {
 			for (const mark of element.childrenOfType(MElement)) {
-				if (!['staccato', 'accent', 'strong-accent'].includes(mark.tag)) {
+				if (
+					![
+						'staccato',
+						'accent',
+						'strong-accent',
+						...GuitarProValues.slideMarks.map(([, name]) => name),
+					].includes(mark.tag)
+				) {
 					this.values.unsupported(`<${mark.tag}>`);
 				}
 			}
@@ -1312,8 +1416,10 @@ export class GuitarProScoreWriter {
 				'fermata',
 				'arpeggiate',
 				'ornaments',
+				'slur',
+				'slide',
 			],
-			ornaments: ['tremolo'],
+			ornaments: ['tremolo', 'wavy-line'],
 			technical: [
 				'string',
 				'fret',
@@ -1323,6 +1429,8 @@ export class GuitarProScoreWriter {
 				'up-bow',
 				'down-bow',
 				'tap',
+				'hammer-on',
+				'pull-off',
 			],
 			'direction-type': [
 				'metronome',

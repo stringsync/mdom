@@ -32,11 +32,10 @@ describe('Guitar Pro 6 .gpx import', () => {
 		expect(xml).toContain('<note');
 	});
 
-	it('applies the unsupported option to .gpx input', async () => {
-		await expect(musicXml('grace.gpx')).rejects.toThrow('note techniques');
-		expect(await musicXml('grace.gpx', { unsupported: 'omit' })).toContain(
-			'<grace',
-		);
+	it('reads the grace-note slide in grace.gpx', async () => {
+		const xml = await musicXml('grace.gpx');
+		expect(xml).toContain('<grace');
+		expect(xml).toContain('<slide type="start"');
 	});
 
 	it('throws once a container inflates past maxUncompressedBytes', async () => {

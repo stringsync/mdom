@@ -109,6 +109,8 @@ export class GuitarProDocumentReader {
 	private readonly values: GuitarProValues;
 	private tempoChanges: TempoChange[] | null = null;
 	private effects: GuitarProBeatEffectReader;
+	/** Notes that start a hammer-on, pull-off or slide, by their GPIF source, until the next note on their string arrives. */
+	private readonly legatoOrigins = new Map<Note, MElement>();
 	constructor(
 		private readonly xml: X,
 		opts: GuitarProOptions = {},
@@ -360,6 +362,15 @@ export class GuitarProDocumentReader {
 				) {
 					measure.setAttribute('implicit', 'yes');
 				}
+			}
+			// A hammer-on with nothing after it on its string joins nothing; a slide still draws.
+			const slides = [...this.legatoOrigins.values()].filter(
+				(source) =>
+					Number(X.property(source, 'Slide')?.child('Flags')?.text ?? 0) & 3,
+			);
+			this.legatoOrigins.clear();
+			if (slides.length) {
+				this.values.unsupported('slides with no following note');
 			}
 			this.effects.finish();
 			GuitarProLyrics.read(track, part);
@@ -773,6 +784,7 @@ export class GuitarProDocumentReader {
 			: [];
 		const notes: (MElement | null)[] = sources.length ? sources : [null];
 		const chord: Note[] = [];
+		const beatVibrato = beat?.child('Vibrato')?.text;
 		for (const [index, source] of notes.entries()) {
 			const note = new Note();
 			chord.push(note);
@@ -820,8 +832,13 @@ export class GuitarProDocumentReader {
 			if (source) {
 				this.readNote(source, note, staff);
 				this.readWhammy(beat, note);
+				this.readVibrato(source.child('Vibrato')?.text ?? beatVibrato, note);
 				const string = X.property(source, 'String')?.child('String')?.text;
 				const key = `${voice}:${string == null ? `pitch${pitch}` : `string${string}`}`;
+				const before = previous.get(key);
+				if (before) {
+					this.readLegato(before, note);
+				}
 				if (source.child('Tie')?.getAttribute('destination') === 'true') {
 					const origin = previous.get(key);
 					if (!origin?.pitch || GuitarProValues.midi(origin.pitch) !== pitch) {
@@ -832,6 +849,12 @@ export class GuitarProDocumentReader {
 					origin.addTie(note);
 				}
 				previous.set(key, note);
+				const slide = Number(
+					X.property(source, 'Slide')?.child('Flags')?.text ?? 0,
+				);
+				if (X.property(source, 'HopoOrigin') || slide & 3) {
+					this.legatoOrigins.set(note, source);
+				}
 			}
 		}
 		if (beat) {
@@ -903,16 +926,14 @@ export class GuitarProDocumentReader {
 	}
 	private readNote(source: MElement, note: Note, staff: StaffContext): void {
 		if (
-			['Trill', 'Vibrato', 'LeftFingering', 'RightFingering', 'Ornament'].some(
-				(tag) => source.child(tag),
+			['Trill', 'LeftFingering', 'RightFingering', 'Ornament'].some((tag) =>
+				source.child(tag),
 			) ||
 			source
 				.child('Properties')
 				?.childrenNamed('Property')
 				.some((p) =>
-					/^(Hopo|Slide|Tapped|LeftHandTapped)/.test(
-						p.getAttribute('name') ?? '',
-					),
+					/^(Tapped|LeftHandTapped)/.test(p.getAttribute('name') ?? ''),
 				)
 		) {
 			this.values.unsupported('note techniques');
@@ -971,6 +992,17 @@ export class GuitarProDocumentReader {
 				this.values.unsupported(`${harmonicType} harmonics`);
 			}
 		}
+		const slide = Number(
+			X.property(source, 'Slide')?.child('Flags')?.text ?? 0,
+		);
+		for (const [flag, mark] of GuitarProValues.slideMarks) {
+			if (slide & flag) {
+				note.addArticulation(mark);
+			}
+		}
+		if (slide & ~0x3f) {
+			this.values.unsupported('pick slides');
+		}
 		if (enabled('Bended')) {
 			const value = (name: string) =>
 				Number(X.property(source, name)?.child('Float')?.text ?? 0);
@@ -1009,10 +1041,54 @@ export class GuitarProDocumentReader {
 			this.values.unsupported('whammy bar curves');
 		}
 	}
+	/**
+	 * Join `before`, the last note on this string, to `note` when its GPIF source
+	 * started a hammer-on or pull-off (told apart by which way the pitch moves) or
+	 * a slide (a legato slide also slurs the pair).
+	 */
+	private readLegato(before: Note, note: Note): void {
+		const source = this.legatoOrigins.get(before);
+		if (!source) {
+			return;
+		}
+		this.legatoOrigins.delete(before);
+		if (X.property(source, 'HopoOrigin')) {
+			const rises =
+				GuitarProValues.midi(note.pitch!) > GuitarProValues.midi(before.pitch!);
+			if (rises) {
+				before.addHammerOn(note);
+			} else {
+				before.addPullOff(note);
+			}
+			before.addSlur(note);
+		}
+		const slide = Number(
+			X.property(source, 'Slide')?.child('Flags')?.text ?? 0,
+		);
+		if (slide & 3) {
+			before.addSlide(note);
+			if (slide & 2 && !X.property(source, 'HopoOrigin')) {
+				before.addSlur(note);
+			}
+		}
+	}
+	/** A GPIF vibrato (Slight or Wide) as a wavy line over the one note. */
+	private readVibrato(vibrato: string | null | undefined, note: Note): void {
+		if (vibrato == null || vibrato === 'None') {
+			return;
+		}
+		if (!['Slight', 'Wide'].includes(vibrato)) {
+			this.values.unsupported(`${vibrato} vibrato`);
+			return;
+		}
+		const line = note.addVibrato(note);
+		if (vibrato === 'Wide') {
+			line.setAttribute('smufl', GuitarProValues.wideVibrato);
+		}
+	}
 	private checkBeat(beat: MElement): void {
 		const tags = [
 			'WhammyBar',
-			'Vibrato',
 			'Fade',
 			'Fadding',
 			'Hairpin',

@@ -1,7 +1,7 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
 exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
-"## Import: 30 of 45 ok
+"## Import: 35 of 45 ok
 
 | File | Result |
 | --- | --- |
@@ -15,10 +15,10 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 | \`drum-tabs.gp\` | error: Guitar Pro percussion tracks are not supported |
 | \`effects.gp\` | omits \`Semi harmonics\`, \`beat effects or annotations\`, \`bend curves\`, \`instrument changes or track automation\`, \`note techniques\`, \`whammy bar curves\` |
 | \`fermata.gp\` | omits \`fermatas between beats\` |
-| \`grace.gp\` | omits \`note techniques\` |
+| \`grace.gp\` | ok |
 | \`grace.gp5\` | omits \`note techniques\` |
-| \`grace.gpx\` | omits \`note techniques\` |
-| \`hammer.gp\` | omits \`note techniques\` |
+| \`grace.gpx\` | ok |
+| \`hammer.gp\` | ok |
 | \`harmonics.gp\` | omits \`Semi harmonics\` |
 | \`hide-tuning.gp\` | ok |
 | \`key-signatures.gp\` | ok |
@@ -37,7 +37,7 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 | \`score-info.gp\` | ok |
 | \`score-info.gp5\` | omits \`lyrics\` |
 | \`score-info.gpx\` | ok |
-| \`slides.gp\` | omits \`note techniques\` |
+| \`slides.gp\` | ok |
 | \`strings.gp\` | ok |
 | \`strings.gp5\` | ok |
 | \`strings.gpx\` | ok |
@@ -49,13 +49,13 @@ exports[`Guitar Pro coverage scoreboard imports every Guitar Pro fixture 1`] = `
 | \`tuplets.gp\` | ok |
 | \`tuplets.gp5\` | ok |
 | \`tuplets.gpx\` | ok |
-| \`vibrato.gp\` | omits \`note techniques\` |
+| \`vibrato.gp\` | ok |
 
 | Omitted feature | Files |
 | --- | --- |
-| \`note techniques\` | 7 |
 | \`beat effects or annotations\` | 2 |
 | \`bend curves\` | 2 |
+| \`note techniques\` | 2 |
 | \`Semi harmonics\` | 2 |
 | \`whammy bar curves\` | 2 |
 | \`fermatas between beats\` | 1 |
@@ -71,8 +71,8 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | --- | --- |
 | \`accidentals.xml\` | error: Invalid MIDI pitch: 67.5; expected an integer from 0 to 127 |
 | \`actor_prelude_sample.xml\` | omits \`<notehead> diamond\`, \`<other-direction>\`, \`<rehearsal>\`, \`<slur>\`, \`<unpitched>\`, \`<wedge>\`; error: Guitar Pro export requires a supported note type, got null |
-| \`aloof_gp7.musicxml\` | omits \`<dynamics>\`, \`<hammer-on>\`, \`<slide>\`, \`<slur>\`; error: Guitar Pro export needs one transposition per part, but this part changes it across measures or staves |
-| \`aloof_gp8.musicxml\` | omits \`<hammer-on>\`, \`<slide>\`, \`<slur>\`; error: Guitar Pro export needs one transposition per part, but this part changes it across measures or staves |
+| \`aloof_gp7.musicxml\` | omits \`<dynamics>\`, \`<slur>\`; error: Guitar Pro export needs one transposition per part, but this part changes it across measures or staves |
+| \`aloof_gp8.musicxml\` | omits \`<slur>\`; error: Guitar Pro export needs one transposition per part, but this part changes it across measures or staves |
 | \`chopin_prelude.xml\` | omits \`<slur>\` |
 | \`composer_one_line.xml\` | ok |
 | \`concert_score_and_for_part.xml\` | ok |
@@ -148,26 +148,26 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`lilypond/31c-MetronomeMarks.xml\` | omits \`non-numeric or compound metronome marks\` |
 | \`lilypond/31d-Directions-Compounds.xml\` | omits \`<dashes>\`, \`<rehearsal>\`, \`<wedge>\`; error: Unsupported metronome beat unit: long |
 | \`lilypond/31f-Direction-Multiline-Compounds.xml\` | ok |
-| \`lilypond/32a-Notations.xml\` | omits \`<accidental-mark>\`, \`<breath-mark>\`, \`<caesura>\`, \`<delayed-inverted-turn>\`, \`<delayed-turn>\`, \`<detached-legato>\`, \`<doit>\`, \`<double-tongue>\`, \`<dynamics>\`, \`<falloff>\`, \`<fingering>\`, \`<fingernails>\`, \`<hammer-on>\`, \`<haydn>\`, \`<heel>\`, \`<inverted-mordent>\`, \`<inverted-turn>\`, \`<inverted-vertical-turn>\`, \`<mordent>\`, \`<non-arpeggiate>\`, \`<open-string>\`, \`<plop>\`, \`<pluck>\`, \`<pull-off>\`, \`<schleifer>\`, \`<scoop>\`, \`<shake>\`, \`<snap-pizzicato>\`, \`<soft-accent>\`, \`<spiccato>\`, \`<staccatissimo>\`, \`<stopped>\`, \`<stress>\`, \`<tenuto>\`, \`<thumb-position>\`, \`<toe>\`, \`<trill-mark>\`, \`<triple-tongue>\`, \`<turn>\`, \`<unstress>\`, \`<vertical-turn>\`, \`<wavy-line>\`; error: Guitar Pro tablature requires tuning, string and fret |
+| \`lilypond/32a-Notations.xml\` | omits \`<accidental-mark>\`, \`<breath-mark>\`, \`<caesura>\`, \`<delayed-inverted-turn>\`, \`<delayed-turn>\`, \`<detached-legato>\`, \`<double-tongue>\`, \`<dynamics>\`, \`<fingering>\`, \`<fingernails>\`, \`<haydn>\`, \`<heel>\`, \`<inverted-mordent>\`, \`<inverted-turn>\`, \`<inverted-vertical-turn>\`, \`<mordent>\`, \`<non-arpeggiate>\`, \`<open-string>\`, \`<pluck>\`, \`<schleifer>\`, \`<shake>\`, \`<snap-pizzicato>\`, \`<soft-accent>\`, \`<spiccato>\`, \`<staccatissimo>\`, \`<stopped>\`, \`<stress>\`, \`<tenuto>\`, \`<thumb-position>\`, \`<toe>\`, \`<trill-mark>\`, \`<triple-tongue>\`, \`<turn>\`, \`<unstress>\`, \`<vertical-turn>\`; error: Guitar Pro tablature requires tuning, string and fret |
 | \`lilypond/32b-Articulations-Texts.xml\` | ok |
 | \`lilypond/32c-MultipleNotationChildren.xml\` | ok |
 | \`lilypond/32d-Arpeggio.xml\` | omits \`<non-arpeggiate>\` |
 | \`lilypond/32e-Arpeggios-Cross.xml\` | ok |
-| \`lilypond/33a-Spanners.xml\` | omits \`<accidental-mark>\`, \`<bracket>\`, \`<dashes>\`, \`<glissando>\`, \`<hammer-on>\`, \`<pedal>\`, \`<pull-off>\`, \`<slide>\`, \`<slur>\`, \`<tremolo> start\`, \`<tremolo> stop\`, \`<trill-mark>\`, \`<wavy-line>\`, \`<wedge>\` |
+| \`lilypond/33a-Spanners.xml\` | omits \`<accidental-mark>\`, \`<bracket>\`, \`<dashes>\`, \`<glissando>\`, \`<pedal>\`, \`<slur>\`, \`<tremolo> start\`, \`<tremolo> stop\`, \`<trill-mark>\`, \`<wedge>\` |
 | \`lilypond/33b-Spanners-Tie.xml\` | ok |
 | \`lilypond/33c-Spanners-Slurs.xml\` | omits \`<slur>\` |
 | \`lilypond/33da-Spanners-OctaveShifts-before.xml\` | ok |
 | \`lilypond/33db-Spanners-OctaveShifts-after.xml\` | ok |
 | \`lilypond/33e-Spanners-OctaveShifts-InvalidSize.xml\` | omits \`ottava 11\`, \`ottava 27\` |
-| \`lilypond/33f-Trill-EndingOnGraceNote.xml\` | omits \`<slur>\`, \`<trill-mark>\`, \`<wavy-line>\` |
+| \`lilypond/33f-Trill-EndingOnGraceNote.xml\` | omits \`<slur>\`, \`<trill-mark>\` |
 | \`lilypond/33g-Slur-ChordedNotes.xml\` | omits \`<slur>\` |
-| \`lilypond/33h-Spanners-Glissando.xml\` | omits \`<glissando>\`, \`<slide>\` |
+| \`lilypond/33h-Spanners-Glissando.xml\` | omits \`<glissando>\` |
 | \`lilypond/33i-Ties-NotEnded.xml\` | error: Guitar Pro ties must connect matching pitches in the same voice and staff |
 | \`lilypond/33j-Beams-Tremolos.xml\` | omits \`<tremolo> start\`, \`<tremolo> stop\`, \`tremolo of 0 marks\` |
 | \`lilypond/33k-Tie-Types.xml\` | error: Guitar Pro ties must connect matching pitches in the same voice and staff |
-| \`lilypond/34a-Print-Object-Spanners.xml\` | omits \`<glissando>\`, \`<hammer-on>\`, \`<pull-off>\`, \`<slide>\`, \`<slur>\`, \`<tremolo> start\`, \`<tremolo> stop\`, \`<trill-mark>\`, \`<wavy-line>\` |
-| \`lilypond/34b-Colors.xml\` | omits \`<bracket>\`, \`<breath-mark>\`, \`<dashes>\`, \`<fingering>\`, \`<glissando>\`, \`<pedal>\`, \`<pluck>\`, \`<rehearsal>\`, \`<slur>\`, \`<tremolo> start\`, \`<tremolo> stop\`, \`<trill-mark>\`, \`<unpitched>\`, \`<wavy-line>\`, \`<wedge>\`, \`mid-measure key or time changes\`; error: Guitar Pro export requires pitched notes; percussion is not supported |
-| \`lilypond/34c-Font-Size.xml\` | omits \`<accidental-mark>\`, \`<breath-mark>\`, \`<dashes>\`, \`<fingering>\`, \`<pedal>\`, \`<pluck>\`, \`<rehearsal>\`, \`<trill-mark>\`, \`<unpitched>\`, \`<wavy-line>\`, \`mid-measure clef changes\`, \`mid-measure key or time changes\`; error: Guitar Pro export requires pitched notes; percussion is not supported |
+| \`lilypond/34a-Print-Object-Spanners.xml\` | omits \`<glissando>\`, \`<slur>\`, \`<tremolo> start\`, \`<tremolo> stop\`, \`<trill-mark>\` |
+| \`lilypond/34b-Colors.xml\` | omits \`<bracket>\`, \`<breath-mark>\`, \`<dashes>\`, \`<fingering>\`, \`<glissando>\`, \`<pedal>\`, \`<pluck>\`, \`<rehearsal>\`, \`<slur>\`, \`<tremolo> start\`, \`<tremolo> stop\`, \`<trill-mark>\`, \`<unpitched>\`, \`<wedge>\`, \`mid-measure key or time changes\`; error: Guitar Pro export requires pitched notes; percussion is not supported |
+| \`lilypond/34c-Font-Size.xml\` | omits \`<accidental-mark>\`, \`<breath-mark>\`, \`<dashes>\`, \`<fingering>\`, \`<pedal>\`, \`<pluck>\`, \`<rehearsal>\`, \`<trill-mark>\`, \`<unpitched>\`, \`mid-measure clef changes\`, \`mid-measure key or time changes\`; error: Guitar Pro export requires pitched notes; percussion is not supported |
 | \`lilypond/34d-Note-Attributes.xml\` | ok |
 | \`lilypond/41a-MultiParts-Partorder.xml\` | ok |
 | \`lilypond/41b-MultiParts-MoreThan10.xml\` | ok |
@@ -267,18 +267,15 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`sorted_notes_chord_vexflow_keys_order.xml\` | omits \`different keys across staves or parts\`, \`key mode none\` |
 | \`stave_repetitions_coda_etc.xml\` | omits \`mid-measure clef changes\` |
 | \`tablature_bends.xml\` | error: Note pitch disagrees with its string, fret and capo |
-| \`wanna_skip_class.xml\` | omits \`<hammer-on>\`, \`<slide>\`, \`<slur>\` |
+| \`wanna_skip_class.xml\` | omits \`<slur>\` |
 
 | Omitted feature | Files |
 | --- | --- |
 | \`<slur>\` | 24 |
 | \`<wedge>\` | 8 |
 | \`<trill-mark>\` | 7 |
-| \`<hammer-on>\` | 6 |
 | \`<rehearsal>\` | 6 |
-| \`<slide>\` | 6 |
 | \`<unpitched>\` | 6 |
-| \`<wavy-line>\` | 6 |
 | \`different keys across staves or parts\` | 6 |
 | \`mid-measure clef changes\` | 6 |
 | \`mid-measure key or time changes\` | 6 |
@@ -296,7 +293,6 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`<notehead> diamond\` | 3 |
 | \`<notehead> slash\` | 3 |
 | \`<pluck>\` | 3 |
-| \`<pull-off>\` | 3 |
 | \`pickups after the first measure\` | 3 |
 | \`<accordion-registration>\` | 2 |
 | \`<non-arpeggiate>\` | 2 |
@@ -321,10 +317,8 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`<delayed-inverted-turn>\` | 1 |
 | \`<delayed-turn>\` | 1 |
 | \`<detached-legato>\` | 1 |
-| \`<doit>\` | 1 |
 | \`<double-tongue>\` | 1 |
 | \`<eyeglasses>\` | 1 |
-| \`<falloff>\` | 1 |
 | \`<fingernails>\` | 1 |
 | \`<harp-pedals>\` | 1 |
 | \`<haydn>\` | 1 |
@@ -348,10 +342,8 @@ exports[`Guitar Pro coverage scoreboard exports every MusicXML file in the corpu
 | \`<other-direction>\` | 1 |
 | \`<other-notation>\` | 1 |
 | \`<percussion>\` | 1 |
-| \`<plop>\` | 1 |
 | \`<principal-voice>\` | 1 |
 | \`<schleifer>\` | 1 |
-| \`<scoop>\` | 1 |
 | \`<scordatura>\` | 1 |
 | \`<shake>\` | 1 |
 | \`<snap-pizzicato>\` | 1 |

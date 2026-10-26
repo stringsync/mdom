@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { GuitarProParser } from './guitar-pro-parser';
 import { GuitarProSerializer } from './guitar-pro-serializer';
 import { MDocument } from './m-document';
+import type { Note } from './note';
 
 const fixture = (name: string) =>
 	Bun.file(new URL(`./fixtures/guitar-pro/${name}`, import.meta.url));
@@ -97,9 +98,116 @@ describe('Guitar Pro note techniques', () => {
 		});
 	});
 
-	it('still rejects slides', async () => {
-		await expect(parser.parseFromBlob(fixture('slides.gp'))).rejects.toThrow(
-			'note techniques',
+	it('imports hammer-ons, dropping one with no note after it', async () => {
+		const doc = await parser.parseFromBlob(fixture('hammer.gp'));
+		const notes = doc.score.parts[0]!.measures.flatMap((m) => m.notes);
+		const starts = notes
+			.flatMap((n) => n.hammerOns)
+			.filter((marker) => marker.hammerOnType === 'start');
+		expect(starts.length).toBe(9);
+		for (const start of starts) {
+			expect(start.partner?.note.slurs.length).toBeGreaterThan(0);
+		}
+	});
+
+	it('imports slides into, out of and between notes', async () => {
+		const doc = await parser.parseFromBlob(fixture('slides.gp'));
+		const notes = doc.score.parts[0]!.measures.flatMap((m) => m.notes);
+		expect(notes.map((n) => n.slides.map((s) => s.slideType))).toEqual([
+			['start'],
+			['start'],
+			['stop'],
+			['stop'],
+			['start'],
+			['stop'],
+			[],
+			[],
+			[],
+			[],
+		]);
+		// Flag 2, a legato slide, also slurs; flag 1, a shift slide, does not.
+		expect(notes.map((n) => n.slurs.length)).toEqual([
+			1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+		]);
+		expect(notes.slice(6).map((n) => n.articulations)).toEqual([
+			['scoop'],
+			['plop'],
+			['falloff'],
+			['doit'],
+		]);
+	});
+
+	it('imports note vibrato as wavy lines', async () => {
+		const doc = await parser.parseFromBlob(fixture('vibrato.gp'));
+		const notes = doc.score.parts[0]!.measures.flatMap((m) => m.notes);
+		const covered = notes.filter((n) => n.wavyLines.length);
+		expect(covered.length).toBe(2);
+		for (const note of covered) {
+			expect(note.wavyLines[0]!.partner?.note).toBe(note);
+		}
+	});
+
+	it('round trips legato, slides and vibrato through GPIF', async () => {
+		const document = MDocument.empty();
+		const measure = document.score.addPart({ name: 'Guitar' }).addMeasure();
+		measure.setTime({ beats: 4, beatType: 4 });
+		measure.setClef({ sign: 'G', line: 2 });
+		const voice = measure.getOrCreateVoice('v');
+		const notes = ['C', 'D', 'C', 'E', 'G', 'A', 'B', 'C'].map((step) =>
+			voice.addNote({ step, octave: 4, type: 'eighth' }),
 		);
+		const [c, d, back, e, g, a, b, last] = notes as [
+			Note,
+			Note,
+			Note,
+			Note,
+			Note,
+			Note,
+			Note,
+			Note,
+		];
+		c.addHammerOn(d);
+		c.addSlur(d);
+		d.addPullOff(back);
+		d.addSlur(back);
+		back.addSlide(e);
+		e.addSlide(g);
+		e.addSlur(g);
+		g.addArticulation('scoop');
+		a.addArticulation('falloff');
+		a.addVibrato(b);
+		last.addVibrato(last).setAttribute('smufl', 'wiggleVibratoWide');
+
+		const bytes = await new GuitarProSerializer().serializeToBytes(document);
+		const restored = (await parser.parseFromBytes(bytes)).score.parts[0]!
+			.measures[0]!.notes;
+
+		expect(restored[0]!.hammerOns[0]!.partner?.note).toBe(restored[1]!);
+		expect(restored[1]!.pullOffs[0]!.partner?.note).toBe(restored[2]!);
+		expect(restored[2]!.slides[0]!.partner?.note).toBe(restored[3]!);
+		expect(restored[2]!.slurs.length).toBe(1);
+		expect(restored[3]!.slides[1]!.partner?.note).toBe(restored[4]!);
+		expect(restored[4]!.slurs.length).toBe(1);
+		expect(restored[4]!.articulations).toEqual(['scoop']);
+		expect(restored[5]!.articulations).toEqual(['falloff']);
+		expect(restored.map((n) => n.wavyLines.length)).toEqual([
+			0, 0, 0, 0, 0, 2, 2, 2,
+		]);
+		expect(restored[7]!.wavyLines[0]!.getAttribute('smufl')).toBe(
+			'wiggleVibratoWide',
+		);
+	});
+
+	it('refuses a slur that no legato technique carries', async () => {
+		const document = MDocument.empty();
+		const measure = document.score.addPart({ name: 'Guitar' }).addMeasure();
+		const voice = measure.getOrCreateVoice('v');
+		const [first, second] = ['C', 'D'].map((step) =>
+			voice.addNote({ step, octave: 4, type: 'half' }),
+		);
+		first!.addSlur(second!);
+		await expect(
+			new GuitarProSerializer().serializeToBytes(document),
+		).rejects.toThrow('<slur>');
 	});
 });
