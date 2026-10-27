@@ -788,10 +788,11 @@ export class GuitarProBinaryReader {
 				effects.properties += `<Property name="${slap}"><Enable/></Property>`;
 			}
 			if (this.version < 400) {
-				// Type 0 is a tremolo bar dip, whose depth this value holds.
-				this.cursor.int32();
-				if (type === 0) {
-					this.values.unsupported(BEAT_EFFECTS);
+				// Type 0 is a tremolo bar dip, whose depth this value holds in the
+				// same units as a Guitar Pro 4 curve point.
+				const depth = this.cursor.int32();
+				if (type === 0 && depth !== 0) {
+					effects.tags += whammyTag(0, -depth, 0);
 				}
 			}
 		}
@@ -799,7 +800,7 @@ export class GuitarProBinaryReader {
 			const points = this.readBend();
 			if (points.length) {
 				const [origin, middle, destination] = bendValues(points);
-				effects.tags += `<Whammy originValue="${origin}" originOffset="0" middleValue="${middle}" middleOffset1="0" middleOffset2="100" destinationValue="${destination}" destinationOffset="100"/>`;
+				effects.tags += whammyTag(origin, middle, destination);
 			}
 		}
 		if (flags & 0x40) {
@@ -1203,6 +1204,14 @@ function lyricsXml(lines: LyricLine[]): string {
 				)
 				.join('')}</Lyrics>`
 		: '';
+}
+
+function whammyTag(
+	origin: number,
+	middle: number,
+	destination: number,
+): string {
+	return `<Whammy originValue="${origin}" originOffset="0" middleValue="${middle}" middleOffset1="0" middleOffset2="100" destinationValue="${destination}" destinationOffset="100"/>`;
 }
 
 /** A curve's first, middle (the point furthest from zero) and last values; GPIF counts them as Guitar Pro 5 does, 50 per semitone. */

@@ -416,3 +416,16 @@ function legacyFile(opts: {
 	}
 	return new Uint8Array(bytes);
 }
+
+describe('Guitar Pro 3 tremolo bar dips', () => {
+	it('reads effects.gp3 dips as the whammy of effects.gp4', async () => {
+		const dips = async (name: string) =>
+			new GuitarProBinaryReader({ unsupported: 'omit' }).read(
+				await fixture(name),
+			).gpif;
+
+		expect(await dips('effects.gp3')).toContain(
+			'<Whammy originValue="0" originOffset="0" middleValue="-100" middleOffset1="0" middleOffset2="100" destinationValue="0" destinationOffset="100"/>',
+		);
+	});
+});
