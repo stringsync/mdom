@@ -18,4 +18,7 @@ export default {
 	// --check so the gate reads the tree instead of writing to it.
 	preMerge:
 		'./bin/mdom fix --check && ./bin/mdom test --reporter=junit --reporter-outfile="$SPLATES_TEST_REPORT"',
+	// `splates ship mdom` publishes the public package. `mdom ship` requires a
+	// bump type, so the patch bump is explicit.
+	ship: './bin/mdom ship patch',
 };
