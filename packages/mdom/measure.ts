@@ -967,6 +967,14 @@ function leadingAttributes(measure: Measure): MElement[] {
 	return blocks;
 }
 
+/** Write the signatures in effect at the end of `source` into `target`. */
+export function carrySignaturesAfterInto(
+	target: Measure,
+	source: Measure,
+): void {
+	carrySignaturesInto(target, source, source.children.length);
+}
+
 /**
  * Write the signatures in effect at the start of `source` into `target`'s leading
  * `<attributes>`. The backward walk is the same one every carry-forward query
@@ -975,7 +983,11 @@ function leadingAttributes(measure: Measure): MElement[] {
  * tag entirely. What `target` already declares is claimed first, so this never
  * overwrites — and is idempotent.
  */
-function carrySignaturesInto(target: Measure, source: Measure): void {
+function carrySignaturesInto(
+	target: Measure,
+	source: Measure,
+	fromIndex?: number,
+): void {
 	const staveCount = Math.max(source.staveCount, target.staveCount);
 	const staves = Array.from({ length: staveCount }, (_, index) =>
 		String(index + 1),
@@ -1016,11 +1028,11 @@ function carrySignaturesInto(target: Measure, source: Measure): void {
 	}
 
 	const firstNote = source.notes[0];
-	const fromIndex = firstNote
-		? source.children.indexOf(firstNote)
-		: source.children.length;
+	const from =
+		fromIndex ??
+		(firstNote ? source.children.indexOf(firstNote) : source.children.length);
 	const carried: MElement[] = [];
-	for (const attrs of attributesBackFrom(source, fromIndex)) {
+	for (const attrs of attributesBackFrom(source, from)) {
 		for (const child of attrs.childrenOfType(MElement)) {
 			if (claim(child)) {
 				carried.push(child);

@@ -13,7 +13,8 @@ import {
 	writeScoreInstrument,
 } from './instrument';
 import { MElement, required } from './m-node';
-import { Measure } from './measure';
+import { appendValue, carrySignaturesAfterInto, Measure } from './measure';
+import { Note, WRITE_DIVISIONS } from './note';
 import { memo, stampOf } from './read-cache';
 import { Score } from './score';
 import {
@@ -26,7 +27,13 @@ import {
 	partMetadataOrder,
 	setMetadataText,
 } from './score-metadata';
+import {
+	appliesToStaff,
+	attributeBackFrom,
+	divisionsBackFrom,
+} from './signature';
 import type { StaffTuning } from './staff-tuning';
+import { Time } from './time';
 
 /** A `<part>`: a sequence of measures, keyed to a `<score-part>` by id. */
 export class Part extends MElement {
@@ -330,6 +337,64 @@ export class Part extends MElement {
 	}
 
 	/**
+	 * Insert a complete measure after `measure`, with the signatures in effect at
+	 * its end and one whole-measure rest in voice 1. Ordinary consecutive numeric
+	 * measure runs are renumbered; pickup, nonnumeric, suffixed, and unset numbers
+	 * are preserved. With no time signature, the rest uses 4/4.
+	 */
+	insertMeasureAfter(measure: Measure): Measure {
+		const index = measureIndexIn(this, measure);
+		if (index < 0) {
+			throw new Error('mdom: measure to insert after is not in this part');
+		}
+		const divisions =
+			divisionsBackFrom(measure, measure.children.length) ?? WRITE_DIVISIONS;
+		const time = attributeBackFrom(
+			measure,
+			measure.children.length,
+			'time-at-end:1',
+			(attrs) =>
+				attrs
+					.childrenOfType(Time)
+					.find((candidate) => appliesToStaff(candidate, '1')),
+		);
+		const duration = measureRestDuration(time, divisions);
+		const numbering = numberingRuns(this);
+		const inserted = this.insertMeasureAt(index + 1);
+		carrySignaturesAfterInto(inserted, measure);
+		if (divisionsBackFrom(inserted, inserted.children.length) === null) {
+			inserted.setDivisions(divisions);
+		}
+		inserted.append(buildMeasureRest(duration));
+		renumberMeasures(this, numbering, inserted);
+		return inserted;
+	}
+
+	/**
+	 * Remove `measure`, unlinking any span endpoint outside it and preserving a
+	 * final or repeat-end right barline on the preceding measure. Ordinary
+	 * consecutive numeric runs are renumbered as after insertion. Removing the
+	 * only measure is a no-op.
+	 */
+	removeMeasure(measure: Measure): void {
+		const index = measureIndexIn(this, measure);
+		if (index < 0) {
+			throw new Error('mdom: measure to remove is not in this part');
+		}
+		if (measuresOf(this).length === 1) {
+			return;
+		}
+		const numbering = numberingRuns(this);
+		unlinkCrossingSpans(measure);
+		const previous = measuresOf(this)[index - 1];
+		if (previous) {
+			preserveRightBarline(measure, previous);
+		}
+		measure.remove();
+		renumberMeasures(this, numbering);
+	}
+
+	/**
 	 * The `<staff-tuning>` declarations for `staff` (default '1'): the first
 	 * `<staff-details>` anywhere in the part that carries them. Tuning is
 	 * effectively a per-part constant, like {@link partSymbol} — use
@@ -396,6 +461,179 @@ export function measureIndexIn(part: Part, measure: Measure): number {
 			new Map(measuresOf(part).map((each, index) => [each, index] as const)),
 	);
 	return indexes.get(measure) ?? -1;
+}
+
+function buildMeasureRest(duration: number): Note {
+	const note = new Note();
+	const rest = new MElement('rest');
+	rest.setAttribute('measure', 'yes');
+	note.append(rest);
+	appendValue(note, 'duration', String(duration));
+	appendValue(note, 'voice', '1');
+	return note;
+}
+
+function measureRestDuration(time: Time | null, divisions: number): number {
+	if (!time) {
+		return 4 * divisions;
+	}
+	if (time.isSenzaMisura) {
+		throw new Error('mdom: cannot fill a complete unmetered measure');
+	}
+	let duration = 0;
+	for (const component of time.components) {
+		const pieces = component.beats.split('+');
+		const beatType = Number(component.beatType);
+		if (
+			pieces.some((piece) => !/^\d+$/.test(piece)) ||
+			!Number.isFinite(beatType) ||
+			beatType <= 0
+		) {
+			throw new Error(
+				'mdom: cannot fill a measure with an invalid time signature',
+			);
+		}
+		const beats = pieces.reduce((sum, piece) => sum + Number(piece), 0);
+		duration += (beats * 4 * divisions) / beatType;
+	}
+	if (!Number.isInteger(duration) || duration <= 0) {
+		throw new Error('mdom: measure duration is not representable in divisions');
+	}
+	return duration;
+}
+
+interface NumberingRun {
+	start: number;
+}
+
+function numberingRuns(part: Part): Map<Measure, NumberingRun> {
+	const result = new Map<Measure, NumberingRun>();
+	let current: Array<{ measure: Measure; number: number }> = [];
+	const flush = () => {
+		if (
+			current.length > 0 &&
+			current.every(
+				(entry, index) =>
+					index === 0 || entry.number === current[index - 1]!.number + 1,
+			)
+		) {
+			const run = { start: current[0]!.number };
+			for (const entry of current) {
+				result.set(entry.measure, run);
+			}
+		}
+		current = [];
+	};
+	for (const measure of measuresOf(part)) {
+		const number = ordinaryMeasureNumber(measure);
+		if (number === null) {
+			flush();
+		} else {
+			current.push({ measure, number });
+		}
+	}
+	flush();
+	return result;
+}
+
+function ordinaryMeasureNumber(measure: Measure): number | null {
+	const raw = measure.getAttribute('number');
+	if (measure.isImplicit || raw === null || !/^\d+$/.test(raw)) {
+		return null;
+	}
+	const number = Number(raw);
+	return Number.isSafeInteger(number) ? number : null;
+}
+
+function renumberMeasures(
+	part: Part,
+	numbering: ReadonlyMap<Measure, NumberingRun>,
+	inserted?: Measure,
+): void {
+	let current: Measure[] = [];
+	const flush = () => {
+		const existing = current.filter((measure) => measure !== inserted);
+		const first = existing[0];
+		const run = first ? numbering.get(first) : undefined;
+		if (run && existing.every((measure) => numbering.get(measure) === run)) {
+			current.forEach((measure, index) => {
+				measure.setAttribute('number', String(run.start + index));
+			});
+		}
+		current = [];
+	};
+	for (const measure of measuresOf(part)) {
+		if (measure === inserted || ordinaryMeasureNumber(measure) !== null) {
+			current.push(measure);
+		} else {
+			flush();
+		}
+	}
+	flush();
+}
+
+type SpanMarker = MElement & { readonly partner: MElement | null };
+
+function spanMarkers(measure: Measure): SpanMarker[] {
+	return [
+		...measure.notes.flatMap((note) => [
+			...note.slurs,
+			...note.ties,
+			...note.tuplets,
+			...note.wavyLines,
+			...note.hammerOns,
+			...note.pullOffs,
+			...note.slides,
+			...note.glissandos,
+		]),
+		...measure.directions.flatMap((direction) => [
+			...direction.wedges,
+			...direction.pedals,
+			...direction.octaveShifts,
+			...direction.brackets,
+			...direction.dashes,
+		]),
+	] as SpanMarker[];
+}
+
+function unlinkCrossingSpans(measure: Measure): void {
+	const crossings = spanMarkers(measure).flatMap((marker) => {
+		const partner = marker.partner;
+		return partner && partner.closest(Measure) !== measure
+			? [{ marker, partner }]
+			: [];
+	});
+	for (const { marker, partner } of crossings) {
+		const tiedEnds =
+			marker.tag === 'tied'
+				? [marker, partner].flatMap((end) => {
+						const note = end.closest(Note);
+						const type = end.getAttribute('type');
+						return note && (type === 'start' || type === 'stop')
+							? [{ note, type: type as 'start' | 'stop' }]
+							: [];
+					})
+				: [];
+		marker.remove();
+		partner.remove();
+		for (const { note, type } of tiedEnds) {
+			if (!note.ties.some((tie) => tie.getAttribute('type') === type)) {
+				note.setPlaybackTie(type, false);
+			}
+		}
+	}
+}
+
+function preserveRightBarline(removed: Measure, previous: Measure): void {
+	const isBoundary = (barline: (typeof removed.barlines)[number]) =>
+		barline.location === 'right' &&
+		(barline.barStyle === 'light-heavy' || barline.repeat === 'backward');
+	if (previous.barlines.some(isBoundary)) {
+		return;
+	}
+	for (const barline of removed.barlines.filter(isBoundary)) {
+		previous.append(barline);
+	}
 }
 
 /** `part`'s `<score-part>` in the `<part-list>`, joined by id; null when absent. */
