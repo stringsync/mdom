@@ -7,11 +7,13 @@ import {
 	durationDivisions,
 	Note,
 	type NoteSpec,
+	type NoteType,
 	type PitchSpec,
 	type UnpitchedNoteSpec,
 	WRITE_DIVISIONS,
 } from './note';
 import type { Part } from './part';
+import { removeRhythmEntry, replaceRest, resize } from './rhythm-edits';
 import { divisionsBackFrom } from './signature';
 import { buildTimeModification } from './time-modification';
 import { alignCursor, onsetOf } from './timeline';
@@ -30,9 +32,9 @@ export type {
 /**
  * A single `<voice>` within a measure — read and write. Reading: `notes` is the
  * live slice for this voice and `chords()` groups its `<chord/>` stacks. Writing:
- * note/rest/chord append on this voice's staff, and mdom lays out the
- * `<backup>`/`<forward>`, `<duration>`, `<voice>`, and `<staff>` so the caller
- * never does.
+ * note/rest/chord append or edit at fixed onsets on this voice's staff, and mdom
+ * lays out the `<backup>`/`<forward>`, `<duration>`, `<voice>`, and `<staff>` so
+ * the caller never does.
  */
 export class Voice {
 	constructor(
@@ -98,6 +100,38 @@ export class Voice {
 			return note;
 		});
 		return new Chord(notes);
+	}
+
+	/** Replace all or part of a rest without moving later entries. */
+	replaceRest(rest: Note, spec: NoteSpec | DurationSpec): number;
+	replaceRest(rest: Note, pitches: PitchSpec[], spec: DurationSpec): number;
+	replaceRest(
+		rest: Note,
+		specOrPitches: NoteSpec | DurationSpec | PitchSpec[],
+		chordSpec?: DurationSpec,
+	): number {
+		return replaceRest(
+			this,
+			rest,
+			specOrPitches,
+			chordSpec,
+			(spec, duration, pitch, isChord) =>
+				this.build(spec, duration, pitch, isChord),
+		);
+	}
+
+	/** Resize a note or chord while keeping later entries at their onsets. */
+	resize(entry: Note | Chord, spec: { type: NoteType; dots?: number }): void {
+		resize(this, entry, spec, (durationSpec, duration, pitch, isChord) =>
+			this.build(durationSpec, duration, pitch, isChord),
+		);
+	}
+
+	/** Remove a note or chord, filling its time with rests; remove one chord tone when given a member. */
+	removeEntry(entry: Note | Chord): void {
+		removeRhythmEntry(this, entry, (spec, duration, pitch, isChord) =>
+			this.build(spec, duration, pitch, isChord),
+		);
 	}
 
 	/**
