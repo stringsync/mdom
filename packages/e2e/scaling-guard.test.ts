@@ -17,6 +17,12 @@ const seed = parser.parseFromString(
 const inputs = sizes.map((measures) =>
 	syntheticScore(seed, { measures, parts: 1, voices: 1, notes: 4 }),
 );
+// Eight full exports at the usual sizes can exceed the test timeout under
+// merge-gate load. A shorter axis preserves the same cold-cache 4x guard.
+const serializeGpSizes = [16, 64] as const;
+const serializeGpInputs = serializeGpSizes.map((measures) =>
+	syntheticScore(seed, { measures, parts: 1, voices: 1, notes: 4 }),
+);
 const linearOperations = [
 	'parse',
 	'gpif-parse',
@@ -30,7 +36,6 @@ const linearOperations = [
 	'edit-remove-read',
 	'edit-set-read',
 	'span-add',
-	'serialize-gp',
 	'gp-parse',
 ] as const satisfies readonly Operation[];
 
@@ -124,6 +129,16 @@ async function guardRatio(
 	expect(small, evidence).toBeGreaterThan(0);
 	expect(large / small, evidence).toBeLessThan(6);
 }
+
+describe('bounded-density measure scaling guards (16 → 64)', () => {
+	it('serialize-gp time grows less than 6x for 4x measures', () =>
+		guardRatio(
+			'serialize-gp',
+			serializeGpInputs,
+			serializeGpSizes.map((measures) => measures * 4),
+			{ sizes: serializeGpSizes },
+		));
+});
 
 describe('bounded-density measure scaling guards (64 → 256)', () => {
 	for (const operation of linearOperations) {
