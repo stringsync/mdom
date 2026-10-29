@@ -75,4 +75,4 @@ mdom
 	.command('ship')
 	.description('bump the version, then commit, tag, and publish')
 	.arg('type', z.enum(['patch', 'minor', 'major'] as const))
-	.action((opts) => ship(opts.type));
+	.action((opts, { ps, log }) => ship(opts.type, { ps, log }));
