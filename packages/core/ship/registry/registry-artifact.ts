@@ -5,6 +5,9 @@ import type { Cut } from "../cut";
 import type { CheckReport, Step, StepReport } from "../step";
 import type { Registry } from "./registry";
 
+/** How often a run a publish handed off is looked in on: a run takes a minute or two. */
+const RUN_CHECK_EVERY = Duration.secs(5);
+
 /** How long a version may wait to go live before its `Live` step reports it `held`. */
 // npm's scan takes about five minutes, fifteen at its busiest, and holds some
 // versions for a person at npm to review, so this is well past the busiest.
@@ -16,7 +19,11 @@ export class RegistryArtifact implements Artifact {
 	readonly stage: Stage = "publish";
 	/** Set only when the registry has a CI job to trust. */
 	readonly trust?: (log: Logger) => Promise<void>;
+	/** Set only when the registry checks a package before it goes out. */
+	readonly verify?: (cut: Cut) => Promise<void>;
 	private saidHeld = false;
+	/** What the handed-off run was doing when last looked in on, to log each change once. */
+	private runStatus?: string;
 
 	constructor(
 		readonly name: string,
@@ -26,6 +33,15 @@ export class RegistryArtifact implements Artifact {
 		const { trust } = registry;
 		if (trust !== undefined) {
 			this.trust = (log) => trust.call(registry, name, log);
+		}
+		const { verify } = registry;
+		if (verify !== undefined) {
+			this.verify = async (cut) => {
+				const pkg = cut.packages.find((one) => one.name === name);
+				if (pkg !== undefined) {
+					await verify.call(registry, pkg);
+				}
+			};
 		}
 	}
 
@@ -85,16 +101,30 @@ export class RegistryArtifact implements Artifact {
 	}
 
 	/** The check that follows a publish handed off to a run elsewhere, when this registry has one. */
-	private watching(): Pick<Step, "check"> {
+	private watching(): Pick<Step, "check" | "checkEvery"> {
 		const { watch } = this.registry;
 		if (watch === undefined) {
 			return {};
 		}
 		return {
-			check: async ({ version, log }) => {
+			checkEvery: RUN_CHECK_EVERY,
+			check: async ({ version, log }, waited) => {
 				const found = await watch.call(this.registry, this.name, version);
 				if (found.passed) {
-					log.info(`${this.name}@${version} ${color.green("run finished")}`);
+					const after = waited.isEqual(Duration.zero())
+						? ""
+						: ` after ${waited.human()}`;
+					log.info(
+						`${this.name}@${version} ${color.green("publish run finished")}${after}`,
+					);
+					return found;
+				}
+				if (found.status !== this.runStatus) {
+					this.runStatus = found.status;
+					const doing = (found.status ?? "waiting").replaceAll("_", " ");
+					log.info(
+						`${this.name}@${version} publish run ${color.yellow(doing)}${found.url === undefined ? "" : `: ${found.url}`}`,
+					);
 				}
 				return found;
 			},
@@ -142,7 +172,11 @@ export class RegistryArtifact implements Artifact {
 			return;
 		}
 		if (staged === undefined) {
-			log.info(`${this.name}@${version} ${color.green("published")}`);
+			log.info(
+				this.registry.watch === undefined
+					? `${this.name}@${version} ${color.green("published")}`
+					: `${this.name}@${version} ${color.green("publish run started")}`,
+			);
 			return;
 		}
 		log.info(

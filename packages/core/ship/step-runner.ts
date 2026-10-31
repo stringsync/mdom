@@ -42,8 +42,9 @@ export class StepRunner {
 				if (report.passed) {
 					break;
 				}
-				await this.wait(interval);
-				waited = waited.add(interval);
+				const every = declaration.step.checkEvery ?? interval;
+				await this.wait(every);
+				waited = waited.add(every);
 				interval = Duration.min(interval.multiply(2), CHECK_BACKOFF_MAX);
 			}
 			await this.events.done(declaration);

@@ -45,6 +45,12 @@ export interface Artifact {
 	 * Leave it off when nothing about it publishes from CI.
 	 */
 	trust?(log: Logger): Promise<void>;
+	/**
+	 * Throws, saying what to fix, when this artifact cannot go out as the
+	 * checkout stands. The release asks before it stamps anything, so a
+	 * mistake costs no version. Leave it off when there is nothing to check.
+	 */
+	verify?(cut: Cut): Promise<void>;
 	/** Removes output this artifact created, after success or failure. */
 	clean?(cut: Cut): Promise<void>;
 	/**

@@ -45,4 +45,9 @@ export interface Step {
 	 */
 	dryRun?(cut: Cut): Promise<void>;
 	check?(cut: Cut, waited: Duration): Promise<boolean | CheckReport>;
+	/**
+	 * How often to check, steadily, in place of the backoff, for a check
+	 * whose answer comes soon and is worth hearing as it comes.
+	 */
+	readonly checkEvery?: Duration;
 }

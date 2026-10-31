@@ -2,6 +2,7 @@ import type { Logger } from "core/log";
 import { NodePs, type Ps } from "core/system";
 import { Duration } from "core/time";
 import type { CheckReport } from "../step";
+import type { Package } from "../workspace/workspace";
 import type { GithubActions } from "./github-actions";
 import type { Publication, Registry } from "./registry";
 
@@ -92,6 +93,24 @@ export class NpmRegistry implements Registry {
 				`${argv.join(" ")} failed: if ${name} already trusts another workflow, \`npm trust list ${name}\` shows it and \`npm trust revoke ${name} --id <id>\` clears it`,
 			);
 		}
+	}
+
+	/**
+	 * Refuses a package going out through a run whose `repository.url` is not
+	 * the run's repository: npm checks the two match against the provenance
+	 * the run signs, and refuses the publish otherwise.
+	 */
+	async verify({ name, repository: url = "" }: Package): Promise<void> {
+		if (this.via === undefined) {
+			return;
+		}
+		const expected = `https://github.com/${await this.via.repo()}`;
+		if (sameRepository(url, expected)) {
+			return;
+		}
+		throw new Error(
+			`${name}'s package.json has repository.url ${JSON.stringify(url)}, and npm refuses a publish from ${expected}'s workflow unless it names that repository: set it to "git+${expected}.git"`,
+		);
 	}
 
 	trusted(): Registry {
@@ -243,4 +262,15 @@ export class NpmRegistry implements Registry {
 			throw new Error("npm login failed");
 		}
 	}
+}
+
+/** Whether a manifest's repository URL names `expected`, an `https://github.com/<owner>/<name>`. */
+function sameRepository(url: string, expected: string): boolean {
+	const normal = url
+		.replace(/^git\+/, "")
+		.replace(/\.git$/, "")
+		.replace(/^git@github\.com:/, "https://github.com/")
+		.replace(/^github:/, "https://github.com/")
+		.replace(/^(?=[\w.-]+\/[\w.-]+$)/, "https://github.com/");
+	return normal.toLowerCase() === expected.toLowerCase();
 }

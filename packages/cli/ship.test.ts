@@ -25,7 +25,12 @@ describe("ship", () => {
 		ps.setCwd("/repo");
 		await fs.write(
 			"/repo/package.json",
-			JSON.stringify({ name: "@stringsync/mdom", version: "1.2.3" }),
+			JSON.stringify({
+				name: "@stringsync/mdom",
+				version: "1.2.3",
+				// What npm checks a publish from stringsync/mdom's workflow against.
+				repository: { url: "git+https://github.com/stringsync/mdom.git" },
+			}),
 		);
 		const spawnCapture = ps.spawnCapture.bind(ps);
 		ps.spawnCapture = async (argv, opts) => {

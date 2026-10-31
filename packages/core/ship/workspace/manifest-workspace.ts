@@ -9,6 +9,7 @@ interface Manifest {
 	workspaces?: string[] | { packages?: string[] };
 	dependencies?: Record<string, string>;
 	peerDependencies?: Record<string, string>;
+	repository?: string | { url?: string };
 }
 
 /**
@@ -111,6 +112,7 @@ export class ManifestWorkspace implements Workspace {
 					...manifest.dependencies,
 					...manifest.peerDependencies,
 				}).filter((dep) => names.has(dep)),
+				...repositoryOf(manifest),
 			}))
 			.sort((left, right) => left.name.localeCompare(right.name));
 	}
@@ -221,4 +223,11 @@ async function read(fs: Fs, dir: string): Promise<Manifest | null> {
 	} catch {
 		return null;
 	}
+}
+
+/** The manifest's repository URL, written either way npm takes it. */
+function repositoryOf(manifest: Manifest): { repository?: string } {
+	const { repository } = manifest;
+	const url = typeof repository === "string" ? repository : repository?.url;
+	return url === undefined ? {} : { repository: url };
 }

@@ -1,6 +1,7 @@
 import type { Logger } from "core/log";
 import type { Duration } from "core/time";
 import type { CheckReport } from "../step";
+import type { Package } from "../workspace/workspace";
 
 /** A package a registry holds back until somebody approves it. */
 export interface StagedPackage {
@@ -76,6 +77,12 @@ export interface Registry {
 	 * person to authenticate. Leave it off when nothing publishes from CI.
 	 */
 	trust?(name: string, log: Logger): Promise<void>;
+	/**
+	 * Throws, saying what to fix, when the registry would refuse `pkg`, before
+	 * the release stamps a version for it. Leave it off when the registry
+	 * takes whatever it is sent.
+	 */
+	verify?(pkg: Package): Promise<void>;
 	/** Where a person can see `version` of `name`, and why it is not live yet. */
 	page?(name: string, version: string): string;
 }

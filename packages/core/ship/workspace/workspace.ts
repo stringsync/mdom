@@ -11,6 +11,8 @@ export interface Package {
 	 * everything from outside the workspace is already on the registry.
 	 */
 	dependencies: readonly string[];
+	/** The URL its manifest's `repository` names, if it names one. */
+	repository?: string;
 }
 
 /**

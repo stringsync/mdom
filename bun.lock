@@ -12,7 +12,7 @@
     },
     "packages/cli": {
       "name": "@mdom/cli",
-      "version": "0.8.2",
+      "version": "0.8.3",
       "bin": {
         "mdom": "./index.ts",
       },
@@ -24,14 +24,14 @@
     },
     "packages/core": {
       "name": "core",
-      "version": "0.8.2",
+      "version": "0.8.3",
       "dependencies": {
         "@standard-schema/spec": "^1.1.0",
       },
     },
     "packages/e2e": {
       "name": "@mdom/e2e",
-      "version": "0.8.2",
+      "version": "0.8.3",
       "dependencies": {
         "@stringsync/mdom": "workspace:*",
         "core": "workspace:*",
@@ -40,7 +40,7 @@
     },
     "packages/mdom": {
       "name": "@stringsync/mdom",
-      "version": "0.8.2",
+      "version": "0.8.3",
       "dependencies": {
         "core": "workspace:*",
         "jszip": "^3.10.1",

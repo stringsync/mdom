@@ -316,6 +316,9 @@ export class Release {
 						);
 					}
 					declares(this.packages, packages);
+					for (const artifact of this.artifacts) {
+						await artifact.verify?.(cut);
+					}
 				},
 			},
 		};
