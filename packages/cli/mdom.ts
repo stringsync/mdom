@@ -74,7 +74,7 @@ mdom
 mdom
 	.command("ship")
 	.description("bump the version, then commit, tag, and publish")
-	.arg("type", z.enum(["patch", "minor", "major"] as const))
+	.arg("type", z.enum(["patch", "minor", "major"] as const).optional())
 	.option("dry-run", z.boolean(), {
 		default: false,
 		description: "rehearse the release, publishing and pushing nothing",

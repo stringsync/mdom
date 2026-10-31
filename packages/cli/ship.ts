@@ -33,17 +33,38 @@ const PUBLISH = "bin/mdom publish";
 
 const PACKAGE = "@stringsync/mdom";
 
-export async function ship(type: string, opts: ShipOptions = {}) {
-	// unrecognized <type> is rejected with a nonzero exit: ship types `bump` but
-	// never checks it, and a typo would otherwise ship a silent patch
-	if (!isBump(type)) {
+/** Where `splates ship` passes the release type the person approved. */
+const SHIP_BUMP = "SPLATES_SHIP_BUMP";
+
+/**
+ * The release type: the argument when given, else SPLATES_SHIP_BUMP, which the
+ * splates Ships page sets. Neither is an error, so nothing ships a silent patch.
+ */
+export function bumpOf(type: string | undefined, ps: Ps): Bump {
+	const value = type ?? nonEmpty(ps.env(SHIP_BUMP));
+	if (value === undefined) {
 		throw new Error(
-			`unknown version bump "${type}" (expected ${TYPES.join(", ")})`,
+			`missing version bump (expected ${TYPES.join(", ")}, as an argument or ${SHIP_BUMP})`,
 		);
 	}
+	// unrecognized types are rejected with a nonzero exit: ship types `bump` but
+	// never checks it, and a typo would otherwise ship a silent patch
+	if (!isBump(value)) {
+		throw new Error(
+			`unknown version bump "${value}" (expected ${TYPES.join(", ")})`,
+		);
+	}
+	return value;
+}
 
+function nonEmpty(value: string | undefined): string | undefined {
+	return value === "" ? undefined : value;
+}
+
+export async function ship(type: string | undefined, opts: ShipOptions = {}) {
 	const log = opts.log ?? new ConsoleLogger();
 	const ps = opts.ps ?? new NodePs();
+	const bump = bumpOf(type, ps);
 	const via = actions(ps);
 
 	// `releases.mirrored()` is the compile, done where anyone cloning the public
@@ -70,7 +91,7 @@ export async function ship(type: string, opts: ShipOptions = {}) {
 			releases.github({ repo: REPO, ps }),
 		)
 		.release({
-			bump: type,
+			bump,
 			project: "mdom",
 			prompt: opts.prompt,
 			yes: opts.yes,
