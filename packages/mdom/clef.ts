@@ -1,19 +1,20 @@
-import { MElement, required } from './m-node';
+import { MElement } from "./m-element";
+import { required } from "./m-node";
 
 /** A `<clef>`. Lives inside `<attributes>`; one per staff in multi-staff parts. */
 export class Clef extends MElement {
 	constructor() {
-		super('clef');
+		super("clef");
 	}
 
 	/** Staff this clef applies to; '1' when omitted (single-staff parts). */
 	get staff(): string {
-		return this.getAttribute('number') ?? '1';
+		return this.getAttribute("number") ?? "1";
 	}
 
 	/** `<sign>`. Required in a well-formed `<clef>`; absence is a malformed document. */
 	get sign(): string {
-		return required(this.child('sign')?.text, '<sign> in <clef>'); // G, F, C, percussion, TAB
+		return required(this.child("sign")?.text, "<sign> in <clef>"); // G, F, C, percussion, TAB
 	}
 
 	/**
@@ -21,15 +22,15 @@ export class Clef extends MElement {
 	 * absence stays null for the caller (or renderer) to resolve.
 	 */
 	get line(): number | null {
-		const line = this.child('line')?.text;
+		const line = this.child("line")?.text;
 		return line == null ? null : Number(line);
 	}
 
 	/**
 	 * `<clef-octave-change>`: ±1 = ottava (e.g. treble-8 for guitar). Absent means
-	 * no transposition — the spec default of 0.
+	 * no transposition, the spec default of 0.
 	 */
 	get octaveChange(): number {
-		return Number(this.child('clef-octave-change')?.text ?? 0);
+		return Number(this.child("clef-octave-change")?.text ?? 0);
 	}
 }

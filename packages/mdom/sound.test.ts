@@ -1,10 +1,10 @@
-import { describe, expect, it } from 'bun:test';
-import { MDocument } from './m-document';
-import { MDOMParser } from './m-dom-parser';
-import { MElement } from './m-node';
+import { describe, expect, it } from "bun:test";
+import { MDocument } from "./m-document";
+import { MDOMParser } from "./m-dom-parser";
+import { MElement } from "./m-element";
 
 // <sound> appears inside a <direction> AND as a direct <measure> child, with the
-// same meaning — here both spellings, plus a swing instruction and the
+// same meaning, here both spellings, plus a swing instruction and the
 // <straight/> that cancels it.
 const SAMPLE = `<score-partwise><part id="P1">
   <measure number="1">
@@ -25,27 +25,27 @@ const SAMPLE = `<score-partwise><part id="P1">
   </measure>
 </part></score-partwise>`;
 
-describe('sound — merged from the direction and the measure', () => {
-	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
+describe("sound, merged from the direction and the measure", () => {
+	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart("P1")!;
 	const [first, second] = part.measures;
 
-	it('merges the directions sounds, then the measure own standalone child', () => {
+	it("merges the directions sounds, then the measure own standalone child", () => {
 		expect(first!.sounds.map((sound) => sound.tempo)).toEqual([132, 90]);
 		expect(first!.directions[0]!.sound?.tempo).toBe(132);
 		expect(first!.directions[0]!.soundTempo).toBe(132); // the old accessor still works
 	});
 
-	it('reads the playback dynamics, null when unset', () => {
+	it("reads the playback dynamics, null when unset", () => {
 		expect(first!.sounds[0]!.dynamics).toBe(80);
 		expect(first!.sounds[1]!.dynamics).toBeNull();
 	});
 
-	it('reads the swing ratio and the note value it divides', () => {
+	it("reads the swing ratio and the note value it divides", () => {
 		expect(first!.sounds[0]!.swing).toEqual({ first: 2, second: 1, unit: 0.5 });
 		expect(first!.sounds[1]!.swing).toBeNull(); // no <swing> at all
 	});
 
-	it('reads <straight/> as an even 1:1, so it cancels a carried swing', () => {
+	it("reads <straight/> as an even 1:1, so it cancels a carried swing", () => {
 		expect(second!.sounds[0]!.swing).toEqual({
 			first: 1,
 			second: 1,
@@ -54,9 +54,9 @@ describe('sound — merged from the direction and the measure', () => {
 	});
 });
 
-describe('sound — writing swing', () => {
-	it('writes a ratio and its unit, read back alike', () => {
-		const measure = MDocument.empty().score.addPart({ name: 'P' }).addMeasure();
+describe("sound, writing swing", () => {
+	it("writes a ratio and its unit, read back alike", () => {
+		const measure = MDocument.empty().score.addPart({ name: "P" }).addMeasure();
 		const swung = measure.addSound({
 			swing: { first: 3, second: 1, unit: 0.25 },
 		});
@@ -64,48 +64,48 @@ describe('sound — writing swing', () => {
 
 		expect(
 			swung
-				.child('swing')!
+				.child("swing")!
 				.childrenOfType(MElement)
 				.map((child) => [child.tag, child.text]),
 		).toEqual([
-			['first', '3'],
-			['second', '1'],
-			['swing-type', '16th'],
+			["first", "3"],
+			["second", "1"],
+			["swing-type", "16th"],
 		]);
-		expect(plain.child('swing')!.child('swing-type')).toBeNull();
+		expect(plain.child("swing")!.child("swing-type")).toBeNull();
 		expect(swung.swing).toEqual({ first: 3, second: 1, unit: 0.25 });
 		expect(plain.swing).toEqual({ first: 2, second: 1, unit: 0.5 });
 	});
 
-	it('writes an even ratio as <straight/>, after any MIDI change', () => {
+	it("writes an even ratio as <straight/>, after any MIDI change", () => {
 		const sound = MDocument.empty()
-			.score.addPart({ name: 'P' })
+			.score.addPart({ name: "P" })
 			.addMeasure()
 			.addSound({
 				swing: { first: 2, second: 2, unit: 0.25 },
-				midiInstruments: [{ id: 'P1-I1', program: 25 }],
+				midiInstruments: [{ id: "P1-I1", program: 25 }],
 			});
 
 		expect(sound.childrenOfType(MElement).map((child) => child.tag)).toEqual([
-			'midi-instrument',
-			'swing',
+			"midi-instrument",
+			"swing",
 		]);
 		expect(
 			sound
-				.child('swing')!
+				.child("swing")!
 				.childrenOfType(MElement)
 				.map((child) => child.tag),
-		).toEqual(['straight']);
+		).toEqual(["straight"]);
 	});
 
-	it('rejects ratios and units MusicXML cannot write', () => {
-		const measure = MDocument.empty().score.addPart({ name: 'P' }).addMeasure();
+	it("rejects ratios and units MusicXML cannot write", () => {
+		const measure = MDocument.empty().score.addPart({ name: "P" }).addMeasure();
 
 		expect(() =>
 			measure.addSound({ swing: { first: 1.5, second: 1 } }),
-		).toThrow('positive integers');
+		).toThrow("positive integers");
 		expect(() =>
 			measure.addSound({ swing: { first: 2, second: 1, unit: 1 } }),
-		).toThrow('swing unit');
+		).toThrow("swing unit");
 	});
 });

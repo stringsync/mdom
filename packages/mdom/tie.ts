@@ -1,6 +1,7 @@
-import { MElement, required } from './m-node';
-import { Note } from './note';
-import { Part } from './part';
+import { MElement } from "./m-element";
+import { required } from "./m-node";
+import { Note } from "./note";
+import { Part } from "./part";
 import {
 	type Bezier,
 	type BezierSpec,
@@ -18,33 +19,33 @@ import {
 	setBezierOf,
 	setLineStyleOf,
 	setPositionOf,
-} from './print-style';
-import { noteMarkers, Spanner, type SpannerSpec } from './spanner';
-import { setOrRemove } from './text-format';
+} from "./print-style";
+import { noteMarkers, Spanner, type SpannerSpec } from "./spanner";
+import { setOrRemove } from "./text-format";
 
-export type TieType = 'start' | 'stop' | 'continue' | 'let-ring';
+export type TieType = "start" | "stop" | "continue" | "let-ring";
 
 /**
- * A `<tied>` inside `<notations>` — the notated tie (distinct from the `<tie>`
+ * A `<tied>` inside `<notations>`, the notated tie (distinct from the `<tie>`
  * sound element). Paired start/stop by `number`, resolved on demand by
  * {@link partner}, the same shape every spanner uses.
  */
 export class Tie extends MElement {
 	constructor() {
-		super('tied');
+		super("tied");
 	}
 
 	/** Pairing key; '1' when omitted. */
 	get number(): string {
-		return this.getAttribute('number') ?? '1';
+		return this.getAttribute("number") ?? "1";
 	}
 
 	/** `type`: required on a `<tied>` and drives pairing. */
 	get tieType(): TieType {
-		return required(this.getAttribute('type'), 'type on <tied>') as TieType;
+		return required(this.getAttribute("type"), "type on <tied>") as TieType;
 	}
 
-	/** `line-type` (solid/dashed/dotted/wavy) — the stroke to draw; null when unstated. */
+	/** `line-type` (solid/dashed/dotted/wavy), the stroke to draw; null when unstated. */
 	get lineType(): LineType | null {
 		return lineTypeOf(this);
 	}
@@ -60,13 +61,13 @@ export class Tie extends MElement {
 	}
 
 	/** `orientation`: over (tips down) or under (tips up); null when unstated. */
-	get orientation(): 'over' | 'under' | null {
+	get orientation(): "over" | "under" | null {
 		return orientationOf(this);
 	}
 
 	/** Set `orientation`, or remove it with null. */
-	setOrientation(value: 'over' | 'under' | null): void {
-		setOrRemove(this, 'orientation', value);
+	setOrientation(value: "over" | "under" | null): void {
+		setOrRemove(this, "orientation", value);
 	}
 
 	/**
@@ -102,12 +103,12 @@ export class Tie extends MElement {
 
 	/** The note this marker hangs off of. An attached marker always has one. */
 	get note(): Note {
-		return required(this.closest(Note), '<note> ancestor of <tied>');
+		return required(this.closest(Note), "<note> ancestor of <tied>");
 	}
 
 	/** The part this marker belongs to. An attached marker always has one. */
 	get part(): Part {
-		return required(this.closest(Part), '<part> ancestor of <tied>');
+		return required(this.closest(Part), "<part> ancestor of <tied>");
 	}
 
 	/** The marker at the other end (same number), resolved across the part in onset order. */
@@ -129,14 +130,14 @@ export class Tie extends MElement {
 	unlink(): void {
 		const ends = [this, this.partner].flatMap((end) => {
 			const note = end?.closest(Note);
-			const type = end?.getAttribute('type');
-			return note && (type === 'start' || type === 'stop')
-				? [{ note, type: type as 'start' | 'stop' }]
+			const type = end?.getAttribute("type");
+			return note && (type === "start" || type === "stop")
+				? [{ note, type: type as "start" | "stop" }]
 				: [];
 		});
 		new Spanner(this.spec()).removeSpan(this);
 		for (const { note, type } of ends) {
-			if (!note.ties.some((tie) => tie.getAttribute('type') === type)) {
+			if (!note.ties.some((tie) => tie.getAttribute("type") === type)) {
 				note.setPlaybackTie(type, false);
 			}
 		}
@@ -149,12 +150,12 @@ export class Tie extends MElement {
 
 	private spec(): SpannerSpec<Tie> {
 		return {
-			siblings: noteMarkers(this, (note) => note.ties, 'ties'),
+			siblings: noteMarkers(this, (note) => note.ties, "ties"),
 			// Raw reads so resolution tolerates a malformed typeless marker.
 			isOpen: (tie) =>
-				tie.getAttribute('type') === 'start' ||
-				tie.getAttribute('type') === 'let-ring',
-			isClose: (tie) => tie.getAttribute('type') === 'stop',
+				tie.getAttribute("type") === "start" ||
+				tie.getAttribute("type") === "let-ring",
+			isClose: (tie) => tie.getAttribute("type") === "stop",
 		};
 	}
 }

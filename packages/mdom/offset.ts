@@ -1,7 +1,8 @@
-import { MElement, required } from './m-node';
-import { Measure } from './measure';
-import { setYesNo, yesNoOf } from './print-style';
-import { childIndexIn, divisionsBackFrom } from './signature';
+import { MElement } from "./m-element";
+import { required } from "./m-node";
+import { Measure } from "./measure";
+import { setYesNo, yesNoOf } from "./print-style";
+import { childIndexIn, divisionsBackFrom } from "./signature";
 
 /**
  * An `<offset>`: how far from its cursor position a harmony, direction or sound
@@ -31,9 +32,9 @@ export function offsetOf(
 	host: MElement,
 	soundFallback: boolean,
 ): Offset | null {
-	const offset = host.child('offset');
+	const offset = host.child("offset");
 	const text = offset?.text;
-	if (offset == null || text == null || text.trim() === '') {
+	if (offset == null || text == null || text.trim() === "") {
 		return null;
 	}
 	const divisions = Number(text);
@@ -41,7 +42,7 @@ export function offsetOf(
 	return {
 		divisions,
 		beats: perQuarter ? divisions / perQuarter : null,
-		sound: yesNoOf(offset, 'sound', soundFallback),
+		sound: yesNoOf(offset, "sound", soundFallback),
 	};
 }
 
@@ -54,7 +55,7 @@ export function writeOffset(
 	offset: OffsetSpec | null,
 	before: () => MElement | null,
 ): void {
-	host.child('offset')?.remove();
+	host.child("offset")?.remove();
 	if (offset == null) {
 		return;
 	}
@@ -62,10 +63,10 @@ export function writeOffset(
 		divisionsAt(host),
 		`divisions to write a <${host.tag}> offset`,
 	);
-	const element = new MElement('offset');
+	const element = new MElement("offset");
 	element.setText(String(offset.beats * perQuarter));
 	if (offset.sound != null) {
-		setYesNo(element, 'sound', offset.sound);
+		setYesNo(element, "sound", offset.sound);
 	}
 	host.insertBefore(element, before());
 }

@@ -1,15 +1,15 @@
-import { beforeEach, describe, expect, it } from 'bun:test';
-import JSZip from 'jszip';
-import { GuitarProParser } from './guitar-pro-parser';
-import { GuitarProSerializer } from './guitar-pro-serializer';
-import { MDocument } from './m-document';
-import { MDOMParser } from './m-dom-parser';
-import type { MElement } from './m-node';
-import type { Measure } from './measure';
-import { schemaErrors } from './music-xml-schema';
-import type { Part } from './part';
+import { beforeEach, describe, expect, it } from "bun:test";
+import JSZip from "jszip";
+import { GuitarProParser } from "./guitar-pro-parser";
+import { GuitarProSerializer } from "./guitar-pro-serializer";
+import { MDocument } from "./m-document";
+import { MDOMParser } from "./m-dom-parser";
+import type { MElement } from "./m-element";
+import type { Measure } from "./measure";
+import { schemaErrors } from "./music-xml-schema";
+import type { Part } from "./part";
 
-describe('Guitar Pro notation pitches', () => {
+describe("Guitar Pro notation pitches", () => {
 	let document: MDocument;
 	let part: Part;
 	let measure: Measure;
@@ -18,111 +18,111 @@ describe('Guitar Pro notation pitches', () => {
 
 	beforeEach(() => {
 		document = MDocument.empty();
-		part = document.score.addPart({ name: 'Piano' });
+		part = document.score.addPart({ name: "Piano" });
 		measure = part.addMeasure();
 		measure.setTime({ beats: 4, beatType: 4 });
-		measure.setClef({ sign: 'G', line: 2 });
+		measure.setClef({ sign: "G", line: 2 });
 		serializer = new GuitarProSerializer();
 		parser = new GuitarProParser();
 	});
 
-	it('writes distinct native playback pitches for a notation-only melody', async () => {
-		const voice = measure.getOrCreateVoice('1');
-		voice.addNote({ step: 'C', octave: 3, type: 'quarter' });
-		voice.addNote({ step: 'D', octave: 4, type: 'quarter' });
-		voice.addNote({ step: 'E', octave: 5, type: 'quarter' });
-		voice.addNote({ step: 'F', alter: 1, octave: 4, type: 'quarter' });
+	it("writes distinct native playback pitches for a notation-only melody", async () => {
+		const voice = measure.getOrCreateVoice("1");
+		voice.addNote({ step: "C", octave: 3, type: "quarter" });
+		voice.addNote({ step: "D", octave: 4, type: "quarter" });
+		voice.addNote({ step: "E", octave: 5, type: "quarter" });
+		voice.addNote({ step: "F", alter: 1, octave: 4, type: "quarter" });
 		const root = await gpif(await serializer.serializeToBytes(document));
 		const tuning = root
-			.child('Tracks')!
-			.child('Track')!
-			.child('Staves')!
-			.child('Staff')!
-			.child('Properties')!
-			.childrenNamed('Property')
-			.find((p) => p.getAttribute('name') === 'Tuning')!
-			.child('Pitches')!
-			.text!.split(' ')
+			.child("Tracks")!
+			.child("Track")!
+			.child("Staves")!
+			.child("Staff")!
+			.child("Properties")!
+			.childrenNamed("Property")
+			.find((mElement) => mElement.getAttribute("name") === "Tuning")!
+			.child("Pitches")!
+			.text!.split(" ")
 			.map(Number);
-		const notes = root.child('Notes')!.childrenNamed('Note');
+		const notes = root.child("Notes")!.childrenNamed("Note");
 
 		expect(
 			notes.map(
-				(note) => tuning[property(note, 'String')]! + property(note, 'Fret'),
+				(note) => tuning[property(note, "String")]! + property(note, "Fret"),
 			),
 		).toEqual([48, 62, 76, 66]);
-		expect(notes.map((note) => property(note, 'Midi'))).toEqual([
+		expect(notes.map((note) => property(note, "Midi"))).toEqual([
 			48, 62, 76, 66,
 		]);
 		expect(
 			notes[0]!
-				.child('Properties')!
-				.childrenNamed('Property')
-				.map((p) => p.getAttribute('name'))
+				.child("Properties")!
+				.childrenNamed("Property")
+				.map((mElement) => mElement.getAttribute("name"))
 				.sort(),
-		).toEqual(['ConcertPitch', 'Fret', 'Midi', 'String', 'TransposedPitch']);
+		).toEqual(["ConcertPitch", "Fret", "Midi", "String", "TransposedPitch"]);
 	});
 
-	it('keeps written pitch and sounding pitch apart for a B-flat clarinet', async () => {
+	it("keeps written pitch and sounding pitch apart for a B-flat clarinet", async () => {
 		measure.setTranspose({ diatonic: -1, chromatic: -2 });
 		measure
-			.getOrCreateVoice('1')
-			.addNote({ step: 'D', octave: 5, type: 'whole' });
+			.getOrCreateVoice("1")
+			.addNote({ step: "D", octave: 5, type: "whole" });
 		const root = await gpif(await serializer.serializeToBytes(document));
-		const track = root.child('Tracks')!.child('Track')!;
-		const note = root.child('Notes')!.child('Note')!;
+		const track = root.child("Tracks")!.child("Track")!;
+		const note = root.child("Notes")!.child("Note")!;
 		const pitchOf = (name: string) => {
 			const found = note
-				.child('Properties')!
-				.childrenNamed('Property')
-				.find((p) => p.getAttribute('name') === name)!
-				.child('Pitch')!;
-			return `${found.child('Step')!.text}${found.child('Octave')!.text}`;
+				.child("Properties")!
+				.childrenNamed("Property")
+				.find((mElement) => mElement.getAttribute("name") === name)!
+				.child("Pitch")!;
+			return `${found.child("Step")!.text}${found.child("Octave")!.text}`;
 		};
 
-		expect(track.child('Transpose')!.child('Chromatic')!.text).toBe('-2');
-		expect(track.child('Transpose')!.child('Octave')!.text).toBe('0');
-		expect(property(note, 'Midi')).toBe(72);
-		expect(pitchOf('ConcertPitch')).toBe('C6');
-		expect(pitchOf('TransposedPitch')).toBe('D6');
+		expect(track.child("Transpose")!.child("Chromatic")!.text).toBe("-2");
+		expect(track.child("Transpose")!.child("Octave")!.text).toBe("0");
+		expect(property(note, "Midi")).toBe(72);
+		expect(pitchOf("ConcertPitch")).toBe("C6");
+		expect(pitchOf("TransposedPitch")).toBe("D6");
 	});
 
-	it('records an octave transposition and fits tablature to sounding pitch', async () => {
+	it("records an octave transposition and fits tablature to sounding pitch", async () => {
 		measure.setTranspose({ chromatic: 0, octaveChange: -1 });
 		measure
-			.getOrCreateVoice('1')
-			.addNote({ step: 'F', octave: 3, type: 'whole' });
+			.getOrCreateVoice("1")
+			.addNote({ step: "F", octave: 3, type: "whole" });
 		const root = await gpif(await serializer.serializeToBytes(document));
-		const note = root.child('Notes')!.child('Note')!;
+		const note = root.child("Notes")!.child("Note")!;
 
 		expect(
-			root.child('Tracks')!.child('Track')!.child('Transpose')!.child('Octave')!
+			root.child("Tracks")!.child("Track")!.child("Transpose")!.child("Octave")!
 				.text,
-		).toBe('-1');
-		expect(property(note, 'Midi')).toBe(41);
+		).toBe("-1");
+		expect(property(note, "Midi")).toBe(41);
 	});
 
-	it('rejects a transposition that changes within a part', async () => {
+	it("rejects a transposition that changes within a part", async () => {
 		const second = part.addMeasure();
-		second.setClef({ sign: 'G', line: 2 });
+		second.setClef({ sign: "G", line: 2 });
 		measure.setTranspose({ chromatic: -2 });
 		second.setTranspose({ chromatic: -3 });
 		measure
-			.getOrCreateVoice('1')
-			.addNote({ step: 'C', octave: 4, type: 'whole' });
+			.getOrCreateVoice("1")
+			.addNote({ step: "C", octave: 4, type: "whole" });
 		second
-			.getOrCreateVoice('1')
-			.addNote({ step: 'C', octave: 4, type: 'whole' });
+			.getOrCreateVoice("1")
+			.addNote({ step: "C", octave: 4, type: "whole" });
 
-		await expect(serializer.serializeToBytes(document)).rejects.toThrow(
-			'one transposition per part',
+		expect(serializer.serializeToBytes(document)).rejects.toThrow(
+			"one transposition per part",
 		);
 	});
 
-	it('keeps internal strings out of notation-only MusicXML', async () => {
+	it("keeps internal strings out of notation-only MusicXML", async () => {
 		measure
-			.getOrCreateVoice('1')
-			.addNote({ step: 'C', octave: 4, type: 'whole' });
+			.getOrCreateVoice("1")
+			.addNote({ step: "C", octave: 4, type: "whole" });
 		const result = await parser.parseFromBytes(
 			await serializer.serializeToBytes(document),
 		);
@@ -132,90 +132,92 @@ describe('Guitar Pro notation pitches', () => {
 		expect(restored.notes[0]).toMatchObject({
 			string: null,
 			fret: null,
-			pitch: { step: 'C', octave: 4 },
+			pitch: { step: "C", octave: 4 },
 		});
 		expect(schemaErrors(result)).toEqual([]);
 	});
 
-	it('reads the scale verified in Guitar Pro 8 without inventing tablature', async () => {
+	it("reads the scale verified in Guitar Pro 8 without inventing tablature", async () => {
 		const result = await parser.parseFromBlob(
 			Bun.file(
-				new URL('./fixtures/guitar-pro/piano-native.gp', import.meta.url),
+				new URL("./fixtures/guitar-pro/piano-native.gp", import.meta.url),
 			),
 		);
 		const measures = result.score.parts[0]!.measures;
 
 		expect(
-			measures.flatMap((m) =>
-				m.notes.map((n) => `${n.pitch?.step}${n.pitch?.octave}`),
+			measures.flatMap((measure) =>
+				measure.notes.map((note) => `${note.pitch?.step}${note.pitch?.octave}`),
 			),
 		).toEqual([
-			'C3',
-			'D3',
-			'E3',
-			'F3',
-			'G3',
-			'A3',
-			'B3',
-			'C4',
-			'D4',
-			'E4',
-			'F4',
-			'G4',
-			'A4',
-			'B4',
-			'C5',
-			'C4',
-			'C4',
-			'C4',
-			'C4',
-			'C3',
-			'C4',
-			'C5',
-			'C4',
+			"C3",
+			"D3",
+			"E3",
+			"F3",
+			"G3",
+			"A3",
+			"B3",
+			"C4",
+			"D4",
+			"E4",
+			"F4",
+			"G4",
+			"A4",
+			"B4",
+			"C5",
+			"C4",
+			"C4",
+			"C4",
+			"C4",
+			"C3",
+			"C4",
+			"C5",
+			"C4",
 		]);
-		expect(measures.flatMap((m) => m.getStaffTunings())).toEqual([]);
+		expect(measures.flatMap((measure) => measure.getStaffTunings())).toEqual(
+			[],
+		);
 		expect(schemaErrors(result)).toEqual([]);
 	});
 
-	it('preserves the full MIDI pitch range with nonnegative internal frets', async () => {
-		const voice = measure.getOrCreateVoice('1');
-		voice.addNote({ step: 'C', octave: -1, type: 'half' });
-		voice.addNote({ step: 'G', octave: 9, type: 'half' });
+	it("preserves the full MIDI pitch range with nonnegative internal frets", async () => {
+		const voice = measure.getOrCreateVoice("1");
+		voice.addNote({ step: "C", octave: -1, type: "half" });
+		voice.addNote({ step: "G", octave: 9, type: "half" });
 		const bytes = await serializer.serializeToBytes(document);
 		const result = await parser.parseFromBytes(bytes);
 		const root = await gpif(bytes);
 
 		expect(
-			result.score.parts[0]!.measures[0]!.notes.map((n) => [
-				n.pitch?.step,
-				n.pitch?.octave,
+			result.score.parts[0]!.measures[0]!.notes.map((note) => [
+				note.pitch?.step,
+				note.pitch?.octave,
 			]),
 		).toEqual([
-			['C', -1],
-			['G', 9],
+			["C", -1],
+			["G", 9],
 		]);
 		expect(
 			root
-				.child('Notes')!
-				.childrenNamed('Note')
-				.map((n) => property(n, 'Fret')),
+				.child("Notes")!
+				.childrenNamed("Note")
+				.map((mElement) => property(mElement, "Fret")),
 		).toEqual([0, 127]);
 	});
 
-	it('keeps every pitch of a tied upper-register chord', async () => {
+	it("keeps every pitch of a tied upper-register chord", async () => {
 		const pitches = [
-			{ step: 'C', octave: 5 },
-			{ step: 'E', octave: 5 },
-			{ step: 'G', octave: 5 },
+			{ step: "C", octave: 5 },
+			{ step: "E", octave: 5 },
+			{ step: "G", octave: 5 },
 		] as const;
 		const first = measure
-			.getOrCreateVoice('1')
-			.addChord([...pitches], { type: 'whole' });
+			.getOrCreateVoice("1")
+			.addChord([...pitches], { type: "whole" });
 		const second = part
 			.addMeasure()
-			.getOrCreateVoice('1')
-			.addChord([...pitches], { type: 'whole' });
+			.getOrCreateVoice("1")
+			.addChord([...pitches], { type: "whole" });
 		first.notes[0]!.addTie(second.notes[0]!);
 		first.notes[1]!.addTie(second.notes[1]!);
 		first.notes[2]!.addTie(second.notes[2]!);
@@ -224,29 +226,33 @@ describe('Guitar Pro notation pitches', () => {
 		);
 		const measures = result.score.parts[0]!.measures;
 
-		expect(measures.map((m) => m.notes.map((n) => n.pitch?.step))).toEqual([
-			['C', 'E', 'G'],
-			['C', 'E', 'G'],
+		expect(
+			measures.map((measure) => measure.notes.map((note) => note.pitch?.step)),
+		).toEqual([
+			["C", "E", "G"],
+			["C", "E", "G"],
 		]);
 		expect(
-			measures[0]!.notes.map((n) => n.ties[0]?.partner?.note.pitch?.step),
-		).toEqual(['C', 'E', 'G']);
+			measures[0]!.notes.map(
+				(note2) => note2.ties[0]?.partner?.note.pitch?.step,
+			),
+		).toEqual(["C", "E", "G"]);
 		expect(schemaErrors(result)).toEqual([]);
 	});
 
-	it('reserves a tied pitch when the next chord has a new lower note', async () => {
+	it("reserves a tied pitch when the next chord has a new lower note", async () => {
 		const start = measure
-			.getOrCreateVoice('1')
-			.addNote({ step: 'C', octave: 5, type: 'whole' });
+			.getOrCreateVoice("1")
+			.addNote({ step: "C", octave: 5, type: "whole" });
 		const chord = part
 			.addMeasure()
-			.getOrCreateVoice('1')
+			.getOrCreateVoice("1")
 			.addChord(
 				[
-					{ step: 'G', octave: 4 },
-					{ step: 'C', octave: 5 },
+					{ step: "G", octave: 4 },
+					{ step: "C", octave: 5 },
 				],
-				{ type: 'whole' },
+				{ type: "whole" },
 			);
 		start.addTie(chord.notes[1]!);
 		const result = await parser.parseFromBytes(
@@ -254,24 +260,27 @@ describe('Guitar Pro notation pitches', () => {
 		);
 		const measures = result.score.parts[0]!.measures;
 
-		expect(measures[1]!.notes.map((n) => n.pitch?.step)).toEqual(['G', 'C']);
+		expect(measures[1]!.notes.map((note) => note.pitch?.step)).toEqual([
+			"G",
+			"C",
+		]);
 		expect(measures[0]!.notes[0]!.ties[0]!.partner?.note).toBe(
 			measures[1]!.notes[1],
 		);
 	});
 
-	it('keeps piano staves and simultaneous voices separate', async () => {
+	it("keeps piano staves and simultaneous voices separate", async () => {
 		measure.setStaveCount(2);
-		measure.setClef({ sign: 'F', line: 4, staff: '2' });
+		measure.setClef({ sign: "F", line: 4, staff: "2" });
 		measure
-			.getOrCreateVoice('1')
-			.addNote({ step: 'C', octave: 5, type: 'whole' });
+			.getOrCreateVoice("1")
+			.addNote({ step: "C", octave: 5, type: "whole" });
 		measure
-			.getOrCreateVoice('2')
-			.addNote({ step: 'E', octave: 4, type: 'whole' });
+			.getOrCreateVoice("2")
+			.addNote({ step: "E", octave: 4, type: "whole" });
 		measure
-			.getOrCreateVoice('3', { staff: '2' })
-			.addNote({ step: 'C', octave: 2, type: 'whole' });
+			.getOrCreateVoice("3", { staff: "2" })
+			.addNote({ step: "C", octave: 2, type: "whole" });
 		const result = await parser.parseFromBytes(
 			await serializer.serializeToBytes(document),
 		);
@@ -279,14 +288,18 @@ describe('Guitar Pro notation pitches', () => {
 
 		expect(restored.staveCount).toBe(2);
 		expect(
-			restored.notes.map((n) => [n.staff, n.pitch?.step, n.pitch?.octave]),
+			restored.notes.map((note) => [
+				note.staff,
+				note.pitch?.step,
+				note.pitch?.octave,
+			]),
 		).toEqual([
-			['1', 'C', 5],
-			['1', 'E', 4],
-			['2', 'C', 2],
+			["1", "C", 5],
+			["1", "E", 4],
+			["2", "C", 2],
 		]);
-		expect(restored.getStaffTunings('1')).toEqual([]);
-		expect(restored.getStaffTunings('2')).toEqual([]);
+		expect(restored.getStaffTunings("1")).toEqual([]);
+		expect(restored.getStaffTunings("2")).toEqual([]);
 		expect(schemaErrors(result)).toEqual([]);
 	});
 });
@@ -294,14 +307,16 @@ describe('Guitar Pro notation pitches', () => {
 async function gpif(bytes: Uint8Array): Promise<MElement> {
 	const zip = await JSZip.loadAsync(bytes);
 	return new MDOMParser().parseFromString(
-		await zip.file('Content/score.gpif')!.async('string'),
+		await zip.file("Content/score.gpif")!.async("string"),
 	).root;
 }
 
 function property(note: MElement, name: string): number {
-	const p = note
-		.child('Properties')!
-		.childrenNamed('Property')
-		.find((p) => p.getAttribute('name') === name)!;
-	return Number(p.childrenNamed(name)[0]?.text ?? p.child('Number')?.text);
+	const mElement2 = note
+		.child("Properties")!
+		.childrenNamed("Property")
+		.find((mElement) => mElement.getAttribute("name") === name)!;
+	return Number(
+		mElement2.childrenNamed(name)[0]?.text ?? mElement2.child("Number")?.text,
+	);
 }

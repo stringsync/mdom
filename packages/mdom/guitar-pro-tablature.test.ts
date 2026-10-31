@@ -1,13 +1,13 @@
-import { beforeEach, describe, expect, it } from 'bun:test';
-import JSZip from 'jszip';
-import { GuitarProParser } from './guitar-pro-parser';
-import { GuitarProSerializer } from './guitar-pro-serializer';
-import type { MDocument } from './m-document';
-import { MDOMParser } from './m-dom-parser';
-import type { Measure } from './measure';
-import { schemaErrors } from './music-xml-schema';
+import { beforeEach, describe, expect, it } from "bun:test";
+import JSZip from "jszip";
+import { GuitarProParser } from "./guitar-pro-parser";
+import { GuitarProSerializer } from "./guitar-pro-serializer";
+import type { MDocument } from "./m-document";
+import { MDOMParser } from "./m-dom-parser";
+import type { Measure } from "./measure";
+import { schemaErrors } from "./music-xml-schema";
 
-describe('Guitar Pro tablature', () => {
+describe("Guitar Pro tablature", () => {
 	let document: MDocument;
 	let measure: Measure;
 	let parser: GuitarProParser;
@@ -30,13 +30,13 @@ describe('Guitar Pro tablature', () => {
 		measure = document.score.parts[0]!.measures[0]!;
 	});
 
-	it('keeps open-string pitches with a capo and nonstandard tuning', async () => {
-		const chord = measure.getOrCreateVoice('1').addChord(
+	it("keeps open-string pitches with a capo and nonstandard tuning", async () => {
+		const chord = measure.getOrCreateVoice("1").addChord(
 			[
-				{ step: 'D', octave: 4 },
-				{ step: 'A', octave: 3 },
+				{ step: "D", octave: 4 },
+				{ step: "A", octave: 3 },
 			],
-			{ type: 'whole' },
+			{ type: "whole" },
 		);
 		chord.notes[0]!.setStringFret({ string: 1, fret: 0 });
 		chord.notes[1]!.setStringFret({ string: 2, fret: 0 });
@@ -57,98 +57,98 @@ describe('Guitar Pro tablature', () => {
 				note.pitch?.octave,
 			]),
 		).toEqual([
-			[1, 0, 'D', 4],
-			[2, 0, 'A', 3],
+			[1, 0, "D", 4],
+			[2, 0, "A", 3],
 		]);
 		expect(schemaErrors(result)).toEqual([]);
 	});
 
-	it('writes GPIF string indices and frets independently of the mdom reader', async () => {
+	it("writes GPIF string indices and frets independently of the mdom reader", async () => {
 		const note = measure
-			.getOrCreateVoice('1')
-			.addNote({ step: 'E', octave: 4, type: 'whole' });
+			.getOrCreateVoice("1")
+			.addNote({ step: "E", octave: 4, type: "whole" });
 		note.setStringFret({ string: 1, fret: 2 });
 		const zip = await JSZip.loadAsync(
 			await serializer.serializeToBytes(document),
 		);
 		const gpif = new MDOMParser().parseFromString(
-			await zip.file('Content/score.gpif')!.async('string'),
+			await zip.file("Content/score.gpif")!.async("string"),
 		).root;
-		const properties = gpif.child('Notes')!.child('Note')!.child('Properties')!;
+		const properties = gpif.child("Notes")!.child("Note")!.child("Properties")!;
 
 		expect(
 			properties
-				.childrenNamed('Property')
-				.find((property) => property.getAttribute('name') === 'String')
-				?.child('String')?.text,
-		).toBe('1');
+				.childrenNamed("Property")
+				.find((property) => property.getAttribute("name") === "String")
+				?.child("String")?.text,
+		).toBe("1");
 		expect(
 			properties
-				.childrenNamed('Property')
-				.find((property) => property.getAttribute('name') === 'Fret')
-				?.child('Fret')?.text,
-		).toBe('2');
+				.childrenNamed("Property")
+				.find((property) => property.getAttribute("name") === "Fret")
+				?.child("Fret")?.text,
+		).toBe("2");
 	});
 
-	it('rejects a fret that disagrees with the pitch', async () => {
+	it("rejects a fret that disagrees with the pitch", async () => {
 		const note = measure
-			.getOrCreateVoice('1')
-			.addNote({ step: 'D', octave: 4, type: 'whole' });
+			.getOrCreateVoice("1")
+			.addNote({ step: "D", octave: 4, type: "whole" });
 		note.setStringFret({ string: 1, fret: 4 });
 
-		await expect(serializer.serializeToBlob(document)).rejects.toThrow(
-			'pitch disagrees',
+		expect(serializer.serializeToBlob(document)).rejects.toThrow(
+			"pitch disagrees",
 		);
 	});
 
-	it('rejects a string outside the tuning', async () => {
+	it("rejects a string outside the tuning", async () => {
 		const note = measure
-			.getOrCreateVoice('1')
-			.addNote({ step: 'D', octave: 4, type: 'whole' });
+			.getOrCreateVoice("1")
+			.addNote({ step: "D", octave: 4, type: "whole" });
 		note.setStringFret({ string: 3, fret: 0 });
 
-		await expect(serializer.serializeToBlob(document)).rejects.toThrow(
-			'Invalid string',
+		expect(serializer.serializeToBlob(document)).rejects.toThrow(
+			"Invalid string",
 		);
 	});
 
-	it('rejects a missing string assignment on a tablature staff', async () => {
+	it("rejects a missing string assignment on a tablature staff", async () => {
 		measure
-			.getOrCreateVoice('1')
-			.addNote({ step: 'D', octave: 4, type: 'whole' });
+			.getOrCreateVoice("1")
+			.addNote({ step: "D", octave: 4, type: "whole" });
 
-		await expect(serializer.serializeToBlob(document)).rejects.toThrow(
-			'needs a string and fret',
+		expect(serializer.serializeToBlob(document)).rejects.toThrow(
+			"needs a string and fret",
 		);
 	});
 
-	it('rejects string assignments without a tuning', async () => {
+	it("rejects string assignments without a tuning", async () => {
 		measure.getStaffDetails()!.remove();
 		const note = measure
-			.getOrCreateVoice('1')
-			.addNote({ step: 'D', octave: 4, type: 'whole' });
+			.getOrCreateVoice("1")
+			.addNote({ step: "D", octave: 4, type: "whole" });
 		note.setStringFret({ string: 1, fret: 0 });
 
-		await expect(serializer.serializeToBlob(document)).rejects.toThrow(
-			'requires tuning, string and fret',
+		expect(serializer.serializeToBlob(document)).rejects.toThrow(
+			"requires tuning, string and fret",
 		);
 	});
 
-	it('rejects a tuning with missing line numbers', async () => {
-		measure.getStaffTunings()[0]!.setAttribute('line', '3');
+	it("rejects a tuning with missing line numbers", async () => {
+		measure.getStaffTunings()[0]!.setAttribute("line", "3");
 
-		await expect(serializer.serializeToBlob(document)).rejects.toThrow(
-			'tuning lines must be consecutive',
+		expect(serializer.serializeToBlob(document)).rejects.toThrow(
+			"tuning lines must be consecutive",
 		);
 	});
 
-	it('rejects a capo change after the first measure', async () => {
+	it("rejects a capo change after the first measure", async () => {
 		const next = document.score.parts[0]!.addMeasure();
 		next.copySignaturesFrom(measure);
-		next.getStaffDetails()!.child('capo')!.setText('3');
+		next.getStaffDetails()!.child("capo")!.setText("3");
 
-		await expect(serializer.serializeToBlob(document)).rejects.toThrow(
-			'mid-score tuning or capo changes',
+		expect(serializer.serializeToBlob(document)).rejects.toThrow(
+			"mid-score tuning or capo changes",
 		);
 	});
 });

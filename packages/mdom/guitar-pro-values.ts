@@ -1,6 +1,6 @@
-import type { GuitarProOptions } from './guitar-pro-options';
-import type { PitchSpec } from './note';
-import type { HarmonicKind, HarmonicPitch } from './technical';
+import type { GuitarProOptions } from "./guitar-pro-options";
+import type { PitchSpec } from "./note";
+import type { HarmonicKind, HarmonicPitch } from "./technical";
 
 interface GuitarProRhythmOptions {
 	dots?: number;
@@ -16,7 +16,7 @@ export class GuitarProValues {
 	constructor(private readonly opts: GuitarProOptions = {}) {}
 
 	unsupported(feature: string): void {
-		if (this.opts.unsupported !== 'omit') {
+		if (this.opts.unsupported !== "omit") {
 			throw new Error(
 				`Guitar Pro conversion does not support ${feature}. Use { unsupported: 'omit' } to omit it.`,
 			);
@@ -29,10 +29,10 @@ export class GuitarProValues {
 		half: 2,
 		quarter: 4,
 		eighth: 8,
-		'16th': 16,
-		'32nd': 32,
-		'64th': 64,
-		'128th': 128,
+		"16th": 16,
+		"32nd": 32,
+		"64th": 64,
+		"128th": 128,
 	};
 
 	static noteType(duration: number): string {
@@ -53,10 +53,10 @@ export class GuitarProValues {
 	}
 
 	static pitch(midi: number, opts: GuitarProPitchOptions = {}): PitchSpec {
-		GuitarProValues.integer(midi, 'MIDI pitch', 0, 127);
+		GuitarProValues.integer(midi, "MIDI pitch", 0, 127);
 		const names = opts.flats
-			? ['C', 'D', 'D', 'E', 'E', 'F', 'G', 'G', 'A', 'A', 'B', 'B']
-			: ['C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'];
+			? ["C", "D", "D", "E", "E", "F", "G", "G", "A", "A", "B", "B"]
+			: ["C", "C", "D", "D", "E", "F", "F", "G", "G", "A", "A", "B"];
 		const step = names[midi % 12]!;
 		const natural = GuitarProValues.semitones[step]!;
 		return {
@@ -73,7 +73,7 @@ export class GuitarProValues {
 		}
 		return GuitarProValues.integer(
 			(pitch.octave + 1) * 12 + semitone + (pitch.alter ?? 0),
-			'MIDI pitch',
+			"MIDI pitch",
 			0,
 			127,
 		);
@@ -100,14 +100,14 @@ export class GuitarProValues {
 	 * slide to the next note, are `<slide>` spanners instead.
 	 */
 	static readonly slideMarks: ReadonlyArray<readonly [number, string]> = [
-		[4, 'falloff'],
-		[8, 'doit'],
-		[16, 'scoop'],
-		[32, 'plop'],
+		[4, "falloff"],
+		[8, "doit"],
+		[16, "scoop"],
+		[32, "plop"],
 	];
 
 	/** The SMuFL glyph a wavy line names to mark a wide vibrato. */
-	static readonly wideVibrato = 'wiggleVibratoWide';
+	static readonly wideVibrato = "wiggleVibratoWide";
 
 	/** GPIF bend values are 50 per semitone (100 is a whole step). */
 	private static readonly bendUnit = 50;
@@ -121,14 +121,14 @@ export class GuitarProValues {
 		type: string,
 	): { kind: HarmonicKind; pitch?: HarmonicPitch } | null {
 		switch (type) {
-			case 'Natural':
-				return { kind: 'natural' };
-			case 'Artificial':
-				return { kind: 'artificial' };
-			case 'Pinch':
-				return { kind: 'artificial', pitch: 'sounding' };
-			case 'Tap':
-				return { kind: 'artificial', pitch: 'touching' };
+			case "Natural":
+				return { kind: "natural" };
+			case "Artificial":
+				return { kind: "artificial" };
+			case "Pinch":
+				return { kind: "artificial", pitch: "sounding" };
+			case "Tap":
+				return { kind: "artificial", pitch: "touching" };
 			default:
 				return null;
 		}
@@ -139,13 +139,13 @@ export class GuitarProValues {
 		kind: HarmonicKind | null;
 		pitch: HarmonicPitch | null;
 	}): string {
-		if (harmonic.kind !== 'artificial') {
-			return 'Natural';
+		if (harmonic.kind !== "artificial") {
+			return "Natural";
 		}
-		if (harmonic.pitch === 'sounding') {
-			return 'Pinch';
+		if (harmonic.pitch === "sounding") {
+			return "Pinch";
 		}
-		return harmonic.pitch === 'touching' ? 'Tap' : 'Artificial';
+		return harmonic.pitch === "touching" ? "Tap" : "Artificial";
 	}
 
 	/**
@@ -158,10 +158,10 @@ export class GuitarProValues {
 		origin: number,
 		middles: number[],
 		destination: number,
-	): 'none' | { semitones: number; preBend: boolean; release: boolean } | null {
+	): "none" | { semitones: number; preBend: boolean; release: boolean } | null {
 		const peak = Math.max(origin, destination, ...middles);
 		if (peak <= 0) {
-			return 'none';
+			return "none";
 		}
 		if (origin !== 0 && origin !== peak) {
 			return null;
@@ -189,7 +189,7 @@ export class GuitarProValues {
 		middles: number[],
 		destination: number,
 	):
-		| 'none'
+		| "none"
 		| { semitones: number; preBend: boolean; release: boolean; withBar: string }
 		| null {
 		const values = [origin, ...middles, destination];
@@ -203,13 +203,13 @@ export class GuitarProValues {
 			middles.map((value) => value * sign),
 			destination * sign,
 		);
-		if (bend == null || bend === 'none') {
+		if (bend == null || bend === "none") {
 			return bend;
 		}
 		return {
 			...bend,
 			semitones: bend.semitones * sign,
-			withBar: dip ? 'dip' : 'scoop',
+			withBar: dip ? "dip" : "scoop",
 		};
 	}
 

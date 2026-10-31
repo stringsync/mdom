@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
-import { NodePs } from 'webappwiz/system';
-import { mdom } from './mdom';
-import { NodeScoreFiles } from './node-score-files';
+import { NodePs } from "core/system";
+import { mdom } from "./mdom";
+import { NodeScoreFiles } from "./node-score-files";
 
 const ps = new NodePs();
 const invocationDir = ps.cwd();

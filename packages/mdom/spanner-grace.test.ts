@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './m-dom-parser';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser } from "./m-dom-parser";
 
 // The one case where opener and closer really do share an onset: a `<grace/>`
 // steals time from the note it leans on, so both sit at the same cursor position.
@@ -14,13 +14,13 @@ const GRACE_SLUR = `<score-partwise><part id="P1">
   </measure>
 </part></score-partwise>`;
 
-describe('spanner — an acciaccatura slur', () => {
+describe("spanner, an acciaccatura slur", () => {
 	const part = new MDOMParser()
 		.parseFromString(GRACE_SLUR)
-		.score.getPart('P1')!;
-	const [grace, main] = part.getMeasure('1')!.notes;
+		.score.getPart("P1")!;
+	const [grace, main] = part.getMeasure("1")!.notes;
 
-	it('pairs the grace note to its main note despite the shared onset', () => {
+	it("pairs the grace note to its main note despite the shared onset", () => {
 		expect(grace!.slurs[0]!.partner).toBe(main!.slurs[0]!);
 	});
 });

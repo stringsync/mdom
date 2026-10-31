@@ -1,8 +1,8 @@
-import { MHistory } from './m-history';
-import { MMutation } from './m-mutation';
-import { descendants, type MElement } from './m-node';
-import { Score } from './score';
-import { assertXmlDeclaration, isSafeDoctype } from './xml-syntax';
+import { descendants, type MElement } from "./m-element";
+import { MHistory } from "./m-history";
+import { MMutation } from "./m-mutation";
+import { Score } from "./score";
+import { assertXmlDeclaration, isSafeDoctype } from "./xml-syntax";
 
 /** A parsed document: the root element plus the XML declaration and doctype. */
 export class MDocument {
@@ -39,14 +39,14 @@ export class MDocument {
 	 * An empty `<score-partwise>` scaffold carrying the XML declaration, doctype,
 	 * and `version` so serialization produces a real MusicXML file. Add at least
 	 * one part with a measure (e.g. `doc.score.addPart().addMeasure()`) to reach a
-	 * DTD-valid document — `<score-partwise>` requires `part-list` plus `part+`.
+	 * DTD-valid document, `<score-partwise>` requires `part-list` plus `part+`.
 	 */
 	static empty(): MDocument {
 		const score = new Score();
-		score.setAttribute('version', '4.0');
+		score.setAttribute("version", "4.0");
 		return new MDocument(
 			score,
-			{ version: '1.0', encoding: 'UTF-8' },
+			{ version: "1.0", encoding: "UTF-8" },
 			'score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd"',
 		);
 	}

@@ -1,5 +1,9 @@
-import { MElement } from './m-node';
-import { appendValue } from './measure';
+import { MElement } from "./m-element";
+import { appendValue } from "./measure";
+
+export function decimals(min: number, max: number): Range {
+	return { min, max, integer: false };
+}
 
 /** A `<virtual-instrument>`: the sample library and patch a part plays on. */
 export interface VirtualInstrument {
@@ -42,35 +46,35 @@ export interface ScoreInstrumentSpec {
  * switches to this sound, ensemble or virtual instrument from here. The name
  * and abbreviation stay the score-instrument's own.
  */
-export type InstrumentChange = Omit<ScoreInstrument, 'name' | 'abbreviation'>;
+export type InstrumentChange = Omit<ScoreInstrument, "name" | "abbreviation">;
 export type InstrumentChangeSpec = Omit<
 	ScoreInstrumentSpec,
-	'id' | 'name' | 'abbreviation'
+	"id" | "name" | "abbreviation"
 >;
 
 export type PlayMute =
-	| 'on'
-	| 'off'
-	| 'straight'
-	| 'cup'
-	| 'harmon-no-stem'
-	| 'harmon-stem'
-	| 'bucket'
-	| 'plunger'
-	| 'hat'
-	| 'solotone'
-	| 'practice'
-	| 'stop-mute'
-	| 'stop-hand'
-	| 'echo'
-	| 'palm';
+	| "on"
+	| "off"
+	| "straight"
+	| "cup"
+	| "harmon-no-stem"
+	| "harmon-stem"
+	| "bucket"
+	| "plunger"
+	| "hat"
+	| "solotone"
+	| "practice"
+	| "stop-mute"
+	| "stop-hand"
+	| "echo"
+	| "palm";
 export type PlaySemiPitched =
-	| 'high'
-	| 'medium-high'
-	| 'medium'
-	| 'medium-low'
-	| 'low'
-	| 'very-low';
+	| "high"
+	| "medium-high"
+	| "medium"
+	| "medium-low"
+	| "low"
+	| "very-low";
 
 /**
  * A `<play>`: how an instrument sounds a note or from a point on. `id` names
@@ -103,17 +107,17 @@ interface ListenScope {
  */
 export interface Listen {
 	actions: Array<
-		| ({ kind: 'assess'; assess: boolean } & ListenScope)
-		| ({ kind: 'wait' } & ListenScope)
-		| ({ kind: 'other'; type: string; text: string } & ListenScope)
+		| ({ kind: "assess"; assess: boolean } & ListenScope)
+		| ({ kind: "wait" } & ListenScope)
+		| ({ kind: "other"; type: string; text: string } & ListenScope)
 	>;
 }
 export interface ListenSpec {
 	actions: Array<
-		| { kind: 'assess'; assess: boolean; player?: string; timeOnly?: number[] }
-		| { kind: 'wait'; player?: string; timeOnly?: number[] }
+		| { kind: "assess"; assess: boolean; player?: string; timeOnly?: number[] }
+		| { kind: "wait"; player?: string; timeOnly?: number[] }
 		| {
-				kind: 'other';
+				kind: "other";
 				type: string;
 				text: string;
 				player?: string;
@@ -140,7 +144,7 @@ export interface MidiInstrument {
 	elevation: number | null;
 }
 export type MidiInstrumentSpec = {
-	[Key in Exclude<keyof MidiInstrument, 'id'>]?: NonNullable<
+	[Key in Exclude<keyof MidiInstrument, "id">]?: NonNullable<
 		MidiInstrument[Key]
 	>;
 };
@@ -169,22 +173,19 @@ const midiFields: readonly {
 	tag: string;
 	range: Range | null;
 }[] = [
-	{ key: 'channel', tag: 'midi-channel', range: integers(1, 16) },
-	{ key: 'name', tag: 'midi-name', range: null },
-	{ key: 'bank', tag: 'midi-bank', range: integers(1, 16384) },
-	{ key: 'program', tag: 'midi-program', range: integers(1, 128) },
-	{ key: 'unpitched', tag: 'midi-unpitched', range: integers(1, 128) },
-	{ key: 'volume', tag: 'volume', range: decimals(0, 100) },
-	{ key: 'pan', tag: 'pan', range: decimals(-180, 180) },
-	{ key: 'elevation', tag: 'elevation', range: decimals(-180, 180) },
+	{ key: "channel", tag: "midi-channel", range: integers(1, 16) },
+	{ key: "name", tag: "midi-name", range: null },
+	{ key: "bank", tag: "midi-bank", range: integers(1, 16384) },
+	{ key: "program", tag: "midi-program", range: integers(1, 128) },
+	{ key: "unpitched", tag: "midi-unpitched", range: integers(1, 128) },
+	{ key: "volume", tag: "volume", range: decimals(0, 100) },
+	{ key: "pan", tag: "pan", range: decimals(-180, 180) },
+	{ key: "elevation", tag: "elevation", range: decimals(-180, 180) },
 ];
 const portRange = integers(1, 16);
 
 function integers(min: number, max: number): Range {
 	return { min, max, integer: true };
-}
-export function decimals(min: number, max: number): Range {
-	return { min, max, integer: false };
 }
 
 /** `text` as a number within `range`, or null when absent or out of range. */
@@ -209,21 +210,21 @@ export function checkRange(label: string, value: number, range: Range): string {
 		value > range.max
 	) {
 		throw new Error(
-			`${label} must be ${range.integer ? 'an integer' : 'a number'} from ${range.min} to ${range.max}, got ${value}`,
+			`${label} must be ${range.integer ? "an integer" : "a number"} from ${range.min} to ${range.max}, got ${value}`,
 		);
 	}
 	return String(value);
 }
 
 export function readScoreInstrument(node: MElement): ScoreInstrument {
-	const ensemble = node.child('ensemble');
-	const virtual = node.child('virtual-instrument');
+	const ensemble = node.child("ensemble");
+	const virtual = node.child("virtual-instrument");
 	return {
-		id: node.getAttribute('id'),
-		name: node.child('instrument-name')?.text ?? null,
-		abbreviation: node.child('instrument-abbreviation')?.text ?? null,
-		sound: node.child('instrument-sound')?.text ?? null,
-		solo: node.child('solo') !== null,
+		id: node.getAttribute("id"),
+		name: node.child("instrument-name")?.text ?? null,
+		abbreviation: node.child("instrument-abbreviation")?.text ?? null,
+		sound: node.child("instrument-sound")?.text ?? null,
+		solo: node.child("solo") !== null,
 		ensemble: ensemble
 			? {
 					size: numberIn(ensemble.text, {
@@ -235,8 +236,8 @@ export function readScoreInstrument(node: MElement): ScoreInstrument {
 			: null,
 		virtualInstrument: virtual
 			? {
-					library: virtual.child('virtual-library')?.text ?? null,
-					name: virtual.child('virtual-name')?.text ?? null,
+					library: virtual.child("virtual-library")?.text ?? null,
+					name: virtual.child("virtual-name")?.text ?? null,
 				}
 			: null,
 	};
@@ -251,16 +252,16 @@ export function writeScoreInstrument(
 	for (const child of [...node.children]) {
 		child.remove();
 	}
-	appendValue(node, 'instrument-name', spec.name);
+	appendValue(node, "instrument-name", spec.name);
 	if (spec.abbreviation !== undefined) {
-		appendValue(node, 'instrument-abbreviation', spec.abbreviation);
+		appendValue(node, "instrument-abbreviation", spec.abbreviation);
 	}
 	appendInstrumentSound(node, spec);
 }
 
 function checkInstrumentSound(spec: InstrumentChangeSpec): void {
 	if (spec.solo && spec.ensemble) {
-		throw new Error('An instrument is either solo or an ensemble, not both');
+		throw new Error("An instrument is either solo or an ensemble, not both");
 	}
 	const size = spec.ensemble?.size;
 	if (size !== undefined && (!Number.isInteger(size) || size < 1)) {
@@ -274,25 +275,25 @@ function appendInstrumentSound(
 	spec: InstrumentChangeSpec,
 ): void {
 	if (spec.sound !== undefined) {
-		appendValue(node, 'instrument-sound', spec.sound);
+		appendValue(node, "instrument-sound", spec.sound);
 	}
 	if (spec.solo) {
-		node.append(new MElement('solo'));
+		node.append(new MElement("solo"));
 	}
 	if (spec.ensemble) {
-		const ensemble = new MElement('ensemble');
+		const ensemble = new MElement("ensemble");
 		if (spec.ensemble.size !== undefined) {
 			ensemble.setText(String(spec.ensemble.size));
 		}
 		node.append(ensemble);
 	}
 	if (spec.virtualInstrument) {
-		const virtual = new MElement('virtual-instrument');
+		const virtual = new MElement("virtual-instrument");
 		if (spec.virtualInstrument.library !== undefined) {
-			appendValue(virtual, 'virtual-library', spec.virtualInstrument.library);
+			appendValue(virtual, "virtual-library", spec.virtualInstrument.library);
 		}
 		if (spec.virtualInstrument.name !== undefined) {
-			appendValue(virtual, 'virtual-name', spec.virtualInstrument.name);
+			appendValue(virtual, "virtual-name", spec.virtualInstrument.name);
 		}
 		node.append(virtual);
 	}
@@ -316,29 +317,29 @@ export function writeInstrumentChange(
 }
 
 const mutes: readonly PlayMute[] = [
-	'on',
-	'off',
-	'straight',
-	'cup',
-	'harmon-no-stem',
-	'harmon-stem',
-	'bucket',
-	'plunger',
-	'hat',
-	'solotone',
-	'practice',
-	'stop-mute',
-	'stop-hand',
-	'echo',
-	'palm',
+	"on",
+	"off",
+	"straight",
+	"cup",
+	"harmon-no-stem",
+	"harmon-stem",
+	"bucket",
+	"plunger",
+	"hat",
+	"solotone",
+	"practice",
+	"stop-mute",
+	"stop-hand",
+	"echo",
+	"palm",
 ];
 const semiPitches: readonly PlaySemiPitched[] = [
-	'high',
-	'medium-high',
-	'medium',
-	'medium-low',
-	'low',
-	'very-low',
+	"high",
+	"medium-high",
+	"medium",
+	"medium-low",
+	"low",
+	"very-low",
 ];
 
 /** `text` when it is one of `allowed`, else null. */
@@ -352,13 +353,13 @@ function oneOf<Value extends string>(
 
 export function readPlay(node: MElement): Play {
 	return {
-		id: node.getAttribute('id'),
-		ipa: node.child('ipa')?.text ?? null,
-		mute: oneOf(node.child('mute')?.text, mutes),
-		semiPitched: oneOf(node.child('semi-pitched')?.text, semiPitches),
-		other: node.childrenNamed('other-play').map((other) => ({
-			type: other.getAttribute('type') ?? '',
-			text: other.text ?? '',
+		id: node.getAttribute("id"),
+		ipa: node.child("ipa")?.text ?? null,
+		mute: oneOf(node.child("mute")?.text, mutes),
+		semiPitched: oneOf(node.child("semi-pitched")?.text, semiPitches),
+		other: node.childrenNamed("other-play").map((other) => ({
+			type: other.getAttribute("type") ?? "",
+			text: other.text ?? "",
 		})),
 	};
 }
@@ -367,29 +368,29 @@ export function readPlay(node: MElement): Play {
 export function writePlay(node: MElement, spec: PlaySpec): void {
 	if (spec.mute != null && !mutes.includes(spec.mute)) {
 		throw new Error(
-			`mute must be one of ${mutes.join(', ')}, got ${spec.mute}`,
+			`mute must be one of ${mutes.join(", ")}, got ${spec.mute}`,
 		);
 	}
 	if (spec.semiPitched != null && !semiPitches.includes(spec.semiPitched)) {
 		throw new Error(
-			`semiPitched must be one of ${semiPitches.join(', ')}, got ${spec.semiPitched}`,
+			`semiPitched must be one of ${semiPitches.join(", ")}, got ${spec.semiPitched}`,
 		);
 	}
 	for (const child of [...node.children]) {
 		child.remove();
 	}
 	if (spec.ipa != null) {
-		appendValue(node, 'ipa', spec.ipa);
+		appendValue(node, "ipa", spec.ipa);
 	}
 	if (spec.mute != null) {
-		appendValue(node, 'mute', spec.mute);
+		appendValue(node, "mute", spec.mute);
 	}
 	if (spec.semiPitched != null) {
-		appendValue(node, 'semi-pitched', spec.semiPitched);
+		appendValue(node, "semi-pitched", spec.semiPitched);
 	}
 	for (const other of spec.other ?? []) {
-		appendValue(node, 'other-play', other.text).setAttribute(
-			'type',
+		appendValue(node, "other-play", other.text).setAttribute(
+			"type",
 			other.type,
 		);
 	}
@@ -397,39 +398,39 @@ export function writePlay(node: MElement, spec: PlaySpec): void {
 
 export function readListen(node: MElement): Listen {
 	const read = (child: MElement) => {
-		const timeOnly = child.getAttribute('time-only');
+		const timeOnly = child.getAttribute("time-only");
 		return {
-			player: child.getAttribute('player'),
+			player: child.getAttribute("player"),
 			timeOnly:
 				timeOnly == null || !/^\s*\d+(\s*,\s*\d+)*\s*$/.test(timeOnly)
 					? null
-					: timeOnly.split(',').map((pass) => Number(pass)),
+					: timeOnly.split(",").map((pass) => Number(pass)),
 		};
 	};
 	return {
-		actions: node.children.flatMap((child): Listen['actions'] => {
+		actions: node.children.flatMap((child): Listen["actions"] => {
 			if (!(child instanceof MElement)) {
 				return [];
 			}
-			if (child.tag === 'assess') {
+			if (child.tag === "assess") {
 				return [
 					{
-						kind: 'assess',
+						kind: "assess",
 						...read(child),
-						assess: child.getAttribute('type') !== 'no',
+						assess: child.getAttribute("type") !== "no",
 					},
 				];
 			}
-			if (child.tag === 'wait') {
-				return [{ kind: 'wait', ...read(child) }];
+			if (child.tag === "wait") {
+				return [{ kind: "wait", ...read(child) }];
 			}
-			if (child.tag === 'other-listen') {
+			if (child.tag === "other-listen") {
 				return [
 					{
-						kind: 'other',
+						kind: "other",
 						...read(child),
-						type: child.getAttribute('type') ?? '',
-						text: child.text ?? '',
+						type: child.getAttribute("type") ?? "",
+						text: child.text ?? "",
 					},
 				];
 			}
@@ -445,19 +446,19 @@ export function writeListen(node: MElement, spec: ListenSpec): void {
 	}
 	for (const action of spec.actions) {
 		const element = new MElement(
-			{ wait: 'wait', assess: 'assess', other: 'other-listen' }[action.kind],
+			{ wait: "wait", assess: "assess", other: "other-listen" }[action.kind],
 		);
-		if (action.kind === 'assess') {
-			element.setAttribute('type', action.assess ? 'yes' : 'no');
-		} else if (action.kind === 'other') {
-			element.setAttribute('type', action.type);
+		if (action.kind === "assess") {
+			element.setAttribute("type", action.assess ? "yes" : "no");
+		} else if (action.kind === "other") {
+			element.setAttribute("type", action.type);
 			element.setText(action.text);
 		}
 		if (action.player != null) {
-			element.setAttribute('player', action.player);
+			element.setAttribute("player", action.player);
 		}
 		if (action.timeOnly != null) {
-			element.setAttribute('time-only', action.timeOnly.join(','));
+			element.setAttribute("time-only", action.timeOnly.join(","));
 		}
 		node.append(element);
 	}
@@ -465,7 +466,7 @@ export function writeListen(node: MElement, spec: ListenSpec): void {
 
 export function readMidiInstrument(node: MElement): MidiInstrument {
 	const midi: MidiInstrument = {
-		id: node.getAttribute('id'),
+		id: node.getAttribute("id"),
 		channel: null,
 		name: null,
 		bank: null,
@@ -513,8 +514,8 @@ export function writeMidiInstrument(
 
 export function readMidiDevice(node: MElement): MidiDevice {
 	return {
-		id: node.getAttribute('id'),
-		port: numberIn(node.getAttribute('port'), portRange),
+		id: node.getAttribute("id"),
+		port: numberIn(node.getAttribute("port"), portRange),
 		name: node.text,
 	};
 }
@@ -523,11 +524,11 @@ export function writeMidiDevice(node: MElement, spec: MidiDeviceSpec): void {
 	const port =
 		spec.port === undefined
 			? undefined
-			: checkRange('midi-device port', spec.port, portRange);
+			: checkRange("midi-device port", spec.port, portRange);
 	if (port === undefined) {
-		node.removeAttribute('port');
+		node.removeAttribute("port");
 	} else {
-		node.setAttribute('port', port);
+		node.setAttribute("port", port);
 	}
 	for (const child of [...node.children]) {
 		child.remove();

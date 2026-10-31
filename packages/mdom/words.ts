@@ -1,4 +1,4 @@
-import { FormattedTextElement } from './formatted-text';
+import { FormattedTextElement } from "./formatted-text";
 
 /**
  * A `<words>` under `<direction-type>`: free text printed over or under the staff
@@ -8,16 +8,16 @@ import { FormattedTextElement } from './formatted-text';
  */
 export class Words extends FormattedTextElement {
 	constructor() {
-		super('words');
+		super("words");
 	}
 
 	/** `font-style` (italic/normal); null when unstated. */
 	get fontStyle(): string | null {
-		return this.getAttribute('font-style');
+		return this.getAttribute("font-style");
 	}
 
 	/** `font-weight` (bold/normal); null when unstated. */
 	get fontWeight(): string | null {
-		return this.getAttribute('font-weight');
+		return this.getAttribute("font-weight");
 	}
 }

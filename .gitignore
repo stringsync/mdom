@@ -6,9 +6,6 @@ out
 dist
 *.tgz
 
-# a release under way; the last artifact to land deletes it
-RELEASE
-
 # code coverage
 coverage
 *.lcov
@@ -30,8 +27,22 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .cache
 *.tsbuildinfo
 
+# a release under way; the last part to land deletes it (wiz dev ship)
+RELEASE
+
 # IntelliJ based IDEs
 .idea
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# agent scratch notes (splates worktrees)
+ARBOR.md
+SPLATES.md
+
+# snapshots and screenshots an agent's browser leaves behind
+.playwright-mcp
+.arbor-shots
+.splates-shots
+
+# the splates server page, compiled by splates/packages/web/build.ts

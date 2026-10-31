@@ -1,5 +1,5 @@
-import { MMutation, type MStampScope } from './m-mutation';
-import type { MNode } from './m-node';
+import { MMutation, type MStampScope } from "./m-mutation";
+import type { MNode } from "./m-node";
 
 interface Entry {
 	stamp: number;

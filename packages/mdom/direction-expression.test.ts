@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './m-dom-parser';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser } from "./m-dom-parser";
 
 // A dotted-quarter = 120 metronome (with a redundant <sound tempo>), a "dolce"
 // words direction, and a plain <direction> that carries none of them.
@@ -13,34 +13,34 @@ const EXPRESSIVE = `<score-partwise><part id="P1"><measure number="1">
   <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration></note>
 </measure></part></score-partwise>`;
 
-describe('direction — metronome, tempo, words, and neighbor notes', () => {
+describe("direction, metronome, tempo, words, and neighbor notes", () => {
 	const measure = new MDOMParser()
 		.parseFromString(EXPRESSIVE)
-		.score.getPart('P1')!
-		.getMeasure('1')!;
+		.score.getPart("P1")!
+		.getMeasure("1")!;
 	const [tempo, text] = measure.directions;
 
-	it('reads the metronome with its beat-unit dots and per-minute string', () => {
+	it("reads the metronome with its beat-unit dots and per-minute string", () => {
 		expect(tempo!.metronome).toEqual({
-			beatUnit: 'quarter',
+			beatUnit: "quarter",
 			dots: 1,
-			perMinute: '120',
+			perMinute: "120",
 		});
 		expect(text!.metronome).toBeNull();
 	});
 
-	it('reads the <sound> tempo as a number, null when absent', () => {
+	it("reads the <sound> tempo as a number, null when absent", () => {
 		expect(tempo!.soundTempo).toBe(180);
 		expect(text!.soundTempo).toBeNull();
 	});
 
-	it('lists every <words> child in order, empty when none', () => {
-		expect(text!.words).toEqual(['dolce', 'espressivo']);
+	it("lists every <words> child in order, empty when none", () => {
+		expect(text!.words).toEqual(["dolce", "espressivo"]);
 		expect(tempo!.words).toEqual([]);
 	});
 
-	it('binds to its neighbor notes in the measure', () => {
-		expect(text!.nextNote?.pitch?.step).toBe('C'); // the note after the direction
+	it("binds to its neighbor notes in the measure", () => {
+		expect(text!.nextNote?.pitch?.step).toBe("C"); // the note after the direction
 		expect(tempo!.previousNote).toBeNull(); // nothing before the first direction
 	});
 });

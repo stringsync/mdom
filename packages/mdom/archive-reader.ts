@@ -1,4 +1,4 @@
-import JSZip from 'jszip';
+import JSZip from "jszip";
 
 /** Limits on what reading a `.mxl` or `.gp` archive may cost. */
 export interface ArchiveOptions {
@@ -15,9 +15,9 @@ export const DEFAULT_MAX_UNCOMPRESSED_BYTES = 128 * 1024 * 1024;
 
 /** The streaming reader JSZip ships but leaves out of its type declarations. */
 interface EntryStream {
-	on(event: 'data', listener: (chunk: Uint8Array) => void): EntryStream;
-	on(event: 'end', listener: () => void): EntryStream;
-	on(event: 'error', listener: (error: Error) => void): EntryStream;
+	on(event: "data", listener: (chunk: Uint8Array) => void): EntryStream;
+	on(event: "end", listener: () => void): EntryStream;
+	on(event: "error", listener: (error: Error) => void): EntryStream;
 	pause(): EntryStream;
 	resume(): EntryStream;
 }
@@ -58,12 +58,12 @@ export class ArchiveReader {
 		// Streamed rather than read with async(): the size in the zip header is
 		// attacker-controlled, so the budget is enforced on what actually inflates.
 		const stream = (
-			file as unknown as { internalStream(type: 'uint8array'): EntryStream }
-		).internalStream('uint8array');
+			file as unknown as { internalStream(type: "uint8array"): EntryStream }
+		).internalStream("uint8array");
 		const chunks: Uint8Array[] = [];
 		await new Promise<void>((resolve, reject) => {
 			stream
-				.on('data', (chunk) => {
+				.on("data", (chunk) => {
 					this.remaining -= chunk.length;
 					if (this.remaining < 0) {
 						stream.pause();
@@ -76,8 +76,8 @@ export class ArchiveReader {
 					}
 					chunks.push(chunk);
 				})
-				.on('end', resolve)
-				.on('error', reject)
+				.on("end", resolve)
+				.on("error", reject)
 				.resume();
 		});
 		return concat(chunks);

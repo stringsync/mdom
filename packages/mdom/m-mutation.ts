@@ -1,11 +1,11 @@
-import type { MNode } from './m-node';
+import type { MNode } from "./m-node";
 
 /**
  * What a read cache depends on, stamped per node: `subtree` is any write at or
  * under the node; `children` is a change to its own child list; `attributes` is a
  * write at or under an `<attributes>` element inside the node.
  */
-export type MStampScope = 'subtree' | 'children' | 'attributes';
+export type MStampScope = "subtree" | "children" | "attributes";
 
 type Stamps = Record<MStampScope, number>;
 
@@ -30,7 +30,7 @@ export class MMutation {
 
 	static register(root: MNode, nodes: readonly MNode[]): void {
 		if (root.parent || nodes.some((node) => MMutation.owners.has(node))) {
-			throw new Error('mdom: document nodes already belong to a document');
+			throw new Error("mdom: document nodes already belong to a document");
 		}
 		for (const node of nodes) {
 			MMutation.owners.set(node, root);
@@ -39,10 +39,10 @@ export class MMutation {
 
 	static enable(root: MNode): void {
 		if (MMutation.managed.has(root)) {
-			throw new Error('mdom: document already has a history');
+			throw new Error("mdom: document already has a history");
 		}
 		if (MMutation.owners.get(root) !== root) {
-			throw new Error('mdom: history requires a document root');
+			throw new Error("mdom: history requires a document root");
 		}
 		MMutation.managed.add(root);
 	}
@@ -67,7 +67,7 @@ export class MMutation {
 		const chain: MNode[] = [];
 		for (let current: MNode | null = node; current; current = current.parent) {
 			chain.push(current);
-			attributes ||= 'tag' in current && current.tag === 'attributes';
+			attributes ||= "tag" in current && current.tag === "attributes";
 		}
 		for (const each of chain) {
 			let stamps = MMutation.stamps.get(each);
@@ -79,7 +79,7 @@ export class MMutation {
 			if (attributes) {
 				stamps.attributes = tick;
 			}
-			if (each === node && field === 'children') {
+			if (each === node && field === "children") {
 				stamps.children = tick;
 			}
 		}
@@ -88,7 +88,7 @@ export class MMutation {
 	static assertIdle(): void {
 		if (MMutation.active || MMutation.notifying) {
 			throw new Error(
-				'mdom: nested transactions and history operations are unsupported',
+				"mdom: nested transactions and history operations are unsupported",
 			);
 		}
 	}
@@ -105,19 +105,19 @@ export class MMutation {
 	static assertWritable(node: MNode): void {
 		if (MMutation.notifying) {
 			throw new Error(
-				'mdom: mutations during change notifications are unsupported',
+				"mdom: mutations during change notifications are unsupported",
 			);
 		}
 		const owner = MMutation.owners.get(node);
 		if (owner && MMutation.active && owner !== MMutation.active.root) {
-			throw new Error('mdom: cannot edit another document in a transaction');
+			throw new Error("mdom: cannot edit another document in a transaction");
 		}
 		if (
 			owner &&
 			MMutation.managed.has(owner) &&
 			MMutation.active?.root !== owner
 		) {
-			throw new Error('mdom: document mutations require history.edit');
+			throw new Error("mdom: document mutations require history.edit");
 		}
 	}
 
@@ -128,7 +128,7 @@ export class MMutation {
 			const previous = MMutation.owners.get(node);
 			if (previous && (previous !== owner || node === previous)) {
 				throw new Error(
-					'mdom: moving nodes between documents or moving a document root is unsupported',
+					"mdom: moving nodes between documents or moving a document root is unsupported",
 				);
 			}
 			MMutation.assertWritable(node);
@@ -185,19 +185,19 @@ export class MMutation {
 			const result = operation();
 			if (
 				result != null &&
-				(typeof result === 'object' || typeof result === 'function') &&
-				'then' in result &&
-				typeof result.then === 'function'
+				(typeof result === "object" || typeof result === "function") &&
+				"then" in result &&
+				typeof result.then === "function"
 			) {
 				// A returned promise cannot extend the synchronous mutation window.
 				if (result instanceof Promise) {
 					void result.catch(() => {});
 				}
-				throw new Error('mdom: transaction callbacks must be synchronous');
+				throw new Error("mdom: transaction callbacks must be synchronous");
 			}
 			return result;
 		} catch (error) {
-			this.restore('before');
+			this.restore("before");
 			throw error;
 		} finally {
 			MMutation.active = null;
@@ -231,7 +231,7 @@ export class MMutation {
 		return false;
 	}
 
-	restore(side: 'before' | 'after'): void {
+	restore(side: "before" | "after"): void {
 		// No read runs mid-restore, so stamping each chain as it stands before and
 		// after the whole replay covers every ancestor a read could see.
 		this.touchAll();

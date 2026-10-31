@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './m-dom-parser';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser } from "./m-dom-parser";
 
 // Chord members with no <voice> of their own: they stack on the note before them
 // and belong to its voice. Bucketing them into '1' invented a voice and, with no
@@ -16,23 +16,23 @@ const IMPLICIT_VOICE = `<score-partwise>
   </part>
 </score-partwise>`;
 
-describe('Voice reader — chord members inherit their lead’s voice', () => {
+describe("Voice reader, chord members inherit their lead’s voice", () => {
 	const measure = new MDOMParser()
 		.parseFromString(IMPLICIT_VOICE)
-		.score.getPart('P1')!
-		.getMeasure('1')!;
+		.score.getPart("P1")!
+		.getMeasure("1")!;
 
-	it('does not invent a voice 1 for the <voice>-less chord members', () => {
-		expect(measure.voices.map((voice) => voice.id)).toEqual(['2']);
+	it("does not invent a voice 1 for the <voice>-less chord members", () => {
+		expect(measure.voices.map((voice) => voice.id)).toEqual(["2"]);
 	});
 
-	it('keeps the two stacks separate, each at its lead’s onset', () => {
-		const chords = measure.getOrCreateVoice('2').chords;
+	it("keeps the two stacks separate, each at its lead’s onset", () => {
+		const chords = measure.getOrCreateVoice("2").chords;
 		expect(
 			chords.map((chord) => chord.notes.map((note) => note.pitch?.step)),
 		).toEqual([
-			['C', 'G'],
-			['D', 'A'],
+			["C", "G"],
+			["D", "A"],
 		]);
 		expect(chords.map((chord) => chord.measureBeat)).toEqual([0, 1]);
 	});

@@ -1,7 +1,7 @@
-import type { Direction } from './direction';
-import type { Measure } from './measure';
+import type { Direction } from "./direction";
+import type { Measure } from "./measure";
 
-const DYNAMICS = ['ppp', 'pp', 'p', 'mp', 'mf', 'f', 'ff', 'fff'];
+const DYNAMICS = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"];
 
 /** One staff's direction in a measure, in the order Guitar Pro export reads it. */
 interface StaffDirection {
@@ -51,7 +51,7 @@ export class GuitarProDirectionIndex {
 		const before =
 			measure.index > 0
 				? this.endOf(measure.part.measures[measure.index - 1]!, staff)
-				: 'F';
+				: "F";
 		const entry = this.staffMeasure(measure, staff);
 		const reached = upperBound(entry.byBeat, onset);
 		this.reportUpTo(entry, reached);
@@ -71,7 +71,7 @@ export class GuitarProDirectionIndex {
 			start--;
 		}
 		let dynamic =
-			start >= 0 ? this.ends.get(measures[start]!)!.get(staff)! : 'F';
+			start >= 0 ? this.ends.get(measures[start]!)!.get(staff)! : "F";
 		for (let index = start + 1; index <= measure.index; index++) {
 			const current = measures[index]!;
 			const entry = this.staffMeasure(current, staff);
@@ -112,7 +112,9 @@ export class GuitarProDirectionIndex {
 		for (const [order, direction] of measure.directions.entries()) {
 			let dynamic: string | null = null;
 			const unsupported: string[] = [];
-			for (const mark of direction.dynamics.flatMap((d) => d.marks)) {
+			for (const mark of direction.dynamics.flatMap(
+				(dynamics) => dynamics.marks,
+			)) {
 				if (DYNAMICS.includes(mark)) {
 					dynamic = mark.toUpperCase();
 				} else {
@@ -131,7 +133,10 @@ export class GuitarProDirectionIndex {
 		}
 		const staves = new Map<string, StaffMeasure>();
 		for (const [staff, list] of lists) {
-			const byBeat = list.toSorted((a, b) => a.beat - b.beat);
+			const byBeat = list.toSorted(
+				(staffDirection2, staffDirection) =>
+					staffDirection2.beat - staffDirection.beat,
+			);
 			const latest: Array<StaffDirection | null> = [];
 			let best: StaffDirection | null = null;
 			for (const entry of byBeat) {
@@ -161,7 +166,10 @@ export class GuitarProDirectionIndex {
 		}
 		const fresh = entry.byBeat
 			.slice(entry.reported, count)
-			.toSorted((a, b) => a.order - b.order);
+			.toSorted(
+				(staffDirection, staffDirection2) =>
+					staffDirection.order - staffDirection2.order,
+			);
 		entry.reported = count;
 		for (const direction of fresh) {
 			for (const feature of direction.unsupported) {

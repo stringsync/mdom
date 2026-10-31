@@ -1,10 +1,13 @@
-import { xml2js } from 'xml-js';
-import { type ArchiveOptions, ArchiveReader } from './archive-reader';
-import { MDocument } from './m-document';
-import { appendChildren, MCData, MElement, type MNode, MText } from './m-node';
-import { elementFor } from './registry';
-import type { XmlNode } from './xml';
-import { isSafeDoctype } from './xml-syntax';
+import { xml2js } from "xml-js";
+import { type ArchiveOptions, ArchiveReader } from "./archive-reader";
+import { MCData } from "./m-cdata";
+import { MDocument } from "./m-document";
+import { appendChildren, MElement } from "./m-element";
+import type { MNode } from "./m-node";
+import { MText } from "./m-text";
+import { elementFor } from "./registry";
+import type { XmlNode } from "./xml";
+import { isSafeDoctype } from "./xml-syntax";
 
 /** Parses a MusicXML string into an {@link MDocument} tree of typed nodes. */
 export class MDOMParser {
@@ -17,11 +20,13 @@ export class MDOMParser {
 	parseFromString(xml: string): MDocument {
 		const tree = xml2js(xml, { compact: false }) as unknown as XmlNode;
 		const top = tree.elements ?? [];
-		const root = top.find((n) => n.type === 'element');
+		const root = top.find((xmlNode) => xmlNode.type === "element");
 		if (!root) {
-			throw new Error('MusicXML has no root element');
+			throw new Error("MusicXML has no root element");
 		}
-		const doctype = top.find((n) => n.type === 'doctype')?.doctype?.trim();
+		const doctype = top
+			.find((xmlNode) => xmlNode.type === "doctype")
+			?.doctype?.trim();
 		return new MDocument(
 			build(root),
 			tree.declaration?.attributes ?? null,
@@ -42,15 +47,15 @@ export class MDOMParser {
 		opts: ArchiveOptions = {},
 	): Promise<MDocument> {
 		const archive = await ArchiveReader.load(await blob.arrayBuffer(), opts);
-		const container = await archive.text('META-INF/container.xml');
+		const container = await archive.text("META-INF/container.xml");
 		if (container === null) {
-			throw new Error('MXL archive has no META-INF/container.xml');
+			throw new Error("MXL archive has no META-INF/container.xml");
 		}
 		const fullPath = findRootfilePath(
 			xml2js(container, { compact: false }) as unknown as XmlNode,
 		);
 		if (!fullPath) {
-			throw new Error('MXL container.xml has no <rootfile>');
+			throw new Error("MXL container.xml has no <rootfile>");
 		}
 		const score = await archive.text(fullPath);
 		if (score === null) {
@@ -62,8 +67,8 @@ export class MDOMParser {
 
 /** Depth-first search for the first `<rootfile>` element's full-path attribute. */
 function findRootfilePath(node: XmlNode): string | undefined {
-	if (node.name === 'rootfile') {
-		return node.attributes?.['full-path'];
+	if (node.name === "rootfile") {
+		return node.attributes?.["full-path"];
 	}
 	for (const child of node.elements ?? []) {
 		const found = findRootfilePath(child);
@@ -76,7 +81,7 @@ function findRootfilePath(node: XmlNode): string | undefined {
 
 /** Build a typed (or plain) element tree from an xml-js node, recursively. */
 function build(node: XmlNode): MElement {
-	const el = elementFor(node.name ?? '');
+	const el = elementFor(node.name ?? "");
 
 	for (const [key, value] of Object.entries(node.attributes ?? {})) {
 		el.setAttribute(key, value);
@@ -86,15 +91,15 @@ function build(node: XmlNode): MElement {
 	// growing child list per sibling, quadratic for wide parts and GPIF tables.
 	const children: MNode[] = [];
 	for (const child of node.elements ?? []) {
-		if (child.type === 'element') {
+		if (child.type === "element") {
 			const built = build(child);
 			// Some exporters put a barline's ending after its repeat. Repair this
 			// on import so the tree itself has the order MusicXML requires.
 			const repeat =
-				el.tag === 'barline' && built.tag === 'ending'
+				el.tag === "barline" && built.tag === "ending"
 					? children.findIndex(
 							(sibling) =>
-								sibling instanceof MElement && sibling.tag === 'repeat',
+								sibling instanceof MElement && sibling.tag === "repeat",
 						)
 					: -1;
 			if (repeat < 0) {
@@ -103,12 +108,12 @@ function build(node: XmlNode): MElement {
 				children.splice(repeat, 0, built);
 			}
 		} else if (
-			child.type === 'text' &&
-			typeof child.text === 'string' &&
-			child.text.trim() !== ''
+			child.type === "text" &&
+			typeof child.text === "string" &&
+			child.text.trim() !== ""
 		) {
 			children.push(new MText(child.text));
-		} else if (child.type === 'cdata' && typeof child.cdata === 'string') {
+		} else if (child.type === "cdata" && typeof child.cdata === "string") {
 			children.push(new MCData(child.cdata));
 		}
 		// Whitespace-only text and comments are dropped so serialization stays

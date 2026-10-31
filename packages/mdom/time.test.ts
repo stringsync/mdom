@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './m-dom-parser';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser } from "./m-dom-parser";
 
 // m1: common time. m2: a composite 3+2/8 meter (two beats/beat-type pairs).
 const SAMPLE = `<score-partwise>
@@ -15,21 +15,21 @@ const SAMPLE = `<score-partwise>
   </part>
 </score-partwise>`;
 
-describe('Time', () => {
-	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
+describe("Time", () => {
+	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart("P1")!;
 
-	it('reads a simple meter with a symbol', () => {
-		const time = part.getMeasure('1')!.getTime()!;
-		expect(time.beats).toBe('4');
-		expect(time.beatType).toBe('4');
-		expect(time.symbol).toBe('common');
+	it("reads a simple meter with a symbol", () => {
+		const time = part.getMeasure("1")!.getTime()!;
+		expect(time.beats).toBe("4");
+		expect(time.beatType).toBe("4");
+		expect(time.symbol).toBe("common");
 	});
 
-	it('reads a composite meter as ordered components', () => {
-		const time = part.getMeasure('2')!.getTime()!;
+	it("reads a composite meter as ordered components", () => {
+		const time = part.getMeasure("2")!.getTime()!;
 		expect(time.components).toEqual([
-			{ beats: '3', beatType: '8' },
-			{ beats: '2', beatType: '8' },
+			{ beats: "3", beatType: "8" },
+			{ beats: "2", beatType: "8" },
 		]);
 	});
 });

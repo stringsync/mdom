@@ -1,23 +1,23 @@
-import type { MElement } from './m-node';
+import type { MElement } from "./m-element";
 
 /** The CSS keyword sizes MusicXML allows in place of a point size. */
 export type CssFontSize =
-	| 'xx-small'
-	| 'x-small'
-	| 'small'
-	| 'medium'
-	| 'large'
-	| 'x-large'
-	| 'xx-large';
+	| "xx-small"
+	| "x-small"
+	| "small"
+	| "medium"
+	| "large"
+	| "x-large"
+	| "xx-large";
 
 /** A MusicXML `font-size`: points, or a CSS keyword size. */
 export type FontSize = number | CssFontSize;
 
 /** Horizontal text alignment (`justify`, `halign`). */
-export type TextAlign = 'left' | 'center' | 'right';
+export type TextAlign = "left" | "center" | "right";
 
 /** Vertical text alignment (`valign`). */
-export type TextVerticalAlign = 'top' | 'middle' | 'bottom' | 'baseline';
+export type TextVerticalAlign = "top" | "middle" | "bottom" | "baseline";
 
 /**
  * The MusicXML `font` attribute group as read. Each field is null when that
@@ -28,37 +28,28 @@ export interface Font {
 	/** A comma-separated list of family names, or a generic family (`serif`). */
 	family: string | null;
 	size: FontSize | null;
-	style: 'normal' | 'italic' | null;
-	weight: 'normal' | 'bold' | null;
+	style: "normal" | "italic" | null;
+	weight: "normal" | "bold" | null;
 }
 
 /** The font attributes to write; an omitted field is left to inheritance. */
 export interface FontSpec {
 	family?: string;
 	size?: FontSize;
-	style?: 'normal' | 'italic';
-	weight?: 'normal' | 'bold';
+	style?: "normal" | "italic";
+	weight?: "normal" | "bold";
 }
 
-const CSS_FONT_SIZES = new Set<string>([
-	'xx-small',
-	'x-small',
-	'small',
-	'medium',
-	'large',
-	'x-large',
-	'xx-large',
-]);
-
 /** The explicit font attributes of `element`; all null when it is null. */
+// vet-ignore noop-objects-over-null: an absent optional child is XML data, passed straight in from child(), not a missing collaborator.
 export function fontOf(element: MElement | null | undefined): Font {
-	const style = element?.getAttribute('font-style') ?? null;
-	const weight = element?.getAttribute('font-weight') ?? null;
+	const style = element?.getAttribute("font-style") ?? null;
+	const weight = element?.getAttribute("font-weight") ?? null;
 	return {
-		family: element?.getAttribute('font-family') ?? null,
-		size: fontSizeOf(element?.getAttribute('font-size') ?? null),
-		style: style === 'normal' || style === 'italic' ? style : null,
-		weight: weight === 'normal' || weight === 'bold' ? weight : null,
+		family: element?.getAttribute("font-family") ?? null,
+		size: fontSizeOf(element?.getAttribute("font-size") ?? null),
+		style: style === "normal" || style === "italic" ? style : null,
+		weight: weight === "normal" || weight === "bold" ? weight : null,
 	};
 }
 
@@ -77,14 +68,14 @@ export function hasFont(font: Font): boolean {
  * removed, so they inherit again. Null removes them all.
  */
 export function setFontOf(element: MElement, spec: FontSpec | null): void {
-	setOrRemove(element, 'font-family', spec?.family);
+	setOrRemove(element, "font-family", spec?.family);
 	setOrRemove(
 		element,
-		'font-size',
+		"font-size",
 		spec?.size === undefined ? undefined : String(spec.size),
 	);
-	setOrRemove(element, 'font-style', spec?.style);
-	setOrRemove(element, 'font-weight', spec?.weight);
+	setOrRemove(element, "font-style", spec?.style);
+	setOrRemove(element, "font-weight", spec?.weight);
 }
 
 /** Each field of `explicit`, falling back to `inherited` where it is null. */
@@ -100,21 +91,21 @@ export function resolveFont(explicit: Font, inherited: Font | null): Font {
 /** A `justify` or `halign` value; null when absent or unrecognized. */
 export function textAlignOf(
 	element: MElement,
-	name: 'justify' | 'halign',
+	name: "justify" | "halign",
 ): TextAlign | null {
 	const value = element.getAttribute(name);
-	return value === 'left' || value === 'center' || value === 'right'
+	return value === "left" || value === "center" || value === "right"
 		? value
 		: null;
 }
 
 /** The `valign` value; null when absent or unrecognized. */
 export function verticalAlignOf(element: MElement): TextVerticalAlign | null {
-	const value = element.getAttribute('valign');
-	return value === 'top' ||
-		value === 'middle' ||
-		value === 'bottom' ||
-		value === 'baseline'
+	const value = element.getAttribute("valign");
+	return value === "top" ||
+		value === "middle" ||
+		value === "bottom" ||
+		value === "baseline"
 		? value
 		: null;
 }
@@ -140,7 +131,7 @@ function fontSizeOf(text: string | null): FontSize | null {
 		return text as CssFontSize;
 	}
 	const points = Number(text);
-	return text.trim() === '' || Number.isNaN(points) ? null : points;
+	return text.trim() === "" || Number.isNaN(points) ? null : points;
 }
 
 /** Which lyrics a `<lyric-font>` or `<lyric-language>` applies to; an absent field matches any. */
@@ -191,3 +182,13 @@ export function lyricDefaultFor<
 	}
 	return best;
 }
+
+const CSS_FONT_SIZES = new Set<string>([
+	"xx-small",
+	"x-small",
+	"small",
+	"medium",
+	"large",
+	"x-large",
+	"xx-large",
+]);

@@ -1,4 +1,4 @@
-import { MElement } from './m-node';
+import { MElement } from "./m-element";
 import {
 	colorOf,
 	type Position,
@@ -6,16 +6,16 @@ import {
 	placementOf,
 	positionOf,
 	setPositionOf,
-} from './print-style';
+} from "./print-style";
 
 /**
  * A `<dynamics>` under `<direction-type>`: one or more dynamic markings printed
- * as a unit. MusicXML names the marking by the TAG — `<dynamics><sfz/>` — so
+ * as a unit. MusicXML names the marking by the TAG, `<dynamics><sfz/>`, so
  * {@link marks} returns tag names, which are also the text to print.
  */
 export class Dynamics extends MElement {
 	constructor() {
-		super('dynamics');
+		super("dynamics");
 	}
 
 	/**
@@ -24,12 +24,12 @@ export class Dynamics extends MElement {
 	 */
 	get marks(): string[] {
 		return this.childrenOfType(MElement).map((mark) =>
-			mark.tag === 'other-dynamics' ? (mark.text ?? '') : mark.tag,
+			mark.tag === "other-dynamics" ? (mark.text ?? "") : mark.tag,
 		);
 	}
 
 	/** `placement`; null when unstated. */
-	get placement(): 'above' | 'below' | null {
+	get placement(): "above" | "below" | null {
 		return placementOf(this);
 	}
 

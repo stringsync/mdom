@@ -1,40 +1,34 @@
-import { Clef } from './clef';
-import { Key } from './key';
-import { MElement } from './m-node';
+import { Clef } from "./clef";
+import { buildForPart, ForPart } from "./for-part";
+import { Key } from "./key";
+import { MElement } from "./m-element";
 import {
 	appendValue,
 	type Measure,
 	placeInAttributes,
 	transposeChoiceBlock,
 	valueElement,
-} from './measure';
-import type { Note } from './note';
-import type { Part } from './part';
-import { diatonicSteps, type PitchInterval, transposePitch } from './pitch';
-import { appliesToStaff, attributeBackFrom } from './signature';
-import {
-	buildForPart,
-	buildTranspose,
-	ForPart,
-	shiftsPitchClass,
-	Transpose,
-	type TransposeGroup,
-	type TransposeSpec,
-} from './transpose';
+} from "./measure";
+import type { Note } from "./note";
+import type { Part } from "./part";
+import { diatonicSteps, type PitchInterval, transposePitch } from "./pitch";
+import { appliesToStaff, attributeBackFrom } from "./signature";
+import { buildTranspose, shiftsPitchClass, Transpose } from "./transpose";
+import type { TransposeGroup, TransposeSpec } from "./transpose-group";
 
 /** The printed glyph for each whole-tone-free alter, for rewriting `<accidental>`. */
 const ACCIDENTALS: Record<number, string> = {
-	[-2]: 'flat-flat',
-	[-1]: 'flat',
-	0: 'natural',
-	1: 'sharp',
-	2: 'double-sharp',
+	[-2]: "flat-flat",
+	[-1]: "flat",
+	0: "natural",
+	1: "sharp",
+	2: "double-sharp",
 };
 
 /** The glyphs {@link ACCIDENTALS} knows, so a rewrite leaves others (microtones, Sori) alone. */
 const PLAIN_ACCIDENTALS = new Set([
 	...Object.values(ACCIDENTALS),
-	'sharp-sharp',
+	"sharp-sharp",
 ]);
 
 /** An edit planned from the document as it was, run once every read is done. */
@@ -68,7 +62,7 @@ export function convertPartsToConcertPitch(parts: readonly Part[]): void {
 					edits.push(...moveHarmony(harmony, pitchClassOf(transpose)));
 				}
 			}
-			for (const attrs of measure.childrenNamed('attributes')) {
+			for (const attrs of measure.childrenNamed("attributes")) {
 				for (const key of attrs.childrenOfType(Key)) {
 					const transpose = transposeAtPoint(measure, attrs, keyStaff(key));
 					if (transpose && shiftsPitchClass(transpose)) {
@@ -124,7 +118,7 @@ export function convertPartsToTransposedPitch(parts: readonly Part[]): void {
 					);
 				}
 			}
-			for (const attrs of measure.childrenNamed('attributes')) {
+			for (const attrs of measure.childrenNamed("attributes")) {
 				for (const key of attrs.childrenOfType(Key)) {
 					const forPart = forPartAtPoint(measure, attrs, keyStaff(key));
 					if (forPart) {
@@ -158,7 +152,7 @@ function toForPart(
 	attrs: MElement,
 	transpose: Transpose,
 ): Edit[] {
-	const staff = transpose.staff ?? '1';
+	const staff = transpose.staff ?? "1";
 	const before = transposeBefore(measure, attrs, staff);
 	if (!shiftsPitchClass(transpose) && !(before && shiftsPitchClass(before))) {
 		return [];
@@ -172,7 +166,7 @@ function toForPart(
 	return [
 		() => {
 			placeInAttributes(
-				transposeChoiceBlock(attrs, 'for-part'),
+				transposeChoiceBlock(attrs, "for-part"),
 				buildForPart(
 					{ transpose: partTranspose },
 					transpose.staff ?? undefined,
@@ -204,7 +198,7 @@ function toTranspose(
 	attrs: MElement,
 	forPart: ForPart,
 ): Edit[] {
-	const staff = forPart.staff ?? '1';
+	const staff = forPart.staff ?? "1";
 	const beside = pointBlocks(attrs)
 		.flatMap((block) => block.childrenOfType(Transpose))
 		.find((transpose) => transpose.staff === forPart.staff);
@@ -222,7 +216,7 @@ function toTranspose(
 				beside.setTransposition(spec);
 			} else {
 				placeInAttributes(
-					transposeChoiceBlock(attrs, 'transpose'),
+					transposeChoiceBlock(attrs, "transpose"),
 					buildTranspose(spec, forPart.staff ?? undefined),
 				);
 			}
@@ -253,8 +247,8 @@ function foldForPartInto(
 	const forPart = attributeBackFrom(
 		measure,
 		measure.children.indexOf(pointBlocks(attrs)[0]!),
-		`for-part:${transpose.staff ?? '1'}`,
-		forPartPick(transpose.staff ?? '1'),
+		`for-part:${transpose.staff ?? "1"}`,
+		forPartPick(transpose.staff ?? "1"),
 	);
 	if (!forPart) {
 		return [];
@@ -313,7 +307,7 @@ function moveKey(key: Key, interval: PitchInterval): Edit {
 	const fifths = key.fifths;
 	if (fifths != null) {
 		const by = fifthsShift(interval);
-		return () => key.child('fifths')!.setText(String(fifths + by));
+		return () => key.child("fifths")!.setText(String(fifths + by));
 	}
 	const elements = key.childrenOfType(MElement);
 	const moved = key.alterations.map(({ step, alter }) =>
@@ -321,19 +315,19 @@ function moveKey(key: Key, interval: PitchInterval): Edit {
 	);
 	return () => {
 		elements
-			.filter((element) => element.tag === 'key-step')
+			.filter((element) => element.tag === "key-step")
 			.forEach((step, index) => {
 				const to = moved[index]!;
 				step.setText(to.step);
 				const alter = elements[elements.indexOf(step) + 1];
-				if (alter?.tag === 'key-alter') {
+				if (alter?.tag === "key-alter") {
 					alter.setText(String(to.alter));
 					const accidental = elements[elements.indexOf(alter) + 1];
 					const glyph = ACCIDENTALS[to.alter];
 					if (
-						accidental?.tag === 'key-accidental' &&
+						accidental?.tag === "key-accidental" &&
 						glyph &&
-						PLAIN_ACCIDENTALS.has(accidental.text ?? '')
+						PLAIN_ACCIDENTALS.has(accidental.text ?? "")
 					) {
 						accidental.setText(glyph);
 					}
@@ -356,8 +350,8 @@ function fifthsShift(interval: PitchInterval): number {
 function moveHarmony(harmony: MElement, interval: PitchInterval): Edit[] {
 	const edits: Edit[] = [];
 	for (const [block, stepTag, alterTag] of [
-		['root', 'root-step', 'root-alter'],
-		['bass', 'bass-step', 'bass-alter'],
+		["root", "root-step", "root-alter"],
+		["bass", "bass-step", "bass-alter"],
 	] as const) {
 		for (const element of harmony.childrenNamed(block)) {
 			const step = element.child(stepTag);
@@ -375,7 +369,7 @@ function moveHarmony(harmony: MElement, interval: PitchInterval): Edit[] {
 			);
 			edits.push(() => {
 				step.setText(to.step);
-				step.removeAttribute('text');
+				step.removeAttribute("text");
 				if (alter) {
 					alter.setText(String(to.alter));
 				} else if (to.alter !== 0) {
@@ -388,8 +382,8 @@ function moveHarmony(harmony: MElement, interval: PitchInterval): Edit[] {
 			});
 		}
 	}
-	for (const numeral of harmony.childrenNamed('numeral')) {
-		const fifths = numeral.child('numeral-key')?.child('numeral-fifths');
+	for (const numeral of harmony.childrenNamed("numeral")) {
+		const fifths = numeral.child("numeral-key")?.child("numeral-fifths");
 		if (fifths?.text != null) {
 			const moved = Number(fifths.text) + fifthsShift(interval);
 			edits.push(() => fifths.setText(String(moved)));
@@ -407,19 +401,19 @@ function setPartClef(
 	for (const block of pointBlocks(attrs)) {
 		block
 			.childrenOfType(Clef)
-			.find((clef) => clef.getAttribute('number') === staff)
+			.find((clef) => clef.getAttribute("number") === staff)
 			?.remove();
 	}
 	const clef = new Clef();
 	if (staff != null) {
-		clef.setAttribute('number', staff);
+		clef.setAttribute("number", staff);
 	}
-	appendValue(clef, 'sign', spec.sign);
+	appendValue(clef, "sign", spec.sign);
 	if (spec.line != null) {
-		appendValue(clef, 'line', String(spec.line));
+		appendValue(clef, "line", String(spec.line));
 	}
 	if (spec.octaveChange != null) {
-		appendValue(clef, 'clef-octave-change', String(spec.octaveChange));
+		appendValue(clef, "clef-octave-change", String(spec.octaveChange));
 	}
 	placeInAttributes(attrs, clef);
 }
@@ -440,7 +434,7 @@ function pointBlocks(attrs: MElement): MElement[] {
 	const siblings = attrs.parent!.children;
 	const isBlock = (index: number) => {
 		const node = siblings[index];
-		return node instanceof MElement && node.tag === 'attributes';
+		return node instanceof MElement && node.tag === "attributes";
 	};
 	let first = siblings.indexOf(attrs);
 	while (isBlock(first - 1)) {
@@ -512,7 +506,7 @@ function forPartPick(staff: string) {
 }
 
 function keyStaff(key: Key): string {
-	return key.getAttribute('number') ?? '1';
+	return key.getAttribute("number") ?? "1";
 }
 
 function shiftsOctaves(transpose: TransposeGroup): boolean {

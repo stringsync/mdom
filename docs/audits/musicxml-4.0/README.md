@@ -7,7 +7,7 @@ are included. The TSVs are a frozen measurement, not a live coverage scoreboard.
 The largest observed gaps are metadata, instruments, page/staff layout, and text
 formatting. Transpose and richer chord symbols have fewer examples but affect
 musical interpretation. Guitar technique **writers** remain valuable work already
-assigned to #2–#6; registration of a technical mark does not cover its nested
+assigned to #2-#6; registration of a technical mark does not cover its nested
 payload.
 
 ## Scope and method

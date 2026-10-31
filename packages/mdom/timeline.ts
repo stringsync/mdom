@@ -1,7 +1,9 @@
-import { MElement, type MNode, MText } from './m-node';
-import type { Measure } from './measure';
-import { Note } from './note';
-import { memo, stampOf } from './read-cache';
+import { MElement } from "./m-element";
+import type { MNode } from "./m-node";
+import { MText } from "./m-text";
+import type { Measure } from "./measure";
+import { Note } from "./note";
+import { memo, stampOf } from "./read-cache";
 
 /**
  * Onset of `target` within `measure`, in divisions (not beats): a single
@@ -12,7 +14,7 @@ import { memo, stampOf } from './read-cache';
  */
 export function onsetOf(measure: Measure, target: MElement): number | null {
 	return (
-		memo(measure, 'onsets', stampOf(measure, 'subtree'), () =>
+		memo(measure, "onsets", stampOf(measure, "subtree"), () =>
 			onsetsIn(measure),
 		).get(target) ?? null
 	);
@@ -20,7 +22,7 @@ export function onsetOf(measure: Measure, target: MElement): number | null {
 
 /**
  * Every element child's onset within `measure`, in divisions, from a single fold
- * — the whole timeline in one pass. {@link onsetOf} is a lookup into it; readers
+ *, the whole timeline in one pass. {@link onsetOf} is a lookup into it; readers
  * that need many onsets at once (ordering a measure's spanner markers by when
  * they sound) fold once instead of once per element. `<backup>`/`<forward>` move
  * the cursor and get no onset of their own.
@@ -33,15 +35,15 @@ export function onsetsIn(measure: Measure): Map<MElement, number> {
 		if (!(node instanceof MElement)) {
 			continue;
 		}
-		if (node.tag === 'backup') {
-			cursor -= Number(node.child('duration')?.text ?? 0);
-		} else if (node.tag === 'forward') {
-			cursor += Number(node.child('duration')?.text ?? 0);
+		if (node.tag === "backup") {
+			cursor -= Number(node.child("duration")?.text ?? 0);
+		} else if (node.tag === "forward") {
+			cursor += Number(node.child("duration")?.text ?? 0);
 		} else if (node instanceof Note) {
 			// <chord/> notes share the prior onset; <grace/> notes are stolen time and
-			// sit at the cursor — neither advances it.
-			const isChord = node.child('chord') !== null;
-			const isGrace = node.child('grace') !== null;
+			// sit at the cursor, neither advances it.
+			const isChord = node.child("chord") !== null;
+			const isGrace = node.child("grace") !== null;
 			onsets.set(node, isChord ? chordOnset : cursor);
 			if (!isChord && !isGrace) {
 				chordOnset = cursor;
@@ -57,7 +59,7 @@ export function onsetsIn(measure: Measure): Map<MElement, number> {
 /**
  * Divisions elapsed at the end of the measure's content: the furthest the fold
  * reaches, across every voice. Not the same as {@link writeCursor}, which is
- * where the cursor *finishes* — a measure ending with a `<backup>` leaves that
+ * where the cursor *finishes*, a measure ending with a `<backup>` leaves that
  * behind the content. Callers divide by divisions in effect to get beats.
  */
 export function contentEnd(measure: Measure): number {
@@ -67,14 +69,14 @@ export function contentEnd(measure: Measure): number {
 		if (!(node instanceof MElement)) {
 			continue;
 		}
-		if (node.tag === 'backup') {
-			cursor -= Number(node.child('duration')?.text ?? 0);
-		} else if (node.tag === 'forward') {
-			cursor += Number(node.child('duration')?.text ?? 0);
+		if (node.tag === "backup") {
+			cursor -= Number(node.child("duration")?.text ?? 0);
+		} else if (node.tag === "forward") {
+			cursor += Number(node.child("duration")?.text ?? 0);
 		} else if (
 			node instanceof Note &&
-			node.child('chord') === null &&
-			node.child('grace') === null
+			node.child("chord") === null &&
+			node.child("grace") === null
 		) {
 			cursor += node.duration ?? 0;
 		} else {
@@ -87,7 +89,7 @@ export function contentEnd(measure: Measure): number {
 
 /**
  * The write cursor: divisions elapsed after all current content, in document
- * order — where the next appended note lands unless an onset says otherwise.
+ * order, where the next appended note lands unless an onset says otherwise.
  */
 export function writeCursor(measure: Measure): number {
 	let cursor = 0;
@@ -95,14 +97,14 @@ export function writeCursor(measure: Measure): number {
 		if (!(node instanceof MElement)) {
 			continue;
 		}
-		if (node.tag === 'backup') {
-			cursor -= Number(node.child('duration')?.text ?? 0);
-		} else if (node.tag === 'forward') {
-			cursor += Number(node.child('duration')?.text ?? 0);
+		if (node.tag === "backup") {
+			cursor -= Number(node.child("duration")?.text ?? 0);
+		} else if (node.tag === "forward") {
+			cursor += Number(node.child("duration")?.text ?? 0);
 		} else if (
 			node instanceof Note &&
-			node.child('chord') === null &&
-			node.child('grace') === null
+			node.child("chord") === null &&
+			node.child("grace") === null
 		) {
 			cursor += node.duration ?? 0;
 		}
@@ -121,8 +123,8 @@ export function alignCursor(measure: Measure, target: number): void {
 	if (delta === 0) {
 		return;
 	}
-	const mover = new MElement(delta > 0 ? 'forward' : 'backup');
-	const duration = new MElement('duration');
+	const mover = new MElement(delta > 0 ? "forward" : "backup");
+	const duration = new MElement("duration");
 	duration.append(new MText(String(Math.abs(delta))));
 	mover.append(duration);
 	measure.append(mover);
@@ -156,17 +158,17 @@ export function repairTimelineAfter(
 		const mover = children[index];
 		if (
 			!(mover instanceof MElement) ||
-			(mover.tag !== 'backup' && mover.tag !== 'forward')
+			(mover.tag !== "backup" && mover.tag !== "forward")
 		) {
 			continue;
 		}
 		const next = nextNoteFrom(children, index + 1);
 		if (next && next.voice !== edited.voice) {
-			const duration = mover.child('duration');
+			const duration = mover.child("duration");
 			if (duration) {
 				const current = Number(duration.text ?? 0);
 				duration.setText(
-					String(mover.tag === 'backup' ? current + delta : current - delta),
+					String(mover.tag === "backup" ? current + delta : current - delta),
 				);
 			}
 			return;

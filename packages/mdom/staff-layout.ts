@@ -1,5 +1,5 @@
-import { MElement } from './m-node';
-import { insertMetadata } from './score-metadata';
+import { MElement } from "./m-element";
+import { insertMetadata } from "./score-metadata";
 
 /**
  * A `<staff-layout>`: the vertical gap above one staff of a part, from the
@@ -9,29 +9,29 @@ import { insertMetadata } from './score-metadata';
  */
 export class StaffLayout extends MElement {
 	constructor() {
-		super('staff-layout');
+		super("staff-layout");
 	}
 
 	/** The `number` attribute: which staff of the part, top first; `'1'` when absent. */
 	get staff(): string {
-		return this.getAttribute('number') ?? '1';
+		return this.getAttribute("number") ?? "1";
 	}
 
 	/** `<staff-distance>` in tenths; null when unset, which leaves it to the defaults or the application. */
 	get distance(): number | null {
-		const text = this.child('staff-distance')?.text;
+		const text = this.child("staff-distance")?.text;
 		return text == null ? null : Number(text);
 	}
 
 	/** Set `<staff-distance>` in tenths, or remove it with null. */
 	setDistance(tenths: number | null): void {
 		if (tenths === null) {
-			this.child('staff-distance')?.remove();
+			this.child("staff-distance")?.remove();
 			return;
 		}
-		let element = this.child('staff-distance');
+		let element = this.child("staff-distance");
 		if (!element) {
-			element = new MElement('staff-distance');
+			element = new MElement("staff-distance");
 			this.append(element);
 		}
 		element.setText(String(tenths));
@@ -40,6 +40,7 @@ export class StaffLayout extends MElement {
 
 /** The `<staff-layout>` for `staff` among `parent`'s children; a numberless one is staff 1. */
 export function staffLayoutIn(
+	// vet-ignore noop-objects-over-null: an absent parent is XML data, passed straight in from child().
 	parent: MElement | null | undefined,
 	staff: string,
 ): StaffLayout | null {
@@ -59,17 +60,17 @@ export function getOrCreateStaffLayoutIn(
 	staff: string | undefined,
 	order: readonly string[],
 ): StaffLayout {
-	const existing = staffLayoutIn(parent, staff ?? '1');
+	const existing = staffLayoutIn(parent, staff ?? "1");
 	if (existing) {
 		return existing;
 	}
 	const layout = new StaffLayout();
 	if (staff !== undefined) {
-		layout.setAttribute('number', staff);
+		layout.setAttribute("number", staff);
 	}
 	const after = parent
 		.childrenOfType(StaffLayout)
-		.find((each) => Number(each.staff) > Number(staff ?? '1'));
+		.find((each) => Number(each.staff) > Number(staff ?? "1"));
 	if (after) {
 		parent.insertBefore(layout, after);
 	} else {

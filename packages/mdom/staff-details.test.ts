@@ -1,12 +1,13 @@
-import { describe, expect, it } from 'bun:test';
-import { LineDetail } from './line-detail';
-import { MDOMParser } from './m-dom-parser';
-import { StaffDetails } from './staff-details';
-import { StaffTuning } from './staff-tuning';
+import { describe, expect, it } from "bun:test";
+import { LineDetail } from "./line-detail";
+import { MDOMParser } from "./m-dom-parser";
+import { StaffDetails } from "./staff-details";
+import { StaffTuning } from "./staff-tuning";
 
-// A notation+tab part as Guitar Pro writes it: staff 1 gets the guitar's tunings
-// copied onto it with NO <staff-lines>, staff 2 is the real tab staff.
-const TAB = `
+describe("StaffDetails", () => {
+	// A notation+tab part as Guitar Pro writes it: staff 1 gets the guitar's tunings
+	// copied onto it with NO <staff-lines>, staff 2 is the real tab staff.
+	const TAB = `
 <score-partwise>
   <part id="P1">
     <measure number="1">
@@ -29,15 +30,14 @@ const TAB = `
   </part>
 </score-partwise>`;
 
-describe('StaffDetails', () => {
-	const part = new MDOMParser().parseFromString(TAB).score.getPart('P1')!;
-	const tab = part.getMeasure('1')!.getStaffDetails('2')!;
+	const part = new MDOMParser().parseFromString(TAB).score.getPart("P1")!;
+	const tab = part.getMeasure("1")!.getStaffDetails("2")!;
 
-	it('reads every declaration on the block', () => {
+	it("reads every declaration on the block", () => {
 		expect(tab).toBeInstanceOf(StaffDetails);
 		expect(tab.staffLines).toBe(6);
 		expect(tab.staffSize).toBe(80);
-		expect(tab.showFrets).toBe('letters');
+		expect(tab.showFrets).toBe("letters");
 		expect(tab.capo).toBe(2);
 		expect(tab.printObject).toBe(false);
 		expect(tab.lineDetails.map((detail) => detail.line)).toEqual([1]);
@@ -46,10 +46,10 @@ describe('StaffDetails', () => {
 		expect(tab.staffTunings[0]).toBeInstanceOf(StaffTuning);
 	});
 
-	it('keeps an undeclared <staff-lines> distinct from the 5-line default', () => {
-		const notation = part.getMeasure('1')!.getStaffDetails('1')!;
+	it("keeps an undeclared <staff-lines> distinct from the 5-line default", () => {
+		const notation = part.getMeasure("1")!.getStaffDetails("1")!;
 		expect(notation.staffLines).toBeNull(); // the tunings here are spurious
-		expect(part.getMeasure('1')!.getStaveLines('1')).toBe(5);
+		expect(part.getMeasure("1")!.getStaveLines("1")).toBe(5);
 		expect(notation.staffSize).toBeNull();
 		expect(notation.showFrets).toBeNull();
 		expect(notation.capo).toBeNull();
@@ -57,8 +57,8 @@ describe('StaffDetails', () => {
 		expect(notation.lineDetails).toEqual([]);
 	});
 
-	it('carries forward to later measures, and is null when none applies', () => {
-		expect(part.getMeasure('2')!.getStaffDetails('2')?.staffLines).toBe(6);
-		expect(part.getMeasure('1')!.getStaffDetails('3')).toBeNull();
+	it("carries forward to later measures, and is null when none applies", () => {
+		expect(part.getMeasure("2")!.getStaffDetails("2")?.staffLines).toBe(6);
+		expect(part.getMeasure("1")!.getStaffDetails("3")).toBeNull();
 	});
 });

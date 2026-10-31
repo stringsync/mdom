@@ -1,41 +1,42 @@
-import { MElement, required } from './m-node';
-import { Note } from './note';
-import { Part } from './part';
-import { noteMarkers, Spanner, type SpannerSpec } from './spanner';
+import { MElement } from "./m-element";
+import { required } from "./m-node";
+import { Note } from "./note";
+import { Part } from "./part";
+import { noteMarkers, Spanner, type SpannerSpec } from "./spanner";
 
-export type PullOffType = 'start' | 'stop';
+export type PullOffType = "start" | "stop";
 
 /**
- * A `<pull-off>` inside `<notations><technical>` — the guitar pull-off, the
+ * A `<pull-off>` inside `<notations><technical>`, the guitar pull-off, the
  * mirror of {@link HammerOn}. A note-attached spanner: `start` on the fretted
  * note pairs with `stop` on the note pulled off to, joined by `number`.
  */
 export class PullOff extends MElement {
 	constructor() {
-		super('pull-off');
+		super("pull-off");
 	}
 
 	/** Pairing key; '1' when omitted. */
 	get number(): string {
-		return this.getAttribute('number') ?? '1';
+		return this.getAttribute("number") ?? "1";
 	}
 
 	/** `type`: required on a `<pull-off>` and drives pairing. */
 	get pullOffType(): PullOffType {
 		return required(
-			this.getAttribute('type'),
-			'type on <pull-off>',
+			this.getAttribute("type"),
+			"type on <pull-off>",
 		) as PullOffType;
 	}
 
 	/** The note this marker hangs off of. An attached marker always has one. */
 	get note(): Note {
-		return required(this.closest(Note), '<note> ancestor of <pull-off>');
+		return required(this.closest(Note), "<note> ancestor of <pull-off>");
 	}
 
 	/** The part this marker belongs to. An attached marker always has one. */
 	get part(): Part {
-		return required(this.closest(Part), '<part> ancestor of <pull-off>');
+		return required(this.closest(Part), "<part> ancestor of <pull-off>");
 	}
 
 	/** The marker at the far end (same number), scanning the part in document order. */
@@ -60,10 +61,10 @@ export class PullOff extends MElement {
 
 	private spec(): SpannerSpec<PullOff> {
 		return {
-			siblings: noteMarkers(this, (note) => note.pullOffs, 'pullOffs'),
+			siblings: noteMarkers(this, (note) => note.pullOffs, "pullOffs"),
 			// Raw reads so resolution tolerates a malformed typeless marker.
-			isOpen: (marker) => marker.getAttribute('type') === 'start',
-			isClose: (marker) => marker.getAttribute('type') === 'stop',
+			isOpen: (marker) => marker.getAttribute("type") === "start",
+			isClose: (marker) => marker.getAttribute("type") === "stop",
 		};
 	}
 }

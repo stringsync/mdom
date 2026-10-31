@@ -1,13 +1,13 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from "bun:test";
 import {
 	MDOMParser,
 	MDocument,
 	MusicXMLSerializer,
 	Rehearsal,
 	Words,
-} from './index';
-import { MElement } from './m-node';
-import { schemaErrors } from './music-xml-schema';
+} from "./index";
+import { MElement } from "./m-element";
+import { schemaErrors } from "./music-xml-schema";
 
 const serialize = (doc: MDocument) =>
 	new MusicXMLSerializer().serializeToString(doc);
@@ -17,7 +17,7 @@ function tags(element: MElement): string[] {
 	return element.childrenOfType(MElement).map((child) => child.tag);
 }
 
-describe('text formatting — reads', () => {
+describe("text formatting, reads", () => {
 	const doc = parse(`
 		<score-partwise>
 			<defaults>
@@ -55,41 +55,41 @@ describe('text formatting — reads', () => {
 	)[0]!;
 	const lyrics = measure.notes[0]!.lyrics;
 
-	it('reads the score default fonts, numeric and keyword sizes alike', () => {
+	it("reads the score default fonts, numeric and keyword sizes alike", () => {
 		expect(score.musicFont).toEqual({
-			family: 'Bravura',
+			family: "Bravura",
 			size: 20,
 			style: null,
 			weight: null,
 		});
 		expect(score.wordFont).toMatchObject({
-			family: 'Times New Roman',
+			family: "Times New Roman",
 			size: 10.25,
 		});
-		expect(dolce!.font.size).toBe('large');
+		expect(dolce!.font.size).toBe("large");
 		expect(MDocument.empty().score.wordFont).toBeNull();
 	});
 
-	it('matches lyric fonts and languages by verse and name, the most specific winning', () => {
+	it("matches lyric fonts and languages by verse and name, the most specific winning", () => {
 		expect(score.lyricFonts.map((each) => each.number)).toEqual([
 			null,
-			'2',
-			'2',
+			"2",
+			"2",
 		]);
-		expect(score.getLyricFont()!.font.family).toBe('Georgia');
-		expect(score.getLyricFont('2')!.font.style).toBe('italic');
-		expect(score.getLyricFont('2', 'chorus')!.font.weight).toBe('bold');
-		expect(score.getLyricFont('5')!.number).toBeNull();
-		expect(score.getLyricLanguage('3')!.language).toBe('en');
-		expect(score.getLyricLanguage('2', 'chorus')!.language).toBe('de');
+		expect(score.getLyricFont()!.font.family).toBe("Georgia");
+		expect(score.getLyricFont("2")!.font.style).toBe("italic");
+		expect(score.getLyricFont("2", "chorus")!.font.weight).toBe("bold");
+		expect(score.getLyricFont("5")!.number).toBeNull();
+		expect(score.getLyricLanguage("3")!.language).toBe("en");
+		expect(score.getLyricLanguage("2", "chorus")!.language).toBe("de");
 	});
 
-	it('reads explicit words and rehearsal formatting, null where it inherits', () => {
+	it("reads explicit words and rehearsal formatting, null where it inherits", () => {
 		expect(dolce).toBeInstanceOf(Words);
 		expect([dolce!.halign, dolce!.valign, dolce!.justify]).toEqual([
-			'right',
-			'top',
-			'center',
+			"right",
+			"top",
+			"center",
 		]);
 		expect(plain!.font).toEqual({
 			family: null,
@@ -99,131 +99,131 @@ describe('text formatting — reads', () => {
 		});
 		expect(plain!.halign).toBeNull();
 		expect(rehearsal).toBeInstanceOf(Rehearsal);
-		expect(rehearsal.font).toMatchObject({ family: 'Arial', weight: 'bold' });
+		expect(rehearsal.font).toMatchObject({ family: "Arial", weight: "bold" });
 	});
 
-	it('resolves unstated words fields from the word font', () => {
+	it("resolves unstated words fields from the word font", () => {
 		expect(plain!.resolvedFont).toEqual({
-			family: 'Times New Roman',
+			family: "Times New Roman",
 			size: 10.25,
 			style: null,
 			weight: null,
 		});
 		expect(dolce!.resolvedFont).toMatchObject({
-			family: 'Times New Roman',
-			size: 'large',
-			style: 'italic',
+			family: "Times New Roman",
+			size: "large",
+			style: "italic",
 		});
-		expect(rehearsal.resolvedFont.family).toBe('Arial');
+		expect(rehearsal.resolvedFont.family).toBe("Arial");
 		expect(new Words().resolvedFont.family).toBeNull();
 	});
 
-	it('keeps each lyric run its own formatting, resolved against its verse font', () => {
+	it("keeps each lyric run its own formatting, resolved against its verse font", () => {
 		const runs = lyrics[0]!.runs;
-		expect(runs.map((run) => run.font.weight)).toEqual(['bold', null, null]);
+		expect(runs.map((run) => run.font.weight)).toEqual(["bold", null, null]);
 		expect(runs[1]!.font.size).toBe(8);
 		expect(runs[2]!.resolvedFont).toEqual({
 			family: null,
 			size: null,
-			style: 'italic',
+			style: "italic",
 			weight: null,
 		});
-		expect(lyrics[1]!.name).toBe('chorus');
-		expect(lyrics[1]!.inheritedFont!.weight).toBe('bold');
-		expect(lyrics[2]!.runs[0]!.resolvedFont.family).toBe('Georgia');
+		expect(lyrics[1]!.name).toBe("chorus");
+		expect(lyrics[1]!.inheritedFont!.weight).toBe("bold");
+		expect(lyrics[2]!.runs[0]!.resolvedFont.family).toBe("Georgia");
 	});
 });
 
-describe('text formatting — writes', () => {
-	it('writes default fonts and lyric defaults in schema order, and removes them', () => {
+describe("text formatting, writes", () => {
+	it("writes default fonts and lyric defaults in schema order, and removes them", () => {
 		const doc = MDocument.empty();
 		const score = doc.score;
 		score
-			.addPart({ id: 'P1', name: 'Voice' })
+			.addPart({ id: "P1", name: "Voice" })
 			.addMeasure()
-			.getOrCreateVoice('1')
-			.addNote({ step: 'C', octave: 4, type: 'whole' });
-		score.setLyricLanguage('de', { number: '2' });
-		score.setLyricFont({ family: 'Georgia', size: 11 });
-		score.setWordFont({ family: 'Times New Roman', size: 'small' });
-		score.setMusicFont({ family: 'Bravura' });
+			.getOrCreateVoice("1")
+			.addNote({ step: "C", octave: 4, type: "whole" });
+		score.setLyricLanguage("de", { number: "2" });
+		score.setLyricFont({ family: "Georgia", size: 11 });
+		score.setWordFont({ family: "Times New Roman", size: "small" });
+		score.setMusicFont({ family: "Bravura" });
 		score.getOrCreatePageLayout().setSize({ height: 1683, width: 1190 });
-		score.setLyricFont({ style: 'italic' }, { number: '2', name: 'chorus' });
-		score.setLyricLanguage('en');
-		const defaults = score.child('defaults')!;
+		score.setLyricFont({ style: "italic" }, { number: "2", name: "chorus" });
+		score.setLyricLanguage("en");
+		const defaults = score.child("defaults")!;
 		expect(tags(defaults)).toEqual([
-			'page-layout',
-			'music-font',
-			'word-font',
-			'lyric-font',
-			'lyric-font',
-			'lyric-language',
-			'lyric-language',
+			"page-layout",
+			"music-font",
+			"word-font",
+			"lyric-font",
+			"lyric-font",
+			"lyric-language",
+			"lyric-language",
 		]);
-		expect(score.getLyricLanguage('1')!.language).toBe('en');
-		expect(score.getLyricFont('2', 'chorus')!.font.style).toBe('italic');
+		expect(score.getLyricLanguage("1")!.language).toBe("en");
+		expect(score.getLyricFont("2", "chorus")!.font.style).toBe("italic");
 		expect(schemaErrors(doc)).toEqual([]);
 
-		score.setWordFont({ family: 'Palatino' });
+		score.setWordFont({ family: "Palatino" });
 		expect(score.wordFont).toEqual({
-			family: 'Palatino',
+			family: "Palatino",
 			size: null,
 			style: null,
 			weight: null,
 		});
-		score.setLyricFont({ weight: 'bold' }, { number: '2', name: 'chorus' });
+		score.setLyricFont({ weight: "bold" }, { number: "2", name: "chorus" });
 		expect(score.lyricFonts).toHaveLength(2);
 		score.setMusicFont(null);
-		score.setLyricLanguage(null, { number: '2' });
+		score.setLyricLanguage(null, { number: "2" });
 		score.setLyricFont(null);
 		expect(tags(defaults)).toEqual([
-			'page-layout',
-			'word-font',
-			'lyric-font',
-			'lyric-language',
+			"page-layout",
+			"word-font",
+			"lyric-font",
+			"lyric-language",
 		]);
 	});
 
-	it('writes words formatting from the direction spec and in place', () => {
+	it("writes words formatting from the direction spec and in place", () => {
 		const doc = MDocument.empty();
-		const measure = doc.score.addPart({ id: 'P1' }).addMeasure();
+		const measure = doc.score.addPart({ id: "P1" }).addMeasure();
 		measure
-			.getOrCreateVoice('1')
-			.addNote({ step: 'C', octave: 4, type: 'whole' });
+			.getOrCreateVoice("1")
+			.addNote({ step: "C", octave: 4, type: "whole" });
 		const direction = measure.addDirection({
 			words: {
-				text: 'Swing',
-				fontFamily: 'Arial',
+				text: "Swing",
+				fontFamily: "Arial",
 				fontSize: 12,
-				halign: 'left',
-				valign: 'baseline',
-				justify: 'left',
+				halign: "left",
+				valign: "baseline",
+				justify: "left",
 			},
 		});
 		const words = direction.wordsElements[0]!;
-		expect(words.font).toMatchObject({ family: 'Arial', size: 12 });
+		expect(words.font).toMatchObject({ family: "Arial", size: 12 });
 		expect([words.halign, words.valign, words.justify]).toEqual([
-			'left',
-			'baseline',
-			'left',
+			"left",
+			"baseline",
+			"left",
 		]);
 		expect(schemaErrors(doc)).toEqual([]);
 
-		words.setFont({ style: 'italic' });
+		words.setFont({ style: "italic" });
 		words.setHalign(null);
-		words.setValign('middle');
+		words.setValign("middle");
 		expect(words.font).toEqual({
 			family: null,
 			size: null,
-			style: 'italic',
+			style: "italic",
 			weight: null,
 		});
 		expect(words.halign).toBeNull();
-		expect(words.valign).toBe('middle');
+		expect(words.valign).toBe("middle");
 		expect(schemaErrors(doc)).toEqual([]);
 	});
 
-	it('formats rehearsal marks and lyric runs in place', () => {
+	it("formats rehearsal marks and lyric runs in place", () => {
 		const doc = parse(`
 			<score-partwise version="4.0">
 				<part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list>
@@ -237,19 +237,19 @@ describe('text formatting — writes', () => {
 			</score-partwise>`);
 		const measure = doc.score.parts[0]!.measures[0]!;
 		const rehearsal = measure.directions[0]!.rehearsals[0]!;
-		rehearsal.setFont({ family: 'Arial', size: 14, weight: 'bold' });
-		rehearsal.setJustify('center');
+		rehearsal.setFont({ family: "Arial", size: 14, weight: "bold" });
+		rehearsal.setJustify("center");
 		const lyric = measure.notes[0]!.lyrics[0]!;
-		lyric.setRunFont(2, { style: 'italic' });
-		lyric.setRunFont(1, { size: 'x-small' });
+		lyric.setRunFont(2, { style: "italic" });
+		lyric.setRunFont(1, { size: "x-small" });
 		expect(rehearsal.font.size).toBe(14);
-		expect(rehearsal.justify).toBe('center');
+		expect(rehearsal.justify).toBe("center");
 		expect(lyric.runs.map((run) => run.font.style)).toEqual([
 			null,
 			null,
-			'italic',
+			"italic",
 		]);
-		expect(lyric.runs[1]!.font.size).toBe('x-small');
+		expect(lyric.runs[1]!.font.size).toBe("x-small");
 		expect(() => lyric.setRunFont(3, null)).toThrow(RangeError);
 		expect(schemaErrors(doc)).toEqual([]);
 
@@ -257,7 +257,7 @@ describe('text formatting — writes', () => {
 		expect(lyric.runs[2]!.font.style).toBeNull();
 	});
 
-	it('round-trips formatting it does not read', () => {
+	it("round-trips formatting it does not read", () => {
 		const xml = `<words font-size="9" underline="1" letter-spacing="normal">x</words>`;
 		const doc = parse(
 			`<score-partwise><part id="P1"><measure number="1"><direction><direction-type>${xml}</direction-type></direction></measure></part></score-partwise>`,

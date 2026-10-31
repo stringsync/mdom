@@ -1,4 +1,5 @@
-import { MElement, required } from './m-node';
+import { MElement } from "./m-element";
+import { required } from "./m-node";
 
 /** Indexed rather than computed: the gaps between E-F and B-C have no formula. */
 const STEP_SEMITONES: Record<string, number> = {
@@ -17,7 +18,7 @@ const STEP_SEMITONES: Record<string, number> = {
  */
 export class StaffTuning extends MElement {
 	constructor() {
-		super('staff-tuning');
+		super("staff-tuning");
 	}
 
 	/**
@@ -27,15 +28,15 @@ export class StaffTuning extends MElement {
 	 */
 	get line(): number {
 		return Number(
-			required(this.getAttribute('line'), 'line on <staff-tuning>'),
+			required(this.getAttribute("line"), "line on <staff-tuning>"),
 		);
 	}
 
 	/** `<tuning-step>`: the open string's step name. */
 	get step(): string {
 		return required(
-			this.child('tuning-step')?.text,
-			'<tuning-step> in <staff-tuning>',
+			this.child("tuning-step")?.text,
+			"<tuning-step> in <staff-tuning>",
 		);
 	}
 
@@ -43,18 +44,18 @@ export class StaffTuning extends MElement {
 	get octave(): number {
 		return Number(
 			required(
-				this.child('tuning-octave')?.text,
-				'<tuning-octave> in <staff-tuning>',
+				this.child("tuning-octave")?.text,
+				"<tuning-octave> in <staff-tuning>",
 			),
 		);
 	}
 
 	/** `<tuning-alter>` in semitones; 0 when absent (the common case). */
 	get alter(): number {
-		return Number(this.child('tuning-alter')?.text ?? 0);
+		return Number(this.child("tuning-alter")?.text ?? 0);
 	}
 
-	/** MIDI number of the open string — what tunings and sounding pitches compare on. */
+	/** MIDI number of the open string, what tunings and sounding pitches compare on. */
 	get midi(): number {
 		return (
 			(this.octave + 1) * 12 +

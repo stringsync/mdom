@@ -1,27 +1,27 @@
-import { LineDetail, type LineDetailSpec } from './line-detail';
-import { MElement } from './m-node';
-import { insertMetadata, setMetadataText } from './score-metadata';
-import { StaffTuning } from './staff-tuning';
+import { LineDetail, type LineDetailSpec } from "./line-detail";
+import { MElement } from "./m-element";
+import { insertMetadata, setMetadataText } from "./score-metadata";
+import { StaffTuning } from "./staff-tuning";
 
 /** Canonical child order of the MusicXML `<staff-details>` sequence. */
 const ORDER = [
-	'staff-type',
-	'staff-lines',
-	'line-detail',
-	'staff-tuning',
-	'capo',
-	'staff-size',
+	"staff-type",
+	"staff-lines",
+	"line-detail",
+	"staff-tuning",
+	"capo",
+	"staff-size",
 ];
 
 /** What a staff is for: `regular`, or an ossia, editorial, cue or alternate staff. */
-export type StaffType = 'ossia' | 'editorial' | 'cue' | 'alternate' | 'regular';
+export type StaffType = "ossia" | "editorial" | "cue" | "alternate" | "regular";
 
 const STAFF_TYPES = new Set([
-	'ossia',
-	'editorial',
-	'cue',
-	'alternate',
-	'regular',
+	"ossia",
+	"editorial",
+	"cue",
+	"alternate",
+	"regular",
 ]);
 
 /** One open string for `setStaffTunings`, as MusicXML spells it. */
@@ -33,7 +33,7 @@ export interface StaffTuningSpec {
 }
 
 /**
- * A `<staff-details>` inside `<attributes>`: how one staff is drawn — its line
+ * A `<staff-details>` inside `<attributes>`: how one staff is drawn, its line
  * count, its string tunings, its size. Everything here is as DECLARED: absence
  * stays absence, because "was `<staff-lines>` written?" is a real question. A
  * tablature staff that Guitar Pro exported carries six `<staff-tuning>`s AND an
@@ -44,23 +44,23 @@ export interface StaffTuningSpec {
  */
 export class StaffDetails extends MElement {
 	constructor() {
-		super('staff-details');
+		super("staff-details");
 	}
 
 	/** `<staff-type>`: what the staff is for; null when unstated (a regular staff). */
 	get staffType(): StaffType | null {
-		const type = this.child('staff-type')?.text?.trim() ?? null;
+		const type = this.child("staff-type")?.text?.trim() ?? null;
 		return type !== null && STAFF_TYPES.has(type) ? (type as StaffType) : null;
 	}
 
 	/** Set `<staff-type>`, or remove it with null. */
 	setStaffType(type: StaffType | null): void {
-		setMetadataText(this, 'staff-type', type, ORDER);
+		setMetadataText(this, "staff-type", type, ORDER);
 	}
 
 	/** `<staff-lines>` as DECLARED; null when this block states none. */
 	get staffLines(): number | null {
-		const lines = this.child('staff-lines')?.text;
+		const lines = this.child("staff-lines")?.text;
 		return lines == null ? null : Number(lines);
 	}
 
@@ -70,11 +70,11 @@ export class StaffDetails extends MElement {
 	 */
 	setStaffLines(count: number | null): void {
 		if (count === null && this.lineDetails.length > 0) {
-			throw new Error('Remove the line details before the staff line count');
+			throw new Error("Remove the line details before the staff line count");
 		}
 		setMetadataText(
 			this,
-			'staff-lines',
+			"staff-lines",
 			count === null ? null : String(count),
 			ORDER,
 		);
@@ -96,19 +96,19 @@ export class StaffDetails extends MElement {
 		}
 		for (const [index, spec] of tunings.entries()) {
 			const tuning = new StaffTuning();
-			tuning.setAttribute('line', String(index + 1));
-			appendText(tuning, 'tuning-step', spec.step);
+			tuning.setAttribute("line", String(index + 1));
+			appendText(tuning, "tuning-step", spec.step);
 			if (spec.alter) {
-				appendText(tuning, 'tuning-alter', String(spec.alter));
+				appendText(tuning, "tuning-alter", String(spec.alter));
 			}
-			appendText(tuning, 'tuning-octave', String(spec.octave));
+			appendText(tuning, "tuning-octave", String(spec.octave));
 			insertMetadata(this, tuning, ORDER);
 		}
 	}
 
 	/** `<staff-size>` as a percentage of the score's default size; null when unstated. */
 	get staffSize(): number | null {
-		const size = this.child('staff-size')?.text;
+		const size = this.child("staff-size")?.text;
 		return size == null ? null : Number(size);
 	}
 
@@ -118,7 +118,7 @@ export class StaffDetails extends MElement {
 	 * percussion staff); null when unstated.
 	 */
 	get staffScaling(): number | null {
-		const scaling = this.child('staff-size')?.getAttribute('scaling');
+		const scaling = this.child("staff-size")?.getAttribute("scaling");
 		return scaling == null ? null : Number(scaling);
 	}
 
@@ -129,45 +129,45 @@ export class StaffDetails extends MElement {
 	setStaffSize(percent: number | null, scaling?: number | null): void {
 		setMetadataText(
 			this,
-			'staff-size',
+			"staff-size",
 			percent === null ? null : String(percent),
 			ORDER,
 		);
-		const node = this.child('staff-size');
+		const node = this.child("staff-size");
 		if (!node || scaling === undefined) {
 			return;
 		}
 		if (scaling === null) {
-			node.removeAttribute('scaling');
+			node.removeAttribute("scaling");
 		} else {
-			node.setAttribute('scaling', String(scaling));
+			node.setAttribute("scaling", String(scaling));
 		}
 	}
 
 	/** The `show-frets` attribute: how a tab staff labels its stops; null when unstated (numbers). */
-	get showFrets(): 'numbers' | 'letters' | null {
-		const value = this.getAttribute('show-frets');
-		return value === 'numbers' || value === 'letters' ? value : null;
+	get showFrets(): "numbers" | "letters" | null {
+		const value = this.getAttribute("show-frets");
+		return value === "numbers" || value === "letters" ? value : null;
 	}
 
 	/** Set `show-frets`, or remove it with null. */
-	setShowFrets(value: 'numbers' | 'letters' | null): void {
+	setShowFrets(value: "numbers" | "letters" | null): void {
 		if (value === null) {
-			this.removeAttribute('show-frets');
+			this.removeAttribute("show-frets");
 		} else {
-			this.setAttribute('show-frets', value);
+			this.setAttribute("show-frets", value);
 		}
 	}
 
 	/** `<capo>` fret; null when unstated. */
 	get capo(): number | null {
-		const capo = this.child('capo')?.text;
+		const capo = this.child("capo")?.text;
 		return capo == null ? null : Number(capo);
 	}
 
 	/** Set the `<capo>` fret, or remove it with null. */
 	setCapo(fret: number | null): void {
-		setMetadataText(this, 'capo', fret === null ? null : String(fret), ORDER);
+		setMetadataText(this, "capo", fret === null ? null : String(fret), ORDER);
 	}
 
 	/** `<line-detail>` per-line appearance overrides. */
@@ -187,7 +187,7 @@ export class StaffDetails extends MElement {
 			return null;
 		}
 		if (this.staffLines === null) {
-			throw new Error('Set the staff line count before a line detail');
+			throw new Error("Set the staff line count before a line detail");
 		}
 		const detail = new LineDetail();
 		detail.line = line;
@@ -195,13 +195,13 @@ export class StaffDetails extends MElement {
 			detail.width = spec.width;
 		}
 		if (spec.color !== undefined) {
-			detail.setAttribute('color', spec.color);
+			detail.setAttribute("color", spec.color);
 		}
 		if (spec.lineType !== undefined) {
-			detail.setAttribute('line-type', spec.lineType);
+			detail.setAttribute("line-type", spec.lineType);
 		}
 		if (spec.printObject !== undefined) {
-			detail.setAttribute('print-object', spec.printObject ? 'yes' : 'no');
+			detail.setAttribute("print-object", spec.printObject ? "yes" : "no");
 		}
 		const after = this.lineDetails.find((each) => each.line > line);
 		if (after) {
@@ -214,12 +214,12 @@ export class StaffDetails extends MElement {
 
 	/** Whether the staff is drawn at all (`print-object`); true when unstated. */
 	get printObject(): boolean {
-		return this.getAttribute('print-object') !== 'no';
+		return this.getAttribute("print-object") !== "no";
 	}
 
 	/** Set `print-object`: false hides the staff, as large scores do for empty parts. */
 	setPrintObject(value: boolean): void {
-		this.setAttribute('print-object', value ? 'yes' : 'no');
+		this.setAttribute("print-object", value ? "yes" : "no");
 	}
 
 	/**
@@ -227,12 +227,12 @@ export class StaffDetails extends MElement {
 	 * cutaway format); true when unstated.
 	 */
 	get printSpacing(): boolean {
-		return this.getAttribute('print-spacing') !== 'no';
+		return this.getAttribute("print-spacing") !== "no";
 	}
 
 	/** Set `print-spacing`. */
 	setPrintSpacing(value: boolean): void {
-		this.setAttribute('print-spacing', value ? 'yes' : 'no');
+		this.setAttribute("print-spacing", value ? "yes" : "no");
 	}
 }
 

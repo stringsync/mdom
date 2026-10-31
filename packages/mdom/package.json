@@ -1,6 +1,6 @@
 {
 	"name": "@stringsync/mdom",
-	"version": "0.8.1",
+	"version": "0.8.2",
 	"type": "module",
 	"license": "MIT AND MPL-2.0",
 	"main": "./index.ts",
@@ -11,7 +11,7 @@
 	},
 	"dependencies": {
 		"jszip": "^3.10.1",
-		"webappwiz": "0.0.54",
+		"core": "workspace:*",
 		"xml-js": "^1.6.11"
 	}
 }

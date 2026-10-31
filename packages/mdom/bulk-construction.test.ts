@@ -1,16 +1,12 @@
-import { afterEach, describe, expect, it } from 'bun:test';
-import { GuitarProParser } from './guitar-pro-parser';
-import { GuitarProScoreWriter } from './guitar-pro-score-writer';
-import { GuitarProSerializer } from './guitar-pro-serializer';
-import type { MDocument } from './m-document';
-import { MDOMParser } from './m-dom-parser';
-import {
-	appendChildren,
-	descendants,
-	MElement,
-	type MNode,
-	MText,
-} from './m-node';
+import { afterEach, describe, expect, it } from "bun:test";
+import { GuitarProParser } from "./guitar-pro-parser";
+import { GuitarProScoreWriter } from "./guitar-pro-score-writer";
+import { GuitarProSerializer } from "./guitar-pro-serializer";
+import type { MDocument } from "./m-document";
+import { MDOMParser } from "./m-dom-parser";
+import { appendChildren, descendants, MElement } from "./m-element";
+import type { MNode } from "./m-node";
+import { MText } from "./m-text";
 
 // Every published children list is a frozen array: summing the lengths frozen
 // while building counts the child references copied, quadratic when wide lists
@@ -39,51 +35,49 @@ function copiedReferences(
 }
 
 function leaves(count: number): MElement[] {
-	return Array.from({ length: count }, () => new MElement('leaf'));
+	return Array.from({ length: count }, () => new MElement("leaf"));
 }
 
 function widePart(measures: number, notes: number): string {
 	const note =
-		'<note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><type>quarter</type></note>';
+		"<note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><type>quarter</type></note>";
 	const body = Array.from(
 		{ length: measures },
 		(_, index) =>
-			`<measure number="${index + 1}">${index ? '' : `<attributes><divisions>1</divisions><time><beats>${notes}</beats><beat-type>4</beat-type></time></attributes>`}${note.repeat(notes)}</measure>`,
-	).join('');
+			`<measure number="${index + 1}">${index ? "" : `<attributes><divisions>1</divisions><time><beats>${notes}</beats><beat-type>4</beat-type></time></attributes>`}${note.repeat(notes)}</measure>`,
+	).join("");
 	return `<score-partwise><part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list><part id="P1">${body}</part></score-partwise>`;
 }
 
-describe('appendChildren', () => {
-	it('appends after existing children, in order, publishing one frozen list', () => {
-		const root = new MElement('root');
-		const first = new MElement('first');
+describe("appendChildren", () => {
+	it("appends after existing children, in order, publishing one frozen list", () => {
+		const root = new MElement("root");
+		const first = new MElement("first");
 		root.append(first);
-		const added = [...leaves(3), new MText('text')];
+		const added = [...leaves(3), new MText("text")];
 
 		appendChildren(root, added);
 
 		expect(root.children).toEqual([first, ...added]);
 		expect(Object.isFrozen(root.children)).toBe(true);
-		for (const child of added) {
-			expect(child.parent).toBe(root);
-		}
-		expect(() => (root.children as MNode[]).push(new MText('x'))).toThrow();
+		expect(added.every((child) => child.parent === root)).toBe(true);
+		expect(() => (root.children as MNode[]).push(new MText("x"))).toThrow();
 	});
 
-	it('copies the children list once rather than once per child', () => {
-		const root = new MElement('root');
+	it("copies the children list once rather than once per child", () => {
+		const root = new MElement("root");
 		const added = leaves(1000);
 
 		expect(copiedReferences(() => appendChildren(root, added))).toBe(1000);
 	});
 
-	it('moves attached and repeated nodes as appending each would', () => {
-		const other = new MElement('other');
+	it("moves attached and repeated nodes as appending each would", () => {
+		const other = new MElement("other");
 		const [moved, kept] = leaves(2) as [MElement, MElement];
 		other.append(moved);
 		other.append(kept);
-		const root = new MElement('root');
-		const fresh = new MElement('fresh');
+		const root = new MElement("root");
+		const fresh = new MElement("fresh");
 
 		appendChildren(root, [fresh, moved, fresh]);
 
@@ -92,56 +86,56 @@ describe('appendChildren', () => {
 		expect(moved.parent).toBe(root);
 	});
 
-	it('rejects a node that would contain itself, changing nothing', () => {
-		const top = new MElement('top');
-		const inner = new MElement('inner');
+	it("rejects a node that would contain itself, changing nothing", () => {
+		const top = new MElement("top");
+		const inner = new MElement("inner");
 		top.append(inner);
-		const leaf = new MElement('leaf');
+		const leaf = new MElement("leaf");
 
 		expect(() => appendChildren(inner, [leaf, top])).toThrow(
-			'a node cannot contain itself',
+			"a node cannot contain itself",
 		);
 		expect(() => appendChildren(top, [top])).toThrow(
-			'a node cannot contain itself',
+			"a node cannot contain itself",
 		);
 		expect(inner.children).toEqual([]);
 		expect(leaf.parent).toBeNull();
 	});
 
-	it('keeps document ownership and history', () => {
-		const document = new MDOMParser().parseFromString('<root><kept/></root>');
+	it("keeps document ownership and history", () => {
+		const document = new MDOMParser().parseFromString("<root><kept/></root>");
 		const root = document.root;
 		const history = document.history;
 		const added = leaves(3);
-		const grandchild = new MElement('grandchild');
+		const grandchild = new MElement("grandchild");
 		added[0]!.append(grandchild);
 
 		expect(() => appendChildren(root, added)).toThrow(
-			'document mutations require history.edit',
+			"document mutations require history.edit",
 		);
-		history.edit('add', () => appendChildren(root, added));
+		history.edit("add", () => appendChildren(root, added));
 		expect(root.children.slice(1)).toEqual(added);
 
 		expect(history.undo()).toBe(true);
 		expect(root.children.map((child) => (child as MElement).tag)).toEqual([
-			'kept',
+			"kept",
 		]);
 		expect(added[0]!.parent).toBeNull();
 		expect(history.redo()).toBe(true);
 		expect(root.children.slice(1)).toEqual(added);
 		expect(grandchild.parent).toBe(added[0]!);
 
-		const elsewhere = new MDOMParser().parseFromString('<other><x/></other>');
+		const elsewhere = new MDOMParser().parseFromString("<other><x/></other>");
 		const stranger = elsewhere.root.children[0]!;
 		stranger.remove();
 		expect(() =>
-			history.edit('steal', () => appendChildren(root, [stranger])),
-		).toThrow('moving nodes between documents');
+			history.edit("steal", () => appendChildren(root, [stranger])),
+		).toThrow("moving nodes between documents");
 	});
 });
 
-describe('bulk tree construction', () => {
-	it('parses a wide part and dense measures copying each child list once', () => {
+describe("bulk tree construction", () => {
+	it("parses a wide part and dense measures copying each child list once", () => {
 		const xml = widePart(400, 24);
 		let document!: MDocument;
 		const copied = copiedReferences(() => {
@@ -152,15 +146,15 @@ describe('bulk tree construction', () => {
 		expect(part.measures).toHaveLength(400);
 		expect(part.measures[399]!.notes).toHaveLength(24);
 		const nodes = descendants(document.root);
-		for (const node of nodes.slice(1)) {
-			expect(node.parent?.children).toContain(node);
-		}
+		expect(
+			nodes.slice(1).every((node) => node.parent?.children.includes(node)),
+		).toBe(true);
 		// Each node is published once in its parent's list; the parser's own
 		// attribute and value freezes stay well under one more per node.
 		expect(copied).toBeLessThan(2 * nodes.length);
 	});
 
-	it('writes GPIF tables copying each table once', () => {
+	it("writes GPIF tables copying each table once", () => {
 		const source = new MDOMParser().parseFromString(widePart(200, 8));
 		let gpif!: MDocument;
 		// Only GPIF lists, whose tags are capitalized: the writer's reads of the
@@ -171,22 +165,25 @@ describe('bulk tree construction', () => {
 			gpif = new GuitarProScoreWriter().write(source);
 		}, gpifList);
 
-		const notes = gpif.root.child('Notes')!.childrenNamed('Note');
+		const notes = gpif.root.child("Notes")!.childrenNamed("Note");
 		expect(notes).toHaveLength(1600);
-		expect(notes.map((note) => note.getAttribute('id'))).toEqual(
+		expect(notes.map((note) => note.getAttribute("id"))).toEqual(
 			notes.map((_, index) => String(index)),
 		);
-		expect(gpif.root.child('MasterBars')!.children).toHaveLength(200);
-		for (const table of ['Bars', 'Voices', 'Beats', 'Rhythms', 'Tracks']) {
-			for (const entry of gpif.root.child(table)!.children) {
-				expect(entry.parent).toBe(gpif.root.child(table)!);
-			}
-		}
+		expect(gpif.root.child("MasterBars")!.children).toHaveLength(200);
+		const tables = ["Bars", "Voices", "Beats", "Rhythms", "Tracks"].map(
+			(name) => gpif.root.child(name)!,
+		);
+		expect(
+			tables.every((table) =>
+				table.children.every((entry) => entry.parent === table),
+			),
+		).toBe(true);
 		// One Notes table built note by note alone would copy 1600² / 2.
 		expect(copied).toBeLessThan(2 * descendants(gpif.root).length);
 	});
 
-	it('round-trips a wide part through Guitar Pro', async () => {
+	it("round-trips a wide part through Guitar Pro", async () => {
 		const source = new MDOMParser().parseFromString(widePart(64, 4));
 		const result = await new GuitarProParser().parseFromBytes(
 			await new GuitarProSerializer().serializeToBytes(source),

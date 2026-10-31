@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './m-dom-parser';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser } from "./m-dom-parser";
 
 // A pickup bar is short BY DECLARATION; a layout engine that misses this pads it
 // out to a full bar's width.
@@ -14,8 +14,8 @@ const PICKUP = `<score-partwise><part id="P1">
   </measure>
 </part></score-partwise>`;
 
-describe('measure and time — the declared-shape flags', () => {
-	const part = new MDOMParser().parseFromString(PICKUP).score.getPart('P1')!;
+describe("measure and time, the declared-shape flags", () => {
+	const part = new MDOMParser().parseFromString(PICKUP).score.getPart("P1")!;
 	const [pickup, full] = part.measures;
 
 	it('reads implicit="yes" as a pickup, not an underfull bar', () => {
@@ -24,11 +24,11 @@ describe('measure and time — the declared-shape flags', () => {
 		expect(pickup!.endBeat).toBe(1); // genuinely short, and that is intended
 	});
 
-	it('reads an unmetered <senza-misura> signature', () => {
+	it("reads an unmetered <senza-misura> signature", () => {
 		expect(pickup!.getTime()!.isSenzaMisura).toBe(true);
 		expect(full!.getTime()!.isSenzaMisura).toBe(false);
-		expect(full!.getTime()!.symbol).toBe('cut');
+		expect(full!.getTime()!.symbol).toBe("cut");
 		expect(pickup!.getTime()!.symbol).toBeNull();
-		expect(pickup!.getTime()!.staff).toBe('1');
+		expect(pickup!.getTime()!.staff).toBe("1");
 	});
 });

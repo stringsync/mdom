@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser, MDocument, MusicXMLSerializer } from './index';
-import { schemaErrors } from './music-xml-schema';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser, MDocument, MusicXMLSerializer } from "./index";
+import { schemaErrors } from "./music-xml-schema";
 
 const parse = (xml: string) => new MDOMParser().parseFromString(xml);
 const serialize = (doc: MDocument) =>
@@ -65,21 +65,21 @@ function fixture() {
 	};
 }
 
-describe('engraving geometry — reads', () => {
+describe("engraving geometry, reads", () => {
 	const { doc, measure, first, second, spacer, crescendo, stop } = fixture();
 
-	it('reads note and stem positions in tenths, null where the renderer places', () => {
+	it("reads note and stem positions in tenths, null where the renderer places", () => {
 		expect(first.position).toEqual({ ...UNSET, defaultX: 151, defaultY: -12 });
 		expect(first.stemPosition).toEqual({ ...UNSET, defaultY: -27 });
 		expect(second.position).toEqual(UNSET);
 		expect(second.stemPosition).toBeNull();
 	});
 
-	it('keeps onsets independent of the coordinates', () => {
+	it("keeps onsets independent of the coordinates", () => {
 		expect([first.measureBeat, second.measureBeat]).toEqual([0, 1]);
 	});
 
-	it('reads the printout flags with their MusicXML defaults', () => {
+	it("reads the printout flags with their MusicXML defaults", () => {
 		expect([first.printObject, first.printDot, first.printSpacing]).toEqual([
 			true,
 			false,
@@ -95,13 +95,13 @@ describe('engraving geometry — reads', () => {
 		expect(spacer.printSpacing).toBe(true);
 	});
 
-	it('reads the type size as written', () => {
-		expect(first.typeSize).toBe('cue');
+	it("reads the type size as written", () => {
+		expect(first.typeSize).toBe("cue");
 		expect(second.typeSize).toBeNull();
 		expect(spacer.typeSize).toBeNull();
 	});
 
-	it('reads slur and tie geometry', () => {
+	it("reads slur and tie geometry", () => {
 		const slur = first.slurs[0]!;
 		expect(slur.position).toEqual({ ...UNSET, defaultX: 6, defaultY: 22 });
 		expect(slur.bezier).toEqual({
@@ -112,10 +112,10 @@ describe('engraving geometry — reads', () => {
 			offset: 2,
 			offset2: null,
 		});
-		expect(slur.orientation).toBe('over');
-		expect(slur.lineType).toBe('dotted');
+		expect(slur.orientation).toBe("over");
+		expect(slur.lineType).toBe("dotted");
 		expect(slur.lineStyle).toEqual({
-			type: 'dotted',
+			type: "dotted",
 			dashLength: null,
 			spaceLength: null,
 		});
@@ -123,16 +123,16 @@ describe('engraving geometry — reads', () => {
 
 		const tie = first.ties[0]!;
 		expect(tie.bezier.x2).toBe(4);
-		expect(tie.color).toBe('#00FF00');
+		expect(tie.color).toBe("#00FF00");
 		expect(tie.orientation).toBeNull();
 		expect(tie.position).toEqual(UNSET);
 	});
 
-	it('reads wedge spread, niente and stroke at each end', () => {
+	it("reads wedge spread, niente and stroke at each end", () => {
 		expect([crescendo.spread, stop.spread]).toEqual([0, 15]);
 		expect([crescendo.niente, stop.niente]).toEqual([true, false]);
 		expect(crescendo.lineStyle).toEqual({
-			type: 'dashed',
+			type: "dashed",
 			dashLength: 5,
 			spaceLength: 3,
 		});
@@ -141,11 +141,11 @@ describe('engraving geometry — reads', () => {
 			defaultY: -58,
 			relativeX: -4.5,
 		});
-		expect(crescendo.color).toBe('#FF0000');
+		expect(crescendo.color).toBe("#FF0000");
 		expect(stop.lineStyle.type).toBeNull();
 	});
 
-	it('reads direction text and dynamics positions', () => {
+	it("reads direction text and dynamics positions", () => {
 		const [dynamics] = measure.directions.flatMap(
 			(direction) => direction.dynamics,
 		);
@@ -160,19 +160,19 @@ describe('engraving geometry — reads', () => {
 		expect(words!.position).toEqual({ ...UNSET, relativeY: 10 });
 	});
 
-	it('reads print-object on lyrics and chord symbols', () => {
+	it("reads print-object on lyrics and chord symbols", () => {
 		expect(first.lyrics[0]!.printObject).toBe(false);
 		expect(measure.harmonies[0]!.printObject).toBe(false);
 	});
 
-	it('round-trips the untouched geometry', () => {
+	it("round-trips the untouched geometry", () => {
 		expect(serialize(parse(serialize(doc)))).toBe(serialize(doc));
 		expect(serialize(doc)).toContain('bezier-offset="2"');
 	});
 });
 
-describe('engraving geometry — writes', () => {
-	it('writes and clears positions, leaving other attributes alone', () => {
+describe("engraving geometry, writes", () => {
+	it("writes and clears positions, leaving other attributes alone", () => {
 		const { doc, first, second } = fixture();
 		first.setPosition({ defaultX: 120.5 });
 		expect(first.position).toEqual({ ...UNSET, defaultX: 120.5 });
@@ -186,7 +186,7 @@ describe('engraving geometry — writes', () => {
 		expect(() => second.setStemPosition({ defaultY: 0 })).toThrow();
 	});
 
-	it('writes the printout flags and the type size', () => {
+	it("writes the printout flags and the type size", () => {
 		const { doc, first, second, spacer } = fixture();
 		second.setPrintObject(false);
 		second.setPrintSpacing(false);
@@ -199,23 +199,23 @@ describe('engraving geometry — writes', () => {
 		first.setPrintDot(null);
 		first.setPrintSpacing(null);
 		expect([first.printDot, first.printSpacing]).toEqual([true, true]);
-		second.setTypeSize('large');
+		second.setTypeSize("large");
 		first.setTypeSize(null);
-		expect([first.typeSize, second.typeSize]).toEqual([null, 'large']);
+		expect([first.typeSize, second.typeSize]).toEqual([null, "large"]);
 		spacer.setPrintObject(true);
 		expect(spacer.printDot).toBe(true);
 		expect(schemaErrors(doc)).toEqual([]);
 	});
 
-	it('writes slur and tie curves', () => {
+	it("writes slur and tie curves", () => {
 		const { doc, first, second } = fixture();
 		const slur = second.slurs[0]!;
 		slur.setBezier({ x: -26, y: 29 });
-		slur.setOrientation('under');
-		slur.setLineStyle({ type: 'dashed', dashLength: 4, spaceLength: 2 });
+		slur.setOrientation("under");
+		slur.setLineStyle({ type: "dashed", dashLength: 4, spaceLength: 2 });
 		expect(slur.bezier).toMatchObject({ x: -26, y: 29, offset: null });
-		expect(slur.orientation).toBe('under');
-		expect(slur.lineType).toBe('dashed');
+		expect(slur.orientation).toBe("under");
+		expect(slur.lineType).toBe("dashed");
 		const tie = first.ties[0]!;
 		tie.setBezier(null);
 		tie.setPosition({ defaultY: 5 });
@@ -226,18 +226,18 @@ describe('engraving geometry — writes', () => {
 		expect(schemaErrors(doc)).toEqual([]);
 	});
 
-	it('writes wedge geometry', () => {
+	it("writes wedge geometry", () => {
 		const { doc, crescendo, stop } = fixture();
 		stop.setSpread(20);
 		stop.setNiente(true);
 		crescendo.setSpread(null);
 		crescendo.setNiente(null);
-		crescendo.setLineStyle({ type: 'solid' });
+		crescendo.setLineStyle({ type: "solid" });
 		stop.setPosition({ defaultY: -60 });
 		expect([crescendo.spread, stop.spread]).toEqual([null, 20]);
 		expect([crescendo.niente, stop.niente]).toEqual([false, true]);
 		expect(crescendo.lineStyle).toEqual({
-			type: 'solid',
+			type: "solid",
 			dashLength: null,
 			spaceLength: null,
 		});
@@ -245,7 +245,7 @@ describe('engraving geometry — writes', () => {
 		expect(schemaErrors(doc)).toEqual([]);
 	});
 
-	it('writes text, dynamics, lyric and harmony print attributes', () => {
+	it("writes text, dynamics, lyric and harmony print attributes", () => {
 		const { doc, measure, first } = fixture();
 		const [dynamics] = measure.directions.flatMap(
 			(direction) => direction.dynamics,
@@ -264,15 +264,15 @@ describe('engraving geometry — writes', () => {
 		expect(schemaErrors(doc)).toEqual([]);
 	});
 
-	it('positions notes added to an empty score', () => {
+	it("positions notes added to an empty score", () => {
 		const doc = MDocument.empty();
 		const note = doc.score
-			.addPart({ name: 'Flute' })
+			.addPart({ name: "Flute" })
 			.addMeasure()
-			.getOrCreateVoice('1')
-			.addNote({ step: 'C', octave: 4, type: 'quarter' });
+			.getOrCreateVoice("1")
+			.addNote({ step: "C", octave: 4, type: "quarter" });
 		note.setPosition({ defaultX: 10 });
-		note.setTypeSize('cue');
+		note.setTypeSize("cue");
 		expect(note.position.defaultX).toBe(10);
 		expect(schemaErrors(doc)).toEqual([]);
 	});

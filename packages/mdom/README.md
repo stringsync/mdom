@@ -168,7 +168,7 @@ and `.gp3`-`.gp5` output, and mid-score tuning changes are not supported.
 The tests use committed, independently produced GP7 and GP8 fixtures with
 [provenance and licensing](fixtures/guitar-pro/README.md), direct assertions on
 exported GPIF XML, musical round trips, and validation against the vendored
-MusicXML XSD. They follow `.wiz/rules`: one `describe` per file, state owned by
+MusicXML XSD. They follow the vet rules: one `describe` per file, state owned by
 each test or its `beforeEach`, no mocks, and no branches or loops in tests.
 
 ```sh
@@ -203,7 +203,7 @@ voice.addUnpitched({ step: 'C', octave: 5, type: 'quarter' }); // a drum hit at 
 note2.remove(); // delete, onsets close the gap
 ```
 
-Signatures and notation are written the same way — mdom assembles `<attributes>`
+Signatures and notation are written the same way, mdom assembles `<attributes>`
 and keeps it in schema order, so a document built this way validates against the
 MusicXML XSD:
 
@@ -228,8 +228,8 @@ measure.addBarline({ barStyle: 'light-heavy', repeat: { direction: 'backward' } 
 measure.setClef({ sign: 'C', line: 3, onset: 1 }); // a change at beat 1, not the measure's own signature
 ```
 
-Every setter without an `onset` writes the measure's *leading* `<attributes>` —
-the signature drawn with the stave — however many notes are already there. Pass
+Every setter without an `onset` writes the measure's *leading* `<attributes>` -
+the signature drawn with the stave, however many notes are already there. Pass
 `onset` (in quarter-note beats) to write a mid-measure change instead;
 `measure.getOrCreateAttributes({ onset })` is the escape hatch for whatever the
 setters don't cover.
@@ -403,13 +403,13 @@ input, or rendering state.
 
 Every printable part of a score has a typed node, so a consumer never walks raw
 tags. `MElement`'s generic read axes (`child`, `childrenNamed`, `closest`) still
-exist — they're mdom's internals, not the way to reach anything.
+exist, they're mdom's internals, not the way to reach anything.
 
 Its mutation API (`append`, `insertBefore`, `replaceChild`, `setText`,
 `setAttribute`) is a different matter: that is the escape hatch for the corners
 no writer covers yet, and MusicXML mdom doesn't model round-trips through it
 verbatim. Reach for it with `measure.getOrCreateAttributes()` for a
-`<transpose>`, say, and open an issue — a missing writer is a gap, not a design.
+`<transpose>`, say, and open an issue, a missing writer is a gap, not a design.
 
 | | |
 | --- | --- |
@@ -431,7 +431,7 @@ lyric's elision runs, a `<metronome-note>` group split at its
 ```ts
 direction.metronomes[0].beatUnits; // [{ type: 'quarter', dots: 1 }, { type: 'half', dots: 0 }]
 measure.sounds; // <direction><sound> and the measure's own, merged
-measure.clefChanges('2'); // [{ beat, clef }] — mid-measure changes, onsets rewound past <backup>
+measure.clefChanges('2'); // [{ beat, clef }], mid-measure changes, onsets rewound past <backup>
 note.ornaments; // document order, so each <accidental-mark> stays with its ornament
 score.partGroups; // [{ fromPartIndex, toPartIndex, symbol, depth, ... }]
 note.color; // "#AARRGGBB" normalized to a CSS color
@@ -467,8 +467,8 @@ with `remove()`.
 
 Signatures carry forward, so a measure lifted out of its score renders wrong on
 its own. `materializeSignatures` writes back in whatever was in effect just
-before it — clef, key, time, divisions, staves, staff-details, transpose,
-part-symbol, measure-style — without overwriting what the measure already
+before it, clef, key, time, divisions, staves, staff-details, transpose,
+part-symbol, measure-style, without overwriting what the measure already
 declares.
 
 ```ts
@@ -495,9 +495,9 @@ voice.addNote({ step: 'C', octave: 4, type: 'quarter' });
 voice.addNote({ step: 'D', octave: 4, type: 'quarter' });
 
 const cursor = Cursor.at(voice); // immutable caret at (measure, voice, onset)
-cursor.note; // C — the note under the caret
-cursor.next()!.note; // D — movement returns a new caret; crosses barlines
-cursor.next()!.next(); // null — past the last note (the append point)
+cursor.note; // C, the note under the caret
+cursor.next()!.note; // D, movement returns a new caret; crosses barlines
+cursor.next()!.next(); // null, past the last note (the append point)
 ```
 
 See [e2e](../e2e) for worked examples.

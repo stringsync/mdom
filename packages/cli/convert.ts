@@ -1,4 +1,4 @@
-import { extname, resolve } from 'node:path';
+import { extname, resolve } from "node:path";
 import {
 	type GuitarProOptions,
 	GuitarProParser,
@@ -7,10 +7,10 @@ import {
 	type MDocument,
 	MusicXMLSerializer,
 	MXLSerializer,
-} from '@stringsync/mdom';
-import { ConsoleLogger, type Logger } from 'webappwiz/log';
-import { NodeScoreFiles } from './node-score-files';
-import type { ScoreFiles } from './score-files';
+} from "@stringsync/mdom";
+import { ConsoleLogger, type Logger } from "core/log";
+import { NodeScoreFiles } from "./node-score-files";
+import type { ScoreFiles } from "./score-files";
 
 export interface ConvertOptions {
 	input: string;
@@ -28,17 +28,17 @@ export async function convert(opts: ConvertOptions): Promise<void> {
 	const input = resolve(opts.cwd, opts.input);
 	const output = resolve(opts.cwd, opts.output);
 	if (input === output) {
-		throw new Error('Input and output must be different paths');
+		throw new Error("Input and output must be different paths");
 	}
 	const source = formatOf(input);
 	const target = formatOf(output);
 	const files = opts.files ?? new NodeScoreFiles();
 	const log = opts.log ?? new ConsoleLogger();
 	const guitarPro: GuitarProOptions = {
-		unsupported: opts.omitUnsupported ? 'omit' : 'error',
+		unsupported: opts.omitUnsupported ? "omit" : "error",
 	};
 	const doc = await parse(await files.read(input), source, guitarPro);
-	if (doc.root.tag !== 'score-partwise') {
+	if (doc.root.tag !== "score-partwise") {
 		throw new Error(
 			`Expected a score-partwise document, got <${doc.root.tag}>`,
 		);
@@ -48,26 +48,26 @@ export async function convert(opts: ConvertOptions): Promise<void> {
 	log.info(`wrote ${output}`);
 }
 
-type Format = 'musicxml' | 'mxl' | 'gp' | 'gpx' | 'gp3-5';
+type Format = "musicxml" | "mxl" | "gp" | "gpx" | "gp3-5";
 
 function formatOf(path: string): Format {
 	switch (extname(path).toLowerCase()) {
-		case '.xml':
-		case '.musicxml':
-			return 'musicxml';
-		case '.mxl':
-			return 'mxl';
-		case '.gp':
-			return 'gp';
-		case '.gpx':
-			return 'gpx';
-		case '.gp3':
-		case '.gp4':
-		case '.gp5':
-			return 'gp3-5';
+		case ".xml":
+		case ".musicxml":
+			return "musicxml";
+		case ".mxl":
+			return "mxl";
+		case ".gp":
+			return "gp";
+		case ".gpx":
+			return "gpx";
+		case ".gp3":
+		case ".gp4":
+		case ".gp5":
+			return "gp3-5";
 		default:
 			throw new Error(
-				`Unsupported score extension: ${extname(path) || '(none)'}. Use .musicxml, .xml, .mxl or .gp (Guitar Pro 7/8); .gpx (Guitar Pro 6) and .gp3, .gp4 and .gp5 (Guitar Pro 3-5) are input only.`,
+				`Unsupported score extension: ${extname(path) || "(none)"}. Use .musicxml, .xml, .mxl or .gp (Guitar Pro 7/8); .gpx (Guitar Pro 6) and .gp3, .gp4 and .gp5 (Guitar Pro 3-5) are input only.`,
 			);
 	}
 }
@@ -78,15 +78,15 @@ async function parse(
 	opts: GuitarProOptions,
 ): Promise<MDocument> {
 	switch (format) {
-		case 'musicxml':
+		case "musicxml":
 			return new MDOMParser().parseFromString(
-				new TextDecoder('utf-8', { fatal: true }).decode(bytes),
+				new TextDecoder("utf-8", { fatal: true }).decode(bytes),
 			);
-		case 'mxl':
+		case "mxl":
 			return new MDOMParser().parseFromBlob(new Blob([bytes]));
-		case 'gp':
-		case 'gpx':
-		case 'gp3-5':
+		case "gp":
+		case "gpx":
+		case "gp3-5":
 			return new GuitarProParser().parseFromBytes(bytes, opts);
 	}
 }
@@ -97,21 +97,21 @@ async function serialize(
 	opts: GuitarProOptions,
 ): Promise<Uint8Array> {
 	switch (format) {
-		case 'musicxml':
+		case "musicxml":
 			return new TextEncoder().encode(
 				new MusicXMLSerializer().serializeToString(doc),
 			);
-		case 'mxl':
+		case "mxl":
 			return new Uint8Array(
 				await (await new MXLSerializer().serializeToBlob(doc)).arrayBuffer(),
 			);
-		case 'gp':
+		case "gp":
 			return new GuitarProSerializer().serializeToBytes(doc, opts);
-		case 'gpx':
-			throw new Error('Writing .gpx (Guitar Pro 6) is not supported; use .gp');
-		case 'gp3-5':
+		case "gpx":
+			throw new Error("Writing .gpx (Guitar Pro 6) is not supported; use .gp");
+		case "gp3-5":
 			throw new Error(
-				'Writing .gp3, .gp4 or .gp5 (Guitar Pro 3-5) is not supported; use .gp',
+				"Writing .gp3, .gp4 or .gp5 (Guitar Pro 3-5) is not supported; use .gp",
 			);
 	}
 }

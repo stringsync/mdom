@@ -1,31 +1,31 @@
-import { MElement } from './m-node';
+import { MElement } from "./m-element";
 import {
 	type Position,
 	type PositionSpec,
 	placementOf,
 	positionOf,
 	setPositionOf,
-} from './print-style';
+} from "./print-style";
 
-/** Every tag this class is registered for — the `<articulations>` children. */
+/** Every tag this class is registered for, the `<articulations>` children. */
 export const ARTICULATION_TAGS = [
-	'accent',
-	'strong-accent',
-	'staccato',
-	'tenuto',
-	'detached-legato',
-	'staccatissimo',
-	'spiccato',
-	'scoop',
-	'plop',
-	'doit',
-	'falloff',
-	'breath-mark',
-	'caesura',
-	'stress',
-	'unstress',
-	'soft-accent',
-	'other-articulation',
+	"accent",
+	"strong-accent",
+	"staccato",
+	"tenuto",
+	"detached-legato",
+	"staccatissimo",
+	"spiccato",
+	"scoop",
+	"plop",
+	"doit",
+	"falloff",
+	"breath-mark",
+	"caesura",
+	"stress",
+	"unstress",
+	"soft-accent",
+	"other-articulation",
 ];
 
 /**
@@ -38,13 +38,13 @@ export const ARTICULATION_TAGS = [
  * `MElement`'s tag-taking constructor: the registry passes the tag it matched.
  */
 export class Articulation extends MElement {
-	/** Which mark this is — the element's own tag. */
+	/** Which mark this is, the element's own tag. */
 	get articulationType(): string {
 		return this.tag;
 	}
 
 	/** `placement`; null when unstated. */
-	get placement(): 'above' | 'below' | null {
+	get placement(): "above" | "below" | null {
 		return placementOf(this);
 	}
 
@@ -53,22 +53,22 @@ export class Articulation extends MElement {
 	 * text draws; null when unset.
 	 */
 	get smufl(): string | null {
-		return this.getAttribute('smufl');
+		return this.getAttribute("smufl");
 	}
 
 	/** `line-shape` of a scoop, plop, doit or falloff; null when unstated. */
-	get lineShape(): 'straight' | 'curved' | null {
-		const shape = this.getAttribute('line-shape');
-		return shape === 'straight' || shape === 'curved' ? shape : null;
+	get lineShape(): "straight" | "curved" | null {
+		const shape = this.getAttribute("line-shape");
+		return shape === "straight" || shape === "curved" ? shape : null;
 	}
 
 	/** `line-type` of a scoop, plop, doit or falloff; null when unstated. */
-	get lineType(): 'solid' | 'dashed' | 'dotted' | 'wavy' | null {
-		const type = this.getAttribute('line-type');
-		return type === 'solid' ||
-			type === 'dashed' ||
-			type === 'dotted' ||
-			type === 'wavy'
+	get lineType(): "solid" | "dashed" | "dotted" | "wavy" | null {
+		const type = this.getAttribute("line-type");
+		return type === "solid" ||
+			type === "dashed" ||
+			type === "dotted" ||
+			type === "wavy"
 			? type
 			: null;
 	}

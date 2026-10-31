@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './m-dom-parser';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser } from "./m-dom-parser";
 
-describe('beam runs — the secondary end that closes the whole beam', () => {
-	it('does not report a break after the last note of a run', () => {
+describe("beam runs, the secondary end that closes the whole beam", () => {
+	it("does not report a break after the last note of a run", () => {
 		const measure = new MDOMParser()
 			.parseFromString(
 				`<score-partwise><part id="P1"><measure number="1">
@@ -13,15 +13,15 @@ describe('beam runs — the secondary end that closes the whole beam', () => {
           <beam number="1">end</beam><beam number="2">end</beam></note>
       </measure></part></score-partwise>`,
 			)
-			.score.getPart('P1')!
-			.getMeasure('1')!;
+			.score.getPart("P1")!
+			.getMeasure("1")!;
 
 		const [run] = measure.beamRuns();
 		expect(run!.notes).toHaveLength(2);
 		expect(run!.breaksAfter).toEqual([]); // the level-2 end IS the run's end
 	});
 
-	it('ignores a continue that never had a begin', () => {
+	it("ignores a continue that never had a begin", () => {
 		const measure = new MDOMParser()
 			.parseFromString(
 				`<score-partwise><part id="P1"><measure number="1">
@@ -30,8 +30,8 @@ describe('beam runs — the secondary end that closes the whole beam', () => {
           <beam number="1">continue</beam></note>
       </measure></part></score-partwise>`,
 			)
-			.score.getPart('P1')!
-			.getMeasure('1')!;
+			.score.getPart("P1")!
+			.getMeasure("1")!;
 		expect(measure.beamRuns()).toEqual([]);
 	});
 });

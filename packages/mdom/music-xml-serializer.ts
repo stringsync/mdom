@@ -1,12 +1,15 @@
-import type { MDocument } from './m-document';
-import { MCData, MElement, type MNode, MText } from './m-node';
+import { MCData } from "./m-cdata";
+import type { MDocument } from "./m-document";
+import { MElement } from "./m-element";
+import type { MNode } from "./m-node";
+import { MText } from "./m-text";
 import {
 	escapeXmlAttribute,
 	escapeXmlCData,
 	escapeXmlText,
-} from './xml-syntax';
+} from "./xml-syntax";
 
-const INDENT = '  ';
+const INDENT = "  ";
 
 /**
  * Serializes an {@link MDocument} back to a MusicXML string. The output is
@@ -24,7 +27,7 @@ export class MusicXMLSerializer {
 			lines.push(`<!DOCTYPE ${doc.doctype}>`);
 		}
 		lines.push(this.element(doc.root, 0));
-		return lines.join('\n');
+		return lines.join("\n");
 	}
 
 	private element(element: MElement, depth: number): string {
@@ -32,7 +35,7 @@ export class MusicXMLSerializer {
 		const children = element.children;
 		if (
 			children.length === 0 &&
-			element.getAttribute('xml:space') !== 'preserve'
+			element.getAttribute("xml:space") !== "preserve"
 		) {
 			return `${open}/>`;
 		}
@@ -41,8 +44,8 @@ export class MusicXMLSerializer {
 		const indented = children.every((child) => child instanceof MElement);
 		const body = children
 			.map((child) => this.child(child, depth + 1, indented))
-			.join('');
-		const close = indented ? `\n${INDENT.repeat(depth)}` : '';
+			.join("");
+		const close = indented ? `\n${INDENT.repeat(depth)}` : "";
 		return `${open}>${body}${close}</${element.tag}>`;
 	}
 
@@ -60,6 +63,6 @@ export class MusicXMLSerializer {
 	private attributes(attributes: Readonly<Record<string, string>>): string {
 		return Object.entries(attributes)
 			.map(([name, value]) => ` ${name}="${escapeXmlAttribute(value)}"`)
-			.join('');
+			.join("");
 	}
 }

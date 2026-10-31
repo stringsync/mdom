@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MPL-2.0
-import { GuitarProXml as X } from './guitar-pro-xml';
-import type { MElement } from './m-node';
-import type { Note } from './note';
-import type { Part } from './part';
+import { GuitarProXml as X } from "./guitar-pro-xml";
+import type { MElement } from "./m-element";
+import type { Note } from "./note";
+import type { Part } from "./part";
 
 /** One beat's worth of Guitar Pro lyric text: the words sung on it, and where it sits in its word. */
 interface Syllable {
 	text: string[];
-	syllabic: 'single' | 'begin' | 'middle' | 'end';
+	syllabic: "single" | "begin" | "middle" | "end";
 }
 
 /**
@@ -28,21 +28,21 @@ export class GuitarProLyrics {
 				continuing = false;
 				continue;
 			}
-			const pieces = token.split('-');
-			const trailing = pieces[pieces.length - 1] === '';
+			const pieces = token.split("-");
+			const trailing = pieces[pieces.length - 1] === "";
 			const words = pieces.filter(Boolean);
 			for (const [index, word] of words.entries()) {
 				const last = index === words.length - 1;
 				const continuesAfter = !last || trailing;
 				const joined = continuing || index > 0;
-				let syllabic: Syllable['syllabic'] = 'single';
+				let syllabic: Syllable["syllabic"] = "single";
 				if (joined) {
-					syllabic = continuesAfter ? 'middle' : 'end';
+					syllabic = continuesAfter ? "middle" : "end";
 				} else if (continuesAfter) {
-					syllabic = 'begin';
+					syllabic = "begin";
 				}
 				syllables.push({
-					text: word.split('+').map((run) => run.replaceAll('_', ' ')),
+					text: word.split("+").map((run) => run.replaceAll("_", " ")),
 					syllabic,
 				});
 				continuing = continuesAfter;
@@ -54,14 +54,14 @@ export class GuitarProLyrics {
 
 	/** Sing each line of the track's `<Lyrics>` on the part's notes, one verse per line. */
 	static read(track: MElement, part: Part): void {
-		const lines = track.child('Lyrics')?.childrenNamed('Line') ?? [];
+		const lines = track.child("Lyrics")?.childrenNamed("Line") ?? [];
 		for (const [lineIndex, line] of lines.entries()) {
-			const text = line.child('Text')?.text ?? '';
+			const text = line.child("Text")?.text ?? "";
 			const syllables = GuitarProLyrics.split(text);
 			if (!syllables.length) {
 				continue;
 			}
-			const start = Math.max(0, Number(line.child('Offset')?.text ?? 0));
+			const start = Math.max(0, Number(line.child("Offset")?.text ?? 0));
 			const notes = part.measures
 				.slice(start)
 				.flatMap((measure) => GuitarProLyrics.singable(measure.notes));
@@ -94,9 +94,10 @@ export class GuitarProLyrics {
 		if (!verses.size) {
 			return;
 		}
-		const lyrics = X.add(track, 'Lyrics', undefined, { dispatched: 'true' });
+		const lyrics = X.add(track, "Lyrics", undefined, { dispatched: "true" });
 		for (const verse of [...verses].sort(
-			(a, b) => Number(a) - Number(b) || a.localeCompare(b),
+			(first, second) =>
+				Number(first) - Number(second) || first.localeCompare(second),
 		)) {
 			const first = part.measures.findIndex((measure) =>
 				measure.notes.some((note) => note.getLyric(verse)),
@@ -106,29 +107,29 @@ export class GuitarProLyrics {
 				for (const note of GuitarProLyrics.singable(measure.notes)) {
 					const lyric = note.getLyric(verse);
 					if (!lyric) {
-						tokens.push('-');
+						tokens.push("-");
 						continue;
 					}
 					const joined = lyric.runs
 						.map((run) =>
-							run.kind === 'elision' ? '+' : run.text.replaceAll(' ', '_'),
+							run.kind === "elision" ? "+" : run.text.replaceAll(" ", "_"),
 						)
-						.join('');
+						.join("");
 					const continues =
-						lyric.syllabic === 'begin' || lyric.syllabic === 'middle';
-					if (joined === '') {
-						tokens.push('-');
+						lyric.syllabic === "begin" || lyric.syllabic === "middle";
+					if (joined === "") {
+						tokens.push("-");
 					} else {
 						tokens.push(continues ? `${joined}-` : joined);
 					}
 				}
 			}
-			while (tokens[tokens.length - 1] === '-') {
+			while (tokens[tokens.length - 1] === "-") {
 				tokens.pop();
 			}
-			const line = X.add(lyrics, 'Line');
-			X.add(line, 'Text', tokens.join(' '));
-			X.add(line, 'Offset', first);
+			const line = X.add(lyrics, "Line");
+			X.add(line, "Text", tokens.join(" "));
+			X.add(line, "Offset", first);
 		}
 	}
 
@@ -136,12 +137,12 @@ export class GuitarProLyrics {
 	private static singable(notes: readonly Note[]): Note[] {
 		return notes.filter(
 			(note) =>
-				note.staff === '1' &&
-				note.voice === '1' &&
+				note.staff === "1" &&
+				note.voice === "1" &&
 				!note.isRest &&
 				!note.isChordMember &&
 				!note.isGrace &&
-				!note.playbackTies.includes('stop'),
+				!note.playbackTies.includes("stop"),
 		);
 	}
 }

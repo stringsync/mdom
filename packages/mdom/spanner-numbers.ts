@@ -1,7 +1,7 @@
-import type { MElement } from './m-node';
-import type { Note } from './note';
-import { Part } from './part';
-import { stampOf } from './read-cache';
+import type { MElement } from "./m-element";
+import type { Note } from "./note";
+import { Part } from "./part";
+import { stampOf } from "./read-cache";
 
 type Markers = (note: Note) => (MElement & { number: string })[];
 
@@ -56,7 +56,7 @@ export function allocateSpanNumber<T>(
 ): T {
 	const part = first.closest(Part);
 	if (!part) {
-		return write('1');
+		return write("1");
 	}
 	const index = partIndex(part);
 	const kindIndex = kindIndexOf(index, part, kind, existing);
@@ -68,7 +68,7 @@ export function allocateSpanNumber<T>(
 	}
 	const number = String(candidate);
 	const result = write(number);
-	const stamp = stampOf(part, 'subtree');
+	const stamp = stampOf(part, "subtree");
 	if (stamp !== index.stamp) {
 		index.stamp = stamp;
 		if (!(0 <= from && from <= to && insert(kindIndex, number, from, to))) {
@@ -79,7 +79,7 @@ export function allocateSpanNumber<T>(
 }
 
 function partIndex(part: Part): PartIndex {
-	const stamp = stampOf(part, 'subtree');
+	const stamp = stampOf(part, "subtree");
 	let index = parts.get(part);
 	if (!index || index.stamp !== stamp) {
 		const positions = new Map<Note, number>();
@@ -111,8 +111,8 @@ function kindIndexOf(
 		for (const note of measure.notes) {
 			const position = index.positions.get(note)!;
 			for (const marker of existing(note)) {
-				const type = marker.getAttribute('type');
-				if (type !== 'start' && type !== 'stop') {
+				const type = marker.getAttribute("type");
+				if (type !== "start" && type !== "stop") {
 					continue;
 				}
 				const number = marker.number;
@@ -122,7 +122,7 @@ function kindIndexOf(
 					numbers.set(number, entry);
 				}
 				entry.positions.push(position);
-				if (type === 'start') {
+				if (type === "start") {
 					open.set(number, position);
 					continue;
 				}

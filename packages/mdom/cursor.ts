@@ -1,13 +1,13 @@
-import { required } from './m-node';
-import { Measure } from './measure';
-import { Note } from './note';
-import { measureIndexIn, measuresOf, Part } from './part';
-import { memo, stampOf } from './read-cache';
-import type { Voice } from './voice';
+import { required } from "./m-node";
+import { Measure } from "./measure";
+import { Note } from "./note";
+import { measureIndexIn, measuresOf, Part } from "./part";
+import { memo, stampOf } from "./read-cache";
+import type { Voice } from "./voice";
 
 /**
  * An immutable timeline caret: a position `(measure, voice, onset-in-beats)` in a
- * score. Movement returns a NEW cursor — the original keeps pointing where it
+ * score. Movement returns a NEW cursor, the original keeps pointing where it
  * did, so two carets can be held at once (a selection's start and end, a slur's
  * two endpoints). The position is a coordinate, not a node reference: {@link note}
  * is looked up live from the tree on each access, so an edit elsewhere never
@@ -35,9 +35,9 @@ export class Cursor {
 		if (target instanceof Note) {
 			const measure = required(
 				target.closest(Measure),
-				'<measure> ancestor for cursor',
+				"<measure> ancestor for cursor",
 			);
-			const onset = required(target.measureBeat, 'measureBeat for cursor');
+			const onset = required(target.measureBeat, "measureBeat for cursor");
 			return new Cursor(measure, target.voice, target.staff, onset);
 		}
 		return new Cursor(target.measure, target.id, target.staff, beat);
@@ -103,8 +103,8 @@ export class Cursor {
 		// Beats divide by the divisions carried in from earlier measures.
 		const part = measure.closest(Part);
 		const stamp = Math.max(
-			stampOf(measure, 'subtree'),
-			part ? stampOf(part, 'children', 'attributes') : 0,
+			stampOf(measure, "subtree"),
+			part ? stampOf(part, "children", "attributes") : 0,
 		);
 		return memo(measure, `cursor-stops:${this.voiceId}`, stamp, () =>
 			indexStops(

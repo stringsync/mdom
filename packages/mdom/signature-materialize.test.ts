@@ -1,10 +1,10 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './m-dom-parser';
-import { MElement } from './m-node';
-import { MusicXMLSerializer } from './music-xml-serializer';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser } from "./m-dom-parser";
+import { MElement } from "./m-element";
+import { MusicXMLSerializer } from "./music-xml-serializer";
 
 // A two-staff part that declares its signatures in measure 1, changes the lower
-// staff's clef in measure 3, and states nothing in measures 2 and 4 — the shape
+// staff's clef in measure 3, and states nothing in measures 2 and 4, the shape
 // every slice and every inserted spacer measure has to cope with.
 const SCORE = `<score-partwise><part id="P1">
   <measure number="1">
@@ -30,52 +30,52 @@ const SCORE = `<score-partwise><part id="P1">
 
 function parse() {
 	const document = new MDOMParser().parseFromString(SCORE);
-	return { document, part: document.score.getPart('P1')! };
+	return { document, part: document.score.getPart("P1")! };
 }
 
-describe('measure — materializeSignatures makes a measure renderable alone', () => {
-	it('writes the carried signatures in, nearest declaration winning per staff', () => {
+describe("measure, materializeSignatures makes a measure renderable alone", () => {
+	it("writes the carried signatures in, nearest declaration winning per staff", () => {
 		const { part } = parse();
-		const last = part.getMeasure('4')!;
+		const last = part.getMeasure("4")!;
 		last.materializeSignatures();
 
-		expect(last.childrenNamed('attributes')).toHaveLength(1);
+		expect(last.childrenNamed("attributes")).toHaveLength(1);
 		expect(last.getKey()?.fifths).toBe(2);
-		expect(last.getTime()?.beats).toBe('3');
-		expect(last.getClef('1')?.sign).toBe('G');
-		expect(last.getClef('2')?.sign).toBe('C'); // measure 3's change, not measure 1's F
+		expect(last.getTime()?.beats).toBe("3");
+		expect(last.getClef("1")?.sign).toBe("G");
+		expect(last.getClef("2")?.sign).toBe("C"); // measure 3's change, not measure 1's F
 	});
 
-	it('survives dropping every earlier measure — the slice operation', () => {
+	it("survives dropping every earlier measure, the slice operation", () => {
 		const { part } = parse();
-		const last = part.getMeasure('4')!;
+		const last = part.getMeasure("4")!;
 		last.materializeSignatures();
-		for (const measure of part.measures.filter(
-			(candidate) => candidate !== last,
-		)) {
-			measure.remove();
-		}
+		part.measures
+			.filter((candidate) => candidate !== last)
+			.forEach((measure) => {
+				measure.remove();
+			});
 
 		expect(part.measures).toHaveLength(1);
-		expect(last.getClef('2')?.sign).toBe('C');
+		expect(last.getClef("2")?.sign).toBe("C");
 		expect(last.getKey()?.fifths).toBe(2);
 		expect(last.notes[0]!.divisions).toBe(4);
 		expect(last.staveCount).toBe(2);
 	});
 
-	it('keeps the block in schema order, positioned before the note, and is idempotent', () => {
+	it("keeps the block in schema order, positioned before the note, and is idempotent", () => {
 		const { document, part } = parse();
-		const last = part.getMeasure('4')!;
+		const last = part.getMeasure("4")!;
 		last.materializeSignatures();
 
-		const attrs = last.childrenNamed('attributes')[0]!;
+		const attrs = last.childrenNamed("attributes")[0]!;
 		expect(attrs.childrenOfType(MElement).map((child) => child.tag)).toEqual([
-			'divisions',
-			'key',
-			'time',
-			'staves',
-			'clef',
-			'clef',
+			"divisions",
+			"key",
+			"time",
+			"staves",
+			"clef",
+			"clef",
 		]);
 		expect(last.children.indexOf(attrs)).toBeLessThan(
 			last.children.indexOf(last.notes[0]!),
@@ -86,17 +86,17 @@ describe('measure — materializeSignatures makes a measure renderable alone', (
 
 		const size = attrs.children.length;
 		last.materializeSignatures();
-		expect(last.childrenNamed('attributes')[0]!.children).toHaveLength(size);
+		expect(last.childrenNamed("attributes")[0]!.children).toHaveLength(size);
 	});
 
-	it('never overwrites what the measure already declares', () => {
+	it("never overwrites what the measure already declares", () => {
 		const { part } = parse();
-		const third = part.getMeasure('3')!;
+		const third = part.getMeasure("3")!;
 		third.materializeSignatures();
 
 		// Its own <clef number="2"> stays; staff 1's is carried in beside it.
-		expect(third.getClef('2')?.sign).toBe('C');
-		expect(third.getClef('1')?.sign).toBe('G');
-		expect(third.childrenNamed('attributes')).toHaveLength(1);
+		expect(third.getClef("2")?.sign).toBe("C");
+		expect(third.getClef("1")?.sign).toBe("G");
+		expect(third.childrenNamed("attributes")).toHaveLength(1);
 	});
 });

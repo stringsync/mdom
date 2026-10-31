@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'bun:test';
-import { LineDetail } from './line-detail';
-import { MDOMParser } from './m-dom-parser';
+import { describe, expect, it } from "bun:test";
+import { LineDetail } from "./line-detail";
+import { MDOMParser } from "./m-dom-parser";
 
-describe('LineDetail', () => {
-	it('reads its line and gets/sets width in tenths', () => {
+describe("LineDetail", () => {
+	it("reads its line and gets/sets width in tenths", () => {
 		const detail = new LineDetail();
 		detail.line = 3;
 		expect(detail.line).toBe(3);
@@ -11,14 +11,14 @@ describe('LineDetail', () => {
 		expect(detail.width).toBeNull();
 		detail.width = 1.5;
 		expect(detail.width).toBe(1.5);
-		expect(detail.getAttribute('width')).toBe('1.5');
+		expect(detail.getAttribute("width")).toBe("1.5");
 	});
 
-	it('throws when line is unset', () => {
-		expect(() => new LineDetail().line).toThrow('line on <line-detail>');
+	it("throws when line is unset", () => {
+		expect(() => new LineDetail().line).toThrow("line on <line-detail>");
 	});
 
-	it('is reachable via measure.lineDetails for the staff in effect', () => {
+	it("is reachable via measure.lineDetails for the staff in effect", () => {
 		const doc = new MDOMParser().parseFromString(`
       <score-partwise>
         <part id="P1">
@@ -34,7 +34,7 @@ describe('LineDetail', () => {
     `);
 
 		const details =
-			doc.score?.getPart('P1')?.getMeasure('1')?.getLineDetails() ?? [];
+			doc.score?.getPart("P1")?.getMeasure("1")?.getLineDetails() ?? [];
 		expect(details).toHaveLength(1);
 		expect(details[0]).toBeInstanceOf(LineDetail);
 		expect(details[0]?.line).toBe(5);

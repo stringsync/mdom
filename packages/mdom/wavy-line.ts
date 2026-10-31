@@ -1,14 +1,15 @@
-import { MElement, required } from './m-node';
-import { Note } from './note';
+import { MElement } from "./m-element";
+import { required } from "./m-node";
+import { Note } from "./note";
 import {
 	type Position,
 	type PositionSpec,
 	positionOf,
 	setPositionOf,
-} from './print-style';
-import { noteMarkers, Spanner, type SpannerSpec } from './spanner';
+} from "./print-style";
+import { noteMarkers, Spanner, type SpannerSpec } from "./spanner";
 
-export type WavyLineType = 'start' | 'stop' | 'continue';
+export type WavyLineType = "start" | "stop" | "continue";
 
 /**
  * A `<wavy-line>` inside `<notations><ornaments>` (trills, etc.). Paired
@@ -16,25 +17,25 @@ export type WavyLineType = 'start' | 'stop' | 'continue';
  */
 export class WavyLine extends MElement {
 	constructor() {
-		super('wavy-line');
+		super("wavy-line");
 	}
 
 	/** Pairing key; '1' when omitted. */
 	get number(): string {
-		return this.getAttribute('number') ?? '1';
+		return this.getAttribute("number") ?? "1";
 	}
 
 	/** `type`: required on a `<wavy-line>` and drives pairing. */
 	get wavyLineType(): WavyLineType {
 		return required(
-			this.getAttribute('type'),
-			'type on <wavy-line>',
+			this.getAttribute("type"),
+			"type on <wavy-line>",
 		) as WavyLineType;
 	}
 
 	/** The note this marker hangs off of. An attached marker always has one. */
 	get note(): Note {
-		return required(this.closest(Note), '<note> ancestor of <wavy-line>');
+		return required(this.closest(Note), "<note> ancestor of <wavy-line>");
 	}
 
 	/** The marker at the far end (same number), or null. */
@@ -59,10 +60,10 @@ export class WavyLine extends MElement {
 
 	private spec(): SpannerSpec<WavyLine> {
 		return {
-			siblings: noteMarkers(this, (note) => note.wavyLines, 'wavyLines'),
+			siblings: noteMarkers(this, (note) => note.wavyLines, "wavyLines"),
 			// Raw reads so resolution tolerates a malformed typeless marker.
-			isOpen: (wavyLine) => wavyLine.getAttribute('type') === 'start',
-			isClose: (wavyLine) => wavyLine.getAttribute('type') === 'stop',
+			isOpen: (wavyLine) => wavyLine.getAttribute("type") === "start",
+			isClose: (wavyLine) => wavyLine.getAttribute("type") === "stop",
 		};
 	}
 	/** Where this is drawn, in tenths. Layout only: it never moves the onset. */

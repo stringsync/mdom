@@ -1,17 +1,18 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './m-dom-parser';
-import type { Measure } from './measure';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser } from "./m-dom-parser";
+import type { Measure } from "./measure";
 
-const whole = '<note><rest/><duration>4</duration><type>whole</type></note>';
-const restMeasures = (start: number, count: number): string =>
-	Array.from(
-		{ length: count },
-		(_unused, offset) =>
-			`<measure number="${start + offset}">${whole}</measure>`,
-	).join('');
+describe("Measure.getMultiRestCount", () => {
+	const whole = "<note><rest/><duration>4</duration><type>whole</type></note>";
+	const restMeasures = (start: number, count: number): string =>
+		Array.from(
+			{ length: count },
+			(_unused, offset) =>
+				`<measure number="${start + offset}">${whole}</measure>`,
+		).join("");
 
-// A 3-measure multirest declared in measure 1, then a 2-measure one in measure 5.
-const MULTI_REST = `<score-partwise>
+	// A 3-measure multirest declared in measure 1, then a 2-measure one in measure 5.
+	const MULTI_REST = `<score-partwise>
   <part id="P1">
     <measure number="1">
       <attributes>
@@ -32,30 +33,29 @@ const MULTI_REST = `<score-partwise>
   </part>
 </score-partwise>`;
 
-describe('Measure.getMultiRestCount', () => {
 	const measuresOf = (xml: string): readonly Measure[] =>
-		new MDOMParser().parseFromString(xml).score.getPart('P1')!.measures;
+		new MDOMParser().parseFromString(xml).score.getPart("P1")!.measures;
 	const measures = measuresOf(MULTI_REST);
 
-	it('reads the count from the measure that begins the multirest', () => {
+	it("reads the count from the measure that begins the multirest", () => {
 		expect(measures[0]!.getMultiRestCount()).toBe(3);
 	});
 
-	it('returns null inside the run — only the first measure begins it', () => {
+	it("returns null inside the run, only the first measure begins it", () => {
 		expect(measures[1]!.getMultiRestCount()).toBeNull();
 		expect(measures[2]!.getMultiRestCount()).toBeNull();
 	});
 
-	it('returns null past the end of the run', () => {
+	it("returns null past the end of the run", () => {
 		expect(measures[3]!.getMultiRestCount()).toBeNull();
 	});
 
-	it('reads a later multirest independently of the first', () => {
+	it("reads a later multirest independently of the first", () => {
 		expect(measures[4]!.getMultiRestCount()).toBe(2);
 		expect(measures[5]!.getMultiRestCount()).toBeNull();
 	});
 
-	it('returns null everywhere when no <measure-style> is present', () => {
+	it("returns null everywhere when no <measure-style> is present", () => {
 		const bare = measuresOf(
 			`<score-partwise><part id="P1">${restMeasures(1, 3)}</part></score-partwise>`,
 		);
@@ -66,16 +66,25 @@ describe('Measure.getMultiRestCount', () => {
 		]);
 	});
 
-	it('leaves clef/key/time/divisions carry-forward untouched', () => {
-		for (const measure of measures.slice(1, 4)) {
-			expect(measure.getClef()?.sign).toBe('G');
-			expect(measure.getKey()?.fifths).toBe(2);
-			expect(measure.getTime()?.beats).toBe('4');
-			expect(measure.notes[0]!.divisions).toBe(1);
-		}
+	it("leaves clef/key/time/divisions carry-forward untouched", () => {
+		expect(
+			measures.slice(1, 4).map((measure) => ({
+				clef: measure.getClef()?.sign,
+				fifths: measure.getKey()?.fifths,
+				beats: measure.getTime()?.beats,
+				divisions: measure.notes[0]!.divisions,
+			})),
+		).toEqual(
+			Array.from({ length: 3 }, () => ({
+				clef: "G",
+				fifths: 2,
+				beats: "4",
+				divisions: 1,
+			})),
+		);
 	});
 
-	it('selects the <measure-style> matching the staff', () => {
+	it("selects the <measure-style> matching the staff", () => {
 		const [measure] = measuresOf(`<score-partwise><part id="P1">
       <measure number="1">
         <attributes>
@@ -86,7 +95,7 @@ describe('Measure.getMultiRestCount', () => {
         ${whole}
       </measure>
     </part></score-partwise>`);
-		expect(measure!.getMultiRestCount('1')).toBeNull();
-		expect(measure!.getMultiRestCount('2')).toBe(4);
+		expect(measure!.getMultiRestCount("1")).toBeNull();
+		expect(measure!.getMultiRestCount("2")).toBe(4);
 	});
 });

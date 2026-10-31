@@ -1,15 +1,23 @@
 {
 	"name": "mdom",
-	"version": "0.8.1",
+	"version": "0.8.2",
 	"private": true,
 	"type": "module",
-	"workspaces": [
-		"packages/*"
-	],
+	"workspaces": {
+		"packages": [
+			"packages/cli",
+			"packages/e2e",
+			"packages/mdom",
+			"packages/core"
+		],
+		"catalog": {
+			"@types/bun": "^1.4",
+			"zod": "^4.4.3"
+		}
+	},
 	"devDependencies": {
-		"@biomejs/biome": "2.5.1",
-		"@types/bun": "latest",
-		"@webappwiz/scry": "0.0.54",
-		"typescript": "^7"
+		"@biomejs/biome": "2.5.7",
+		"@types/bun": "catalog:",
+		"typescript": "^7.0.2"
 	}
 }

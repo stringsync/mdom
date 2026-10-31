@@ -1,15 +1,16 @@
-import type { MElement } from './m-node';
-import { setOrRemove } from './text-format';
+import type { MElement } from "./m-element";
+import { setOrRemove } from "./text-format";
 
 /**
  * The MusicXML `color` of `element`, normalized to a CSS color. MusicXML writes
- * `"#RRGGBB"` or `"#AARRGGBB"` — alpha FIRST, which CSS and canvas read as
- * `#RRGGBBAA` — so the eight-digit form drops its alpha rather than handing a
+ * `"#RRGGBB"` or `"#AARRGGBB"`, alpha FIRST, which CSS and canvas read as
+ * `#RRGGBBAA`, so the eight-digit form drops its alpha rather than handing a
  * renderer the wrong color. Null when unset, or when `element` is null (so a
  * caller can pass an optional child straight in).
  */
+// vet-ignore noop-objects-over-null: an absent optional child is XML data, passed straight in from child(), not a missing collaborator.
 export function colorOf(element: MElement | null | undefined): string | null {
-	const color = element?.getAttribute('color');
+	const color = element?.getAttribute("color");
 	if (color == null) {
 		return null;
 	}
@@ -18,13 +19,14 @@ export function colorOf(element: MElement | null | undefined): string | null {
 
 /**
  * The MusicXML `placement` of `element`: above or below the staff. Null when
- * unstated — the default is the renderer's choice, so mdom doesn't pick one.
+ * unstated, the default is the renderer's choice, so mdom doesn't pick one.
  */
 export function placementOf(
+	// vet-ignore noop-objects-over-null: an absent optional child is XML data, passed straight in from child(), not a missing collaborator.
 	element: MElement | null | undefined,
-): 'above' | 'below' | null {
-	const placement = element?.getAttribute('placement');
-	return placement === 'above' || placement === 'below' ? placement : null;
+): "above" | "below" | null {
+	const placement = element?.getAttribute("placement");
+	return placement === "above" || placement === "below" ? placement : null;
 }
 
 /**
@@ -49,12 +51,13 @@ export interface PositionSpec {
 }
 
 /** The position attributes of `element`; all null when it is null. */
+// vet-ignore noop-objects-over-null: an absent optional child is XML data, passed straight in from child(), not a missing collaborator.
 export function positionOf(element: MElement | null | undefined): Position {
 	return {
-		defaultX: numberOf(element, 'default-x'),
-		defaultY: numberOf(element, 'default-y'),
-		relativeX: numberOf(element, 'relative-x'),
-		relativeY: numberOf(element, 'relative-y'),
+		defaultX: numberOf(element, "default-x"),
+		defaultY: numberOf(element, "default-y"),
+		relativeX: numberOf(element, "relative-x"),
+		relativeY: numberOf(element, "relative-y"),
 	};
 }
 
@@ -66,14 +69,14 @@ export function setPositionOf(
 	element: MElement,
 	spec: PositionSpec | null,
 ): void {
-	setNumber(element, 'default-x', spec?.defaultX);
-	setNumber(element, 'default-y', spec?.defaultY);
-	setNumber(element, 'relative-x', spec?.relativeX);
-	setNumber(element, 'relative-y', spec?.relativeY);
+	setNumber(element, "default-x", spec?.defaultX);
+	setNumber(element, "default-y", spec?.defaultY);
+	setNumber(element, "relative-x", spec?.relativeX);
+	setNumber(element, "relative-y", spec?.relativeY);
 }
 
 /** A MusicXML `line-type`: the stroke a line or curve is drawn with. */
-export type LineType = 'solid' | 'dashed' | 'dotted' | 'wavy';
+export type LineType = "solid" | "dashed" | "dotted" | "wavy";
 
 /**
  * How a line is drawn: its `line-type` and, for dashed lines, the
@@ -111,8 +114,8 @@ export interface DashStyleSpec {
 /** The dash and space lengths of `element`. */
 export function dashStyleOf(element: MElement): DashStyle {
 	return {
-		dashLength: numberOf(element, 'dash-length'),
-		spaceLength: numberOf(element, 'space-length'),
+		dashLength: numberOf(element, "dash-length"),
+		spaceLength: numberOf(element, "space-length"),
 	};
 }
 
@@ -121,19 +124,20 @@ export function setDashStyleOf(
 	element: MElement,
 	spec: DashStyleSpec | null,
 ): void {
-	setNumber(element, 'dash-length', spec?.dashLength);
-	setNumber(element, 'space-length', spec?.spaceLength);
+	setNumber(element, "dash-length", spec?.dashLength);
+	setNumber(element, "space-length", spec?.spaceLength);
 }
 
 /** The `line-type` of `element`; null when absent or unrecognized. */
 export function lineTypeOf(
+	// vet-ignore noop-objects-over-null: an absent optional child is XML data, passed straight in from child(), not a missing collaborator.
 	element: MElement | null | undefined,
 ): LineType | null {
-	const type = element?.getAttribute('line-type');
-	return type === 'solid' ||
-		type === 'dashed' ||
-		type === 'dotted' ||
-		type === 'wavy'
+	const type = element?.getAttribute("line-type");
+	return type === "solid" ||
+		type === "dashed" ||
+		type === "dotted" ||
+		type === "wavy"
 		? type
 		: null;
 }
@@ -142,8 +146,8 @@ export function lineTypeOf(
 export function lineStyleOf(element: MElement): LineStyle {
 	return {
 		type: lineTypeOf(element),
-		dashLength: numberOf(element, 'dash-length'),
-		spaceLength: numberOf(element, 'space-length'),
+		dashLength: numberOf(element, "dash-length"),
+		spaceLength: numberOf(element, "space-length"),
 	};
 }
 
@@ -152,9 +156,9 @@ export function setLineStyleOf(
 	element: MElement,
 	spec: LineStyleSpec | null,
 ): void {
-	setOrRemove(element, 'line-type', spec?.type);
-	setNumber(element, 'dash-length', spec?.dashLength);
-	setNumber(element, 'space-length', spec?.spaceLength);
+	setOrRemove(element, "line-type", spec?.type);
+	setNumber(element, "dash-length", spec?.dashLength);
+	setNumber(element, "space-length", spec?.spaceLength);
 }
 
 /**
@@ -187,32 +191,32 @@ export interface BezierSpec {
 /** The Bezier attributes of `element`. */
 export function bezierOf(element: MElement): Bezier {
 	return {
-		x: numberOf(element, 'bezier-x'),
-		y: numberOf(element, 'bezier-y'),
-		x2: numberOf(element, 'bezier-x2'),
-		y2: numberOf(element, 'bezier-y2'),
-		offset: numberOf(element, 'bezier-offset'),
-		offset2: numberOf(element, 'bezier-offset2'),
+		x: numberOf(element, "bezier-x"),
+		y: numberOf(element, "bezier-y"),
+		x2: numberOf(element, "bezier-x2"),
+		y2: numberOf(element, "bezier-y2"),
+		offset: numberOf(element, "bezier-offset"),
+		offset2: numberOf(element, "bezier-offset2"),
 	};
 }
 
 /** Replace the Bezier attributes of `element`; null removes them all. */
 export function setBezierOf(element: MElement, spec: BezierSpec | null): void {
-	setNumber(element, 'bezier-x', spec?.x);
-	setNumber(element, 'bezier-y', spec?.y);
-	setNumber(element, 'bezier-x2', spec?.x2);
-	setNumber(element, 'bezier-y2', spec?.y2);
-	setNumber(element, 'bezier-offset', spec?.offset);
-	setNumber(element, 'bezier-offset2', spec?.offset2);
+	setNumber(element, "bezier-x", spec?.x);
+	setNumber(element, "bezier-y", spec?.y);
+	setNumber(element, "bezier-x2", spec?.x2);
+	setNumber(element, "bezier-y2", spec?.y2);
+	setNumber(element, "bezier-offset", spec?.offset);
+	setNumber(element, "bezier-offset2", spec?.offset2);
 }
 
 /**
  * A slur or tie's `orientation`: `over` (overhand, tips down) or `under`
  * (underhand, tips up). Null when unstated or unrecognized.
  */
-export function orientationOf(element: MElement): 'over' | 'under' | null {
-	const orientation = element.getAttribute('orientation');
-	return orientation === 'over' || orientation === 'under' ? orientation : null;
+export function orientationOf(element: MElement): "over" | "under" | null {
+	const orientation = element.getAttribute("orientation");
+	return orientation === "over" || orientation === "under" ? orientation : null;
 }
 
 /**
@@ -225,8 +229,8 @@ export function yesNoOf(
 	fallback: boolean,
 ): boolean {
 	const value = element.getAttribute(name);
-	if (value === 'yes' || value === 'no') {
-		return value === 'yes';
+	if (value === "yes" || value === "no") {
+		return value === "yes";
 	}
 	return fallback;
 }
@@ -240,17 +244,18 @@ export function setYesNo(
 	if (value === null) {
 		element.removeAttribute(name);
 	} else {
-		element.setAttribute(name, value ? 'yes' : 'no');
+		element.setAttribute(name, value ? "yes" : "no");
 	}
 }
 
 /** A numeric attribute; null when absent or not a number. */
 export function numberOf(
+	// vet-ignore noop-objects-over-null: an absent optional child is XML data, passed straight in from child(), not a missing collaborator.
 	element: MElement | null | undefined,
 	name: string,
 ): number | null {
 	const text = element?.getAttribute(name);
-	if (text == null || text.trim() === '') {
+	if (text == null || text.trim() === "") {
 		return null;
 	}
 	const value = Number(text);

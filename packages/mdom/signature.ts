@@ -1,12 +1,13 @@
-import { MElement, type MNode } from './m-node';
-import type { Measure } from './measure';
-import { measureIndexIn, measuresOf, Part } from './part';
-import { memo, stampOf } from './read-cache';
+import { MElement } from "./m-element";
+import type { MNode } from "./m-node";
+import type { Measure } from "./measure";
+import { measureIndexIn, measuresOf, Part } from "./part";
+import { memo, stampOf } from "./read-cache";
 
 /**
  * `<attributes>` in effect, nearest first: scan backward from `fromIndex`
  * (exclusive) within `measure`, then through earlier measures of the part. This
- * one backward walk is the entire carry-forward — first match wins. A Note passes
+ * one backward walk is the entire carry-forward, first match wins. A Note passes
  * its own index (so mid-measure changes count); a Measure passes the index of its
  * first note ("at the start of this measure": its own leading `<attributes>`
  * count, a mid-measure change does not). The same helper answers
@@ -31,7 +32,7 @@ export function attributesBackFrom(
 			earlier >= 0;
 			earlier--
 		) {
-			const attrs = measures[earlier]!.childrenNamed('attributes');
+			const attrs = measures[earlier]!.childrenNamed("attributes");
 			for (let index = attrs.length - 1; index >= 0; index--) {
 				result.push(attrs[index]!);
 			}
@@ -74,8 +75,8 @@ export function attributeBackFrom<T>(
 export function childIndexIn(measure: Measure, child: MNode): number {
 	const indexes = memo(
 		measure,
-		'child-indexes',
-		stampOf(measure, 'children'),
+		"child-indexes",
+		stampOf(measure, "children"),
 		() =>
 			new Map(measure.children.map((each, index) => [each, index] as const)),
 	);
@@ -89,10 +90,10 @@ interface LocalAttributes {
 
 /** `measure`'s own `<attributes>` children with their child indexes, in order. */
 function localAttributes(measure: Measure): readonly LocalAttributes[] {
-	return memo(measure, 'local-attributes', stampOf(measure, 'children'), () => {
+	return memo(measure, "local-attributes", stampOf(measure, "children"), () => {
 		const found: LocalAttributes[] = [];
 		measure.children.forEach((node, index) => {
-			if (node instanceof MElement && node.tag === 'attributes') {
+			if (node instanceof MElement && node.tag === "attributes") {
 				found.push({ index, attrs: node });
 			}
 		});
@@ -135,13 +136,13 @@ function carriedInto<T>(
 	const before = memo(
 		part,
 		`carry:${key}`,
-		stampOf(part, 'children', 'attributes'),
+		stampOf(part, "children", "attributes"),
 		(): Array<T | null> => [null],
 	);
 	const measures = measuresOf(part);
 	while (before.length <= index) {
 		const previous = before.length - 1;
-		const attrs = measures[previous]!.childrenNamed('attributes');
+		const attrs = measures[previous]!.childrenNamed("attributes");
 		let found: T | null = null;
 		for (let at = attrs.length - 1; at >= 0 && found == null; at--) {
 			found = pick(attrs[at]!) ?? null;
@@ -156,8 +157,8 @@ export function divisionsBackFrom(
 	measure: Measure,
 	fromIndex: number,
 ): number | null {
-	return attributeBackFrom(measure, fromIndex, 'divisions', (attrs) => {
-		const value = attrs.child('divisions')?.text;
+	return attributeBackFrom(measure, fromIndex, "divisions", (attrs) => {
+		const value = attrs.child("divisions")?.text;
 		return value == null ? null : Number(value);
 	});
 }
@@ -165,10 +166,10 @@ export function divisionsBackFrom(
 /**
  * Whether a per-staff signature element (`<key>`/`<time>`/`<staff-details>`)
  * applies to `staff`: a `number` attribute targets one staff; its absence means
- * all staves. (Clefs are the exception — they match by exact staff, never
+ * all staves. (Clefs are the exception, they match by exact staff, never
  * all-staves.)
  */
 export function appliesToStaff(element: MElement, staff: string): boolean {
-	const number = element.getAttribute('number');
+	const number = element.getAttribute("number");
 	return number === null || number === staff;
 }

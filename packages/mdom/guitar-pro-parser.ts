@@ -1,12 +1,12 @@
-import { ArchiveReader } from './archive-reader';
-import { GuitarProBinaryReader } from './guitar-pro-binary-reader';
-import { GuitarProConfiguration } from './guitar-pro-configuration';
-import { GuitarProDocumentReader } from './guitar-pro-document-reader';
-import { GpxFileSystem, isGpx } from './guitar-pro-gpx-file-system';
-import type { GuitarProOptions } from './guitar-pro-options';
-import { GuitarProXml } from './guitar-pro-xml';
-import type { MDocument } from './m-document';
-import { MDOMParser } from './m-dom-parser';
+import { ArchiveReader } from "./archive-reader";
+import { GuitarProBinaryReader } from "./guitar-pro-binary-reader";
+import { GuitarProConfiguration } from "./guitar-pro-configuration";
+import { GuitarProDocumentReader } from "./guitar-pro-document-reader";
+import { GpxFileSystem, isGpx } from "./guitar-pro-gpx-file-system";
+import type { GuitarProOptions } from "./guitar-pro-options";
+import { GuitarProXml } from "./guitar-pro-xml";
+import type { MDocument } from "./m-document";
+import { MDOMParser } from "./m-dom-parser";
 
 /** Imports core notation and tablature from Guitar Pro 7/8 `.gp` archives and Guitar Pro 6 `.gpx` containers, and Guitar Pro 3-5 `.gp3`, `.gp4` and `.gp5` files. */
 export class GuitarProParser {
@@ -24,28 +24,31 @@ export class GuitarProParser {
 	): Promise<MDocument> {
 		if (isGpx(bytes)) {
 			return this.readGpif(
-				GpxFileSystem.load(bytes, opts).text('score.gpif'),
+				GpxFileSystem.load(bytes, opts).text("score.gpif"),
 				null,
 				opts,
 			);
 		}
 		if (GuitarProBinaryReader.isGuitarPro(bytes)) {
 			const score = new GuitarProBinaryReader(opts).read(bytes);
-			return this.readGpif(score.gpif, null, opts, score.tablature);
+			return this.readGpif(score.gpif, null, {
+				...opts,
+				tablatureOverride: score.tablature,
+			});
 		}
 		if (bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
 			throw new Error(
-				'Expected a Guitar Pro 6 .gpx container, a 7/8 .gp ZIP archive, or a Guitar Pro 3-5 .gp3, .gp4 or .gp5 file',
+				"Expected a Guitar Pro 6 .gpx container, a 7/8 .gp ZIP archive, or a Guitar Pro 3-5 .gp3, .gp4 or .gp5 file",
 			);
 		}
 		const archive = await ArchiveReader.load(bytes, opts);
-		const gpif = await archive.text('Content/score.gpif');
+		const gpif = await archive.text("Content/score.gpif");
 		if (gpif === null) {
-			throw new Error('Guitar Pro archive has no Content/score.gpif');
+			throw new Error("Guitar Pro archive has no Content/score.gpif");
 		}
 		return this.readGpif(
 			gpif,
-			await archive.bytes('Content/PartConfiguration'),
+			await archive.bytes("Content/PartConfiguration"),
 			opts,
 		);
 	}
@@ -53,15 +56,14 @@ export class GuitarProParser {
 	private readGpif(
 		gpif: string | null,
 		configuration: Uint8Array | null,
-		opts: GuitarProOptions,
-		tablatureOverride?: boolean[],
+		opts: ReadGpifOptions = {},
 	): MDocument {
 		if (gpif === null) {
-			throw new Error('Guitar Pro 6 container has no score.gpif');
+			throw new Error("Guitar Pro 6 container has no score.gpif");
 		}
 		const root = new MDOMParser().parseFromString(gpif).root;
 		const tablature =
-			tablatureOverride ??
+			opts.tablatureOverride ??
 			(configuration
 				? new GuitarProConfiguration().readTablature(configuration)
 				: []);
@@ -69,4 +71,9 @@ export class GuitarProParser {
 			tablature,
 		);
 	}
+}
+
+/** What {@link GuitarProParser} reads a `score.gpif` with: the caller's options and the tablature a binary file already holds. */
+interface ReadGpifOptions extends GuitarProOptions {
+	tablatureOverride?: boolean[];
 }

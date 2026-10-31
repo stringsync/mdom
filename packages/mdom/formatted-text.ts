@@ -1,12 +1,12 @@
-import { MElement } from './m-node';
+import { MElement } from "./m-element";
 import {
 	colorOf,
 	type Position,
 	type PositionSpec,
 	positionOf,
 	setPositionOf,
-} from './print-style';
-import type { Score } from './score';
+} from "./print-style";
+import type { Score } from "./score";
 import {
 	type Font,
 	type FontSpec,
@@ -18,7 +18,7 @@ import {
 	type TextVerticalAlign,
 	textAlignOf,
 	verticalAlignOf,
-} from './text-format';
+} from "./text-format";
 
 /**
  * A direction text element (`<words>`, `<rehearsal>`) and the formatting it
@@ -29,7 +29,7 @@ import {
 export abstract class FormattedTextElement extends MElement {
 	/** The printed text; '' when the element carries none. */
 	override get text(): string {
-		return super.text ?? '';
+		return super.text ?? "";
 	}
 
 	/** The font attributes this element states; a null field inherits. */
@@ -53,12 +53,12 @@ export abstract class FormattedTextElement extends MElement {
 
 	/** `justify`: how lines of a multi-line text align to each other; null when unstated. */
 	get justify(): TextAlign | null {
-		return textAlignOf(this, 'justify');
+		return textAlignOf(this, "justify");
 	}
 
 	/** Set `justify`, or remove it with null. */
 	setJustify(value: TextAlign | null): void {
-		setOrRemove(this, 'justify', value);
+		setOrRemove(this, "justify", value);
 	}
 
 	/**
@@ -66,12 +66,12 @@ export abstract class FormattedTextElement extends MElement {
 	 * unstated, in which case MusicXML has it follow {@link justify}.
 	 */
 	get halign(): TextAlign | null {
-		return textAlignOf(this, 'halign');
+		return textAlignOf(this, "halign");
 	}
 
 	/** Set `halign`, or remove it with null. */
 	setHalign(value: TextAlign | null): void {
-		setOrRemove(this, 'halign', value);
+		setOrRemove(this, "halign", value);
 	}
 
 	/** `valign`: which part of the text sits at its y position; null when unstated. */
@@ -81,7 +81,7 @@ export abstract class FormattedTextElement extends MElement {
 
 	/** Set `valign`, or remove it with null. */
 	setValign(value: TextVerticalAlign | null): void {
-		setOrRemove(this, 'valign', value);
+		setOrRemove(this, "valign", value);
 	}
 
 	/** The normalized `color`; null when unset. */
@@ -107,7 +107,7 @@ export abstract class FormattedTextElement extends MElement {
  */
 function scoreOf(element: MElement): Score | null {
 	let node = element.parent;
-	while (node && node.tag !== 'score-partwise') {
+	while (node && node.tag !== "score-partwise") {
 		node = node.parent;
 	}
 	return node as Score | null;

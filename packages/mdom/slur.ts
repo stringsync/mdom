@@ -1,6 +1,7 @@
-import { MElement, required } from './m-node';
-import { Note } from './note';
-import { Part } from './part';
+import { MElement } from "./m-element";
+import { required } from "./m-node";
+import { Note } from "./note";
+import { Part } from "./part";
 import {
 	type Bezier,
 	type BezierSpec,
@@ -18,26 +19,26 @@ import {
 	setBezierOf,
 	setLineStyleOf,
 	setPositionOf,
-} from './print-style';
-import { noteMarkers, Spanner, type SpannerSpec } from './spanner';
-import { setOrRemove } from './text-format';
+} from "./print-style";
+import { noteMarkers, Spanner, type SpannerSpec } from "./spanner";
+import { setOrRemove } from "./text-format";
 
-export type SlurType = 'start' | 'stop' | 'continue';
+export type SlurType = "start" | "stop" | "continue";
 
 /**
- * A `<slur>` marker inside `<notations>`. Slurs — like ties, wedges, pedals, and
- * every other spanner — are NOT tree-shaped: a `start` on one note pairs with a
+ * A `<slur>` marker inside `<notations>`. Slurs, like ties, wedges, pedals, and
+ * every other spanner, are NOT tree-shaped: a `start` on one note pairs with a
  * `stop` on a later note, joined by `number`. The pairing is resolved on demand
  * by {@link partner}, not accumulated into ids by a begin/continue/close walk.
  */
 export class Slur extends MElement {
 	constructor() {
-		super('slur');
+		super("slur");
 	}
 
 	/** Pairing key. MusicXML treats an absent slur number as 1. */
 	get number(): string {
-		return this.getAttribute('number') ?? '1';
+		return this.getAttribute("number") ?? "1";
 	}
 
 	/**
@@ -45,15 +46,15 @@ export class Slur extends MElement {
 	 * marker, not an expected state.
 	 */
 	get slurType(): SlurType {
-		return required(this.getAttribute('type'), 'type on <slur>') as SlurType;
+		return required(this.getAttribute("type"), "type on <slur>") as SlurType;
 	}
 
 	/** `placement` (above/below), or null. */
 	get placement(): string | null {
-		return this.getAttribute('placement');
+		return this.getAttribute("placement");
 	}
 
-	/** `line-type` (solid/dashed/dotted/wavy) — the stroke to draw; null when unstated. */
+	/** `line-type` (solid/dashed/dotted/wavy), the stroke to draw; null when unstated. */
 	get lineType(): LineType | null {
 		return lineTypeOf(this);
 	}
@@ -69,13 +70,13 @@ export class Slur extends MElement {
 	}
 
 	/** `orientation`: over (tips down) or under (tips up); null when unstated. */
-	get orientation(): 'over' | 'under' | null {
+	get orientation(): "over" | "under" | null {
 		return orientationOf(this);
 	}
 
 	/** Set `orientation`, or remove it with null. */
-	setOrientation(value: 'over' | 'under' | null): void {
-		setOrRemove(this, 'orientation', value);
+	setOrientation(value: "over" | "under" | null): void {
+		setOrRemove(this, "orientation", value);
 	}
 
 	/**
@@ -111,12 +112,12 @@ export class Slur extends MElement {
 
 	/** The note this marker hangs off of. An attached marker always has one. */
 	get note(): Note {
-		return required(this.closest(Note), '<note> ancestor of <slur>');
+		return required(this.closest(Note), "<note> ancestor of <slur>");
 	}
 
 	/** The part this marker belongs to. An attached marker always has one. */
 	get part(): Part {
-		return required(this.closest(Part), '<part> ancestor of <slur>');
+		return required(this.closest(Part), "<part> ancestor of <slur>");
 	}
 
 	/**
@@ -142,11 +143,11 @@ export class Slur extends MElement {
 
 	private spec(): SpannerSpec<Slur> {
 		return {
-			siblings: noteMarkers(this, (note) => note.slurs, 'slurs'),
+			siblings: noteMarkers(this, (note) => note.slurs, "slurs"),
 			// Raw reads so resolution tolerates a malformed typeless marker (skips it)
 			// rather than throwing through the strict `slurType` getter.
-			isOpen: (slur) => slur.getAttribute('type') === 'start',
-			isClose: (slur) => slur.getAttribute('type') === 'stop',
+			isOpen: (slur) => slur.getAttribute("type") === "start",
+			isClose: (slur) => slur.getAttribute("type") === "stop",
 		};
 	}
 }

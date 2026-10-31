@@ -1,10 +1,11 @@
-import { MElement, required } from './m-node';
-import type { PitchSpec } from './note';
+import { MElement } from "./m-element";
+import { required } from "./m-node";
+import type { PitchSpec } from "./note";
 
 /** A `<pitch>`: step, octave, and optional alteration. */
 export class Pitch extends MElement {
 	constructor() {
-		super('pitch');
+		super("pitch");
 	}
 
 	/**
@@ -13,26 +14,26 @@ export class Pitch extends MElement {
 	 * caller has to defend against (and won't).
 	 */
 	get step(): string {
-		return required(this.child('step')?.text, '<step> in <pitch>');
+		return required(this.child("step")?.text, "<step> in <pitch>");
 	}
 
 	/** `<octave>`. Required, like {@link step}. */
 	get octave(): number {
-		return Number(required(this.child('octave')?.text, '<octave> in <pitch>'));
+		return Number(required(this.child("octave")?.text, "<octave> in <pitch>"));
 	}
 
 	/**
 	 * `<alter>` in ± semitones (decimals for microtones). Genuinely optional; the
-	 * spec default for absence is natural (0). Returning the default — not null —
+	 * spec default for absence is natural (0). Returning the default, not null -
 	 * keeps null reserved for things that can actually be unknown.
 	 */
 	get alter(): number {
-		return Number(this.child('alter')?.text ?? 0);
+		return Number(this.child("alter")?.text ?? 0);
 	}
 }
 
 /** Steps of the scale in order, C upward. */
-const STEPS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+const STEPS = ["C", "D", "E", "F", "G", "A", "B"];
 
 /** Semitones above C of each natural step. */
 const STEP_SEMITONES = [0, 2, 4, 5, 7, 9, 11];

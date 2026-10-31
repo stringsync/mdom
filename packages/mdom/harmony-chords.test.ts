@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser, MDocument, MElement, MusicXMLSerializer } from './index';
-import { schemaErrors } from './music-xml-schema';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser, MDocument, MElement, MusicXMLSerializer } from "./index";
+import { schemaErrors } from "./music-xml-schema";
 
 const parse = (xml: string) => new MDOMParser().parseFromString(xml);
 const serialize = (doc: MDocument) =>
@@ -51,18 +51,18 @@ const CHORDS = `<?xml version="1.0" encoding="UTF-8"?>
   </part>
 </score-partwise>`;
 
-describe('harmony — reading degrees, inversion and numerals', () => {
+describe("harmony, reading degrees, inversion and numerals", () => {
 	const doc = parse(CHORDS);
-	const [first, second] = doc.score.getPart('P1')!.measures;
+	const [first, second] = doc.score.getPart("P1")!.measures;
 	const [dominant, inversion] = first!.harmonies;
 	const [numeral, functional, polychord] = second!.harmonies;
 
-	it('reads ordered, repeated degrees with explicit zero alters', () => {
+	it("reads ordered, repeated degrees with explicit zero alters", () => {
 		expect(dominant!.degrees).toEqual([
 			{
 				value: 9,
 				alter: -1,
-				type: 'alter',
+				type: "alter",
 				symbol: null,
 				text: null,
 				typeText: null,
@@ -72,9 +72,9 @@ describe('harmony — reading degrees, inversion and numerals', () => {
 			{
 				value: 9,
 				alter: 1,
-				type: 'add',
-				symbol: 'major',
-				text: '9',
+				type: "add",
+				symbol: "major",
+				text: "9",
 				typeText: null,
 				plusMinus: true,
 				printObject: false,
@@ -82,10 +82,10 @@ describe('harmony — reading degrees, inversion and numerals', () => {
 			{
 				value: 5,
 				alter: 0,
-				type: 'subtract',
+				type: "subtract",
 				symbol: null,
 				text: null,
-				typeText: 'no',
+				typeText: "no",
 				plusMinus: false,
 				printObject: true,
 			},
@@ -93,115 +93,115 @@ describe('harmony — reading degrees, inversion and numerals', () => {
 		expect(inversion!.degrees).toEqual([]);
 	});
 
-	it('reads root text, kind formatting and harmony attributes', () => {
-		expect(dominant!.root).toEqual({ step: 'C', alter: 0, text: 'Do' });
+	it("reads root text, kind formatting and harmony attributes", () => {
+		expect(dominant!.root).toEqual({ step: "C", alter: 0, text: "Do" });
 		expect(dominant!.kind).toEqual({
-			value: 'dominant',
-			text: '7',
+			value: "dominant",
+			text: "7",
 			useSymbols: false,
 			stackDegrees: null,
 			parenthesesDegrees: true,
 			bracketDegrees: null,
-			halign: 'left',
-			valign: 'bottom',
+			halign: "left",
+			valign: "bottom",
 		});
-		expect(dominant!.type).toBe('explicit');
+		expect(dominant!.type).toBe("explicit");
 		expect(dominant!.printFrame).toBe(false);
 		expect(inversion!.type).toBeNull();
 		expect(inversion!.printFrame).toBeNull();
 	});
 
-	it('reads the inversion and a styled bass', () => {
-		expect(inversion!.inversion).toEqual({ value: 1, text: '6' });
+	it("reads the inversion and a styled bass", () => {
+		expect(inversion!.inversion).toEqual({ value: 1, text: "6" });
 		expect(inversion!.bass).toEqual({
-			step: 'A',
+			step: "A",
 			alter: 0,
 			text: null,
-			separator: 'over',
-			arrangement: 'horizontal',
+			separator: "over",
+			arrangement: "horizontal",
 		});
 		expect(dominant!.inversion).toBeNull();
 	});
 
-	it('reads a numeral root with its key, and a deprecated function', () => {
+	it("reads a numeral root with its key, and a deprecated function", () => {
 		expect(numeral!.root).toBeNull();
 		expect(numeral!.numeral).toEqual({
 			root: 5,
-			text: 'V',
+			text: "V",
 			alter: 0,
-			key: { fifths: -2, mode: 'harmonic minor', printObject: false },
+			key: { fifths: -2, mode: "harmonic minor", printObject: false },
 		});
-		expect(functional!.function).toBe('ii');
+		expect(functional!.function).toBe("ii");
 		expect(functional!.numeral).toBeNull();
-		expect(functional!.kind!.value).toBe('minor');
+		expect(functional!.kind!.value).toBe("minor");
 	});
 
-	it('reads each chord of a polychord', () => {
-		expect(polychord!.arrangement).toBe('vertical');
+	it("reads each chord of a polychord", () => {
+		expect(polychord!.arrangement).toBe("vertical");
 		expect(
 			polychord!.chords.map((chord) => [chord.root!.step, chord.kind!.value]),
 		).toEqual([
-			['D', 'major'],
-			['C', 'major'],
+			["D", "major"],
+			["C", "major"],
 		]);
 		expect(numeral!.chords).toHaveLength(1);
 	});
 
-	it('reads staff, with a default of 1', () => {
-		expect(dominant!.staff).toBe('2');
-		expect(numeral!.staff).toBe('1');
+	it("reads staff, with a default of 1", () => {
+		expect(dominant!.staff).toBe("2");
+		expect(numeral!.staff).toBe("1");
 	});
 
-	it('places the symbol in musical time apart from the note it sits over', () => {
+	it("places the symbol in musical time apart from the note it sits over", () => {
 		// The F/A change lands at beat 2 over a rest-gap; its next note starts at beat 3.
 		expect(inversion!.measureBeat).toBe(2);
 		expect(inversion!.nextNote!.measureBeat).toBe(3);
 		expect(dominant!.measureBeat).toBe(0);
 	});
 
-	it('reads the offset in divisions and beats', () => {
+	it("reads the offset in divisions and beats", () => {
 		expect(polychord!.offset).toEqual({ divisions: 2, beats: 1, sound: true });
 		expect(polychord!.measureBeat).toBe(0);
 		expect(numeral!.offset).toBeNull();
 	});
 
-	it('validates and round-trips unchanged', () => {
+	it("validates and round-trips unchanged", () => {
 		expect(schemaErrors(doc)).toEqual([]);
 		const once = serialize(parse(CHORDS));
 		expect(serialize(parse(once))).toBe(once);
 	});
 });
 
-describe('harmony — writing', () => {
-	it('writes degrees, inversion, bass and kind formatting in schema order', () => {
+describe("harmony, writing", () => {
+	it("writes degrees, inversion, bass and kind formatting in schema order", () => {
 		const doc = MDocument.empty();
 		const measure = doc.score
-			.addPart({ id: 'P1', name: 'Guitar' })
+			.addPart({ id: "P1", name: "Guitar" })
 			.addMeasure();
 		measure
-			.getOrCreateVoice('1')
-			.addNote({ step: 'C', octave: 4, type: 'whole' });
+			.getOrCreateVoice("1")
+			.addNote({ step: "C", octave: 4, type: "whole" });
 		const harmony = measure.addHarmony({
-			root: { step: 'C', alter: 0 },
-			kind: { value: 'dominant', text: '7', stackDegrees: true },
-			inversion: { value: 1, text: '6' },
-			bass: { step: 'E', separator: '/', arrangement: 'diagonal' },
+			root: { step: "C", alter: 0 },
+			kind: { value: "dominant", text: "7", stackDegrees: true },
+			inversion: { value: 1, text: "6" },
+			bass: { step: "E", separator: "/", arrangement: "diagonal" },
 			degrees: [
-				{ value: 9, alter: -1, type: 'alter' },
-				{ value: 9, alter: 1, type: 'add', plusMinus: true },
-				{ value: 5, type: 'subtract', typeText: 'no' },
+				{ value: 9, alter: -1, type: "alter" },
+				{ value: 9, alter: 1, type: "add", plusMinus: true },
+				{ value: 5, type: "subtract", typeText: "no" },
 			],
 			frame: { notes: [{ string: 5, fret: 3 }] },
-			type: 'implied',
+			type: "implied",
 			printFrame: true,
-			staff: '1',
+			staff: "1",
 			onset: 2,
 			offset: { beats: 0.5, sound: true },
 		});
-		expect(harmony.root).toEqual({ step: 'C', alter: 0, text: null });
+		expect(harmony.root).toEqual({ step: "C", alter: 0, text: null });
 		expect(harmony.kind!.stackDegrees).toBe(true);
-		expect(harmony.inversion).toEqual({ value: 1, text: '6' });
-		expect(harmony.bass!.separator).toBe('/');
+		expect(harmony.inversion).toEqual({ value: 1, text: "6" });
+		expect(harmony.bass!.separator).toBe("/");
 		expect(
 			harmony.degrees.map((degree) => [
 				degree.value,
@@ -209,11 +209,11 @@ describe('harmony — writing', () => {
 				degree.type,
 			]),
 		).toEqual([
-			[9, -1, 'alter'],
-			[9, 1, 'add'],
-			[5, 0, 'subtract'],
+			[9, -1, "alter"],
+			[9, 1, "add"],
+			[5, 0, "subtract"],
 		]);
-		expect(harmony.type).toBe('implied');
+		expect(harmony.type).toBe("implied");
 		expect(harmony.measureBeat).toBe(2);
 		expect(harmony.nextNote).toBeNull();
 		expect(harmony.offset!.beats).toBe(0.5);
@@ -224,60 +224,60 @@ describe('harmony — writing', () => {
 		expect(schemaErrors(doc)).toEqual([]);
 	});
 
-	it('writes a numeral root, a function and a polychord', () => {
+	it("writes a numeral root, a function and a polychord", () => {
 		const doc = MDocument.empty();
-		const measure = doc.score.addPart({ id: 'P1', name: 'Piano' }).addMeasure();
+		const measure = doc.score.addPart({ id: "P1", name: "Piano" }).addMeasure();
 		measure.addHarmony({
 			numeral: {
 				root: 4,
-				text: 'IV',
+				text: "IV",
 				alter: 0,
-				key: { fifths: 1, mode: 'major', printObject: false },
+				key: { fifths: 1, mode: "major", printObject: false },
 			},
-			kind: 'major',
+			kind: "major",
 		});
-		measure.addHarmony({ function: 'V', kind: 'dominant' });
+		measure.addHarmony({ function: "V", kind: "dominant" });
 		measure.addHarmony({
-			root: { step: 'D' },
-			kind: 'major',
-			polychord: [{ root: { step: 'C' }, kind: 'major' }],
-			arrangement: 'vertical',
+			root: { step: "D" },
+			kind: "major",
+			polychord: [{ root: { step: "C" }, kind: "major" }],
+			arrangement: "vertical",
 		});
 		measure
-			.getOrCreateVoice('1')
-			.addNote({ step: 'C', octave: 4, type: 'whole' });
+			.getOrCreateVoice("1")
+			.addNote({ step: "C", octave: 4, type: "whole" });
 		const [numeral, functional, polychord] = measure.harmonies;
 		expect(numeral!.numeral).toEqual({
 			root: 4,
-			text: 'IV',
+			text: "IV",
 			alter: 0,
-			key: { fifths: 1, mode: 'major', printObject: false },
+			key: { fifths: 1, mode: "major", printObject: false },
 		});
-		expect(functional!.function).toBe('V');
+		expect(functional!.function).toBe("V");
 		expect(polychord!.chords.map((chord) => chord.root!.step)).toEqual([
-			'D',
-			'C',
+			"D",
+			"C",
 		]);
-		expect(polychord!.arrangement).toBe('vertical');
+		expect(polychord!.arrangement).toBe("vertical");
 		expect(schemaErrors(doc)).toEqual([]);
 	});
 
-	it('upserts and removes staff and offset around the frame', () => {
+	it("upserts and removes staff and offset around the frame", () => {
 		const doc = MDocument.empty();
-		const measure = doc.score.addPart({ id: 'P1', name: 'Piano' }).addMeasure();
+		const measure = doc.score.addPart({ id: "P1", name: "Piano" }).addMeasure();
 		measure
-			.getOrCreateVoice('1')
-			.addNote({ step: 'C', octave: 4, type: 'whole' });
-		const harmony = measure.addHarmony({ root: { step: 'G' }, kind: 'major' });
-		harmony.setStaff('1');
+			.getOrCreateVoice("1")
+			.addNote({ step: "C", octave: 4, type: "whole" });
+		const harmony = measure.addHarmony({ root: { step: "G" }, kind: "major" });
+		harmony.setStaff("1");
 		harmony.setOffset({ beats: 1 });
 		harmony.setFrame({ notes: [{ string: 6, fret: 3 }] });
 		expect(harmony.childrenOfType(MElement).map((child) => child.tag)).toEqual([
-			'root',
-			'kind',
-			'frame',
-			'offset',
-			'staff',
+			"root",
+			"kind",
+			"frame",
+			"offset",
+			"staff",
 		]);
 		expect(harmony.offset).toEqual({
 			divisions: harmony.offset!.divisions,
@@ -288,6 +288,6 @@ describe('harmony — writing', () => {
 		harmony.setOffset(null);
 		harmony.setStaff(null);
 		expect(harmony.offset).toBeNull();
-		expect(harmony.staff).toBe('1');
+		expect(harmony.staff).toBe("1");
 	});
 });

@@ -1,28 +1,31 @@
-import { MCData, MElement, MText, required } from './m-node';
-import { appendValue } from './measure';
+import { MCData } from "./m-cdata";
+import { MElement } from "./m-element";
+import { required } from "./m-node";
+import { MText } from "./m-text";
+import { appendValue } from "./measure";
 
 /** GPIF uses document-local table IDs, independent of XML element order. */
 export class GuitarProXml {
 	private readonly tables = new Map<string, Map<string, MElement>>();
 	constructor(readonly root: MElement) {
 		this.normalizeText(root);
-		if (root.tag !== 'GPIF') {
-			throw new Error('Expected a GPIF root');
+		if (root.tag !== "GPIF") {
+			throw new Error("Expected a GPIF root");
 		}
 		for (const [table, tag] of Object.entries({
-			Tracks: 'Track',
-			Bars: 'Bar',
-			Voices: 'Voice',
-			Beats: 'Beat',
-			Notes: 'Note',
-			Rhythms: 'Rhythm',
+			Tracks: "Track",
+			Bars: "Bar",
+			Voices: "Voice",
+			Beats: "Beat",
+			Notes: "Note",
+			Rhythms: "Rhythm",
 		})) {
 			const entries = new Map<string, MElement>();
 			for (const node of required(
 				root.child(table),
 				`GPIF ${table}`,
 			).childrenNamed(tag)) {
-				const id = required(node.getAttribute('id'), `GPIF ${tag} id`);
+				const id = required(node.getAttribute("id"), `GPIF ${tag} id`);
 				if (entries.has(id)) {
 					throw new Error(`Duplicate GPIF ${tag} id: ${id}`);
 				}
@@ -38,7 +41,7 @@ export class GuitarProXml {
 		);
 		if (text.length) {
 			node.insertBefore(
-				new MText(text.map((child) => child.value).join('')),
+				new MText(text.map((child) => child.value).join("")),
 				text[0]!,
 			);
 			for (const child of text) {
@@ -61,9 +64,9 @@ export class GuitarProXml {
 	}
 	static property(node: MElement, name: string): MElement | undefined {
 		return node
-			.child('Properties')
-			?.childrenNamed('Property')
-			.find((p) => p.getAttribute('name') === name);
+			.child("Properties")
+			?.childrenNamed("Property")
+			.find((mElement) => mElement.getAttribute("name") === name);
 	}
 	static add(
 		parent: MElement,
@@ -90,8 +93,8 @@ export class GuitarProXml {
 		value: string | number,
 	): MElement {
 		const props =
-			node.child('Properties') ?? GuitarProXml.add(node, 'Properties');
-		const prop = GuitarProXml.add(props, 'Property', undefined, { name });
+			node.child("Properties") ?? GuitarProXml.add(node, "Properties");
+		const prop = GuitarProXml.add(props, "Property", undefined, { name });
 		GuitarProXml.add(prop, tag, value);
 		return prop;
 	}

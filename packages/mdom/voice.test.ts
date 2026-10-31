@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './m-dom-parser';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser } from "./m-dom-parser";
 
 // 4/4, divisions=4. Voice 1: a C-major triad (one onset, stacked via <chord/>)
 // then a D. Voice 2 (after <backup>): two quarters. The two voices interleave in
@@ -19,41 +19,41 @@ const SAMPLE = `<score-partwise>
   </part>
 </score-partwise>`;
 
-describe('Voice reader — filtering and grouping', () => {
+describe("Voice reader, filtering and grouping", () => {
 	const measure = new MDOMParser()
 		.parseFromString(SAMPLE)
-		.score.getPart('P1')!
-		.getMeasure('1')!;
+		.score.getPart("P1")!
+		.getMeasure("1")!;
 
-	it('notes reads only the notes carrying this <voice>', () => {
+	it("notes reads only the notes carrying this <voice>", () => {
 		// `notes` is the live slice for one voice, ignoring the interleaved other one.
-		const firstVoice = measure.getOrCreateVoice('1');
-		const secondVoice = measure.getOrCreateVoice('2');
+		const firstVoice = measure.getOrCreateVoice("1");
+		const secondVoice = measure.getOrCreateVoice("2");
 		expect(firstVoice.notes.map((note) => note.pitch?.step)).toEqual([
-			'C',
-			'E',
-			'G',
-			'D',
+			"C",
+			"E",
+			"G",
+			"D",
 		]);
 		expect(secondVoice.notes.map((note) => note.pitch?.step)).toEqual([
-			'C',
-			'G',
+			"C",
+			"G",
 		]);
 	});
 
-	it('chords() groups this voice’s <chord/> stacks into one Chord', () => {
+	it("chords() groups this voice’s <chord/> stacks into one Chord", () => {
 		// The triad's three notes collapse into a single Chord; the lone D stands alone.
-		const chords = measure.getOrCreateVoice('1').chords;
+		const chords = measure.getOrCreateVoice("1").chords;
 		expect(chords.map((chord) => chord.notes.length)).toEqual([3, 1]);
 		expect(chords[0]!.notes.map((note) => note.pitch?.step)).toEqual([
-			'C',
-			'E',
-			'G',
+			"C",
+			"E",
+			"G",
 		]);
-		expect(chords[0]!.lead.pitch?.step).toBe('C');
+		expect(chords[0]!.lead.pitch?.step).toBe("C");
 	});
 
-	it('reaches the part it belongs to through its measure', () => {
-		expect(measure.getOrCreateVoice('1').part).toBe(measure.part);
+	it("reaches the part it belongs to through its measure", () => {
+		expect(measure.getOrCreateVoice("1").part).toBe(measure.part);
 	});
 });

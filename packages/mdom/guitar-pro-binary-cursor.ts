@@ -40,14 +40,14 @@ export class GuitarProBinaryCursor {
 
 	/** A 4-byte size, then that many bytes. */
 	intString(): string {
-		return decode(this.take(this.nonNegative(this.int32(), 'string length')));
+		return decode(this.take(this.nonNegative(this.int32(), "string length")));
 	}
 
 	/** A 4-byte size that counts one extra byte, a length byte, then the text. */
 	intByteString(): string {
-		const size = this.nonNegative(this.int32(), 'string length');
+		const size = this.nonNegative(this.int32(), "string length");
 		this.byte();
-		return decode(this.take(this.nonNegative(size - 1, 'string length')));
+		return decode(this.take(this.nonNegative(size - 1, "string length")));
 	}
 
 	/** A 4-byte field that carries no text, then a length byte and the text. */
@@ -77,7 +77,7 @@ export class GuitarProBinaryCursor {
 
 	private take(length: number): Uint8Array {
 		if (length < 0 || length > this.remaining) {
-			throw new Error('Guitar Pro file ends unexpectedly');
+			throw new Error("Guitar Pro file ends unexpectedly");
 		}
 		const slice = this.bytes.subarray(this.offset, this.offset + length);
 		this.offset += length;
@@ -88,8 +88,8 @@ export class GuitarProBinaryCursor {
 /** Guitar Pro 5 writes UTF-8 from recent versions and Windows-1252 from older ones. */
 function decode(bytes: Uint8Array): string {
 	try {
-		return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+		return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
 	} catch {
-		return new TextDecoder('windows-1252').decode(bytes);
+		return new TextDecoder("windows-1252").decode(bytes);
 	}
 }

@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'bun:test';
-import { Frame, FrameNote } from './frame';
-import { MDOMParser } from './m-dom-parser';
+import { describe, expect, it } from "bun:test";
+import { Frame } from "./frame";
+import { FrameNote } from "./frame-note";
+import { MDOMParser } from "./m-dom-parser";
 
-describe('Frame', () => {
-	it('gets and sets width and height in tenths', () => {
+describe("Frame", () => {
+	it("gets and sets width and height in tenths", () => {
 		const frame = new Frame();
 		expect(frame.width).toBeNull();
 		expect(frame.height).toBeNull();
@@ -12,10 +13,10 @@ describe('Frame', () => {
 		frame.height = 80;
 		expect(frame.width).toBe(65);
 		expect(frame.height).toBe(80);
-		expect(frame.getAttribute('width')).toBe('65');
+		expect(frame.getAttribute("width")).toBe("65");
 	});
 
-	it('parses as a typed node, reachable via measure.frames', () => {
+	it("parses as a typed node, reachable via measure.frames", () => {
 		const doc = new MDOMParser().parseFromString(`
       <score-partwise>
         <part id="P1">
@@ -28,7 +29,7 @@ describe('Frame', () => {
       </score-partwise>
     `);
 
-		const frames = doc.score?.getPart('P1')?.getMeasure('1')?.frames ?? [];
+		const frames = doc.score?.getPart("P1")?.getMeasure("1")?.frames ?? [];
 		expect(frames[0]).toBeInstanceOf(Frame);
 		expect(frames[0]?.width).toBe(65);
 		expect(frames[0]?.height).toBe(80);
@@ -36,7 +37,7 @@ describe('Frame', () => {
 
 	// A barre-chord diagram: 6 strings, 4-fret box starting at fret 3, string 5
 	// barred to string 1, string 6 muted (no frame-note).
-	it('reads the musical content — strings, frets, first-fret, and frame-notes', () => {
+	it("reads the musical content, strings, frets, first-fret, and frame-notes", () => {
 		const frame = new MDOMParser()
 			.parseFromString(`
       <score-partwise><part id="P1"><measure number="1"><harmony><frame>
@@ -48,8 +49,8 @@ describe('Frame', () => {
         <frame-note><string>1</string><fret>3</fret><barre type="stop"/></frame-note>
       </frame></harmony></measure></part></score-partwise>
     `)
-			.score.getPart('P1')!
-			.getMeasure('1')!.frames[0]!;
+			.score.getPart("P1")!
+			.getMeasure("1")!.frames[0]!;
 
 		expect(frame.strings).toBe(6);
 		expect(frame.frets).toBe(4);
@@ -62,20 +63,20 @@ describe('Frame', () => {
 			[1, 3],
 		]);
 		expect(frame.frameNotes.map((note) => note.barre)).toEqual([
-			'start',
+			"start",
 			null,
-			'stop',
+			"stop",
 		]);
 	});
 
-	it('defaults strings to 6 and first-fret to null when absent', () => {
+	it("defaults strings to 6 and first-fret to null when absent", () => {
 		const frame = new Frame();
 		expect(frame.strings).toBe(6);
 		expect(frame.firstFret).toBeNull();
 	});
 
-	it('throws on a frame-note missing its required string/fret (0 = open must stay distinct)', () => {
+	it("throws on a frame-note missing its required string/fret (0 = open must stay distinct)", () => {
 		const frameNote = new FrameNote();
-		expect(() => frameNote.string).toThrow('<string> in <frame-note>');
+		expect(() => frameNote.string).toThrow("<string> in <frame-note>");
 	});
 });

@@ -1,5 +1,5 @@
-import { MElement } from './m-node';
-import type { Score } from './score';
+import { MElement } from "./m-element";
+import type { Score } from "./score";
 
 /**
  * One resolved `<part-group>`: the brace or bracket joining a run of parts. The
@@ -34,7 +34,7 @@ export interface PartGroupSpan {
  * part, are dropped rather than reported as broken spans.
  */
 export function partGroupsOf(score: Score): PartGroupSpan[] {
-	const partList = score.child('part-list');
+	const partList = score.child("part-list");
 	if (!partList) {
 		return [];
 	}
@@ -54,15 +54,15 @@ export function partGroupsOf(score: Score): PartGroupSpan[] {
 		if (!(node instanceof MElement)) {
 			continue;
 		}
-		if (node.tag === 'score-part') {
+		if (node.tag === "score-part") {
 			partIndex++;
 			continue;
 		}
-		if (node.tag !== 'part-group') {
+		if (node.tag !== "part-group") {
 			continue;
 		}
-		const number = node.getAttribute('number') ?? '1';
-		if (node.getAttribute('type') === 'stop') {
+		const number = node.getAttribute("number") ?? "1";
+		if (node.getAttribute("type") === "stop") {
 			const at = open.findLastIndex((group) => group.number === number);
 			if (at < 0) {
 				continue;
@@ -77,10 +77,10 @@ export function partGroupsOf(score: Score): PartGroupSpan[] {
 				fromPartIndex: group.from,
 				toPartIndex,
 				depth: group.depth,
-				symbol: group.marker.child('group-symbol')?.text ?? null,
-				name: group.marker.child('group-name')?.text ?? null,
-				abbreviation: group.marker.child('group-abbreviation')?.text ?? null,
-				barline: group.marker.child('group-barline')?.text ?? null,
+				symbol: group.marker.child("group-symbol")?.text ?? null,
+				name: group.marker.child("group-name")?.text ?? null,
+				abbreviation: group.marker.child("group-abbreviation")?.text ?? null,
+				barline: group.marker.child("group-barline")?.text ?? null,
 			});
 		} else {
 			open.push({

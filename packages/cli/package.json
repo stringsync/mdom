@@ -1,15 +1,19 @@
 {
 	"name": "@mdom/cli",
-	"version": "0.8.1",
+	"version": "0.8.2",
 	"private": true,
 	"type": "module",
 	"module": "index.ts",
+	"exports": {
+		"./mirror": "./mirror.ts",
+		"./ship": "./ship.ts"
+	},
 	"bin": {
 		"mdom": "./index.ts"
 	},
 	"dependencies": {
 		"@stringsync/mdom": "workspace:*",
-		"webappwiz": "0.0.54",
-		"zod": "^4.4.3"
+		"core": "workspace:*",
+		"zod": "catalog:"
 	}
 }

@@ -1,15 +1,16 @@
-import { Direction } from './direction';
-import { MElement, required } from './m-node';
-import { Measure } from './measure';
+import { Direction } from "./direction";
+import { MElement } from "./m-element";
+import { required } from "./m-node";
+import { Measure } from "./measure";
 import {
 	type DashStyle,
 	type DashStyleSpec,
 	dashStyleOf,
 	setDashStyleOf,
-} from './print-style';
-import { directionMarkers, Spanner, type SpannerSpec } from './spanner';
+} from "./print-style";
+import { directionMarkers, Spanner, type SpannerSpec } from "./spanner";
 
-export type DashesType = 'start' | 'stop' | 'continue';
+export type DashesType = "start" | "stop" | "continue";
 
 /**
  * A `<dashes>` under `<direction-type>`: the dashed line trailing a "cresc." or a
@@ -19,19 +20,19 @@ export type DashesType = 'start' | 'stop' | 'continue';
  */
 export class Dashes extends MElement {
 	constructor() {
-		super('dashes');
+		super("dashes");
 	}
 
 	/** Pairing key; '1' when omitted. */
 	get number(): string {
-		return this.getAttribute('number') ?? '1';
+		return this.getAttribute("number") ?? "1";
 	}
 
 	/** `type`: required on a `<dashes>` and drives pairing. */
 	get dashesType(): DashesType {
 		return required(
-			this.getAttribute('type'),
-			'type on <dashes>',
+			this.getAttribute("type"),
+			"type on <dashes>",
 		) as DashesType;
 	}
 
@@ -39,13 +40,13 @@ export class Dashes extends MElement {
 	get direction(): Direction {
 		return required(
 			this.closest(Direction),
-			'<direction> ancestor of <dashes>',
+			"<direction> ancestor of <dashes>",
 		);
 	}
 
 	/** The measure this marker sits in. An attached marker always has one. */
 	get measure(): Measure {
-		return required(this.closest(Measure), '<measure> ancestor of <dashes>');
+		return required(this.closest(Measure), "<measure> ancestor of <dashes>");
 	}
 
 	/** The marker at the far end (same number), or null. */
@@ -68,11 +69,11 @@ export class Dashes extends MElement {
 			siblings: directionMarkers(
 				this,
 				(direction) => direction.dashes,
-				'dashes',
+				"dashes",
 			),
 			// Raw reads so resolution tolerates a malformed typeless marker.
-			isOpen: (marker) => marker.getAttribute('type') === 'start',
-			isClose: (marker) => marker.getAttribute('type') === 'stop',
+			isOpen: (marker) => marker.getAttribute("type") === "start",
+			isClose: (marker) => marker.getAttribute("type") === "stop",
 		};
 	}
 	/** The dash and space lengths of a dashed stroke, in tenths. */

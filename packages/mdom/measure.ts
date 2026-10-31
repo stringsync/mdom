@@ -1,97 +1,94 @@
+// vet-ignore-file compact-files: the measure node and its voice and beat editing share private storage.
 import {
 	Barline,
 	type BarlineSpec,
 	buildBarline,
 	buildEnding,
 	type EndingSpec,
-} from './barline';
-import { type BeamRun, groupBeamRuns, groupBeams } from './beam';
-import { type Chord, groupChords } from './chord';
-import { Clef } from './clef';
+} from "./barline";
+import { type BeamRun, groupBeamRuns, groupBeams } from "./beam";
+import { type Chord, groupChords } from "./chord";
+import { Clef } from "./clef";
 import {
 	buildDirection,
 	buildNavigation,
 	Direction,
 	type DirectionSpec,
 	type NavigationSpec,
-} from './direction';
-import { FiguredBass } from './figured-bass';
-import type { Frame } from './frame';
-import { buildHarmony, Harmony, type HarmonySpec } from './harmony';
-import { buildKey, Key, type KeySpec } from './key';
-import { LineDetail } from './line-detail';
-import { MElement, type MNode, MText, required } from './m-node';
+} from "./direction";
+import { FiguredBass } from "./figured-bass";
+import { buildForPart, ForPart, type ForPartSpec } from "./for-part";
+import type { Frame } from "./frame";
+import { buildHarmony, Harmony, type HarmonySpec } from "./harmony";
+import { buildKey, Key, type KeySpec } from "./key";
+import { LineDetail } from "./line-detail";
+import { MElement } from "./m-element";
+import { type MNode, required } from "./m-node";
+import { MText } from "./m-text";
 import {
 	buildMeasureStyle,
 	MeasureStyle,
 	type MeasureStyleSpec,
 	type StatefulMeasureStyleKind,
-} from './measure-style';
-import { Note } from './note';
-import { measureIndexIn, Part } from './part';
-import { Print } from './print';
-import { cloneElement } from './registry';
-import { Score } from './score';
+} from "./measure-style";
+import { Note } from "./note";
+import { measureIndexIn, Part } from "./part";
+import { Print } from "./print";
+import { cloneElement } from "./registry";
+import { Score } from "./score";
 import {
 	appliesToStaff,
 	attributeBackFrom,
 	attributesBackFrom,
 	divisionsBackFrom,
-} from './signature';
-import { Sound, type SoundSpec, writeSound } from './sound';
-import { StaffDetails } from './staff-details';
-import { StaffTuning } from './staff-tuning';
-import { buildTime, Time, type TimeSpec } from './time';
-import { alignCursor, contentEnd, onsetsIn } from './timeline';
-import {
-	buildForPart,
-	buildTranspose,
-	ForPart,
-	type ForPartSpec,
-	shiftsPitchClass,
-	Transpose,
-	type TransposeSpec,
-} from './transpose';
-import { Voice } from './voice';
+} from "./signature";
+import { Sound, type SoundSpec, writeSound } from "./sound";
+import { StaffDetails } from "./staff-details";
+import { StaffTuning } from "./staff-tuning";
+import { buildTime, Time, type TimeSpec } from "./time";
+import { alignCursor, contentEnd, onsetsIn } from "./timeline";
+import { buildTranspose, shiftsPitchClass, Transpose } from "./transpose";
+import type { TransposeSpec } from "./transpose-group";
+import { Voice } from "./voice";
 
 /** A `<measure>`. Holds notes, directions, and `<attributes>` (signatures). */
 export class Measure extends MElement {
 	constructor() {
-		super('measure');
+		super("measure");
 	}
 
 	/**
 	 * The `number` attribute. Valid MusicXML always carries one, and addMeasure
-	 * sets it; absence is malformed. (Use {@link index} for position — `number` is
+	 * sets it; absence is malformed. (Use {@link index} for position, `number` is
 	 * the free-form, possibly-repeated printed label.)
 	 */
 	get number(): string {
-		return required(this.getAttribute('number'), 'number on <measure>');
+		return required(this.getAttribute("number"), "number on <measure>");
 	}
 
 	/**
 	 * Whether this is an `implicit="yes"` measure: a pickup bar, or the back half
 	 * of a measure split across a system break. It is short *by declaration*, not
-	 * underfull by accident — a layout engine that misses this pads a pickup out to
+	 * underfull by accident, a layout engine that misses this pads a pickup out to
 	 * a full bar's width.
 	 */
 	get isImplicit(): boolean {
-		return this.getAttribute('implicit') === 'yes';
+		return this.getAttribute("implicit") === "yes";
 	}
 
 	/** The part this measure belongs to. An attached measure always has one. */
 	get part(): Part {
-		return required(this.closest(Part), '<part> ancestor of <measure>');
+		return required(this.closest(Part), "<part> ancestor of <measure>");
 	}
 
 	/** The `width` attribute in tenths (a layout hint); null when unset. */
 	get width(): number | null {
-		const width = this.getAttribute('width');
+		const width = this.getAttribute("width");
 		return width == null ? null : Number(width);
 	}
 
 	set width(tenths: number) {
-		this.setAttribute('width', String(tenths));
+		this.setAttribute("width", String(tenths));
 	}
 
 	/** The measure's notes. */
@@ -113,21 +110,21 @@ export class Measure extends MElement {
 	 * '1'): the nearest declaration at or before this measure. Clefs match their
 	 * staff exactly; a numberless key/time applies to every staff.
 	 */
-	getClef(staff = '1'): Clef | null {
+	getClef(staff = "1"): Clef | null {
 		return this.attributeBack(`clef:${staff}`, (attrs) =>
 			attrs.childrenOfType(Clef).find((clef) => clef.staff === staff),
 		);
 	}
 
 	/** The `<key>` in effect at the start of this measure for `staff`. */
-	getKey(staff = '1'): Key | null {
+	getKey(staff = "1"): Key | null {
 		return this.attributeBack(`key:${staff}`, (attrs) =>
 			attrs.childrenOfType(Key).find((key) => appliesToStaff(key, staff)),
 		);
 	}
 
 	/** The `<time>` in effect at the start of this measure for `staff`. */
-	getTime(staff = '1'): Time | null {
+	getTime(staff = "1"): Time | null {
 		return this.attributeBack(`time:${staff}`, (attrs) =>
 			attrs.childrenOfType(Time).find((time) => appliesToStaff(time, staff)),
 		);
@@ -139,7 +136,7 @@ export class Measure extends MElement {
 	 * Null when none has been declared, which means written pitch is sounding
 	 * pitch. A numberless declaration applies to every staff.
 	 */
-	getTranspose(staff = '1'): Transpose | null {
+	getTranspose(staff = "1"): Transpose | null {
 		return this.attributeBack(`transpose:${staff}`, (attrs) =>
 			attrs
 				.childrenOfType(Transpose)
@@ -152,7 +149,7 @@ export class Measure extends MElement {
 	 * '1'): in a concert score, how a transposed part created from it is written.
 	 * Null when none has been declared. Carries forward like {@link getTranspose}.
 	 */
-	getForPart(staff = '1'): ForPart | null {
+	getForPart(staff = "1"): ForPart | null {
 		return this.attributeBack(`for-part:${staff}`, (attrs) =>
 			attrs
 				.childrenOfType(ForPart)
@@ -163,19 +160,19 @@ export class Measure extends MElement {
 	/** `<staves>` count in effect (global); 1 when never declared. */
 	get staveCount(): number {
 		const staves = this.attributeBack(
-			'staves',
-			(attrs) => attrs.child('staves') ?? undefined,
+			"staves",
+			(attrs) => attrs.child("staves") ?? undefined,
 		);
 		return staves?.text == null ? 1 : Number(staves.text);
 	}
 
 	/** `<staff-lines>` in effect for `staff` (default '1'); 5 lines when unspecified. */
-	getStaveLines(staff = '1'): number {
+	getStaveLines(staff = "1"): number {
 		const lines = this.attributeBack(`staff-lines:${staff}`, (attrs) =>
 			attrs
-				.childrenNamed('staff-details')
+				.childrenNamed("staff-details")
 				.filter((details) => appliesToStaff(details, staff))
-				.map((details) => details.child('staff-lines'))
+				.map((details) => details.child("staff-lines"))
 				.find((node) => node != null),
 		);
 		return lines?.text == null ? 5 : Number(lines.text);
@@ -184,11 +181,11 @@ export class Measure extends MElement {
 	/**
 	 * The `<staff-details>` block in effect for `staff` (default '1'), carry-forward
 	 * like {@link getClef}; null when none applies. Everything on it reads as
-	 * DECLARED — use this when absence has to stay distinguishable from a default,
+	 * DECLARED, use this when absence has to stay distinguishable from a default,
 	 * e.g. "did the document actually state `<staff-lines>`?", which
 	 * {@link getStaveLines} answers 5 to either way.
 	 */
-	getStaffDetails(staff = '1'): StaffDetails | null {
+	getStaffDetails(staff = "1"): StaffDetails | null {
 		return this.attributeBack(`staff-details:${staff}`, (attrs) =>
 			attrs
 				.childrenOfType(StaffDetails)
@@ -208,13 +205,13 @@ export class Measure extends MElement {
 		const number = staff ?? null;
 		const existing = attrs
 			.childrenOfType(StaffDetails)
-			.find((details) => details.getAttribute('number') === number);
+			.find((details) => details.getAttribute("number") === number);
 		if (existing) {
 			return existing;
 		}
 		const details = new StaffDetails();
 		if (staff != null) {
-			details.setAttribute('number', staff);
+			details.setAttribute("number", staff);
 		}
 		return placeInAttributes(attrs, details);
 	}
@@ -228,7 +225,7 @@ export class Measure extends MElement {
 	 * staff. A system break the application made on its own is not visible here,
 	 * so an override only reaches as far back as the last explicit break.
 	 */
-	getStaffDistance(staff = '1'): number | null {
+	getStaffDistance(staff = "1"): number | null {
 		const part = this.part;
 		const measures = part.measures;
 		for (let index = this.index; index >= 0; index--) {
@@ -249,11 +246,11 @@ export class Measure extends MElement {
 	 * per-line appearance from the nearest `<staff-details>`. Empty when that block
 	 * sets none, or when no `<staff-details>` applies.
 	 */
-	getLineDetails(staff = '1'): LineDetail[] {
+	getLineDetails(staff = "1"): LineDetail[] {
 		return [
 			...(this.attributeBack(`line-details:${staff}`, (attrs) => {
 				const details = attrs
-					.childrenNamed('staff-details')
+					.childrenNamed("staff-details")
 					.find((node) => appliesToStaff(node, staff));
 				return details ? details.childrenOfType(LineDetail) : undefined;
 			}) ?? []),
@@ -266,11 +263,11 @@ export class Measure extends MElement {
 	 * tablature staff. Empty when that block declares none. Carry-forward, like
 	 * {@link getClef}.
 	 */
-	getStaffTunings(staff = '1'): StaffTuning[] {
+	getStaffTunings(staff = "1"): StaffTuning[] {
 		return [
 			...(this.attributeBack(`staff-tunings:${staff}`, (attrs) => {
 				const details = attrs
-					.childrenNamed('staff-details')
+					.childrenNamed("staff-details")
 					.find((node) => appliesToStaff(node, staff));
 				const tunings = details?.childrenOfType(StaffTuning);
 				return tunings && tunings.length > 0 ? tunings : undefined;
@@ -283,7 +280,7 @@ export class Measure extends MElement {
 	 * each lands on and the clef itself. MusicXML writes one as an `<attributes>`
 	 * block sitting between two notes.
 	 *
-	 * The measure's *leading* `<attributes>` is excluded — that's the measure's own
+	 * The measure's *leading* `<attributes>` is excluded, that's the measure's own
 	 * signature block, drawn with the stave (see {@link getClef}). A change's beat
 	 * comes from the NEXT note's own {@link Note.measureBeat}, not from a running
 	 * sum of what precedes it, because `measureBeat` already rewinds a `<backup>`:
@@ -292,7 +289,7 @@ export class Measure extends MElement {
 	 * rather than at the measure's end. A block trailing the LAST note lands on
 	 * {@link endBeat} and engraves as the courtesy clef before the barline.
 	 */
-	clefChanges(staff = '1'): Array<{ beat: number; clef: Clef }> {
+	clefChanges(staff = "1"): Array<{ beat: number; clef: Clef }> {
 		const children = this.children;
 		const firstNote = this.notes[0];
 		if (!firstNote) {
@@ -305,7 +302,7 @@ export class Measure extends MElement {
 			index++
 		) {
 			const node = children[index];
-			if (!(node instanceof MElement) || node.tag !== 'attributes') {
+			if (!(node instanceof MElement) || node.tag !== "attributes") {
 				continue;
 			}
 			const clefs = node
@@ -328,7 +325,7 @@ export class Measure extends MElement {
 	 * last mid-measure change if it has one, else the clef it opened with. What the
 	 * next measure compares against to decide whether to reprint.
 	 */
-	clefAtEnd(staff = '1'): Clef | null {
+	clefAtEnd(staff = "1"): Clef | null {
 		return this.clefChanges(staff).at(-1)?.clef ?? this.getClef(staff);
 	}
 
@@ -354,7 +351,7 @@ export class Measure extends MElement {
 			}
 		}
 		return order.map((id) => {
-			const staff = this.notes.find((note) => note.voice === id)?.staff ?? '1';
+			const staff = this.notes.find((note) => note.voice === id)?.staff ?? "1";
 			return new Voice(this, id, staff);
 		});
 	}
@@ -370,7 +367,7 @@ export class Measure extends MElement {
 	}
 
 	/**
-	 * Beamed runs with their secondary-beam break positions — {@link beams} plus
+	 * Beamed runs with their secondary-beam break positions, {@link beams} plus
 	 * the sub-beam splits a renderer needs to draw a run like a triplet-of-16ths
 	 * followed by two 16ths under one primary beam. See {@link groupBeamRuns}.
 	 */
@@ -384,18 +381,18 @@ export class Measure extends MElement {
 	 * query: `<multiple-rest>` carries its own extent in its text and is never
 	 * restated or stopped, so only this measure's own `<attributes>` are read.
 	 */
-	getMultiRestCount(staff = '1'): number | null {
-		const count = this.childrenNamed('attributes')
-			.flatMap((attrs) => attrs.childrenNamed('measure-style'))
+	getMultiRestCount(staff = "1"): number | null {
+		const count = this.childrenNamed("attributes")
+			.flatMap((attrs) => attrs.childrenNamed("measure-style"))
 			.filter((style) => appliesToStaff(style, staff))
-			.map((style) => style.child('multiple-rest'))
+			.map((style) => style.child("multiple-rest"))
 			.find((node) => node != null);
 		return count?.text == null ? null : Number(count.text);
 	}
 
 	/** All style declarations in this measure, including mid-measure starts/stops. */
 	get measureStyles(): MeasureStyle[] {
-		return this.childrenNamed('attributes').flatMap((attrs) =>
+		return this.childrenNamed("attributes").flatMap((attrs) =>
 			attrs.childrenOfType(MeasureStyle),
 		);
 	}
@@ -417,7 +414,7 @@ export class Measure extends MElement {
 	 */
 	getActiveMeasureStyle(
 		kind: StatefulMeasureStyleKind,
-		staff = '1',
+		staff = "1",
 	): MeasureStyle | null {
 		const declaration = this.attributeBack(
 			`measure-style:${kind}:${staff}`,
@@ -428,7 +425,7 @@ export class Measure extends MElement {
 						(style) => style.kind === kind && appliesToStaff(style, staff),
 					),
 		);
-		return declaration?.type === 'start' ? declaration : null;
+		return declaration?.type === "start" ? declaration : null;
 	}
 
 	/** The measure's directions. */
@@ -455,7 +452,7 @@ export class Measure extends MElement {
 	 * Every `<sound>` that applies to this measure: the ones inside its
 	 * `<direction>`s in document order, then the measure's own standalone
 	 * `<sound>` children. MusicXML allows both spellings with the same meaning, so
-	 * merging them here is the whole point — a consumer looks in one place.
+	 * merging them here is the whole point, a consumer looks in one place.
 	 */
 	get sounds(): Sound[] {
 		const fromDirections = this.directions.flatMap((direction) =>
@@ -491,7 +488,7 @@ export class Measure extends MElement {
 	}
 
 	/**
-	 * Append a `<harmony>` chord symbol at the write cursor — the point after
+	 * Append a `<harmony>` chord symbol at the write cursor, the point after
 	 * everything currently in the measure, so a symbol added before its notes sits
 	 * above them, which is how {@link Harmony.nextNote} binds the two. With
 	 * `onset` (in quarter-note beats) it goes at that beat instead,
@@ -503,7 +500,7 @@ export class Measure extends MElement {
 		if (spec.onset != null) {
 			const divisions = required(
 				divisionsBackFrom(this, this.children.length),
-				'divisions to place <harmony> at an onset',
+				"divisions to place <harmony> at an onset",
 			);
 			alignCursor(this, spec.onset * divisions);
 		}
@@ -518,11 +515,11 @@ export class Measure extends MElement {
 	 * Add a `<barline>`: a repeat, a volta bracket, or a bar style at one edge of
 	 * the measure. A `location: 'left'` barline is positioned ahead of everything;
 	 * every other location appends, so add the right barline once the measure's
-	 * content is in — that is where the edge it draws is.
+	 * content is in, that is where the edge it draws is.
 	 */
 	addBarline(spec: BarlineSpec): Barline {
 		const barline = buildBarline(spec);
-		if (spec.location === 'left') {
+		if (spec.location === "left") {
 			// Ahead of everything, but behind any left barline already there, so two
 			// of them keep the order they were written in.
 			const after =
@@ -543,26 +540,26 @@ export class Measure extends MElement {
 	 * so close an ending once the measure's content is in.
 	 */
 	addEnding(spec: EndingSpec): Barline {
-		const location = spec.type === 'start' ? 'left' : 'right';
+		const location = spec.type === "start" ? "left" : "right";
 		const edge =
-			location === 'left'
-				? this.barlines.filter((barline) => barline.location === 'left')
+			location === "left"
+				? this.barlines.filter((barline) => barline.location === "left")
 				: [this.children.at(-1)].filter(
 						(node): node is Barline =>
-							node instanceof Barline && node.location === 'right',
+							node instanceof Barline && node.location === "right",
 					);
-		const host = edge.find((barline) => !barline.child('ending'));
+		const host = edge.find((barline) => !barline.child("ending"));
 		if (!host) {
 			return this.addBarline({ location, ending: spec });
 		}
 		// <ending> sits after everything a barline holds but its <repeat>.
-		host.insertBefore(buildEnding(spec), host.child('repeat'));
+		host.insertBefore(buildEnding(spec), host.child("repeat"));
 		return host;
 	}
 
 	/**
 	 * Append a `<direction>` at the write cursor: a tempo mark, an expression, a
-	 * dynamic. Add it before the notes it applies to — a direction carries no
+	 * dynamic. Add it before the notes it applies to, a direction carries no
 	 * `<duration>`, so it sounds wherever the cursor stands.
 	 */
 	addDirection(spec: DirectionSpec): Direction {
@@ -586,7 +583,7 @@ export class Measure extends MElement {
 	}
 
 	/**
-	 * Add a segno, coda or jump — D.S., D.C., to-coda, fine — printed and with
+	 * Add a segno, coda or jump, D.S., D.C., to-coda, fine, printed and with
 	 * the `<sound>` that makes playback take it. It goes at the write cursor, so a
 	 * segno or coda is added before the notes it marks and a jump after the notes
 	 * it follows; with `onset` (in quarter-note beats) it goes at that beat
@@ -597,7 +594,7 @@ export class Measure extends MElement {
 		if (spec.onset != null) {
 			const divisions = required(
 				divisionsBackFrom(this, this.children.length),
-				'divisions to place a navigation mark at an onset',
+				"divisions to place a navigation mark at an onset",
 			);
 			alignCursor(this, spec.onset * divisions);
 		}
@@ -609,13 +606,13 @@ export class Measure extends MElement {
 	 * Get or create the reader/writer for a `<voice>`; remembers the staff so notes
 	 * added through it are positioned and labeled correctly.
 	 */
-	getOrCreateVoice(id: string, opts?: { staff?: string }): Voice {
-		return new Voice(this, id, opts?.staff ?? '1');
+	getOrCreateVoice(id: string, opts?: VoiceOptions): Voice {
+		return new Voice(this, id, opts?.staff ?? "1");
 	}
 
 	/**
 	 * Upsert the `<clef>` in this measure's `<attributes>`. Without `onset` this is
-	 * the measure's leading block — "the measure opens on this clef" — created and
+	 * the measure's leading block, "the measure opens on this clef", created and
 	 * positioned before the first note if absent; with `onset` it is a mid-measure
 	 * change at that beat, the thing {@link clefChanges} reads back. The caller
 	 * never assembles `<attributes>` by hand.
@@ -628,21 +625,21 @@ export class Measure extends MElement {
 		onset?: number;
 	}): Clef {
 		const attrs = this.getOrCreateAttributes(spec);
-		const staff = spec.staff ?? '1';
+		const staff = spec.staff ?? "1";
 		attrs
 			.childrenOfType(Clef)
 			.find((clef) => clef.staff === staff)
 			?.remove();
 		const clef = new Clef();
 		if (spec.staff != null) {
-			clef.setAttribute('number', spec.staff);
+			clef.setAttribute("number", spec.staff);
 		}
-		appendValue(clef, 'sign', spec.sign);
+		appendValue(clef, "sign", spec.sign);
 		if (spec.line != null) {
-			appendValue(clef, 'line', String(spec.line));
+			appendValue(clef, "line", String(spec.line));
 		}
 		if (spec.octaveChange != null) {
-			appendValue(clef, 'clef-octave-change', String(spec.octaveChange));
+			appendValue(clef, "clef-octave-change", String(spec.octaveChange));
 		}
 		return placeInAttributes(attrs, clef);
 	}
@@ -653,7 +650,7 @@ export class Measure extends MElement {
 		const attrs = this.getOrCreateAttributes(spec);
 		attrs
 			.childrenOfType(Key)
-			.find((key) => key.getAttribute('number') === (spec.staff ?? null))
+			.find((key) => key.getAttribute("number") === (spec.staff ?? null))
 			?.remove();
 		return placeInAttributes(attrs, key);
 	}
@@ -674,12 +671,12 @@ export class Measure extends MElement {
 		const transpose = buildTranspose(spec, spec.staff);
 		if (this.closest(Score)?.isConcertScore && shiftsPitchClass(transpose)) {
 			throw new Error(
-				'A concert score may only transpose by octaves; declare the part transposition with setForPart',
+				"A concert score may only transpose by octaves; declare the part transposition with setForPart",
 			);
 		}
 		const attrs = transposeChoiceBlock(
 			this.getOrCreateAttributes(spec),
-			'transpose',
+			"transpose",
 		);
 		const number = spec.staff ?? null;
 		attrs
@@ -701,11 +698,11 @@ export class Measure extends MElement {
 	setForPart(spec: ForPartSpec & { staff?: string; onset?: number }): ForPart {
 		const score = this.closest(Score);
 		if (score && !score.isConcertScore) {
-			throw new Error('<for-part> is only allowed in a concert score');
+			throw new Error("<for-part> is only allowed in a concert score");
 		}
 		const attrs = transposeChoiceBlock(
 			this.getOrCreateAttributes(spec),
-			'for-part',
+			"for-part",
 		);
 		const number = spec.staff ?? null;
 		attrs
@@ -716,8 +713,8 @@ export class Measure extends MElement {
 	}
 
 	/**
-	 * Copy into this measure the signatures in effect at the start of `source` —
-	 * clef, key, time, divisions and the rest of the carried set — for every staff
+	 * Copy into this measure the signatures in effect at the start of `source` -
+	 * clef, key, time, divisions and the rest of the carried set, for every staff
 	 * of the part. Idempotent, and never overwrites what this measure already
 	 * declares.
 	 *
@@ -732,7 +729,7 @@ export class Measure extends MElement {
 
 	/**
 	 * Write into this measure's leading `<attributes>` every carried attribute that
-	 * was in effect just before it — the signatures earlier measures established.
+	 * was in effect just before it, the signatures earlier measures established.
 	 * Never overwrites what this measure already declares. Creates and positions
 	 * the `<attributes>` block (before the first note) and keeps its children in
 	 * schema order.
@@ -751,7 +748,7 @@ export class Measure extends MElement {
 		const attrs = this.getOrCreateAttributes(spec);
 		attrs
 			.childrenOfType(Time)
-			.find((time) => time.getAttribute('number') === (spec.staff ?? null))
+			.find((time) => time.getAttribute("number") === (spec.staff ?? null))
 			?.remove();
 		return placeInAttributes(attrs, time);
 	}
@@ -759,13 +756,13 @@ export class Measure extends MElement {
 	/**
 	 * Upsert `<divisions>`: the ticks per quarter note every `<duration>` in the
 	 * part is counted in. Global rather than per-staff, and it carries forward, so
-	 * one declaration in the first measure covers the score — which is what
+	 * one declaration in the first measure covers the score, which is what
 	 * {@link Voice.addNote} writes for you when nothing has declared it yet.
 	 */
 	setDivisions(value: number): MElement {
 		const attrs = this.getOrCreateAttributes();
-		attrs.child('divisions')?.remove();
-		return placeInAttributes(attrs, valueElement('divisions', String(value)));
+		attrs.child("divisions")?.remove();
+		return placeInAttributes(attrs, valueElement("divisions", String(value)));
 	}
 
 	/**
@@ -776,19 +773,19 @@ export class Measure extends MElement {
 	 */
 	setStaveCount(count: number): MElement {
 		const attrs = this.getOrCreateAttributes();
-		attrs.child('staves')?.remove();
-		return placeInAttributes(attrs, valueElement('staves', String(count)));
+		attrs.child("staves")?.remove();
+		return placeInAttributes(attrs, valueElement("staves", String(count)));
 	}
 
 	/**
-	 * Get or create an `<attributes>` block to write into — the escape hatch behind
+	 * Get or create an `<attributes>` block to write into, the escape hatch behind
 	 * {@link setClef} and friends, for the corners they don't cover (a
 	 * `<directive>`).
 	 *
 	 * Without `onset` this is the measure's LEADING block, positioned before the
 	 * first note: the signature drawn with the stave. With `onset` (in quarter-note
 	 * beats) it is a mid-measure change at that beat, the `<attributes>` MusicXML
-	 * writes between two notes — `<backup>`/`<forward>` are laid down to reach the
+	 * writes between two notes, `<backup>`/`<forward>` are laid down to reach the
 	 * beat, exactly as adding a note there would. The distinction is the caller's
 	 * to state, so "the measure opens in this key" can't silently become "the key
 	 * changes here" just because a note was added first.
@@ -796,32 +793,32 @@ export class Measure extends MElement {
 	 * Children land in schema order however they arrive, so a block written this
 	 * way still validates.
 	 */
-	getOrCreateAttributes(opts?: { onset?: number }): MElement {
+	getOrCreateAttributes(opts?: AttributesOptions): MElement {
 		if (opts?.onset == null) {
 			return attributesOf(this);
 		}
 		const divisions = required(
 			divisionsBackFrom(this, this.children.length),
-			'divisions to place <attributes> at an onset',
+			"divisions to place <attributes> at an onset",
 		);
 		const target = opts.onset * divisions;
 		const onsets = onsetsIn(this);
 		const leading = leadingAttributes(this);
-		const existing = this.childrenNamed('attributes').find(
+		const existing = this.childrenNamed("attributes").find(
 			(block) => !leading.includes(block) && onsets.get(block) === target,
 		);
 		if (existing) {
 			return existing;
 		}
 		alignCursor(this, target);
-		const attrs = new MElement('attributes');
+		const attrs = new MElement("attributes");
 		this.append(attrs);
 		return attrs;
 	}
 
 	/**
 	 * First `<attributes>` back from the start of this measure (own leading block,
-	 * then earlier measures) for which `pick` matches — the carry-forward shape.
+	 * then earlier measures) for which `pick` matches, the carry-forward shape.
 	 */
 	private attributeBack<T>(
 		key: string,
@@ -839,7 +836,7 @@ export class Measure extends MElement {
 }
 
 /**
- * Get or create this measure's LEADING `<attributes>` block — the signature drawn
+ * Get or create this measure's LEADING `<attributes>` block, the signature drawn
  * with the stave. Positioned before the first note, so it stays the leading block
  * on a measure that already has notes rather than becoming a mid-measure change;
  * {@link Measure.getOrCreateAttributes} is how a caller asks for one of those.
@@ -849,7 +846,7 @@ export function attributesOf(measure: Measure): MElement {
 	if (existing) {
 		return existing;
 	}
-	const attrs = new MElement('attributes');
+	const attrs = new MElement("attributes");
 	measure.insertBefore(attrs, measure.notes[0] ?? null);
 	return attrs;
 }
@@ -858,7 +855,7 @@ export function attributesOf(measure: Measure): MElement {
  * Add `child` to an `<attributes>` block and restore schema order. Every
  * `<attributes>` writer goes through here: the block is a fixed sequence, so an
  * append that happens to be in order for one call order is invalid for the next
- * — which is how `<divisions>` written after the signatures ended up last.
+ *, which is how `<divisions>` written after the signatures ended up last.
  */
 export function placeInAttributes<T extends MElement>(
 	attrs: MElement,
@@ -904,49 +901,49 @@ function nextNoteFrom(children: readonly MNode[], from: number): Note | null {
  * measure that wrote it.
  */
 const CARRIED = new Set([
-	'divisions',
-	'key',
-	'time',
-	'clef',
-	'staves',
-	'staff-details',
-	'transpose',
-	'for-part',
-	'part-symbol',
-	'measure-style',
+	"divisions",
+	"key",
+	"time",
+	"clef",
+	"staves",
+	"staff-details",
+	"transpose",
+	"for-part",
+	"part-symbol",
+	"measure-style",
 ]);
 
 /** The carried attributes that are score-wide rather than per-staff. */
-const GLOBAL = new Set(['divisions', 'staves', 'part-symbol']);
+const GLOBAL = new Set(["divisions", "staves", "part-symbol"]);
 
 /** The `<attributes>` content model, in schema order. */
 const ATTRIBUTE_ORDER = [
-	'footnote',
-	'level',
-	'divisions',
-	'key',
-	'time',
-	'staves',
-	'part-symbol',
-	'instruments',
-	'clef',
-	'staff-details',
-	'transpose',
-	'for-part',
-	'directive',
-	'measure-style',
+	"footnote",
+	"level",
+	"divisions",
+	"key",
+	"time",
+	"staves",
+	"part-symbol",
+	"instruments",
+	"clef",
+	"staff-details",
+	"transpose",
+	"for-part",
+	"directive",
+	"measure-style",
 ];
 
 /**
  * The staves a carried `<attributes>` child applies to. A numberless key, time,
- * staff-details, transpose or for-part applies to EVERY staff — so nothing further back in
+ * staff-details, transpose or for-part applies to EVERY staff, so nothing further back in
  * that tag can still apply. Clefs are the exception: one matches a single staff
  * exactly, and a numberless clef is staff 1's.
  */
 function staffTargets(element: MElement, staves: string[]): string[] {
-	const number = element.getAttribute('number');
-	if (element.tag === 'clef') {
-		return [number ?? '1'];
+	const number = element.getAttribute("number");
+	if (element.tag === "clef") {
+		return [number ?? "1"];
 	}
 	return number == null ? staves : [number];
 }
@@ -960,7 +957,7 @@ function leadingAttributes(measure: Measure): MElement[] {
 	const blocks: MElement[] = [];
 	for (let index = 0; index < limit; index++) {
 		const node = measure.children[index];
-		if (node instanceof MElement && node.tag === 'attributes') {
+		if (node instanceof MElement && node.tag === "attributes") {
 			blocks.push(node);
 		}
 	}
@@ -981,7 +978,7 @@ export function carrySignaturesAfterInto(
  * uses; the bookkeeping here is which staves each tag has already been answered
  * for, so a nearer declaration always wins and a numberless one closes out its
  * tag entirely. What `target` already declares is claimed first, so this never
- * overwrites — and is idempotent.
+ * overwrites, and is idempotent.
  */
 function carrySignaturesInto(
 	target: Measure,
@@ -1007,7 +1004,7 @@ function carrySignaturesInto(
 			if (taken.size > 0) {
 				return false;
 			}
-			taken.add('*');
+			taken.add("*");
 			return true;
 		}
 		const wanted = staffTargets(element, staves);
@@ -1045,17 +1042,17 @@ function carrySignaturesInto(
 
 	let block = existing[0];
 	if (!block) {
-		block = new MElement('attributes');
+		block = new MElement("attributes");
 		target.insertBefore(block, target.notes[0] ?? null);
 	}
 	for (const element of carried) {
 		block.append(cloneElement(element));
 	}
 	sortAttributeChildren(block);
-	if (block.child('transpose')) {
-		const forParts = block.childrenNamed('for-part');
+	if (block.child("transpose")) {
+		const forParts = block.childrenNamed("for-part");
 		if (forParts.length > 0) {
-			const holder = transposeChoiceBlock(block, 'for-part');
+			const holder = transposeChoiceBlock(block, "for-part");
 			for (const forPart of forParts) {
 				holder.append(forPart);
 			}
@@ -1066,29 +1063,29 @@ function carrySignaturesInto(
 
 /**
  * The block to write a `<transpose>` or `<for-part>` into, starting from
- * `attrs`. The schema makes the two a choice — one `<attributes>` holds either
- * kind, never both — so when `attrs` holds the other kind this is the block
+ * `attrs`. The schema makes the two a choice, one `<attributes>` holds either
+ * kind, never both, so when `attrs` holds the other kind this is the block
  * directly after it, created there if needed. Nothing sits between the two, so
  * they share an onset and every carry-forward read sees both.
  */
 export function transposeChoiceBlock(
 	attrs: MElement,
-	tag: 'transpose' | 'for-part',
+	tag: "transpose" | "for-part",
 ): MElement {
-	const rival = tag === 'transpose' ? 'for-part' : 'transpose';
+	const rival = tag === "transpose" ? "for-part" : "transpose";
 	if (!attrs.child(rival)) {
 		return attrs;
 	}
-	const parent = required(attrs.parent, 'parent of <attributes>');
+	const parent = required(attrs.parent, "parent of <attributes>");
 	const next = parent.children[parent.children.indexOf(attrs) + 1] ?? null;
 	if (
 		next instanceof MElement &&
-		next.tag === 'attributes' &&
+		next.tag === "attributes" &&
 		!next.child(rival)
 	) {
 		return next;
 	}
-	const block = new MElement('attributes');
+	const block = new MElement("attributes");
 	parent.insertBefore(block, next);
 	return block;
 }
@@ -1105,7 +1102,7 @@ function sortAttributeChildren(block: MElement): void {
 		return {
 			node,
 			tagRank: tagRank < 0 ? ATTRIBUTE_ORDER.length : tagRank,
-			staffRank: Number(element?.getAttribute('number') ?? 0),
+			staffRank: Number(element?.getAttribute("number") ?? 0),
 			index,
 		};
 	});
@@ -1118,4 +1115,12 @@ function sortAttributeChildren(block: MElement): void {
 	for (const { node } of ranked) {
 		block.append(node);
 	}
+}
+
+interface VoiceOptions {
+	staff?: string;
+}
+
+interface AttributesOptions {
+	onset?: number;
 }

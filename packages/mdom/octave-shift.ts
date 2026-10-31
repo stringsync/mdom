@@ -1,6 +1,7 @@
-import { Direction } from './direction';
-import { MElement, required } from './m-node';
-import { appendValue, Measure } from './measure';
+import { Direction } from "./direction";
+import { MElement } from "./m-element";
+import { required } from "./m-node";
+import { appendValue, Measure } from "./measure";
 import {
 	type DashStyle,
 	type DashStyleSpec,
@@ -10,29 +11,20 @@ import {
 	positionOf,
 	setDashStyleOf,
 	setPositionOf,
-} from './print-style';
-import { directionMarkers, Spanner, type SpannerSpec } from './spanner';
+} from "./print-style";
+import { directionMarkers, Spanner, type SpannerSpec } from "./spanner";
 
-export type OctaveShiftType = 'up' | 'down' | 'stop' | 'continue';
+export type OctaveShiftType = "up" | "down" | "stop" | "continue";
 
 /**
  * The printed ottava: 8va/15ma/22ma sound higher than written, 8vb/15mb/22mb
  * lower. MusicXML names these backwards (`down` is 8va), so writers take this.
  */
-export type Ottava = '8va' | '8vb' | '15ma' | '15mb' | '22ma' | '22mb';
-
-const OTTAVAS: Record<Ottava, { type: 'up' | 'down'; size: number }> = {
-	'8va': { type: 'down', size: 8 },
-	'8vb': { type: 'up', size: 8 },
-	'15ma': { type: 'down', size: 15 },
-	'15mb': { type: 'up', size: 15 },
-	'22ma': { type: 'down', size: 22 },
-	'22mb': { type: 'up', size: 22 },
-};
+export type Ottava = "8va" | "8vb" | "15ma" | "15mb" | "22ma" | "22mb";
 
 /** The ottava a start marker prints, or null for a stop or a size mdom has no name for. */
 export function ottavaOf(shift: OctaveShift): Ottava | null {
-	const type = shift.getAttribute('type');
+	const type = shift.getAttribute("type");
 	return (
 		(Object.keys(OTTAVAS) as Ottava[]).find(
 			(name) =>
@@ -49,18 +41,18 @@ export function buildOctaveShiftDirection(
 ): Direction {
 	const shift = new OctaveShift();
 	if (ottava) {
-		shift.setAttribute('type', OTTAVAS[ottava].type);
-		shift.setAttribute('size', String(OTTAVAS[ottava].size));
+		shift.setAttribute("type", OTTAVAS[ottava].type);
+		shift.setAttribute("size", String(OTTAVAS[ottava].size));
 	} else {
-		shift.setAttribute('type', 'stop');
+		shift.setAttribute("type", "stop");
 	}
-	shift.setAttribute('number', number);
-	const block = new MElement('direction-type');
+	shift.setAttribute("number", number);
+	const block = new MElement("direction-type");
 	block.append(shift);
 	const direction = new Direction();
 	direction.append(block);
-	if (staff !== '1') {
-		appendValue(direction, 'staff', staff);
+	if (staff !== "1") {
+		appendValue(direction, "staff", staff);
 	}
 	return direction;
 }
@@ -71,32 +63,32 @@ export function buildOctaveShiftDirection(
  */
 export class OctaveShift extends MElement {
 	constructor() {
-		super('octave-shift');
+		super("octave-shift");
 	}
 
 	/** Pairing key; '1' when omitted. */
 	get number(): string {
-		return this.getAttribute('number') ?? '1';
+		return this.getAttribute("number") ?? "1";
 	}
 
 	/** `type`: required on an `<octave-shift>` and drives pairing. */
 	get octaveShiftType(): OctaveShiftType {
 		return required(
-			this.getAttribute('type'),
-			'type on <octave-shift>',
+			this.getAttribute("type"),
+			"type on <octave-shift>",
 		) as OctaveShiftType;
 	}
 
 	/** Interval span: 8, 15, or 22. The MusicXML default for an absent size is 8. */
 	get size(): number {
-		return Number(this.getAttribute('size') ?? 8);
+		return Number(this.getAttribute("size") ?? 8);
 	}
 
 	/** The `<direction>` this marker hangs off of. An attached marker always has one. */
 	get direction(): Direction {
 		return required(
 			this.closest(Direction),
-			'<direction> ancestor of <octave-shift>',
+			"<direction> ancestor of <octave-shift>",
 		);
 	}
 
@@ -104,7 +96,7 @@ export class OctaveShift extends MElement {
 	get measure(): Measure {
 		return required(
 			this.closest(Measure),
-			'<measure> ancestor of <octave-shift>',
+			"<measure> ancestor of <octave-shift>",
 		);
 	}
 
@@ -113,9 +105,9 @@ export class OctaveShift extends MElement {
 		return ottavaOf(this);
 	}
 
-	/** `line-type` (solid/dashed/dotted/wavy) — the stroke to draw; null when unstated. */
+	/** `line-type` (solid/dashed/dotted/wavy), the stroke to draw; null when unstated. */
 	get lineType(): string | null {
-		return this.getAttribute('line-type');
+		return this.getAttribute("line-type");
 	}
 
 	/** The marker at the far end (same number), or null. */
@@ -138,13 +130,13 @@ export class OctaveShift extends MElement {
 			siblings: directionMarkers(
 				this,
 				(direction) => direction.octaveShifts,
-				'octaveShifts',
+				"octaveShifts",
 			),
 			// Raw reads so resolution tolerates a malformed typeless marker.
 			isOpen: (shift) =>
-				shift.getAttribute('type') === 'up' ||
-				shift.getAttribute('type') === 'down',
-			isClose: (shift) => shift.getAttribute('type') === 'stop',
+				shift.getAttribute("type") === "up" ||
+				shift.getAttribute("type") === "down",
+			isClose: (shift) => shift.getAttribute("type") === "stop",
 		};
 	}
 	/** Where this is drawn, in tenths. Layout only: it never moves the onset. */
@@ -167,3 +159,12 @@ export class OctaveShift extends MElement {
 		setDashStyleOf(this, spec);
 	}
 }
+
+const OTTAVAS: Record<Ottava, { type: "up" | "down"; size: number }> = {
+	"8va": { type: "down", size: 8 },
+	"8vb": { type: "up", size: 8 },
+	"15ma": { type: "down", size: 15 },
+	"15mb": { type: "up", size: 15 },
+	"22ma": { type: "down", size: 22 },
+	"22mb": { type: "up", size: 22 },
+};

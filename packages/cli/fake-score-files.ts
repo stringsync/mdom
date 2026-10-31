@@ -1,4 +1,4 @@
-import type { ScoreFiles, ScoreWriteOptions } from './score-files';
+import type { ScoreFiles, ScoreWriteOptions } from "./score-files";
 
 export class FakeScoreFiles implements ScoreFiles {
 	readonly contents = new Map<string, Uint8Array<ArrayBuffer>>();

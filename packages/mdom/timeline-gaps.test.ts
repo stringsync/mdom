@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './m-dom-parser';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser } from "./m-dom-parser";
 
 // <forward> is the other half of the fold and much rarer than <backup>: it skips
 // the cursor ahead, leaving a gap no note fills. A measure that ends on a
@@ -14,17 +14,17 @@ const GAPS = `<score-partwise><part id="P1"><measure number="1">
   <backup><duration>4</duration></backup>
 </measure></part></score-partwise>`;
 
-describe('timeline — forward gaps and the content end', () => {
+describe("timeline, forward gaps and the content end", () => {
 	const measure = new MDOMParser()
 		.parseFromString(GAPS)
-		.score.getPart('P1')!
-		.getMeasure('1')!;
+		.score.getPart("P1")!
+		.getMeasure("1")!;
 
-	it('skips the cursor past a <forward>, leaving the gap unfilled', () => {
+	it("skips the cursor past a <forward>, leaving the gap unfilled", () => {
 		expect(measure.notes.map((note) => note.measureBeat)).toEqual([0, 2, 0]);
 	});
 
-	it('measures content out to the furthest point reached, not the final cursor', () => {
+	it("measures content out to the furthest point reached, not the final cursor", () => {
 		// The measure ends on a <backup> that rewinds to beat 0; the content still
 		// runs to beat 3, which is the width a renderer has to reserve.
 		expect(measure.endBeat).toBe(3);

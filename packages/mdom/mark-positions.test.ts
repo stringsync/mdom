@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './index';
-import { schemaErrors } from './music-xml-schema';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser } from "./index";
+import { schemaErrors } from "./music-xml-schema";
 
-const XML = `<?xml version="1.0" encoding="UTF-8"?>
+describe("mark positions", () => {
+	const XML = `<?xml version="1.0" encoding="UTF-8"?>
 <score-partwise version="4.0">
 	<part-list><score-part id="P1"><part-name>Violin</part-name></score-part></part-list>
 	<part id="P1"><measure number="1">
@@ -26,28 +27,27 @@ const XML = `<?xml version="1.0" encoding="UTF-8"?>
 	</measure></part>
 </score-partwise>`;
 
-const UNSET = {
-	defaultX: null,
-	defaultY: null,
-	relativeX: null,
-	relativeY: null,
-};
+	const UNSET = {
+		defaultX: null,
+		defaultY: null,
+		relativeX: null,
+		relativeY: null,
+	};
 
-function fixture() {
-	const doc = new MDOMParser().parseFromString(XML);
-	const measure = doc.score.parts[0]!.measures[0]!;
-	return { doc, measure, note: measure.notes[0]! };
-}
+	function fixture() {
+		const doc = new MDOMParser().parseFromString(XML);
+		const measure = doc.score.parts[0]!.measures[0]!;
+		return { doc, measure, note: measure.notes[0]! };
+	}
 
-describe('mark positions', () => {
-	it('reads positions on marks, lyrics and tuplets', () => {
+	it("reads positions on marks, lyrics and tuplets", () => {
 		const { note, measure } = fixture();
 		const [accent, staccato] = note.articulationMarks;
-		expect(accent!.articulationType).toBe('accent');
-		expect(accent!.placement).toBe('above');
+		expect(accent!.articulationType).toBe("accent");
+		expect(accent!.placement).toBe("above");
 		expect(accent!.position).toEqual({ ...UNSET, defaultX: 1, defaultY: 25 });
 		expect(staccato!.position).toEqual(UNSET);
-		expect(note.articulations).toEqual(['accent', 'staccato']);
+		expect(note.articulations).toEqual(["accent", "staccato"]);
 		expect(note.technicals[0]!.position.defaultY).toBe(30);
 		expect(note.ornaments[0]!.position.defaultX).toBe(2);
 		expect(note.wavyLines[0]!.position.defaultY).toBe(9);
@@ -65,7 +65,7 @@ describe('mark positions', () => {
 		expect(directions[1]!.octaveShifts[0]!.position.defaultY).toBe(20);
 	});
 
-	it('reads line styles on line spanners', () => {
+	it("reads line styles on line spanners", () => {
 		const { measure } = fixture();
 		const [, shift, pedal, bracket, dashes] = measure.directions;
 		expect(shift!.octaveShifts[0]!.dashStyle).toEqual({
@@ -73,14 +73,14 @@ describe('mark positions', () => {
 			spaceLength: 2,
 		});
 		expect(pedal!.pedals[0]!.position.relativeX).toBe(-2);
-		expect(bracket!.brackets[0]!.lineStyle.type).toBe('solid');
+		expect(bracket!.brackets[0]!.lineStyle.type).toBe("solid");
 		expect(dashes!.dashes[0]!.dashStyle).toEqual({
 			dashLength: 6,
 			spaceLength: null,
 		});
 	});
 
-	it('writes positions and line styles schema-valid', () => {
+	it("writes positions and line styles schema-valid", () => {
 		const { doc, measure, note } = fixture();
 		note.articulationMarks[1]!.setPosition({ defaultY: -10 });
 		note.articulationMarks[0]!.setPosition(null);
@@ -92,7 +92,7 @@ describe('mark positions', () => {
 		const directions = measure.directions;
 		directions[0]!.metronomes[0]!.setPosition({ defaultX: 8 });
 		directions[1]!.octaveShifts[0]!.setDashStyle({ dashLength: 5 });
-		directions[3]!.brackets[0]!.setLineStyle({ type: 'dashed', dashLength: 3 });
+		directions[3]!.brackets[0]!.setLineStyle({ type: "dashed", dashLength: 3 });
 		directions[4]!.dashes[0]!.setDashStyle({ spaceLength: 2 });
 		expect(note.articulationMarks[1]!.position.defaultY).toBe(-10);
 		expect(note.articulationMarks[0]!.position).toEqual(UNSET);

@@ -1,48 +1,51 @@
-export { Accidental } from './accidental';
+export { Accidental } from "./accidental";
 export {
 	Appearance,
 	type AppearanceValue,
 	type NoteSizeType,
-} from './appearance';
+} from "./appearance";
 export {
 	type ArchiveOptions,
 	DEFAULT_MAX_UNCOMPRESSED_BYTES,
-} from './archive-reader';
-export { Articulation } from './articulation';
+} from "./archive-reader";
+export { Articulation } from "./articulation";
 export {
 	Barline,
 	type BarlineSpec,
 	type Ending,
 	type EndingSpec,
-} from './barline';
+} from "./barline";
 export {
 	Beam,
 	type BeamRun,
 	type BeamValue,
 	groupBeamRuns,
 	groupBeams,
-} from './beam';
-export { Bracket, type BracketType } from './bracket';
-export { Chord } from './chord';
-export { Clef } from './clef';
-export { Cursor } from './cursor';
-export { Dashes, type DashesType } from './dashes';
+} from "./beam";
+export { Bracket, type BracketType } from "./bracket";
+export { Chord } from "./chord";
+export { Clef } from "./clef";
+export { Cursor } from "./cursor";
+export { Dashes, type DashesType } from "./dashes";
 export {
 	Direction,
 	type DirectionSpec,
 	type MetronomeSpec,
 	type NavigationSpec,
 	type WordsSpec,
-} from './direction';
-export { Dynamics } from './dynamics';
-export { Figure, FiguredBass } from './figured-bass';
-export { FormattedTextElement } from './formatted-text';
-export { Frame, FrameNote, type FrameNoteSpec, type FrameSpec } from './frame';
-export { Glissando } from './glissando';
-export type { GuitarProOptions } from './guitar-pro-options';
-export { GuitarProParser } from './guitar-pro-parser';
-export { GuitarProSerializer } from './guitar-pro-serializer';
-export { HammerOn } from './hammer-on';
+} from "./direction";
+export { Dynamics } from "./dynamics";
+export { Figure } from "./figure";
+export { FiguredBass } from "./figured-bass";
+export { ForPart, type ForPartSpec } from "./for-part";
+export { FormattedTextElement } from "./formatted-text";
+export { Frame, type FrameSpec } from "./frame";
+export { FrameNote, type FrameNoteSpec } from "./frame-note";
+export { Glissando } from "./glissando";
+export type { GuitarProOptions } from "./guitar-pro-options";
+export { GuitarProParser } from "./guitar-pro-parser";
+export { GuitarProSerializer } from "./guitar-pro-serializer";
+export { HammerOn } from "./hammer-on";
 export {
 	Harmony,
 	type HarmonyArrangement,
@@ -67,7 +70,7 @@ export {
 	type HarmonyStep,
 	type HarmonyStepSpec,
 	type HarmonyType,
-} from './harmony';
+} from "./harmony";
 export type {
 	InstrumentChange,
 	InstrumentChangeSpec,
@@ -85,26 +88,28 @@ export type {
 	ScoreInstrumentSpec,
 	VirtualInstrument,
 	VirtualInstrumentSpec,
-} from './instrument';
+} from "./instrument";
 export {
 	Key,
 	type KeyAlterationSpec,
 	type KeyOctaveSpec,
 	type KeySpec,
-} from './key';
-export { LineDetail, type LineDetailSpec } from './line-detail';
+} from "./key";
+export { LineDetail, type LineDetailSpec } from "./line-detail";
 export {
 	Lyric,
 	type LyricExtend,
 	type LyricRun,
 	type LyricSpec,
 	type Syllabic,
-} from './lyric';
-export { MDocument } from './m-document';
-export { MDOMParser } from './m-dom-parser';
-export type { MHistory, MHistoryChange } from './m-history';
-export { MElement, MNode, MText } from './m-node';
-export { Measure } from './measure';
+} from "./lyric";
+export { MDocument } from "./m-document";
+export { MDOMParser } from "./m-dom-parser";
+export { MElement } from "./m-element";
+export type { MHistory, MHistoryChange } from "./m-history";
+export { MNode } from "./m-node";
+export { MText } from "./m-text";
+export { Measure } from "./measure";
 export {
 	MeasureStyle,
 	type MeasureStyleKind,
@@ -112,15 +117,11 @@ export {
 	type MeasureStyleType,
 	type SlashType,
 	type StatefulMeasureStyleKind,
-} from './measure-style';
-export {
-	type BeatUnitSpec,
-	Metronome,
-	MetronomeNote,
-	type MetronomeNoteSpec,
-} from './metronome';
-export { MusicXMLSerializer } from './music-xml-serializer';
-export { MXLSerializer } from './mxl-serializer';
+} from "./measure-style";
+export { type BeatUnitSpec, Metronome } from "./metronome";
+export { MetronomeNote, type MetronomeNoteSpec } from "./metronome-note";
+export { MusicXMLSerializer } from "./music-xml-serializer";
+export { MXLSerializer } from "./mxl-serializer";
 export {
 	type FermataShape,
 	Note,
@@ -128,26 +129,28 @@ export {
 	type NotePerformance,
 	type NotePerformanceSpec,
 	type SymbolSize,
-} from './note';
-export { OctaveShift, type Ottava } from './octave-shift';
-export type { Offset, OffsetSpec } from './offset';
-export { Ornament, type OrnamentType } from './ornament';
+} from "./note";
+export { OctaveShift, type Ottava } from "./octave-shift";
+export type { Offset, OffsetSpec } from "./offset";
+export { Ornament, type OrnamentType } from "./ornament";
 export {
 	type MarginType,
 	PageLayout,
 	type PageMargins,
 	type PageMarginsSpec,
-} from './page-layout';
-export { Part } from './part';
-export type { PartGroupSpan } from './part-group';
-export { Pedal } from './pedal';
-export { Pitch, type PitchInterval, transposePitch } from './pitch';
+} from "./page-layout";
+export { Part } from "./part";
+export { PartClef, type PartClefSpec } from "./part-clef";
+export type { PartGroupSpan } from "./part-group";
+export { PartTranspose } from "./part-transpose";
+export { Pedal } from "./pedal";
+export { Pitch, type PitchInterval, transposePitch } from "./pitch";
 export {
 	type MeasureNumbering,
 	type MeasureNumberingSpec,
 	Print,
 	type SystemRelation,
-} from './print';
+} from "./print";
 export type {
 	Bezier,
 	BezierSpec,
@@ -156,11 +159,11 @@ export type {
 	LineType,
 	Position,
 	PositionSpec,
-} from './print-style';
-export { PullOff } from './pull-off';
-export { Rehearsal } from './rehearsal';
-export { Scaling } from './scaling';
-export { Score } from './score';
+} from "./print-style";
+export { PullOff } from "./pull-off";
+export { Rehearsal } from "./rehearsal";
+export { Scaling } from "./scaling";
+export { Score } from "./score";
 export type {
 	CreditInfo,
 	CreditSpec,
@@ -176,18 +179,18 @@ export type {
 	TextFormatting,
 	TypedText,
 	TypedTextSpec,
-} from './score-metadata';
-export { Slide } from './slide';
-export { Slur } from './slur';
-export { Sound, type SoundSpec } from './sound';
+} from "./score-metadata";
+export { Slide } from "./slide";
+export { Slur } from "./slur";
+export { Sound, type SoundSpec } from "./sound";
 export {
 	StaffDetails,
 	type StaffTuningSpec,
 	type StaffType,
-} from './staff-details';
-export { StaffLayout } from './staff-layout';
-export { StaffTuning } from './staff-tuning';
-export { SystemLayout } from './system-layout';
+} from "./staff-details";
+export { StaffLayout } from "./staff-layout";
+export { StaffTuning } from "./staff-tuning";
+export { SystemLayout } from "./system-layout";
 export {
 	type BendDetail,
 	type BendShape,
@@ -195,7 +198,7 @@ export {
 	type HarmonicKind,
 	type HarmonicPitch,
 	Technical,
-} from './technical';
+} from "./technical";
 export type {
 	CssFontSize,
 	Font,
@@ -206,8 +209,8 @@ export type {
 	LyricTarget,
 	TextAlign,
 	TextVerticalAlign,
-} from './text-format';
-export { Tie } from './tie';
+} from "./text-format";
+export { Tie } from "./tie";
 export {
 	type InterchangeableSpec,
 	Time,
@@ -215,24 +218,19 @@ export {
 	type TimeRelation,
 	type TimeSeparator,
 	type TimeSpec,
-} from './time';
+} from "./time";
 export type {
 	TimeModification,
 	TimeModificationSpec,
-} from './time-modification';
+} from "./time-modification";
+export { Transpose } from "./transpose";
 export {
-	ForPart,
-	type ForPartSpec,
-	PartClef,
-	type PartClefSpec,
-	PartTranspose,
-	Transpose,
 	type TransposeDouble,
 	TransposeGroup,
 	type TransposeSpec,
-} from './transpose';
-export { Tuplet, type TupletDisplay, type TupletSpec } from './tuplet';
-export { Voice } from './voice';
-export { WavyLine } from './wavy-line';
-export { Wedge } from './wedge';
-export { Words } from './words';
+} from "./transpose-group";
+export { Tuplet, type TupletDisplay, type TupletSpec } from "./tuplet";
+export { Voice } from "./voice";
+export { WavyLine } from "./wavy-line";
+export { Wedge } from "./wedge";
+export { Words } from "./words";

@@ -1,5 +1,5 @@
-import type { Operation, Sample } from './scaling-operations';
-import type { Axis, ScoreShape } from './scaling-score';
+import type { Operation, Sample } from "./scaling-operations";
+import type { Axis, ScoreShape } from "./scaling-score";
 
 export interface CaseResult {
 	operation: Operation;
@@ -32,7 +32,7 @@ export function summarize(results: CaseResult[], axis: Axis) {
 				operation: result.operation,
 				axis,
 				size: result.size,
-				error: result.error ?? 'No samples',
+				error: result.error ?? "No samples",
 			};
 		}
 		const elapsedMs = median(result.samples.map((sample) => sample.elapsedMs));
@@ -89,12 +89,12 @@ export function summarize(results: CaseResult[], axis: Axis) {
 
 export function formatTable(rows: ReturnType<typeof summarize>): string {
 	const ratio = (value: number | null | undefined) =>
-		value == null ? '—' : value.toFixed(2);
+		value == null ? "-" : value.toFixed(2);
 	const lines = [
-		'operation\tsize\tms\ttime ×2\theap Δ bytes\theap ×2\tdoc bytes\tdoc ×2\thistory bytes/entry\tflag',
+		"operation\tsize\tms\ttime ×2\theap Δ bytes\theap ×2\tdoc bytes\tdoc ×2\thistory bytes/entry\tflag",
 	];
 	for (const row of rows) {
-		if ('error' in row) {
+		if ("error" in row) {
 			lines.push(`${row.operation}\t${row.size}\tERROR: ${row.error}`);
 		} else {
 			lines.push(
@@ -108,10 +108,10 @@ export function formatTable(rows: ReturnType<typeof summarize>): string {
 					Math.round(row.documentHeapBytes),
 					ratio(row.documentHeapRatio),
 					ratio(row.historyBytesPerEntry),
-					row.flagged ? '>3' : '',
-				].join('\t'),
+					row.flagged ? ">3" : "",
+				].join("\t"),
 			);
 		}
 	}
-	return lines.join('\n');
+	return lines.join("\n");
 }

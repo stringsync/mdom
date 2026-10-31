@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './m-dom-parser';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser } from "./m-dom-parser";
 
-// A chord whose members all slur under number 1 — exporters break the "a number
+// A chord whose members all slur under number 1, exporters break the "a number
 // can't reopen before it closes" rule constantly. The members open together, so
 // voice can't separate them: the oldest open start belongs with the first stop.
 const CHORD = `<score-partwise><part id="P1"><measure number="1">
@@ -20,13 +20,13 @@ const CHORD = `<score-partwise><part id="P1"><measure number="1">
     <notations><slur type="stop" number="1"/></notations></note>
 </measure></part></score-partwise>`;
 
-describe('slur — a chord slurred entirely under number 1', () => {
+describe("slur, a chord slurred entirely under number 1", () => {
 	const notes = new MDOMParser()
 		.parseFromString(CHORD)
-		.score.getPart('P1')!
-		.getMeasure('1')!.notes;
+		.score.getPart("P1")!
+		.getMeasure("1")!.notes;
 
-	it('pairs each member with its counterpart: oldest open start wins', () => {
+	it("pairs each member with its counterpart: oldest open start wins", () => {
 		const pairs = notes
 			.slice(0, 3)
 			.map((note) => [
@@ -34,9 +34,9 @@ describe('slur — a chord slurred entirely under number 1', () => {
 				note.slurs[0]!.partner?.note.pitch?.step,
 			]);
 		expect(pairs).toEqual([
-			['C', 'C'],
-			['E', 'E'],
-			['G', 'G'],
+			["C", "C"],
+			["E", "E"],
+			["G", "G"],
 		]);
 	});
 });

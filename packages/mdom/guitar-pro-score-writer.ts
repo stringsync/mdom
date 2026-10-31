@@ -1,11 +1,12 @@
+// vet-ignore-file compact-files: one writer emitting the Guitar Pro document in file order.
 // SPDX-License-Identifier: MPL-2.0
 // GPIF field encoding adapted from alphaTab's GpifWriter. See THIRD_PARTY.md.
 // Copyright © 2025 Daniel Kuschny and Contributors.
-import { type Chord, groupChords } from './chord';
-import { Direction } from './direction';
-import { GuitarProBeatEffectWriter } from './guitar-pro-beat-effects';
-import { writeDiagram } from './guitar-pro-diagrams';
-import { GuitarProDirectionIndex } from './guitar-pro-direction-index';
+import { type Chord, groupChords } from "./chord";
+import { Direction } from "./direction";
+import { GuitarProBeatEffectWriter } from "./guitar-pro-beat-effect-writer";
+import { writeDiagram } from "./guitar-pro-diagrams";
+import { GuitarProDirectionIndex } from "./guitar-pro-direction-index";
 import {
 	drumGlyph,
 	type GuitarProDrumArticulation,
@@ -13,98 +14,30 @@ import {
 	noteheadOfGlyph,
 	staffLineOf,
 	writeDrumKit,
-} from './guitar-pro-drum-kit';
-import { GuitarProLyrics } from './guitar-pro-lyrics';
-import type { GuitarProOptions } from './guitar-pro-options';
-import { GuitarProPitchWriter } from './guitar-pro-pitch-writer';
+} from "./guitar-pro-drum-kit";
+import { GuitarProLyrics } from "./guitar-pro-lyrics";
+import type { GuitarProOptions } from "./guitar-pro-options";
+import { GuitarProPitchWriter } from "./guitar-pro-pitch-writer";
 import {
 	GuitarProPlayback,
 	type GuitarProTransposition,
-} from './guitar-pro-playback';
-import { GuitarProValues } from './guitar-pro-values';
-import { GuitarProXml as X } from './guitar-pro-xml';
-import type { Harmony } from './harmony';
-import { MDocument } from './m-document';
-import { appendChildren, MElement } from './m-node';
-import type { Measure } from './measure';
-import type { Note } from './note';
-import type { Part } from './part';
-import { childIndexIn, divisionsBackFrom } from './signature';
-import type { Sound } from './sound';
-import { onsetOf } from './timeline';
-
-/** One beat of a chord split at a harmony: where it starts and, when split, its note value. */
-interface BeatPiece {
-	onset: number;
-	type?: string;
-	dots?: number;
-	size?: number;
-}
-
-/** The longest ordinary note value, dotted up to three times, that fits in `beats`. */
-function noteValueWithin(
-	beats: number,
-): { type: string; dots: number; size: number } | null {
-	for (const [type, duration] of Object.entries(GuitarProValues.durations)) {
-		for (let dots = 3; dots >= 0; dots--) {
-			const size = GuitarProValues.beats(duration, { dots });
-			if (size <= beats + 1e-8) {
-				return { type, dots, size };
-			}
-		}
-	}
-	return null;
-}
-
-/** A tempo automation at a fraction of its bar; linear ramps to the next one. */
-interface TempoChange {
-	position: number;
-	tempo: number;
-	linear: boolean;
-}
-
-/** GPIF `TripletFeel` unit suffixes by the swing unit they divide, in quarter-note beats. */
-const SWING_UNITS: Record<number, string> = { 0.5: '8th', 0.25: '16th' };
-
-/** GPIF `TripletFeel` styles by the on-beat:off-beat ratio they play. */
-const SWING_STYLES: Array<[number, string]> = [
-	[2, 'Triplet'],
-	[3, 'Dotted'],
-	[1 / 3, 'Scottish'],
-];
-
-/** Words that mark a gradual tempo change, like accel. or rit. */
-const GRADUAL_TEMPO = /^(accel|rit|rall|ritard|allarg)/i;
-
-/** The GPIF jump suffix ("AlFine", "AlDoubleCoda", "AlCoda") a D.C. or D.S.'s words spell, or none. */
-function jumpUntil(words: string): string {
-	const until = /al\s+(fine|double\s+coda|coda)/i.exec(words)?.[1];
-	return until ? JUMP_UNTIL[until.toLowerCase().replace(/\s+/, ' ')]! : '';
-}
-const JUMP_UNTIL: Record<string, string> = {
-	fine: 'AlFine',
-	'double coda': 'AlDoubleCoda',
-	coda: 'AlCoda',
-};
-
-interface StaffContext {
-	id: string;
-	tuning: number[];
-	capo: number;
-	pitches: GuitarProPitchWriter;
-	/** Semitones from written to sounding pitch, from the part's `<transpose>`. */
-	shift: number;
-	/**
-	 * The drum kit of a staff of unpitched notes: the standard kit, then any
-	 * drums the part draws or names differently; null for a pitched staff.
-	 */
-	kit: GuitarProDrumArticulation[] | null;
-}
+} from "./guitar-pro-playback";
+import { GuitarProValues } from "./guitar-pro-values";
+import { GuitarProXml as X } from "./guitar-pro-xml";
+import type { Harmony } from "./harmony";
+import { MDocument } from "./m-document";
+import { appendChildren, MElement } from "./m-element";
+import type { Measure } from "./measure";
+import type { Note } from "./note";
+import type { Part } from "./part";
+import { childIndexIn, divisionsBackFrom } from "./signature";
+import type { Sound } from "./sound";
+import { onsetOf } from "./timeline";
 
 /** Writes GPIF tables directly from mdom notes; no external score model. */
 export class GuitarProScoreWriter {
 	private readonly values: GuitarProValues;
-	private readonly root = new MElement('GPIF');
+	private readonly root = new MElement("GPIF");
 	private readonly effects: GuitarProBeatEffectWriter;
 	private readonly tables = new Map<string, MElement>();
 	/**
@@ -139,7 +72,7 @@ export class GuitarProScoreWriter {
 		const first = parts[0];
 		if (!first || first.measures.length === 0) {
 			throw new Error(
-				'Guitar Pro export requires at least one part with measures',
+				"Guitar Pro export requires at least one part with measures",
 			);
 		}
 		this.checkAnnotations(document.score);
@@ -147,56 +80,57 @@ export class GuitarProScoreWriter {
 			this.collectVibratos(part);
 			this.collectSlurs(part);
 		}
-		X.add(this.root, 'GPVersion', '7');
-		X.add(this.root, 'GPRevision', '12025');
-		X.add(X.add(this.root, 'Encoding'), 'EncodingDescription', 'GP7');
-		const score = X.add(this.root, 'Score');
-		X.add(score, 'Title', document.score.title ?? '');
-		const identification = document.score.child('identification');
+		X.add(this.root, "GPVersion", "7");
+		X.add(this.root, "GPRevision", "12025");
+		X.add(X.add(this.root, "Encoding"), "EncodingDescription", "GP7");
+		const score = X.add(this.root, "Score");
+		X.add(score, "Title", document.score.title ?? "");
+		const identification = document.score.child("identification");
 		for (const [tag, type] of [
-			['Music', 'composer'],
-			['Words', 'lyricist'],
-			['Artist', 'artist'],
+			["Music", "composer"],
+			["Words", "lyricist"],
+			["Artist", "artist"],
 		]) {
 			X.add(
 				score,
 				tag!,
 				identification
-					?.childrenNamed('creator')
-					.find((c) => c.getAttribute('type') === type)?.text ?? '',
+					?.childrenNamed("creator")
+					.find((mElement) => mElement.getAttribute("type") === type)?.text ??
+					"",
 			);
 		}
-		X.add(score, 'Copyright', identification?.child('rights')?.text ?? '');
+		X.add(score, "Copyright", identification?.child("rights")?.text ?? "");
 		for (const tag of [
-			'SubTitle',
-			'Album',
-			'WordsAndMusic',
-			'Tabber',
-			'Instructions',
-			'Notices',
-			'FirstPageHeader',
-			'FirstPageFooter',
-			'PageHeader',
-			'PageFooter',
+			"SubTitle",
+			"Album",
+			"WordsAndMusic",
+			"Tabber",
+			"Instructions",
+			"Notices",
+			"FirstPageHeader",
+			"FirstPageFooter",
+			"PageHeader",
+			"PageFooter",
 		]) {
-			X.add(score, tag, '');
+			X.add(score, tag, "");
 		}
-		X.add(score, 'ScoreSystemsDefaultLayout', 3);
-		X.add(score, 'ScoreSystemsLayout', 3);
-		const masterTrack = X.add(this.root, 'MasterTrack');
-		const masterTracks = X.add(masterTrack, 'Tracks');
+		X.add(score, "ScoreSystemsDefaultLayout", 3);
+		X.add(score, "ScoreSystemsLayout", 3);
+		const masterTrack = X.add(this.root, "MasterTrack");
+		const masterTracks = X.add(masterTrack, "Tracks");
 		if (first.measures[0]!.isImplicit) {
-			X.add(masterTrack, 'Anacrusis');
+			X.add(masterTrack, "Anacrusis");
 		}
-		const tempos = X.add(masterTrack, 'Automations');
+		const tempos = X.add(masterTrack, "Automations");
 		for (const name of [
-			'Tracks',
-			'MasterBars',
-			'Bars',
-			'Voices',
-			'Beats',
-			'Notes',
-			'Rhythms',
+			"Tracks",
+			"MasterBars",
+			"Bars",
+			"Voices",
+			"Beats",
+			"Notes",
+			"Rhythms",
 		]) {
 			this.tables.set(name, X.add(this.root, name));
 			this.entries.set(name, []);
@@ -205,21 +139,21 @@ export class GuitarProScoreWriter {
 		let feel: string | null = null;
 		for (const measure of first.measures) {
 			const master = this.masterBar(measure);
-			this.entries.get('MasterBars')!.push(master);
+			this.entries.get("MasterBars")!.push(master);
 			this.masterBars.push(master);
 			if (passes[measure.index]!.length) {
-				X.add(master, 'AlternateEndings', passes[measure.index]!.join(' '));
+				X.add(master, "AlternateEndings", passes[measure.index]!.join(" "));
 			}
 			this.navigation(master, measure);
 			feel = this.feel(parts, measure.index, feel);
 			if (feel) {
-				X.add(master, 'TripletFeel', feel);
+				X.add(master, "TripletFeel", feel);
 			}
-			X.add(master, 'Bars', '');
+			X.add(master, "Bars", "");
 			for (const change of this.tempos(measure)) {
 				this.automation(
 					tempos,
-					'Tempo',
+					"Tempo",
 					measure.index,
 					`${change.tempo} 2`,
 					change.position,
@@ -230,7 +164,7 @@ export class GuitarProScoreWriter {
 		for (const [index, part] of parts.entries()) {
 			if (part.measures.length !== first.measures.length) {
 				throw new Error(
-					'Guitar Pro parts must have the same number of measures',
+					"Guitar Pro parts must have the same number of measures",
 				);
 			}
 			const staffCount = part.measures[0]!.staveCount;
@@ -241,18 +175,18 @@ export class GuitarProScoreWriter {
 				String(i + 1),
 			);
 			for (const measure of part.measures) {
-				if (measure.notes.some((n) => !staffIds.includes(n.staff))) {
-					throw new Error('Guitar Pro notes must refer to a declared staff');
+				if (measure.notes.some((note) => !staffIds.includes(note.staff))) {
+					throw new Error("Guitar Pro notes must refer to a declared staff");
 				}
 				if (measure.staveCount !== staffCount) {
 					throw new Error(
-						'Guitar Pro export does not support changing the staff count',
+						"Guitar Pro export does not support changing the staff count",
 					);
 				}
 				const master = first.measures[measure.index]!;
 				const own = this.masterBar(measure);
 				const shared = this.masterBar(master);
-				for (const tag of ['Time', 'Repeat', 'DoubleBar']) {
+				for (const tag of ["Time", "Repeat", "DoubleBar"]) {
 					if (
 						own.child(tag)?.text !== shared.child(tag)?.text ||
 						JSON.stringify(own.child(tag)?.attributes) !==
@@ -260,7 +194,7 @@ export class GuitarProScoreWriter {
 						measure.isImplicit !== master.isImplicit
 					) {
 						throw new Error(
-							'Guitar Pro requires matching meter, pickups and repeats across parts',
+							"Guitar Pro requires matching meter, pickups and repeats across parts",
 						);
 					}
 				}
@@ -271,12 +205,12 @@ export class GuitarProScoreWriter {
 						JSON.stringify(this.tempos(master))
 				) {
 					throw new Error(
-						'Guitar Pro requires matching tempo changes across parts',
+						"Guitar Pro requires matching tempo changes across parts",
 					);
 				}
-				for (const attributes of measure.childrenNamed('attributes').slice(1)) {
-					if (attributes.child('key') || attributes.child('time')) {
-						this.values.unsupported('mid-measure key or time changes');
+				for (const attributes of measure.childrenNamed("attributes").slice(1)) {
+					if (attributes.child("key") || attributes.child("time")) {
+						this.values.unsupported("mid-measure key or time changes");
 					}
 				}
 			}
@@ -284,28 +218,28 @@ export class GuitarProScoreWriter {
 			const drums = this.isPercussion(part);
 			// A Guitar Pro track holds at most a grand staff, so a part with more staves splits into consecutive tracks of up to two.
 			for (let firstStaff = 1; firstStaff <= staffCount; firstStaff += 2) {
-				const track = this.entry('Tracks', 'Track');
-				X.add(track, 'Name', part.label ?? '');
-				X.add(track, 'ShortName', part.label ?? '');
-				X.add(track, 'Color', '200 40 40');
-				X.add(track, 'SystemsDefautLayout', 3);
-				X.add(track, 'SystemsLayout', 3);
+				const track = this.entry("Tracks", "Track");
+				X.add(track, "Name", part.label ?? "");
+				X.add(track, "ShortName", part.label ?? "");
+				X.add(track, "Color", "200 40 40");
+				X.add(track, "SystemsDefautLayout", 3);
+				X.add(track, "SystemsLayout", 3);
 				const scorePart = document.score
-					.child('part-list')
-					?.childrenNamed('score-part')
-					.find((s) => s.getAttribute('id') === part.id);
-				const instrument = scorePart?.child('midi-instrument');
+					.child("part-list")
+					?.childrenNamed("score-part")
+					.find((mElement) => mElement.getAttribute("id") === part.id);
+				const instrument = scorePart?.child("midi-instrument");
 				const program =
 					GuitarProValues.integer(
-						Number(instrument?.child('midi-program')?.text ?? 1),
-						'MIDI program',
+						Number(instrument?.child("midi-program")?.text ?? 1),
+						"MIDI program",
 						1,
 						128,
 					) - 1;
 				const channel =
 					GuitarProValues.integer(
-						Number(instrument?.child('midi-channel')?.text ?? (drums ? 10 : 1)),
-						'MIDI channel',
+						Number(instrument?.child("midi-channel")?.text ?? (drums ? 10 : 1)),
+						"MIDI channel",
 						1,
 						16,
 					) - 1;
@@ -317,7 +251,7 @@ export class GuitarProScoreWriter {
 					drums,
 				);
 				const kit = drums ? [...guitarProDrumKit] : null;
-				const staves = X.add(track, 'Staves');
+				const staves = X.add(track, "Staves");
 				for (
 					let staff = firstStaff;
 					staff <= Math.min(firstStaff + 1, staffCount);
@@ -333,7 +267,7 @@ export class GuitarProScoreWriter {
 				}
 				if (kit) {
 					writeDrumKit(
-						track.child('InstrumentSet')!,
+						track.child("InstrumentSet")!,
 						kit.slice(guitarProDrumKit.length),
 					);
 				}
@@ -344,20 +278,20 @@ export class GuitarProScoreWriter {
 		}
 		masterTracks.setText(
 			this.entries
-				.get('Tracks')!
-				.map((track) => track.getAttribute('id'))
-				.join(' '),
+				.get("Tracks")!
+				.map((track) => track.getAttribute("id"))
+				.join(" "),
 		);
 		for (const [name, entries] of this.entries) {
 			appendChildren(this.tables.get(name)!, entries);
 		}
-		return new MDocument(this.root, { version: '1.0', encoding: 'utf-8' });
+		return new MDocument(this.root, { version: "1.0", encoding: "utf-8" });
 	}
 
 	private entry(table: string, tag: string): MElement {
 		const entries = this.entries.get(table)!;
 		const node = new MElement(tag);
-		node.setAttribute('id', String(entries.length));
+		node.setAttribute("id", String(entries.length));
 		entries.push(node);
 		return node;
 	}
@@ -369,13 +303,13 @@ export class GuitarProScoreWriter {
 		position = 0,
 		linear = false,
 	): void {
-		const node = X.add(parent, 'Automation');
+		const node = X.add(parent, "Automation");
 		for (const [tag, text] of Object.entries({
 			Type: type,
 			Linear: String(linear),
 			Bar: String(bar),
 			Position: String(position),
-			Visible: 'true',
+			Visible: "true",
 			Value: value,
 		})) {
 			X.add(node, tag, text);
@@ -384,43 +318,47 @@ export class GuitarProScoreWriter {
 	private masterBar(measure: Measure): MElement {
 		const time = measure.getTime();
 		if (time && (time.components.length !== 1 || time.isSenzaMisura)) {
-			throw new Error('Guitar Pro export requires a simple time signature');
+			throw new Error("Guitar Pro export requires a simple time signature");
 		}
 		const numerator = GuitarProValues.integer(
 			Number(time?.beats ?? 4),
-			'time numerator',
+			"time numerator",
 			1,
 			64,
 		);
 		const denominator = GuitarProValues.integer(
 			Number(time?.beatType ?? 4),
-			'time denominator',
+			"time denominator",
 			1,
 			128,
 		);
 		if ((denominator & (denominator - 1)) !== 0) {
-			throw new Error('Guitar Pro time denominator must be a power of two');
+			throw new Error("Guitar Pro time denominator must be a power of two");
 		}
-		const node = new MElement('MasterBar');
-		this.key(node, measure, '1');
-		X.add(node, 'Time', `${numerator}/${denominator}`);
+		const node = new MElement("MasterBar");
+		this.key(node, measure, "1");
+		X.add(node, "Time", `${numerator}/${denominator}`);
 		if (measure.isImplicit && measure.index > 0) {
-			this.values.unsupported('pickups after the first measure');
+			this.values.unsupported("pickups after the first measure");
 		}
-		const start = measure.barlines.some((b) => b.repeat === 'forward');
-		const end = measure.barlines.find((b) => b.repeat === 'backward');
+		const start = measure.barlines.some(
+			(barline) => barline.repeat === "forward",
+		);
+		const end = measure.barlines.find(
+			(barline) => barline.repeat === "backward",
+		);
 		if (start || end) {
-			const repeat = X.add(node, 'Repeat', undefined, {
+			const repeat = X.add(node, "Repeat", undefined, {
 				start: String(start),
 				end: String(!!end),
 			});
 			if (end) {
 				repeat.setAttribute(
-					'count',
+					"count",
 					String(
 						GuitarProValues.integer(
 							end.repeatTimes ?? 2,
-							'repeat count',
+							"repeat count",
 							2,
 							100,
 						),
@@ -428,8 +366,10 @@ export class GuitarProScoreWriter {
 				);
 			}
 		}
-		if (measure.barlines.some((b) => b.barStyle === 'light-light')) {
-			X.add(node, 'DoubleBar');
+		if (
+			measure.barlines.some((barline) => barline.barStyle === "light-light")
+		) {
+			X.add(node, "DoubleBar");
 		}
 		return node;
 	}
@@ -443,18 +383,18 @@ export class GuitarProScoreWriter {
 			const endings = measure.barlines.flatMap((barline) =>
 				barline.ending ? [barline.ending] : [],
 			);
-			const start = endings.find((ending) => ending.type === 'start');
+			const start = endings.find((ending) => ending.type === "start");
 			if (start) {
 				open = start.numbers;
 				if (!open.length) {
-					this.values.unsupported('endings with no pass numbers');
+					this.values.unsupported("endings with no pass numbers");
 				} else if (open.some((pass) => pass > 32)) {
-					this.values.unsupported('endings past pass 32');
+					this.values.unsupported("endings past pass 32");
 					open = [];
 				}
 			}
 			const passes = open;
-			if (endings.some((ending) => ending.type !== 'start')) {
+			if (endings.some((ending) => ending.type !== "start")) {
 				open = [];
 			}
 			return passes;
@@ -476,23 +416,23 @@ export class GuitarProScoreWriter {
 		};
 		for (const sound of measure.sounds) {
 			const words =
-				sound.parent instanceof Direction ? sound.parent.words.join(' ') : '';
+				sound.parent instanceof Direction ? sound.parent.words.join(" ") : "";
 			if (sound.segno != null) {
-				add(targets, this.landmark('segno', sound.segno));
+				add(targets, this.landmark("segno", sound.segno));
 			}
 			if (sound.coda != null) {
-				add(targets, this.landmark('coda', sound.coda));
+				add(targets, this.landmark("coda", sound.coda));
 			}
 			if (sound.fine != null) {
-				add(targets, 'Fine');
+				add(targets, "Fine");
 			}
 			if (sound.toCoda != null) {
-				const coda = this.landmark('coda', sound.toCoda);
-				add(jumps, coda && (coda === 'Coda' ? 'DaCoda' : 'DaDoubleCoda'));
+				const coda = this.landmark("coda", sound.toCoda);
+				add(jumps, coda && (coda === "Coda" ? "DaCoda" : "DaDoubleCoda"));
 			}
 			const segno =
-				sound.dalSegno == null ? null : this.landmark('segno', sound.dalSegno);
-			const from = sound.daCapo ? 'DaCapo' : segno && `Da${segno}`;
+				sound.dalSegno == null ? null : this.landmark("segno", sound.dalSegno);
+			const from = sound.daCapo ? "DaCapo" : segno && `Da${segno}`;
 			if (from) {
 				add(jumps, from + jumpUntil(words));
 			}
@@ -500,44 +440,44 @@ export class GuitarProScoreWriter {
 				sound.timeOnly != null &&
 				(sound.daCapo || sound.dalSegno != null || sound.toCoda != null)
 			) {
-				this.values.unsupported('jumps on chosen passes');
+				this.values.unsupported("jumps on chosen passes");
 			}
 		}
 		for (const direction of measure.directions) {
 			if (
 				direction.sound?.segno == null &&
-				direction.navigations.includes('segno')
+				direction.navigations.includes("segno")
 			) {
-				add(targets, this.landmark('segno', 'segno'));
+				add(targets, this.landmark("segno", "segno"));
 			}
 			if (
 				direction.sound?.coda == null &&
-				direction.navigations.includes('coda')
+				direction.navigations.includes("coda")
 			) {
-				add(targets, this.landmark('coda', 'coda'));
+				add(targets, this.landmark("coda", "coda"));
 			}
 		}
 		if (!targets.length && !jumps.length) {
 			return;
 		}
-		const node = X.add(master, 'Directions');
+		const node = X.add(master, "Directions");
 		for (const target of targets) {
-			X.add(node, 'Target', target);
+			X.add(node, "Target", target);
 		}
 		for (const jump of jumps) {
-			X.add(node, 'Jump', jump);
+			X.add(node, "Jump", jump);
 		}
 	}
 	/** The GPIF target (`Segno`/`SegnoSegno`, `Coda`/`DoubleCoda`) a landmark id names; null past two. */
-	private landmark(kind: 'segno' | 'coda', id: string): string | null {
+	private landmark(kind: "segno" | "coda", id: string): string | null {
 		const names =
-			kind === 'segno' ? ['Segno', 'SegnoSegno'] : ['Coda', 'DoubleCoda'];
+			kind === "segno" ? ["Segno", "SegnoSegno"] : ["Coda", "DoubleCoda"];
 		const ids = this.landmarks[kind];
 		const known = ids.get(id);
 		if (known) {
 			return known;
 		}
-		const second = kind === 'segno' ? 'segno-segno' : 'double-coda';
+		const second = kind === "segno" ? "segno-segno" : "double-coda";
 		const taken = new Set(ids.values());
 		const name =
 			id === second
@@ -569,12 +509,12 @@ export class GuitarProScoreWriter {
 				continue;
 			}
 			if (swings.some((sound) => (this.soundBeat(measure, sound) ?? 0) > 0)) {
-				this.values.unsupported('mid-measure swing changes');
+				this.values.unsupported("mid-measure swing changes");
 			}
 			feels.add(this.tripletFeel(last.swing!));
 		}
 		if (feels.size > 1) {
-			this.values.unsupported('swing that differs across parts');
+			this.values.unsupported("swing that differs across parts");
 		}
 		return feels.size ? [...feels][0]! : carried;
 	}
@@ -612,17 +552,17 @@ export class GuitarProScoreWriter {
 	private key(parent: MElement, measure: Measure, staff: string): void {
 		const key = measure.getKey(staff);
 		const mode = key?.mode;
-		if (mode && mode !== 'major' && mode !== 'minor') {
+		if (mode && mode !== "major" && mode !== "minor") {
 			this.values.unsupported(`key mode ${mode}`);
 		}
-		const node = X.add(parent, 'Key');
+		const node = X.add(parent, "Key");
 		X.add(
 			node,
-			'AccidentalCount',
-			GuitarProValues.integer(key?.fifths ?? 0, 'key fifths', -7, 7),
+			"AccidentalCount",
+			GuitarProValues.integer(key?.fifths ?? 0, "key fifths", -7, 7),
 		);
-		X.add(node, 'Mode', mode === 'minor' ? 'Minor' : 'Major');
-		X.add(node, 'TransposeAs', (key?.fifths ?? 0) < 0 ? 'Flats' : 'Sharps');
+		X.add(node, "Mode", mode === "minor" ? "Minor" : "Major");
+		X.add(node, "TransposeAs", (key?.fifths ?? 0) < 0 ? "Flats" : "Sharps");
 	}
 	private tempos(measure: Measure): TempoChange[] {
 		const result: TempoChange[] = [];
@@ -637,7 +577,7 @@ export class GuitarProScoreWriter {
 		}
 		const add = (beat: number | null, tempo: number): void => {
 			if (beat == null || beat < 0 || beat >= barBeats) {
-				this.values.unsupported('mid-measure tempo changes');
+				this.values.unsupported("mid-measure tempo changes");
 				return;
 			}
 			result.push({
@@ -667,7 +607,7 @@ export class GuitarProScoreWriter {
 					!Number.isFinite(Number(mark.perMinute)) ||
 					Number(mark.perMinute) <= 0
 				) {
-					this.values.unsupported('non-numeric or compound metronome marks');
+					this.values.unsupported("non-numeric or compound metronome marks");
 					continue;
 				}
 				const duration = GuitarProValues.durations[unit.type];
@@ -681,7 +621,10 @@ export class GuitarProScoreWriter {
 				);
 			}
 		}
-		return result.toSorted((a, b) => a.position - b.position);
+		return result.toSorted(
+			(tempoChange, tempoChange2) =>
+				tempoChange.position - tempoChange2.position,
+		);
 	}
 	/**
 	 * The one `<transpose>` a GPIF track can carry. Written pitches stay as notated;
@@ -695,19 +638,19 @@ export class GuitarProScoreWriter {
 				const current = {
 					chromatic: GuitarProValues.integer(
 						transpose?.chromatic ?? 0,
-						'transpose chromatic',
+						"transpose chromatic",
 						-11,
 						11,
 					),
 					octave: GuitarProValues.integer(
 						transpose?.octaveChange ?? 0,
-						'transpose octave-change',
+						"transpose octave-change",
 						-4,
 						4,
 					),
 				};
 				if (transpose?.double) {
-					this.values.unsupported('<double>');
+					this.values.unsupported("<double>");
 				}
 				if (
 					found &&
@@ -715,7 +658,7 @@ export class GuitarProScoreWriter {
 						found.octave !== current.octave)
 				) {
 					throw new Error(
-						'Guitar Pro export needs one transposition per part, but this part changes it across measures or staves',
+						"Guitar Pro export needs one transposition per part, but this part changes it across measures or staves",
 					);
 				}
 				found = { ...current, shift: 0 };
@@ -747,111 +690,121 @@ export class GuitarProScoreWriter {
 		const first = part.measures[0]!;
 		const tunings = first
 			.getStaffTunings(id)
-			.toSorted((a, b) => a.line - b.line);
-		if (tunings.some((t, i) => t.line !== i + 1)) {
+			.toSorted(
+				(staffTuning, staffTuning2) => staffTuning.line - staffTuning2.line,
+			);
+		if (tunings.some((staffTuning, i) => staffTuning.line !== i + 1)) {
 			throw new Error(
-				'Guitar Pro tuning lines must be consecutive starting at 1',
+				"Guitar Pro tuning lines must be consecutive starting at 1",
 			);
 		}
-		const tuning = tunings.map((t) =>
-			GuitarProValues.integer(t.midi, 'tuning pitch', 0, 127),
+		const tuning = tunings.map((staffTuning) =>
+			GuitarProValues.integer(staffTuning.midi, "tuning pitch", 0, 127),
 		);
 		const capo = GuitarProValues.integer(
 			first.getStaffDetails(id)?.capo ?? 0,
-			'capo',
+			"capo",
 			0,
 			36,
 		);
 		const pitches = new GuitarProPitchWriter(part, id, shift);
 		if (drums && tuning.length) {
-			throw new Error('Guitar Pro percussion staves cannot have a tuning');
+			throw new Error("Guitar Pro percussion staves cannot have a tuning");
 		}
 		const ctx: StaffContext = { id, tuning, capo, pitches, shift, kit };
 		const ottavas = this.effects.ottavas(part, id);
-		const node = X.add(staves, 'Staff');
-		X.addProperty(node, 'CapoFret', 'Fret', tuning.length ? capo : 0);
-		X.addProperty(node, 'FretCount', 'Number', 24);
+		const node = X.add(staves, "Staff");
+		X.addProperty(node, "CapoFret", "Fret", tuning.length ? capo : 0);
+		X.addProperty(node, "FretCount", "Number", 24);
 		const tuningNode = X.addProperty(
 			node,
-			'Tuning',
-			'Pitches',
-			this.staffTuning(drums, tuning, pitches).join(' '),
+			"Tuning",
+			"Pitches",
+			this.staffTuning(drums, tuning, pitches).join(" "),
 		);
-		X.add(tuningNode, 'Instrument', 'Guitar');
-		X.add(tuningNode, 'LabelVisible', 'false');
+		X.add(tuningNode, "Instrument", "Guitar");
+		X.add(tuningNode, "LabelVisible", "false");
 		// Identical chord symbols share one diagram, as Guitar Pro's own do.
 		const diagrams = new Map<string, string | null>();
-		const diagramItems = new MElement('Items');
+		const diagramItems = new MElement("Items");
 		const voiceIds = [
 			...new Set(
-				part.measures.flatMap((m) =>
-					m.notes.filter((n) => n.staff === id).map((n) => n.voice),
+				part.measures.flatMap((measure) =>
+					measure.notes
+						.filter((note) => note.staff === id)
+						.map((note) => note.voice),
 				),
 			),
 		];
 		if (voiceIds.length > 4) {
-			throw new Error('Guitar Pro supports at most four voices per staff');
+			throw new Error("Guitar Pro supports at most four voices per staff");
 		}
 		if (!voiceIds.length) {
-			voiceIds.push('1');
+			voiceIds.push("1");
 		}
 		for (const measure of part.measures) {
 			const current = measure
 				.getStaffTunings(id)
-				.toSorted((a, b) => a.line - b.line)
-				.map((t) => t.midi);
+				.toSorted(
+					(staffTuning, staffTuning2) => staffTuning.line - staffTuning2.line,
+				)
+				.map((staffTuning) => staffTuning.midi);
 			if (
 				JSON.stringify(current) !== JSON.stringify(tuning) ||
 				(measure.getStaffDetails(id)?.capo ?? 0) !== capo
 			) {
 				throw new Error(
-					'Guitar Pro export does not support mid-score tuning or capo changes',
+					"Guitar Pro export does not support mid-score tuning or capo changes",
 				);
 			}
 			if (measure.clefChanges(id).length) {
-				this.values.unsupported('mid-measure clef changes');
+				this.values.unsupported("mid-measure clef changes");
 			}
 			const clef = measure.getClef(id);
 			if (clef?.octaveChange) {
-				this.values.unsupported('octave clefs');
+				this.values.unsupported("octave clefs");
 			}
 			let clefName =
-				!clef || clef.sign === 'TAB' ? 'G2' : `${clef.sign}${clef.line ?? ''}`;
+				!clef || clef.sign === "TAB" ? "G2" : `${clef.sign}${clef.line ?? ""}`;
 			if (drums) {
 				// Unpitched positions read through the clef; percussion and treble agree.
-				if (clef && !['percussion', 'G'].includes(clef.sign)) {
+				if (clef && !["percussion", "G"].includes(clef.sign)) {
 					throw new Error(
-						'Guitar Pro percussion staves need a percussion or treble clef',
+						"Guitar Pro percussion staves need a percussion or treble clef",
 					);
 				}
-				clefName = 'Neutral';
-			} else if (!['G2', 'F4', 'C3', 'C4'].includes(clefName)) {
+				clefName = "Neutral";
+			} else if (!["G2", "F4", "C3", "C4"].includes(clefName)) {
 				throw new Error(`Unsupported Guitar Pro clef: ${clefName}`);
 			}
-			const bar = this.entry('Bars', 'Bar');
-			X.add(bar, 'Clef', clefName);
+			const bar = this.entry("Bars", "Bar");
+			X.add(bar, "Clef", clefName);
 			// GPIF stores the shared key in MasterBar; different staff keys cannot be encoded faithfully.
-			const sharedKey = this.masterBars[measure.index]!.child('Key')!;
+			const sharedKey = this.masterBars[measure.index]!.child("Key")!;
 			if (
-				Number(sharedKey.child('AccidentalCount')!.text) !==
+				Number(sharedKey.child("AccidentalCount")!.text) !==
 					(measure.getKey(id)?.fifths ?? 0) ||
-				sharedKey.child('Mode')!.text!.toLowerCase() !==
-					(measure.getKey(id)?.mode ?? 'major')
+				sharedKey.child("Mode")!.text!.toLowerCase() !==
+					(measure.getKey(id)?.mode ?? "major")
 			) {
-				this.values.unsupported('different keys across staves or parts');
+				this.values.unsupported("different keys across staves or parts");
 			}
-			const masterBars = this.masterBars[measure.index]!.child('Bars')!;
+			const masterBars = this.masterBars[measure.index]!.child("Bars")!;
 			masterBars.setText(
-				[...X.refs(masterBars), bar.getAttribute('id')!].join(' '),
+				[...X.refs(masterBars), bar.getAttribute("id")!].join(" "),
 			);
 			const voices: string[] = [];
-			const harmonies = measure.harmonies.filter((h) => h.staff === id);
+			const harmonies = measure.harmonies.filter(
+				(harmony) => harmony.staff === id,
+			);
 			for (const voiceId of voiceIds) {
-				const voice = this.entry('Voices', 'Voice');
-				voices.push(voice.getAttribute('id')!);
+				const voice = this.entry("Voices", "Voice");
+				voices.push(voice.getAttribute("id")!);
 				const beats: string[] = [];
 				const chords = groupChords(
-					measure.notes.filter((n) => n.staff === id && n.voice === voiceId),
+					measure.notes.filter(
+						(note) => note.staff === id && note.voice === voiceId,
+					),
 				);
 				let cursor = 0;
 				for (const chord of chords) {
@@ -870,7 +823,7 @@ export class GuitarProScoreWriter {
 					const pieces = this.pieces(lead, harmonies);
 					for (const [index, piece] of pieces.entries()) {
 						const beat = this.beat(lead, piece);
-						beats.push(beat.getAttribute('id')!);
+						beats.push(beat.getAttribute("id")!);
 						const notes: string[] = [];
 						for (const note of chord.notes) {
 							if (
@@ -882,7 +835,7 @@ export class GuitarProScoreWriter {
 									JSON.stringify(lead.timeModification)
 							) {
 								throw new Error(
-									'Guitar Pro chord members must share a duration',
+									"Guitar Pro chord members must share a duration",
 								);
 							}
 							if (!note.isRest) {
@@ -890,20 +843,20 @@ export class GuitarProScoreWriter {
 									this.note(note, ctx, {
 										index,
 										count: pieces.length,
-									}).getAttribute('id')!,
+									}).getAttribute("id")!,
 								);
 							} else if (chord.notes.length !== 1) {
-								throw new Error('Guitar Pro chords cannot contain rests');
+								throw new Error("Guitar Pro chords cannot contain rests");
 							}
 						}
 						if (notes.length) {
-							X.add(beat, 'Notes', notes.join(' '));
+							X.add(beat, "Notes", notes.join(" "));
 						}
 						const legato = this.legatos.get(lead);
 						// The later pieces of a split chord carry its slur on to the next one.
 						const destination = index ? legato?.origin : legato?.destination;
 						if (legato && (legato.origin || destination)) {
-							X.add(beat, 'Legato', undefined, {
+							X.add(beat, "Legato", undefined, {
 								origin: String(legato.origin),
 								destination: String(destination),
 							});
@@ -918,7 +871,8 @@ export class GuitarProScoreWriter {
 							);
 						}
 						const harmony = harmonies.findIndex(
-							(h) => Math.abs((h.measureBeat ?? 0) - piece.onset) < 1e-8,
+							(harmony) =>
+								Math.abs((harmony.measureBeat ?? 0) - piece.onset) < 1e-8,
 						);
 						if (harmony >= 0 && !lead.isGrace) {
 							const diagram = this.diagram(
@@ -928,26 +882,26 @@ export class GuitarProScoreWriter {
 								tuning.length || 6,
 							);
 							if (diagram != null) {
-								X.add(beat, 'Chord', diagram);
+								X.add(beat, "Chord", diagram);
 							}
 						}
 					}
 					cursor = onset + (lead.isGrace ? 0 : lead.beats!);
 				}
 				if (!chords.length) {
-					beats.push(this.rhythmBeat('whole', 0).getAttribute('id')!);
+					beats.push(this.rhythmBeat("whole", 0).getAttribute("id")!);
 				}
-				X.add(voice, 'Beats', beats.join(' '));
+				X.add(voice, "Beats", beats.join(" "));
 			}
-			X.add(bar, 'Voices', voices.join(' '));
+			X.add(bar, "Voices", voices.join(" "));
 			for (const _ of harmonies) {
-				this.values.unsupported('several chord symbols on one beat');
+				this.values.unsupported("several chord symbols on one beat");
 			}
 		}
 		if (diagramItems.children.length) {
-			const props = node.child('Properties')!;
-			X.add(props, 'Property', undefined, {
-				name: 'DiagramCollection',
+			const props = node.child("Properties")!;
+			X.add(props, "Property", undefined, {
+				name: "DiagramCollection",
 			}).append(diagramItems);
 		}
 	}
@@ -963,7 +917,12 @@ export class GuitarProScoreWriter {
 			harmony.chords,
 			harmony.printFrame,
 			frame && [frame.strings, frame.frets, frame.firstFret],
-			frame?.frameNotes.map((n) => [n.string, n.fret, n.fingering, n.barre]),
+			frame?.frameNotes.map((frameNote) => [
+				frameNote.string,
+				frameNote.fret,
+				frameNote.fingering,
+				frameNote.barre,
+			]),
 		]);
 		if (!diagrams.has(key)) {
 			const id = String(items.children.length);
@@ -980,20 +939,20 @@ export class GuitarProScoreWriter {
 		dots: number,
 		ratio?: { actual: number; normal: number },
 	): MElement {
-		const beat = this.entry('Beats', 'Beat');
-		const rhythm = this.entry('Rhythms', 'Rhythm');
-		X.add(rhythm, 'NoteValue', type[0]!.toUpperCase() + type.slice(1));
+		const beat = this.entry("Beats", "Beat");
+		const rhythm = this.entry("Rhythms", "Rhythm");
+		X.add(rhythm, "NoteValue", type[0]!.toUpperCase() + type.slice(1));
 		if (dots) {
-			X.add(rhythm, 'AugmentationDot', undefined, { count: String(dots) });
+			X.add(rhythm, "AugmentationDot", undefined, { count: String(dots) });
 		}
 		if (ratio) {
-			X.add(rhythm, 'PrimaryTuplet', undefined, {
+			X.add(rhythm, "PrimaryTuplet", undefined, {
 				num: String(ratio.actual),
 				den: String(ratio.normal),
 			});
 		}
-		X.add(beat, 'Rhythm', undefined, { ref: rhythm.getAttribute('id')! });
-		X.add(beat, 'ConcertPitchStemOrientation', 'Undefined');
+		X.add(beat, "Rhythm", undefined, { ref: rhythm.getAttribute("id")! });
+		X.add(beat, "ConcertPitchStemOrientation", "Undefined");
 		return beat;
 	}
 	/**
@@ -1011,7 +970,7 @@ export class GuitarProScoreWriter {
 		const cuts = [
 			...new Set(
 				harmonies
-					.map((h) => h.measureBeat ?? 0)
+					.map((harmony) => harmony.measureBeat ?? 0)
 					.filter((at) => at > onset + 1e-8 && at < end - 1e-8),
 			),
 		].sort((first, second) => first - second);
@@ -1038,23 +997,23 @@ export class GuitarProScoreWriter {
 	private beat(note: Note, piece?: BeatPiece): MElement {
 		const fullRest =
 			note.isRest &&
-			(note.child('rest')?.getAttribute('measure') === 'yes' ||
-				((note.type === 'whole' || note.type == null) &&
+			(note.child("rest")?.getAttribute("measure") === "yes" ||
+				((note.type === "whole" || note.type == null) &&
 					note.measure.notes.filter(
-						(n) => n.voice === note.voice && n.staff === note.staff,
+						(note2) => note2.voice === note.voice && note2.staff === note.staff,
 					).length === 1));
-		const type = fullRest ? 'whole' : (note.type ?? '');
+		const type = fullRest ? "whole" : (note.type ?? "");
 		const duration = GuitarProValues.durations[type];
 		if (duration == null) {
 			throw new Error(
 				`Guitar Pro export requires a supported note type, got ${note.type}`,
 			);
 		}
-		const dots = GuitarProValues.integer(note.dots, 'augmentation dots', 0, 3);
+		const dots = GuitarProValues.integer(note.dots, "augmentation dots", 0, 3);
 		const ratio = note.timeModification;
 		if (ratio) {
-			GuitarProValues.integer(ratio.actual, 'tuplet numerator', 1, 64);
-			GuitarProValues.integer(ratio.normal, 'tuplet denominator', 1, 64);
+			GuitarProValues.integer(ratio.actual, "tuplet numerator", 1, 64);
+			GuitarProValues.integer(ratio.normal, "tuplet denominator", 1, 64);
 		}
 		if (!note.isGrace) {
 			const expected = fullRest
@@ -1079,7 +1038,7 @@ export class GuitarProScoreWriter {
 			? this.rhythmBeat(piece.type, piece.dots!)
 			: this.rhythmBeat(type, dots, ratio ?? undefined);
 		if (note.isGrace) {
-			X.add(beat, 'GraceNotes', note.graceSlash ? 'BeforeBeat' : 'OnBeat');
+			X.add(beat, "GraceNotes", note.graceSlash ? "BeforeBeat" : "OnBeat");
 		}
 		return beat;
 	}
@@ -1090,7 +1049,7 @@ export class GuitarProScoreWriter {
 		}
 		const peak = (bend.semitones * 50).toFixed(6);
 		const zero = (0).toFixed(6);
-		X.add(beat, 'Whammy', undefined, {
+		X.add(beat, "Whammy", undefined, {
 			originValue: bend.preBend ? peak : zero,
 			middleValue: peak,
 			destinationValue: bend.release ? zero : peak,
@@ -1104,11 +1063,11 @@ export class GuitarProScoreWriter {
 	private isPercussion(part: Part): boolean {
 		const notes = part.measures.flatMap((measure) => measure.notes);
 		const percussion =
-			notes.some((note) => note.child('unpitched')) ||
-			part.measures[0]!.getClef('1')?.sign === 'percussion';
+			notes.some((note) => note.child("unpitched")) ||
+			part.measures[0]!.getClef("1")?.sign === "percussion";
 		if (percussion && notes.some((note) => note.pitch)) {
 			throw new Error(
-				'Guitar Pro tracks cannot mix pitched and unpitched notes',
+				"Guitar Pro tracks cannot mix pitched and unpitched notes",
 			);
 		}
 		return percussion;
@@ -1130,16 +1089,16 @@ export class GuitarProScoreWriter {
 			id == null ? null : (part.getMidiInstrument(id)?.unpitched ?? null);
 		const key = unpitched == null ? null : unpitched - 1;
 		const line = source.unpitched ? staffLineOf(source.unpitched) : null;
-		const notehead = source.notehead?.value ?? 'normal';
+		const notehead = source.notehead?.value ?? "normal";
 		const symbols = [
 			...source.otherTechnicalGlyphs,
 			...(source.bowing
-				? [`strings${source.bowing === 'up' ? 'Up' : 'Down'}Bow`]
+				? [`strings${source.bowing === "up" ? "Up" : "Down"}Bow`]
 				: []),
 		];
-		const type = source.type ?? 'quarter';
+		const type = source.type ?? "quarter";
 		const drawn = (drum: GuitarProDrumArticulation) =>
-			noteheadOfGlyph(drumGlyph(drum, type))?.value ?? 'normal';
+			noteheadOfGlyph(drumGlyph(drum, type))?.value ?? "normal";
 		let best = -1;
 		let bestScore = -1;
 		for (const [index, drum] of guitarProDrumKit.entries()) {
@@ -1171,14 +1130,14 @@ export class GuitarProScoreWriter {
 			}
 			if (best >= 0) {
 				this.values.unsupported(
-					'percussion instruments without a General MIDI drum key',
+					"percussion instruments without a General MIDI drum key",
 				);
 				return best;
 			}
 		}
 		if (best < 0) {
 			throw new Error(
-				'Guitar Pro export needs each unpitched note to have a staff position or name an instrument with a General MIDI drum key (<midi-unpitched>) or a Guitar Pro drum name',
+				"Guitar Pro export needs each unpitched note to have a staff position or name an instrument with a General MIDI drum key (<midi-unpitched>) or a Guitar Pro drum name",
 			);
 		}
 		const standard = guitarProDrumKit[best]!;
@@ -1207,7 +1166,7 @@ export class GuitarProScoreWriter {
 			drum.element === custom.element &&
 			drum.name === custom.name &&
 			drum.staffLine === custom.staffLine &&
-			drum.noteheads.join(' ') === custom.noteheads.join(' ') &&
+			drum.noteheads.join(" ") === custom.noteheads.join(" ") &&
 			drum.techniqueSymbol === custom.techniqueSymbol &&
 			drum.output === custom.output;
 		if (same(standard)) {
@@ -1231,28 +1190,28 @@ export class GuitarProScoreWriter {
 		for (const tie of source.ties) {
 			const partner = tie.partner?.note;
 			if (
-				tie.tieType !== 'let-ring' &&
-				(!partner?.child('unpitched') ||
+				tie.tieType !== "let-ring" &&
+				(!partner?.child("unpitched") ||
 					partner.voice !== source.voice ||
 					partner.staff !== source.staff ||
 					this.drum(partner, kit) !== drum)
 			) {
 				throw new Error(
-					'Guitar Pro ties must connect matching drums in the same voice and staff',
+					"Guitar Pro ties must connect matching drums in the same voice and staff",
 				);
 			}
 		}
-		const node = this.entry('Notes', 'Note');
-		X.add(node, 'InstrumentArticulation', drum);
-		const properties = X.add(node, 'Properties');
-		for (const name of ['ConcertPitch', 'TransposedPitch']) {
+		const node = this.entry("Notes", "Note");
+		X.add(node, "InstrumentArticulation", drum);
+		const properties = X.add(node, "Properties");
+		for (const name of ["ConcertPitch", "TransposedPitch"]) {
 			const pitch = X.add(
-				X.add(properties, 'Property', undefined, { name }),
-				'Pitch',
+				X.add(properties, "Property", undefined, { name }),
+				"Pitch",
 			);
-			X.add(pitch, 'Step', 'C');
-			X.add(pitch, 'Accidental', '');
-			X.add(pitch, 'Octave', -1);
+			X.add(pitch, "Step", "C");
+			X.add(pitch, "Accidental", "");
+			X.add(pitch, "Octave", -1);
 		}
 		this.marks(source, node, piece, false);
 		return node;
@@ -1266,17 +1225,17 @@ export class GuitarProScoreWriter {
 			return this.drumNote(source, staff.kit, piece);
 		}
 		if (!source.pitch) {
-			throw new Error('Guitar Pro export requires pitched notes');
+			throw new Error("Guitar Pro export requires pitched notes");
 		}
 		const writtenMidi = GuitarProValues.midi(source.pitch);
 		const midi = GuitarProValues.integer(
 			writtenMidi + staff.shift,
-			'sounding MIDI pitch',
+			"sounding MIDI pitch",
 			0,
 			127,
 		);
 		for (const tie of source.ties) {
-			if (tie.tieType === 'let-ring') {
+			if (tie.tieType === "let-ring") {
 				continue;
 			}
 			const partner = tie.partner?.note;
@@ -1287,7 +1246,7 @@ export class GuitarProScoreWriter {
 				partner.staff !== source.staff
 			) {
 				throw new Error(
-					'Guitar Pro ties must connect matching pitches in the same voice and staff',
+					"Guitar Pro ties must connect matching pitches in the same voice and staff",
 				);
 			}
 		}
@@ -1300,34 +1259,34 @@ export class GuitarProScoreWriter {
 				source.fret == null
 			) {
 				throw new Error(
-					'Guitar Pro tablature requires tuning, string and fret',
+					"Guitar Pro tablature requires tuning, string and fret",
 				);
 			}
 			string =
 				staff.tuning.length -
 				GuitarProValues.integer(
 					source.string,
-					'string',
+					"string",
 					1,
 					staff.tuning.length,
 				);
-			fret = GuitarProValues.integer(source.fret, 'fret', 0, 99);
+			fret = GuitarProValues.integer(source.fret, "fret", 0, 99);
 			if (staff.tuning[string]! + staff.capo + fret !== midi) {
-				throw new Error('Note pitch disagrees with its string, fret and capo');
+				throw new Error("Note pitch disagrees with its string, fret and capo");
 			}
 		} else {
 			if (staff.tuning.length) {
 				throw new Error(
-					'Every pitched note on a Guitar Pro tablature staff needs a string and fret',
+					"Every pitched note on a Guitar Pro tablature staff needs a string and fret",
 				);
 			}
 			string = staff.pitches.strings.get(source)!;
 			fret = midi - staff.pitches.tuning[string]!;
 		}
-		const node = this.entry('Notes', 'Note');
-		X.addProperty(node, 'String', 'String', string);
-		X.addProperty(node, 'Fret', 'Fret', fret);
-		X.addProperty(node, 'Midi', 'Number', midi);
+		const node = this.entry("Notes", "Note");
+		X.addProperty(node, "String", "String", string);
+		X.addProperty(node, "Fret", "Fret", fret);
+		X.addProperty(node, "Midi", "Number", midi);
 		const concert = GuitarProValues.pitch(midi, {
 			flats: (source.measure.getKey(source.staff)?.fifths ?? 0) < 0,
 		});
@@ -1339,24 +1298,24 @@ export class GuitarProScoreWriter {
 				}
 			: concert;
 		for (const [name, pitch] of [
-			['ConcertPitch', concert],
-			['TransposedPitch', written],
+			["ConcertPitch", concert],
+			["TransposedPitch", written],
 		] as const) {
-			const prop = X.add(node.child('Properties')!, 'Property', undefined, {
+			const prop = X.add(node.child("Properties")!, "Property", undefined, {
 				name,
 			});
-			const p = X.add(prop, 'Pitch');
-			X.add(p, 'Step', pitch.step);
+			const mElement = X.add(prop, "Pitch");
+			X.add(mElement, "Step", pitch.step);
 			X.add(
-				p,
-				'Accidental',
-				({ '-1': 'b', '0': '', '1': '#' } as Record<string, string>)[
+				mElement,
+				"Accidental",
+				({ "-1": "b", "0": "", "1": "#" } as Record<string, string>)[
 					String(pitch.alter)
 				]!,
 			);
-			X.add(p, 'Octave', pitch.octave + 1);
+			X.add(mElement, "Octave", pitch.octave + 1);
 		}
-		X.add(node, 'InstrumentArticulation', 0);
+		X.add(node, "InstrumentArticulation", 0);
 		this.marks(source, node, piece, true);
 		return node;
 	}
@@ -1370,13 +1329,15 @@ export class GuitarProScoreWriter {
 		const start =
 			piece.index < piece.count - 1 ||
 			source.ties.some(
-				(t) => t.tieType === 'start' || t.tieType === 'continue',
+				(tie) => tie.tieType === "start" || tie.tieType === "continue",
 			);
 		const stop =
 			piece.index > 0 ||
-			source.ties.some((t) => t.tieType === 'stop' || t.tieType === 'continue');
+			source.ties.some(
+				(tie) => tie.tieType === "stop" || tie.tieType === "continue",
+			);
 		if (start || stop) {
-			X.add(node, 'Tie', undefined, {
+			X.add(node, "Tie", undefined, {
 				origin: String(start),
 				destination: String(stop),
 			});
@@ -1388,69 +1349,69 @@ export class GuitarProScoreWriter {
 			this.techniques(source, node);
 		}
 		const accent =
-			(source.articulations.includes('staccato') ? 1 : 0) |
-			(source.articulations.includes('strong-accent') ? 4 : 0) |
-			(source.articulations.includes('accent') ? 8 : 0);
+			(source.articulations.includes("staccato") ? 1 : 0) |
+			(source.articulations.includes("strong-accent") ? 4 : 0) |
+			(source.articulations.includes("accent") ? 8 : 0);
 		if (accent) {
-			X.add(node, 'Accent', accent);
+			X.add(node, "Accent", accent);
 		}
 	}
 	private techniques(source: Note, node: MElement): void {
 		const flag = (name: string) => {
-			const prop = X.add(node.child('Properties')!, 'Property', undefined, {
+			const prop = X.add(node.child("Properties")!, "Property", undefined, {
 				name,
 			});
-			X.add(prop, 'Enable');
+			X.add(prop, "Enable");
 		};
 		const notehead = source.notehead;
-		if (notehead?.value === 'x') {
-			flag('Muted');
+		if (notehead?.value === "x") {
+			flag("Muted");
 		}
 		if (source.isPalmMuted) {
-			flag('PalmMuted');
+			flag("PalmMuted");
 		}
 		const harmonic = source.harmonic;
 		if (harmonic) {
-			flag('Harmonic');
+			flag("Harmonic");
 			X.addProperty(
 				node,
-				'HarmonicType',
-				'HType',
+				"HarmonicType",
+				"HType",
 				GuitarProValues.harmonicType(harmonic),
 			);
-			X.addProperty(node, 'HarmonicFret', 'HFret', '12.000000');
+			X.addProperty(node, "HarmonicFret", "HFret", "12.000000");
 		}
 		const bend = source.bend;
 		if (bend && bend.withBar == null) {
 			const peak = bend.semitones * 50;
 			const float = (name: string, value: number) =>
-				X.addProperty(node, name, 'Float', value.toFixed(6));
-			flag('Bended');
-			float('BendOriginValue', bend.preBend ? peak : 0);
-			float('BendOriginOffset', 0);
-			float('BendMiddleValue', peak);
-			float('BendMiddleOffset1', 50);
-			float('BendMiddleOffset2', 50);
-			float('BendDestinationValue', bend.release ? 0 : peak);
-			float('BendDestinationOffset', 100);
+				X.addProperty(node, name, "Float", value.toFixed(6));
+			flag("Bended");
+			float("BendOriginValue", bend.preBend ? peak : 0);
+			float("BendOriginOffset", 0);
+			float("BendMiddleValue", peak);
+			float("BendMiddleOffset1", 50);
+			float("BendMiddleOffset2", 50);
+			float("BendDestinationValue", bend.release ? 0 : peak);
+			float("BendDestinationOffset", 100);
 		}
 		if (notehead?.parentheses) {
-			X.add(node, 'AntiAccent', 'Normal');
+			X.add(node, "AntiAccent", "Normal");
 		}
 		if (source.isLetRing) {
-			X.add(node, 'LetRing');
+			X.add(node, "LetRing");
 		}
 		for (const marker of [...source.hammerOns, ...source.pullOffs]) {
-			const start = marker.getAttribute('type') === 'start';
+			const start = marker.getAttribute("type") === "start";
 			if (this.legatoPartner(source, marker.partner?.note, start)) {
-				flag(start ? 'HopoOrigin' : 'HopoDestination');
+				flag(start ? "HopoOrigin" : "HopoDestination");
 			}
 		}
 		let slide = 0;
 		// Guitar Pro has no glissando of its own, so a glissando writes as the slide it plays as.
 		const slides = [
-			...source.slides.filter((marker) => marker.slideType === 'start'),
-			...source.glissandos.filter((marker) => marker.glissandoType === 'start'),
+			...source.slides.filter((marker) => marker.slideType === "start"),
+			...source.glissandos.filter((marker) => marker.glissandoType === "start"),
 		];
 		for (const marker of slides) {
 			const partner = marker.partner?.note;
@@ -1467,11 +1428,11 @@ export class GuitarProScoreWriter {
 			}
 		}
 		if (slide) {
-			X.addProperty(node, 'Slide', 'Flags', slide);
+			X.addProperty(node, "Slide", "Flags", slide);
 		}
 		const vibrato = this.vibratos.get(source);
 		if (vibrato) {
-			X.add(node, 'Vibrato', vibrato);
+			X.add(node, "Vibrato", vibrato);
 		}
 	}
 	/**
@@ -1482,6 +1443,7 @@ export class GuitarProScoreWriter {
 	 */
 	private legatoPartner(
 		note: Note,
+		// vet-ignore noop-objects-over-null: a legato note with no neighbor is a fact about the score, not a missing collaborator.
 		partner: Note | undefined,
 		starting: boolean,
 	): boolean {
@@ -1496,7 +1458,7 @@ export class GuitarProScoreWriter {
 				from.measure.notes.indexOf(from) >= to.measure.notes.indexOf(to))
 		) {
 			this.values.unsupported(
-				'hammer-ons, pull-offs or slides that do not join consecutive notes of one voice',
+				"hammer-ons, pull-offs or slides that do not join consecutive notes of one voice",
 			);
 			return false;
 		}
@@ -1539,13 +1501,13 @@ export class GuitarProScoreWriter {
 					...note.slides,
 					...note.glissandos,
 				].some((marker) => end && marker.partner?.note === end);
-				if (slur.getAttribute('type') !== 'start' || carried) {
+				if (slur.getAttribute("type") !== "start" || carried) {
 					continue;
 				}
 				const to = end && chords.get(end);
 				if (!to || to.line !== from.line || to.index <= from.index) {
 					this.values.unsupported(
-						'slurs that do not join later notes of one voice',
+						"slurs that do not join later notes of one voice",
 					);
 					continue;
 				}
@@ -1557,7 +1519,7 @@ export class GuitarProScoreWriter {
 				}
 				const covered = from.line.slice(from.index, to.index + 1);
 				if (covered.some((chord) => this.legatos.has(chord.lead))) {
-					this.values.unsupported('slurs that share a note');
+					this.values.unsupported("slurs that share a note");
 					continue;
 				}
 				written.add(span);
@@ -1576,19 +1538,19 @@ export class GuitarProScoreWriter {
 		for (const [index, note] of notes.entries()) {
 			for (const line of note.wavyLines) {
 				// A trill's wavy line extends the trill, which is reported on its own.
-				if (line.wavyLineType !== 'start' || line.parent?.child('trill-mark')) {
+				if (line.wavyLineType !== "start" || line.parent?.child("trill-mark")) {
 					continue;
 				}
 				const end = line.partner?.note;
 				const last = end ? notes.indexOf(end, index) : -1;
 				if (last < 0) {
-					this.values.unsupported('unpaired wavy lines');
+					this.values.unsupported("unpaired wavy lines");
 					continue;
 				}
-				const wide = /wide|large/i.test(line.getAttribute('smufl') ?? '');
+				const wide = /wide|large/i.test(line.getAttribute("smufl") ?? "");
 				for (const covered of notes.slice(index, last + 1)) {
 					if (covered.voice === note.voice && covered.staff === note.staff) {
-						this.vibratos.set(covered, wide ? 'Wide' : 'Slight');
+						this.vibratos.set(covered, wide ? "Wide" : "Slight");
 					}
 				}
 			}
@@ -1608,12 +1570,12 @@ export class GuitarProScoreWriter {
 		)) {
 			const words = direction.words
 				.filter((text) => text && !GRADUAL_TEMPO.test(text.trim()))
-				.join(' ');
+				.join(" ");
 			if (words && !this.isNavigation(direction)) {
-				X.add(beat, 'FreeText', words);
+				X.add(beat, "FreeText", words);
 			}
 		}
-		X.add(beat, 'Dynamic', dynamic);
+		X.add(beat, "Dynamic", dynamic);
 	}
 	/** A segno, coda or jump, which GPIF keeps on its MasterBar rather than as beat text. */
 	private isNavigation(direction: Direction): boolean {
@@ -1634,64 +1596,64 @@ export class GuitarProScoreWriter {
 		for (const [type, duration] of Object.entries(GuitarProValues.durations)) {
 			const size = 4 / duration;
 			while (remaining >= size - 1e-8) {
-				beats.push(this.rhythmBeat(type, 0).getAttribute('id')!);
+				beats.push(this.rhythmBeat(type, 0).getAttribute("id")!);
 				remaining -= size;
 			}
 		}
 		if (Math.abs(remaining) > 1e-8) {
 			throw new Error(
-				'Guitar Pro export cannot represent this gap with ordinary rests',
+				"Guitar Pro export cannot represent this gap with ordinary rests",
 			);
 		}
 	}
 	private checkAnnotations(element: MElement): void {
 		// Measure harmonies are checked as they are written to chord diagrams.
-		if (element.tag === 'harmony' && element.parent?.tag === 'measure') {
+		if (element.tag === "harmony" && element.parent?.tag === "measure") {
 			return;
 		}
 		const unsupported = new Set([
-			'harmony',
-			'fingering',
-			'pluck',
-			'wedge',
-			'pedal',
-			'non-arpeggiate',
-			'senza-misura',
+			"harmony",
+			"fingering",
+			"pluck",
+			"wedge",
+			"pedal",
+			"non-arpeggiate",
+			"senza-misura",
 		]);
 		if (unsupported.has(element.tag)) {
 			this.values.unsupported(`<${element.tag}>`);
 		}
 		// A drum's notehead belongs to its kit articulation.
-		if (element.tag === 'notehead' && !element.parent?.child('unpitched')) {
-			if (!['x', 'normal'].includes(element.text ?? 'normal')) {
+		if (element.tag === "notehead" && !element.parent?.child("unpitched")) {
+			if (!["x", "normal"].includes(element.text ?? "normal")) {
 				this.values.unsupported(`<notehead> ${element.text}`);
 			}
 		}
-		if (element.tag === 'other-technical') {
+		if (element.tag === "other-technical") {
 			// A drum's glyph is the symbol of its kit articulation.
 			const drumGlyph =
-				element.getAttribute('smufl') != null &&
-				element.parent?.parent?.parent?.child('unpitched') != null;
-			if (!drumGlyph && !/^(P\.?M\.?|palm mute)/i.test(element.text ?? '')) {
-				this.values.unsupported('<other-technical>');
+				element.getAttribute("smufl") != null &&
+				element.parent?.parent?.parent?.child("unpitched") != null;
+			if (!drumGlyph && !/^(P\.?M\.?|palm mute)/i.test(element.text ?? "")) {
+				this.values.unsupported("<other-technical>");
 			}
 		}
-		if (element.tag === 'fermata' && element.parent?.tag !== 'notations') {
+		if (element.tag === "fermata" && element.parent?.tag !== "notations") {
 			this.values.unsupported(`<${element.parent?.tag}> fermatas`);
 		}
-		if (element.tag === 'tremolo') {
-			const type = element.getAttribute('type') ?? 'single';
-			if (type !== 'single') {
+		if (element.tag === "tremolo") {
+			const type = element.getAttribute("type") ?? "single";
+			if (type !== "single") {
 				this.values.unsupported(`<tremolo> ${type}`);
 			}
 		}
-		if (element.tag === 'articulations') {
+		if (element.tag === "articulations") {
 			for (const mark of element.childrenOfType(MElement)) {
 				if (
 					![
-						'staccato',
-						'accent',
-						'strong-accent',
+						"staccato",
+						"accent",
+						"strong-accent",
 						...GuitarProValues.slideMarks.map(([, name]) => name),
 					].includes(mark.tag)
 				) {
@@ -1701,37 +1663,37 @@ export class GuitarProScoreWriter {
 		}
 		const supportedChildren: Record<string, string[]> = {
 			notations: [
-				'tied',
-				'tuplet',
-				'technical',
-				'articulations',
-				'fermata',
-				'arpeggiate',
-				'ornaments',
-				'slur',
-				'slide',
-				'glissando',
+				"tied",
+				"tuplet",
+				"technical",
+				"articulations",
+				"fermata",
+				"arpeggiate",
+				"ornaments",
+				"slur",
+				"slide",
+				"glissando",
 			],
-			ornaments: ['tremolo', 'wavy-line'],
+			ornaments: ["tremolo", "wavy-line"],
 			technical: [
-				'string',
-				'fret',
-				'harmonic',
-				'bend',
-				'other-technical',
-				'up-bow',
-				'down-bow',
-				'tap',
-				'hammer-on',
-				'pull-off',
+				"string",
+				"fret",
+				"harmonic",
+				"bend",
+				"other-technical",
+				"up-bow",
+				"down-bow",
+				"tap",
+				"hammer-on",
+				"pull-off",
 			],
-			'direction-type': [
-				'metronome',
-				'dynamics',
-				'words',
-				'segno',
-				'coda',
-				'octave-shift',
+			"direction-type": [
+				"metronome",
+				"dynamics",
+				"words",
+				"segno",
+				"coda",
+				"octave-shift",
 			],
 		};
 		const allowed = supportedChildren[element.tag];
@@ -1746,4 +1708,72 @@ export class GuitarProScoreWriter {
 			this.checkAnnotations(child);
 		}
 	}
+}
+
+/** One beat of a chord split at a harmony: where it starts and, when split, its note value. */
+interface BeatPiece {
+	onset: number;
+	type?: string;
+	dots?: number;
+	size?: number;
+}
+
+/** The longest ordinary note value, dotted up to three times, that fits in `beats`. */
+function noteValueWithin(
+	beats: number,
+): { type: string; dots: number; size: number } | null {
+	for (const [type, duration] of Object.entries(GuitarProValues.durations)) {
+		for (let dots = 3; dots >= 0; dots--) {
+			const size = GuitarProValues.beats(duration, { dots });
+			if (size <= beats + 1e-8) {
+				return { type, dots, size };
+			}
+		}
+	}
+	return null;
+}
+
+/** A tempo automation at a fraction of its bar; linear ramps to the next one. */
+interface TempoChange {
+	position: number;
+	tempo: number;
+	linear: boolean;
+}
+
+/** GPIF `TripletFeel` unit suffixes by the swing unit they divide, in quarter-note beats. */
+const SWING_UNITS: Record<number, string> = { 0.5: "8th", 0.25: "16th" };
+
+/** GPIF `TripletFeel` styles by the on-beat:off-beat ratio they play. */
+const SWING_STYLES: Array<[number, string]> = [
+	[2, "Triplet"],
+	[3, "Dotted"],
+	[1 / 3, "Scottish"],
+];
+
+/** Words that mark a gradual tempo change, like accel. or rit. */
+const GRADUAL_TEMPO = /^(accel|rit|rall|ritard|allarg)/i;
+
+/** The GPIF jump suffix ("AlFine", "AlDoubleCoda", "AlCoda") a D.C. or D.S.'s words spell, or none. */
+function jumpUntil(words: string): string {
+	const until = /al\s+(fine|double\s+coda|coda)/i.exec(words)?.[1];
+	return until ? JUMP_UNTIL[until.toLowerCase().replace(/\s+/, " ")]! : "";
+}
+const JUMP_UNTIL: Record<string, string> = {
+	fine: "AlFine",
+	"double coda": "AlDoubleCoda",
+	coda: "AlCoda",
+};
+
+interface StaffContext {
+	id: string;
+	tuning: number[];
+	capo: number;
+	pitches: GuitarProPitchWriter;
+	/** Semitones from written to sounding pitch, from the part's `<transpose>`. */
+	shift: number;
+	/**
+	 * The drum kit of a staff of unpitched notes: the standard kit, then any
+	 * drums the part draws or names differently; null for a pitched staff.
+	 */
+	kit: GuitarProDrumArticulation[] | null;
 }

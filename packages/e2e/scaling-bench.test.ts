@@ -1,14 +1,14 @@
-import { describe, expect, it } from 'bun:test';
-import { tmpdir } from 'node:os';
-import { GuitarProParser, MDOMParser } from '@stringsync/mdom';
-import { NodeFs, NodePs } from 'webappwiz/system';
+import { describe, expect, it } from "bun:test";
+import { tmpdir } from "node:os";
+import { GuitarProParser, MDOMParser } from "@stringsync/mdom";
+import { NodeFs, NodePs } from "core/system";
 import {
 	measureOperation,
-	operations,
+	type Operation,
 	type Sample,
-} from './scaling-operations';
-import { type CaseResult, formatTable, summarize } from './scaling-report';
-import { repeatScore, scoreCounts, syntheticScore } from './scaling-score';
+} from "./scaling-operations";
+import { type CaseResult, formatTable, summarize } from "./scaling-report";
+import { repeatScore, scoreCounts, syntheticScore } from "./scaling-score";
 
 const parser = new MDOMParser();
 const seedXml = `<score-partwise version="4.0"><part-list><score-part id="P1"><part-name>Seed</part-name></score-part></part-list><part id="P1">
@@ -28,39 +28,51 @@ function sample(elapsedMs: number, heapDeltaBytes: number): Sample {
 	};
 }
 
-describe('scaling benchmark', () => {
-	it('repeats real measures with paired spans and strips dangling truncated endpoints', () => {
+describe("scaling benchmark", () => {
+	it("repeats real measures with paired spans and strips dangling truncated endpoints", () => {
 		const xml = repeatScore(parser.parseFromString(seedXml), 5, 2);
 		const document = parser.parseFromString(xml);
 		expect(document.score.parts.map((part) => part.id)).toEqual([
-			'P1-bench-1',
-			'P1-bench-2',
+			"P1-bench-1",
+			"P1-bench-2",
 		]);
-		for (const part of document.score.parts) {
-			expect(part.measures.map((measure) => measure.number)).toEqual([
-				'1',
-				'2',
-				'3',
-				'4',
-				'5',
-			]);
-			expect(
+		const parts = document.score.parts;
+		expect(
+			parts.map((part) => part.measures.map((measure) => measure.number)),
+		).toEqual([
+			["1", "2", "3", "4", "5"],
+			["1", "2", "3", "4", "5"],
+		]);
+		expect(
+			parts.map((part) =>
 				part.measures.map((measure) => measure.notes[0]!.divisions),
-			).toEqual([1, 1, 1, 1, 1]);
-			for (const measure of part.measures.slice(0, 4)) {
-				const note = measure.notes[0]!;
-				expect(note.slurs[0]!.partner).not.toBeNull();
-				expect(note.ties[0]!.partner).not.toBeNull();
-			}
-			expect(part.measures[4]!.notes[0]!.slurs).toHaveLength(0);
-			expect(part.measures[4]!.notes[0]!.ties).toHaveLength(0);
-		}
+			),
+		).toEqual([
+			[1, 1, 1, 1, 1],
+			[1, 1, 1, 1, 1],
+		]);
+		const pairedNotes = parts.flatMap((part) =>
+			part.measures.slice(0, 4).map((measure) => measure.notes[0]!),
+		);
+		expect(
+			pairedNotes.map((note) => [
+				note.slurs[0]!.partner !== null,
+				note.ties[0]!.partner !== null,
+			]),
+		).toEqual(pairedNotes.map(() => [true, true]));
+		const truncated = parts.map((part) => part.measures[4]!.notes[0]!);
+		expect(
+			truncated.map((note) => [note.slurs.length, note.ties.length]),
+		).toEqual([
+			[0, 0],
+			[0, 0],
+		]);
 		expect((xml.match(/<wedge type="crescendo"/g) ?? []).length).toBe(4);
 		expect((xml.match(/<wedge type="stop"/g) ?? []).length).toBe(4);
 		expect(xml).not.toContain('id="first"');
 	});
 
-	it('generates independent dimensions with aligned voices and complete ties/slurs', () => {
+	it("generates independent dimensions with aligned voices and complete ties/slurs", () => {
 		const xml = syntheticScore(parser.parseFromString(seedXml), {
 			measures: 3,
 			parts: 2,
@@ -75,43 +87,41 @@ describe('scaling benchmark', () => {
 			totalMeasures: 6,
 			totalNotes: 72,
 		});
-		for (const part of parser.parseFromString(xml).score.parts) {
-			for (const measure of part.measures) {
-				expect(measure.endBeat).toBe(4);
-				for (const voice of measure.voices) {
-					expect(voice.notes.map((note) => note.measureBeat)).toEqual([
-						0, 1, 2, 3,
-					]);
-					for (const note of voice.notes) {
-						for (const tie of note.ties) {
-							expect(tie.partner).not.toBeNull();
-						}
-						for (const slur of note.slurs) {
-							expect(slur.partner).not.toBeNull();
-						}
-					}
-				}
-			}
-		}
+		const measures = parser
+			.parseFromString(xml)
+			.score.parts.flatMap((part) => part.measures);
+		expect(measures.map((measure) => measure.endBeat)).toEqual(
+			measures.map(() => 4),
+		);
+		const voices = measures.flatMap((measure) => measure.voices);
+		expect(
+			voices.map((voice) => voice.notes.map((note) => note.measureBeat)),
+		).toEqual(voices.map(() => [0, 1, 2, 3]));
+		const markers = voices.flatMap((voice) =>
+			voice.notes.flatMap((note) => [...note.ties, ...note.slurs]),
+		);
+		expect(markers.map((marker) => marker.partner !== null)).toEqual(
+			markers.map(() => true),
+		);
 	});
 
-	it('uses medians and only compares exact doublings, flagging growth above three', () => {
+	it("uses medians and only compares exact doublings, flagging growth above three", () => {
 		const results: CaseResult[] = [
 			{
-				operation: 'parse',
+				operation: "parse",
 				size: 1,
 				samples: [sample(1, 10), sample(100, 1000), sample(2, 20)],
 			},
-			{ operation: 'parse', size: 2, samples: [sample(8, 80)] },
-			{ operation: 'parse', size: 8, samples: [sample(16, -1)] },
+			{ operation: "parse", size: 2, samples: [sample(8, 80)] },
+			{ operation: "parse", size: 8, samples: [sample(16, -1)] },
 			{
-				operation: 'cursor',
+				operation: "cursor",
 				size: 1,
 				samples: [],
-				error: 'unsupported fixture',
+				error: "unsupported fixture",
 			},
 		];
-		const rows = summarize(results, 'measures');
+		const rows = summarize(results, "measures");
 		expect(rows[0]).toMatchObject({
 			elapsedMs: 2,
 			heapBytes: 20,
@@ -123,88 +133,144 @@ describe('scaling benchmark', () => {
 			flagged: true,
 		});
 		expect(rows[2]).toMatchObject({ timeRatio: null, heapRatio: null });
-		expect(formatTable(rows)).toContain('ERROR: unsupported fixture');
+		expect(formatTable(rows)).toContain("ERROR: unsupported fixture");
 	});
 
-	for (const operation of operations) {
-		it(`runs ${operation} on a tiny fixture and reports finite metrics`, async () => {
-			const files = new NodeFs();
-			const seed =
-				operation === 'gp-parse' ||
-				operation === 'gpif-parse' ||
-				operation === 'serialize-gp'
-					? await new GuitarProParser().parseFromBytes(
-							await files.readBytes(
-								`${import.meta.dir}/../mdom/fixtures/guitar-pro/notes.gp`,
-							),
-						)
-					: parser.parseFromString(seedXml);
-			const xml = syntheticScore(seed, {
-				measures: 1,
-				parts: 1,
-				voices: 1,
-				notes: 2,
-			});
-			const result = await measureOperation(operation, xml, 4);
-			expect(Number.isFinite(result.elapsedMs)).toBe(true);
-			expect(Number.isFinite(result.heapAfterBytes)).toBe(true);
-			expect(result.elapsedMs).toBeGreaterThanOrEqual(0);
-			if (operation === 'history') {
-				expect(result.history?.entries).toBe(4);
-				expect(result.checksum).toBe(4);
-				expect(result.phasesMs).toBeDefined();
-			} else if (operation === 'cursor') {
-				expect(result.checksum).toBe(2);
-			} else if (operation === 'span-add') {
-				expect(result.workUnits).toBe(3);
-				expect(result.checksum).toBeGreaterThanOrEqual(3);
-			} else if (operation.startsWith('edit-')) {
-				expect(result.workUnits).toBe(operation === 'edit-remove-read' ? 2 : 4);
-				expect(result.checksum).toBe(result.workUnits);
-			}
-		}, 30000);
-	}
+	const runTiny = async (operation: Operation) => {
+		const files = new NodeFs();
+		const seed =
+			operation === "gp-parse" ||
+			operation === "gpif-parse" ||
+			operation === "serialize-gp"
+				? await new GuitarProParser().parseFromBytes(
+						await files.readBytes(
+							`${import.meta.dir}/../mdom/fixtures/guitar-pro/notes.gp`,
+						),
+					)
+				: parser.parseFromString(seedXml);
+		const xml = syntheticScore(seed, {
+			measures: 1,
+			parts: 1,
+			voices: 1,
+			notes: 2,
+		});
+		const result = await measureOperation(operation, xml, 4);
+		expect(Number.isFinite(result.elapsedMs)).toBe(true);
+		expect(Number.isFinite(result.heapAfterBytes)).toBe(true);
+		expect(result.elapsedMs).toBeGreaterThanOrEqual(0);
+		return result;
+	};
 
-	it('repeats the largest real XML seed at a truncated boundary', async () => {
+	it("runs parse on a tiny fixture and reports finite metrics", async () => {
+		await runTiny("parse");
+	}, 30000);
+
+	it("runs mxl-unzip on a tiny fixture and reports finite metrics", async () => {
+		await runTiny("mxl-unzip");
+	}, 30000);
+
+	it("runs gp-parse on a tiny fixture and reports finite metrics", async () => {
+		await runTiny("gp-parse");
+	}, 30000);
+
+	it("runs gpif-parse on a tiny fixture and reports finite metrics", async () => {
+		await runTiny("gpif-parse");
+	}, 30000);
+
+	it("runs serialize-xml on a tiny fixture and reports finite metrics", async () => {
+		await runTiny("serialize-xml");
+	}, 30000);
+
+	it("runs serialize-mxl on a tiny fixture and reports finite metrics", async () => {
+		await runTiny("serialize-mxl");
+	}, 30000);
+
+	it("runs serialize-gp on a tiny fixture and reports finite metrics", async () => {
+		await runTiny("serialize-gp");
+	}, 30000);
+
+	it("runs read-walk on a tiny fixture and reports finite metrics", async () => {
+		await runTiny("read-walk");
+	}, 30000);
+
+	it("runs cursor on a tiny fixture and reports finite metrics", async () => {
+		const result = await runTiny("cursor");
+		expect(result.checksum).toBe(2);
+	}, 30000);
+
+	it("runs edit-insert-read on a tiny fixture and reports finite metrics", async () => {
+		const result = await runTiny("edit-insert-read");
+		expect(result.workUnits).toBe(4);
+		expect(result.checksum).toBe(result.workUnits);
+	}, 30000);
+
+	it("runs edit-remove-read on a tiny fixture and reports finite metrics", async () => {
+		const result = await runTiny("edit-remove-read");
+		expect(result.workUnits).toBe(2);
+		expect(result.checksum).toBe(result.workUnits);
+	}, 30000);
+
+	it("runs edit-set-read on a tiny fixture and reports finite metrics", async () => {
+		const result = await runTiny("edit-set-read");
+		expect(result.workUnits).toBe(4);
+		expect(result.checksum).toBe(result.workUnits);
+	}, 30000);
+
+	it("runs span-add on a tiny fixture and reports finite metrics", async () => {
+		const result = await runTiny("span-add");
+		expect(result.workUnits).toBe(3);
+		expect(result.checksum).toBeGreaterThanOrEqual(3);
+	}, 30000);
+
+	it("runs history on a tiny fixture and reports finite metrics", async () => {
+		const result = await runTiny("history");
+		expect(result.history?.entries).toBe(4);
+		expect(result.checksum).toBe(4);
+		expect(result.phasesMs).toBeDefined();
+	}, 30000);
+
+	it("repeats the largest real XML seed at a truncated boundary", async () => {
 		const files = new NodeFs();
 		const seed = parser.parseFromString(
 			await files.read(`${import.meta.dir}/examples/actor_prelude_sample.xml`),
 		);
 		const document = parser.parseFromString(repeatScore(seed, 1));
 		expect(document.score.parts).toHaveLength(seed.score.parts.length);
-		for (const part of document.score.parts) {
-			expect(part.measures).toHaveLength(1);
-			for (const note of part.measures[0]!.notes) {
-				for (const marker of [...note.slurs, ...note.ties]) {
-					expect(marker.partner).not.toBeNull();
-				}
-			}
-		}
+		const parts = document.score.parts;
+		expect(parts.map((part) => part.measures.length)).toEqual(
+			parts.map(() => 1),
+		);
+		const markers = parts.flatMap((part) =>
+			part.measures[0]!.notes.flatMap((note) => [...note.slurs, ...note.ties]),
+		);
+		expect(markers.map((marker) => marker.partner !== null)).toEqual(
+			markers.map(() => true),
+		);
 	}, 30000);
 
-	it('writes machine-readable doubling results from isolated child samples', async () => {
+	it("writes machine-readable doubling results from isolated child samples", async () => {
 		const processes = new NodePs();
 		const files = new NodeFs();
 		const outputPath = `${tmpdir()}/mdom-scaling-test-${processes.pid}.json`;
 		try {
 			const result = await processes.spawnCapture([
-				'bun',
+				"bun",
 				`${import.meta.dir}/scaling.bench.ts`,
-				'--operation',
-				'read-walk',
-				'--base',
-				'1',
-				'--steps',
-				'2',
-				'--samples',
-				'1',
-				'--json',
+				"--operation",
+				"read-walk",
+				"--base",
+				"1",
+				"--steps",
+				"2",
+				"--samples",
+				"1",
+				"--json",
 				outputPath,
 			]);
 			expect(result.exitCode).toBe(0);
 			const report = JSON.parse(await files.read(outputPath));
 			expect(report.schemaVersion).toBe(1);
-			expect(report.isolation).toBe('fresh process per sample');
+			expect(report.isolation).toBe("fresh process per sample");
 			expect(report.results.map((row: CaseResult) => row.size)).toEqual([1, 2]);
 			expect(report.summary[1].timeRatio).toBeGreaterThan(0);
 		} finally {
@@ -212,16 +278,16 @@ describe('scaling benchmark', () => {
 		}
 	}, 30000);
 
-	it('runs a single profiled case through the CLI and rejects invalid options', async () => {
+	it("runs a single profiled case through the CLI and rejects invalid options", async () => {
 		const processes = new NodePs();
 		const success = await processes.spawnCapture([
-			'bun',
+			"bun",
 			`${import.meta.dir}/scaling.bench.ts`,
-			'--operation',
-			'parse',
-			'--size',
-			'1',
-			'--sample',
+			"--operation",
+			"parse",
+			"--size",
+			"1",
+			"--sample",
 		]);
 		expect(success.exitCode).toBe(0);
 		const result = JSON.parse(success.stdout) as CaseResult;
@@ -229,10 +295,10 @@ describe('scaling benchmark', () => {
 		expect(result.counts?.measures).toBe(1);
 		expect(result.samples).toHaveLength(1);
 		const invalid = await processes.spawnCapture([
-			'bun',
+			"bun",
 			`${import.meta.dir}/scaling.bench.ts`,
-			'--size',
-			'0',
+			"--size",
+			"0",
 		]);
 		expect(invalid.exitCode).not.toBe(0);
 	}, 30000);

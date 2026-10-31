@@ -1,4 +1,4 @@
-import type { Note } from './note';
+import type { Note } from "./note";
 
 /**
  * Notes sounding at one onset: a lead note plus its `<chord/>` members. A grouped

@@ -1,4 +1,19 @@
-import { MElement } from './m-node';
+import { MElement } from "./m-element";
+
+/** Insert after peers, before later members of a schema sequence. */
+export function insertMetadata(
+	parent: MElement,
+	node: MElement,
+	order: readonly string[],
+): void {
+	const rank = order.indexOf(node.tag);
+	parent.insertBefore(
+		node,
+		parent.children.find(
+			(child) => child instanceof MElement && order.indexOf(child.tag) > rank,
+		) ?? null,
+	);
+}
 
 /** Dublin Core text and its optional, open-ended role (composer, lyricist, etc.). */
 export interface TypedText {
@@ -12,27 +27,27 @@ export interface TypedTextSpec {
 
 /** Raw MusicXML formatting attributes; unspecified formatting is inherited. */
 export interface TextFormatting {
-	'font-family'?: string;
-	'font-style'?: 'normal' | 'italic';
-	'font-size'?: string;
-	'font-weight'?: 'normal' | 'bold';
+	"font-family"?: string;
+	"font-style"?: "normal" | "italic";
+	"font-size"?: string;
+	"font-weight"?: "normal" | "bold";
 	color?: string;
-	'default-x'?: string;
-	'default-y'?: string;
-	'relative-x'?: string;
-	'relative-y'?: string;
-	justify?: 'left' | 'center' | 'right';
-	halign?: 'left' | 'center' | 'right';
-	valign?: 'top' | 'middle' | 'bottom' | 'baseline';
-	'xml:lang'?: string;
-	'xml:space'?: 'default' | 'preserve';
+	"default-x"?: string;
+	"default-y"?: string;
+	"relative-x"?: string;
+	"relative-y"?: string;
+	justify?: "left" | "center" | "right";
+	halign?: "left" | "center" | "right";
+	valign?: "top" | "middle" | "bottom" | "baseline";
+	"xml:lang"?: string;
+	"xml:space"?: "default" | "preserve";
 	underline?: string;
 	overline?: string;
-	'line-through'?: string;
+	"line-through"?: string;
 	rotation?: string;
-	'letter-spacing'?: string;
-	'line-height'?: string;
-	dir?: 'ltr' | 'rtl' | 'lro' | 'rlo';
+	"letter-spacing"?: string;
+	"line-height"?: string;
+	dir?: "ltr" | "rtl" | "lro" | "rlo";
 	enclosure?: string;
 	id?: string;
 }
@@ -45,13 +60,13 @@ export interface FormattedTextSpec {
 	format?: TextFormatting;
 }
 export interface EncodingSupport {
-	type: 'yes' | 'no' | null;
+	type: "yes" | "no" | null;
 	element: string | null;
 	attribute: string | null;
 	value: string | null;
 }
 export interface EncodingSupportSpec {
-	type: 'yes' | 'no';
+	type: "yes" | "no";
 	element: string;
 	attribute?: string;
 	value?: string;
@@ -88,62 +103,47 @@ export interface CreditSpec {
 	words: readonly [FormattedTextSpec, ...FormattedTextSpec[]];
 }
 export interface NameDisplay {
-	printObject: 'yes' | 'no' | null;
-	runs: (FormattedText & { kind: 'display-text' | 'accidental-text' })[];
+	printObject: "yes" | "no" | null;
+	runs: (FormattedText & { kind: "display-text" | "accidental-text" })[];
 }
 export interface NameDisplaySpec {
-	printObject?: 'yes' | 'no';
+	printObject?: "yes" | "no";
 	runs: readonly (FormattedTextSpec & {
-		kind: 'display-text' | 'accidental-text';
+		kind: "display-text" | "accidental-text";
 	})[];
 }
 
 export const headerOrder = [
-	'work',
-	'movement-number',
-	'movement-title',
-	'identification',
-	'defaults',
-	'credit',
-	'part-list',
-	'part',
+	"work",
+	"movement-number",
+	"movement-title",
+	"identification",
+	"defaults",
+	"credit",
+	"part-list",
+	"part",
 ];
 export const identificationOrder = [
-	'creator',
-	'rights',
-	'encoding',
-	'source',
-	'relation',
-	'miscellaneous',
+	"creator",
+	"rights",
+	"encoding",
+	"source",
+	"relation",
+	"miscellaneous",
 ];
 export const partMetadataOrder = [
-	'identification',
-	'part-link',
-	'part-name',
-	'part-name-display',
-	'part-abbreviation',
-	'part-abbreviation-display',
-	'group',
-	'score-instrument',
-	'player',
-	'midi-device',
-	'midi-instrument',
+	"identification",
+	"part-link",
+	"part-name",
+	"part-name-display",
+	"part-abbreviation",
+	"part-abbreviation-display",
+	"group",
+	"score-instrument",
+	"player",
+	"midi-device",
+	"midi-instrument",
 ];
-
-/** Insert after peers, before later members of a schema sequence. */
-export function insertMetadata(
-	parent: MElement,
-	node: MElement,
-	order: readonly string[],
-): void {
-	const rank = order.indexOf(node.tag);
-	parent.insertBefore(
-		node,
-		parent.children.find(
-			(child) => child instanceof MElement && order.indexOf(child.tag) > rank,
-		) ?? null,
-	);
-}
 export function ensureMetadata(
 	parent: MElement,
 	tag: string,
@@ -175,7 +175,7 @@ export function typedTexts(
 ): TypedText[] {
 	return (parent?.childrenNamed(tag) ?? []).map((node) => ({
 		text: node.text,
-		type: node.getAttribute('type'),
+		type: node.getAttribute("type"),
 	}));
 }
 export function addTypedText(
@@ -187,7 +187,7 @@ export function addTypedText(
 	const node = new MElement(tag);
 	node.setText(spec.text);
 	if (spec.type !== undefined) {
-		node.setAttribute('type', spec.type);
+		node.setAttribute("type", spec.type);
 	}
 	insertMetadata(parent, node, order);
 	return node;
@@ -210,13 +210,13 @@ export function nameDisplay(node: MElement | null): NameDisplay | null {
 	if (!node) {
 		return null;
 	}
-	const print = node.getAttribute('print-object');
+	const print = node.getAttribute("print-object");
 	return {
-		printObject: print === 'yes' || print === 'no' ? print : null,
+		printObject: print === "yes" || print === "no" ? print : null,
 		runs: node
 			.childrenOfType(MElement)
 			.flatMap((child) =>
-				child.tag === 'display-text' || child.tag === 'accidental-text'
+				child.tag === "display-text" || child.tag === "accidental-text"
 					? [{ ...formattedText(child), kind: child.tag }]
 					: [],
 			),

@@ -7,27 +7,27 @@ import {
 	MusicXMLSerializer,
 	MXLSerializer,
 	type Note,
-} from '@stringsync/mdom';
-import { SystemClock } from 'webappwiz/time';
-import { ArchiveReader } from '../mdom/archive-reader';
-import { required } from '../mdom/m-node';
-import { onsetsIn } from '../mdom/timeline';
+} from "@stringsync/mdom";
+import { SystemClock } from "core/time";
+import { ArchiveReader } from "../mdom/archive-reader";
+import { required } from "../mdom/m-node";
+import { onsetsIn } from "../mdom/timeline";
 
 export const operations = [
-	'parse',
-	'mxl-unzip',
-	'gp-parse',
-	'gpif-parse',
-	'serialize-xml',
-	'serialize-mxl',
-	'serialize-gp',
-	'read-walk',
-	'cursor',
-	'edit-insert-read',
-	'edit-remove-read',
-	'edit-set-read',
-	'span-add',
-	'history',
+	"parse",
+	"mxl-unzip",
+	"gp-parse",
+	"gpif-parse",
+	"serialize-xml",
+	"serialize-mxl",
+	"serialize-gp",
+	"read-walk",
+	"cursor",
+	"edit-insert-read",
+	"edit-remove-read",
+	"edit-set-read",
+	"span-add",
+	"history",
 ] as const;
 export type Operation = (typeof operations)[number];
 
@@ -131,9 +131,9 @@ function importInput(
 	document: MDocument,
 ): Promise<ImportInput> {
 	if (
-		operation !== 'mxl-unzip' &&
-		operation !== 'gp-parse' &&
-		operation !== 'gpif-parse'
+		operation !== "mxl-unzip" &&
+		operation !== "gp-parse" &&
+		operation !== "gpif-parse"
 	) {
 		return Promise.resolve({});
 	}
@@ -151,10 +151,10 @@ function importInput(
 }
 
 async function buildImportInput(
-	operation: 'mxl-unzip' | 'gp-parse' | 'gpif-parse',
+	operation: "mxl-unzip" | "gp-parse" | "gpif-parse",
 	document: MDocument,
 ): Promise<ImportInput> {
-	if (operation === 'mxl-unzip') {
+	if (operation === "mxl-unzip") {
 		return {
 			archiveBytes: new Uint8Array(
 				await (
@@ -165,15 +165,15 @@ async function buildImportInput(
 	}
 	const archiveBytes = await new GuitarProSerializer().serializeToBytes(
 		document,
-		{ unsupported: 'omit' },
+		{ unsupported: "omit" },
 	);
-	if (operation === 'gp-parse') {
+	if (operation === "gp-parse") {
 		return { archiveBytes };
 	}
 	return {
 		gpif: required(
-			await (await ArchiveReader.load(archiveBytes)).text('Content/score.gpif'),
-			'GP archive score.gpif',
+			await (await ArchiveReader.load(archiveBytes)).text("Content/score.gpif"),
+			"GP archive score.gpif",
 		),
 	};
 }
@@ -192,77 +192,77 @@ export async function measureOperation(
 	const measures = document.score.parts.flatMap((part) => [...part.measures]);
 	const notes = measures.flatMap((measure) => measure.notes);
 	if (!notes.length) {
-		throw new Error('Benchmark requires at least one note');
+		throw new Error("Benchmark requires at least one note");
 	}
-	const history = operation === 'history' ? document.history : undefined;
+	const history = operation === "history" ? document.history : undefined;
 	const editCount = edits || notes.length;
 	const heapBeforeBytes = heapUsed();
 	let checksum = 0;
 	let workUnits = notes.length;
 	let retained: unknown;
-	let phasesMs: Sample['phasesMs'];
-	let historyMetrics: Sample['history'];
+	let phasesMs: Sample["phasesMs"];
+	let historyMetrics: Sample["history"];
 	let heapAfterBytes: number;
 	let elapsedMs: number;
 	const started = clock.now();
 	switch (operation) {
-		case 'parse':
+		case "parse":
 			retained = parser.parseFromString(xml);
 			break;
-		case 'mxl-unzip': {
+		case "mxl-unzip": {
 			const archive = await ArchiveReader.load(archiveBytes!);
-			retained = await archive.text('score.musicxml');
+			retained = await archive.text("score.musicxml");
 			break;
 		}
-		case 'gp-parse':
+		case "gp-parse":
 			retained = await new GuitarProParser().parseFromBytes(archiveBytes!);
 			break;
-		case 'gpif-parse':
+		case "gpif-parse":
 			retained = parser.parseFromString(gpif!);
 			break;
-		case 'serialize-xml':
+		case "serialize-xml":
 			retained = new MusicXMLSerializer().serializeToString(document);
 			break;
-		case 'serialize-mxl':
+		case "serialize-mxl":
 			retained = await new MXLSerializer().serializeToBlob(document);
 			break;
-		case 'serialize-gp':
+		case "serialize-gp":
 			retained = await new GuitarProSerializer().serializeToBytes(document, {
-				unsupported: 'omit',
+				unsupported: "omit",
 			});
 			break;
-		case 'read-walk':
+		case "read-walk":
 			checksum = readWalk(document);
 			break;
-		case 'cursor':
+		case "cursor":
 			checksum = cursorWalk(document);
 			workUnits = checksum;
 			break;
-		case 'edit-insert-read':
-		case 'edit-remove-read':
-		case 'edit-set-read': {
+		case "edit-insert-read":
+		case "edit-remove-read":
+		case "edit-set-read": {
 			// Exactly one read after each edit. Read the far end of the same part,
 			// exposing invalidation without accidentally timing an entire read walk.
 			const sentinels = new Map(
 				document.score.parts.map((part) => [part, part.measures.at(-1)!]),
 			);
 			workUnits =
-				operation === 'edit-remove-read'
+				operation === "edit-remove-read"
 					? Math.min(editCount, notes.length)
 					: editCount;
 			for (let editIndex = 0; editIndex < workUnits; editIndex++) {
 				const note = notes[editIndex % notes.length]!;
 				const measure = note.parent as (typeof measures)[number];
 				const sentinel = sentinels.get(measure.part)!;
-				if (operation === 'edit-insert-read') {
+				if (operation === "edit-insert-read") {
 					measure
-						.getOrCreateVoice('1')
-						.addNote({ step: 'C', octave: 4, type: 'quarter' });
-				} else if (operation === 'edit-remove-read') {
+						.getOrCreateVoice("1")
+						.addNote({ step: "C", octave: 4, type: "quarter" });
+				} else if (operation === "edit-remove-read") {
 					note.remove();
 				} else {
 					note.setPitch({
-						step: note.pitch?.step === 'C' ? 'D' : 'C',
+						step: note.pitch?.step === "C" ? "D" : "C",
 						octave: 5,
 					});
 				}
@@ -270,7 +270,7 @@ export async function measureOperation(
 			}
 			break;
 		}
-		case 'span-add': {
+		case "span-add": {
 			// A slur, tuplet and tie between each pair of neighboring notes in a
 			// part: three interleaved kinds, each number allocated against the
 			// spans already added.
@@ -288,13 +288,13 @@ export async function measureOperation(
 			}
 			break;
 		}
-		case 'history': {
+		case "history": {
 			workUnits = editCount;
 			for (let editIndex = 0; editIndex < editCount; editIndex++) {
 				const note = notes[editIndex % notes.length]!;
 				history!.edit(`pitch ${editIndex}`, () =>
 					note.setPitch({
-						step: note.pitch?.step === 'C' ? 'D' : 'C',
+						step: note.pitch?.step === "C" ? "D" : "C",
 						octave: 5,
 					}),
 				);
@@ -345,13 +345,13 @@ export async function measureOperation(
 	elapsedMs = clock.now().subtract(started).ms;
 	heapAfterBytes = heapUsed();
 	// Keep outputs live across GC. Observe them after measuring, outside the timer.
-	if (typeof retained === 'string') {
+	if (typeof retained === "string") {
 		checksum += retained.length;
 	} else if (retained instanceof Uint8Array) {
 		checksum += retained.byteLength;
 	} else if (retained instanceof Blob) {
 		checksum += retained.size;
-	} else if (operation === 'gpif-parse') {
+	} else if (operation === "gpif-parse") {
 		checksum += (retained as MDocument).root.children.length;
 	} else if (retained) {
 		checksum += (retained as MDocument).score.parts.length;

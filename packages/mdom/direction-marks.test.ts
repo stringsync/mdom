@@ -1,11 +1,12 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './m-dom-parser';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser } from "./m-dom-parser";
 
-// The <direction-type> children a renderer draws: dynamics named by TAG, a
-// rehearsal mark, styled words, the segno/coda landmarks, and the two spanners
-// (bracket, dashes) that pair start/stop like a wedge. The <staff> child decides
-// which staff of a multi-staff part the directive prints over.
-const SAMPLE = `<score-partwise><part id="P1">
+describe("direction, the printable direction-type children", () => {
+	// The <direction-type> children a renderer draws: dynamics named by TAG, a
+	// rehearsal mark, styled words, the segno/coda landmarks, and the two spanners
+	// (bracket, dashes) that pair start/stop like a wedge. The <staff> child decides
+	// which staff of a multi-staff part the directive prints over.
+	const SAMPLE = `<score-partwise><part id="P1">
   <measure number="1">
     <attributes><divisions>4</divisions><staves>2</staves></attributes>
     <direction placement="below">
@@ -31,41 +32,40 @@ const SAMPLE = `<score-partwise><part id="P1">
   </measure>
 </part></score-partwise>`;
 
-describe('direction — the printable direction-type children', () => {
-	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
-	const [dynamic, marks] = part.getMeasure('1')!.directions;
-	const closing = part.getMeasure('2')!.directions[0]!;
+	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart("P1")!;
+	const [dynamic, marks] = part.getMeasure("1")!.directions;
+	const closing = part.getMeasure("2")!.directions[0]!;
 
-	it('names each dynamic by its tag, and <other-dynamics> by its text', () => {
-		expect(dynamic!.dynamics[0]!.marks).toEqual(['sfz', 'p', 'fp-ish']);
-		expect(dynamic!.dynamics[0]!.placement).toBe('below');
+	it("names each dynamic by its tag, and <other-dynamics> by its text", () => {
+		expect(dynamic!.dynamics[0]!.marks).toEqual(["sfz", "p", "fp-ish"]);
+		expect(dynamic!.dynamics[0]!.placement).toBe("below");
 		expect(marks!.dynamics).toEqual([]);
 	});
 
-	it('reads the staff a direction prints over, defaulting to 1 like a note', () => {
-		expect(dynamic!.staff).toBe('2');
-		expect(marks!.staff).toBe('1');
-		expect(marks!.placement).toBe('above');
+	it("reads the staff a direction prints over, defaulting to 1 like a note", () => {
+		expect(dynamic!.staff).toBe("2");
+		expect(marks!.staff).toBe("1");
+		expect(marks!.placement).toBe("above");
 		expect(closing.placement).toBeNull();
 	});
 
-	it('reads the rehearsal mark and its enclosure', () => {
-		expect(marks!.rehearsals[0]!.text).toBe('A');
-		expect(marks!.rehearsals[0]!.enclosure).toBe('circle');
+	it("reads the rehearsal mark and its enclosure", () => {
+		expect(marks!.rehearsals[0]!.text).toBe("A");
+		expect(marks!.rehearsals[0]!.enclosure).toBe("circle");
 	});
 
-	it('reads words with their font attributes and normalized color', () => {
+	it("reads words with their font attributes and normalized color", () => {
 		const words = marks!.wordsElements[0]!;
-		expect(words.text).toBe('cresc.');
-		expect(words.fontStyle).toBe('italic');
-		expect(words.fontWeight).toBe('bold');
-		expect(words.color).toBe('#00FF00'); // #AARRGGBB, alpha first, dropped
-		expect(marks!.words).toEqual(['cresc.']);
+		expect(words.text).toBe("cresc.");
+		expect(words.fontStyle).toBe("italic");
+		expect(words.fontWeight).toBe("bold");
+		expect(words.color).toBe("#00FF00"); // #AARRGGBB, alpha first, dropped
+		expect(marks!.words).toEqual(["cresc."]);
 	});
 
-	it('lists the segno/coda landmarks a D.S. jumps to', () => {
-		expect(marks!.navigations).toEqual(['segno']);
-		expect(closing.navigations).toEqual(['coda']);
+	it("lists the segno/coda landmarks a D.S. jumps to", () => {
+		expect(marks!.navigations).toEqual(["segno"]);
+		expect(closing.navigations).toEqual(["coda"]);
 		expect(dynamic!.navigations).toEqual([]);
 	});
 });

@@ -1,16 +1,17 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './m-dom-parser';
-import type { Note } from './note';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser } from "./m-dom-parser";
+import type { Note } from "./note";
 
-const slurNote = (note: Note, type: 'start' | 'stop'): Note | null =>
-	note.slurs.find((s) => s.slurType === type)?.partner?.note ?? null;
+describe("Slur.partner, spanner pairing as a query", () => {
+	const slurNote = (note: Note, type: "start" | "stop"): Note | null =>
+		note.slurs.find((slur) => slur.slurType === type)?.partner?.note ?? null;
 
-const step = (note: Note | null): string | null => note?.pitch?.step ?? null;
+	const step = (note: Note | null): string | null => note?.pitch?.step ?? null;
 
-// One part. m1 has a self-contained slur; m2→m3 a cross-measure slur reusing
-// number 1; m4 has nested slurs (1 and 2). If pairing were naive, the reused
-// number or the nesting would mis-resolve.
-const SAMPLE = `<score-partwise>
+	// One part. m1 has a self-contained slur; m2→m3 a cross-measure slur reusing
+	// number 1; m4 has nested slurs (1 and 2). If pairing were naive, the reused
+	// number or the nesting would mis-resolve.
+	const SAMPLE = `<score-partwise>
   <part id="P1">
     <measure number="1">
       <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration>
@@ -38,35 +39,36 @@ const SAMPLE = `<score-partwise>
   </part>
 </score-partwise>`;
 
-describe('Slur.partner — spanner pairing as a query', () => {
-	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
-	const notesOf = (n: string): Note[] => part.getMeasure(n)!.notes;
+	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart("P1")!;
+	const notesOf = (count: string): Note[] => part.getMeasure(count)!.notes;
 
-	it('pairs a slur within one measure, both directions', () => {
-		const [c, , e] = notesOf('1');
-		expect(step(slurNote(c!, 'start'))).toBe('E'); // C's start → E's stop
-		expect(step(slurNote(e!, 'stop'))).toBe('C'); // E's stop → C's start
+	it("pairs a slur within one measure, both directions", () => {
+		const [child, , entry] = notesOf("1");
+		expect(step(slurNote(child!, "start"))).toBe("E"); // C's start → E's stop
+		expect(step(slurNote(entry!, "stop"))).toBe("C"); // E's stop → C's start
 	});
 
-	it('pairs a slur across measures', () => {
-		const f = notesOf('2')[0]!;
-		const g = notesOf('3')[0]!;
-		expect(step(slurNote(f, 'start'))).toBe('G');
-		expect(step(slurNote(g, 'stop'))).toBe('F');
+	it("pairs a slur across measures", () => {
+		const note = notesOf("2")[0]!;
+		const note2 = notesOf("3")[0]!;
+		expect(step(slurNote(note, "start"))).toBe("G");
+		expect(step(slurNote(note2, "stop"))).toBe("F");
 	});
 
-	it('does not let a reused number cross-link slurs', () => {
+	it("does not let a reused number cross-link slurs", () => {
 		// C(m1) and F(m2) both open number 1. C must pair with E, not jump to G.
-		const c = notesOf('1')[0]!;
-		expect(step(slurNote(c, 'start'))).toBe('E');
+		const note = notesOf("1")[0]!;
+		expect(step(slurNote(note, "start"))).toBe("E");
 	});
 
-	it('resolves nested slurs by number', () => {
-		const [a, b, c5] = notesOf('4');
-		expect(step(b!.slurs[0]!.partner?.note ?? null)).toBe('A'); // inner (2): B→A
+	it("resolves nested slurs by number", () => {
+		const [first, second, c5] = notesOf("4");
+		expect(step(second!.slurs[0]!.partner?.note ?? null)).toBe("A"); // inner (2): B→A
 		expect(
-			step(a!.slurs.find((s) => s.number === '1')!.partner?.note ?? null),
-		).toBe('C'); // outer (1): A→C5
-		expect(step(slurNote(c5!, 'stop'))).toBe('A');
+			step(
+				first!.slurs.find((slur) => slur.number === "1")!.partner?.note ?? null,
+			),
+		).toBe("C"); // outer (1): A→C5
+		expect(step(slurNote(c5!, "stop"))).toBe("A");
 	});
 });

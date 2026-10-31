@@ -1,7 +1,7 @@
-import { groupChords } from './chord';
-import { GuitarProValues } from './guitar-pro-values';
-import type { Note } from './note';
-import type { Part } from './part';
+import { groupChords } from "./chord";
+import { GuitarProValues } from "./guitar-pro-values";
+import type { Note } from "./note";
+import type { Part } from "./part";
 
 /** Allocates GP8's internal playback strings without changing the mdom notes. */
 export class GuitarProPitchWriter {
@@ -10,12 +10,12 @@ export class GuitarProPitchWriter {
 	constructor(part: Part, staff: string, shift = 0) {
 		const heldByVoice = new Map<string, Set<number>>();
 		for (const measure of part.measures) {
-			const notes = measure.notes.filter((n) => n.staff === staff);
-			for (const voice of new Set(notes.map((n) => n.voice))) {
+			const notes = measure.notes.filter((note) => note.staff === staff);
+			for (const voice of new Set(notes.map((note) => note.voice))) {
 				const held = heldByVoice.get(voice) ?? new Set<number>();
 				heldByVoice.set(voice, held);
 				for (const chord of groupChords(
-					notes.filter((n) => n.voice === voice),
+					notes.filter((note) => note.voice === voice),
 				)) {
 					const used = new Set(held);
 					for (const note of chord.notes) {
@@ -25,7 +25,7 @@ export class GuitarProPitchWriter {
 							...note.hammerOns,
 							...note.pullOffs,
 							...note.slides,
-						].find((marker) => marker.getAttribute('type') === 'stop')?.partner
+						].find((marker) => marker.getAttribute("type") === "stop")?.partner
 							?.note;
 						const string = origin && this.strings.get(origin);
 						if (string != null) {
@@ -50,7 +50,7 @@ export class GuitarProPitchWriter {
 						this.tuning[string] = Math.min(this.tuning[string] ?? midi, midi);
 						if (
 							note.ties.some(
-								(t) => t.tieType === 'start' || t.tieType === 'continue',
+								(tie) => tie.tieType === "start" || tie.tieType === "continue",
 							)
 						) {
 							held.add(string);

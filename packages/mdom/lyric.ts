@@ -1,4 +1,4 @@
-import { MElement } from './m-node';
+import { MElement } from "./m-element";
 import {
 	colorOf,
 	type Position,
@@ -8,21 +8,21 @@ import {
 	setPositionOf,
 	setYesNo,
 	yesNoOf,
-} from './print-style';
-import { Score } from './score';
+} from "./print-style";
+import { Score } from "./score";
 import {
 	type Font,
 	type FontSpec,
 	fontOf,
 	resolveFont,
 	setFontOf,
-} from './text-format';
+} from "./text-format";
 
 /** How a syllable joins its neighbours: a whole word, or one piece of one. */
-export type Syllabic = 'single' | 'begin' | 'end' | 'middle';
+export type Syllabic = "single" | "begin" | "end" | "middle";
 
 /** Which end of a melisma line an `<extend>` marks; null when it states none. */
-export type LyricExtend = 'start' | 'stop' | 'continue';
+export type LyricExtend = "start" | "stop" | "continue";
 
 /**
  * What {@link Note.setLyric} writes: one syllable of one verse.
@@ -49,7 +49,7 @@ export interface LyricSpec {
 	/** What an elision between the `text` runs draws; '' or unset leaves it to the renderer. */
 	elision?: string;
 	extend?: boolean | LyricExtend;
-	placement?: 'above' | 'below';
+	placement?: "above" | "below";
 }
 
 /**
@@ -58,7 +58,7 @@ export interface LyricSpec {
  * the score's `<defaults>` lyric font for this verse.
  */
 export interface LyricRun {
-	kind: 'text' | 'elision';
+	kind: "text" | "elision";
 	text: string;
 	font: Font;
 	resolvedFont: Font;
@@ -73,32 +73,32 @@ export interface LyricRun {
  */
 export class Lyric extends MElement {
 	constructor() {
-		super('lyric');
+		super("lyric");
 	}
 
 	/** Verse/line this belongs to; '1' when omitted (read off `number`, like a staff off a clef). */
 	get verse(): string {
-		return this.getAttribute('number') ?? '1';
+		return this.getAttribute("number") ?? "1";
 	}
 
 	/** The `name` attribute (a lyric's part: "verse", "chorus", …); null when unstated. */
 	get name(): string | null {
-		return this.getAttribute('name');
+		return this.getAttribute("name");
 	}
 
 	/**
 	 * The syllable, all `<text>` runs joined (an elided syllable holds several).
-	 * '' when the lyric carries no text — an empty syllable takes no width.
+	 * '' when the lyric carries no text, an empty syllable takes no width.
 	 */
 	get syllable(): string {
-		return this.childrenNamed('text')
-			.map((textNode) => textNode.text ?? '')
-			.join('');
+		return this.childrenNamed("text")
+			.map((textNode) => textNode.text ?? "")
+			.join("");
 	}
 
 	/** `<syllabic>`: where this sits in a word, or null when unspecified. */
 	get syllabic(): Syllabic | null {
-		return (this.child('syllabic')?.text ?? null) as Syllabic | null;
+		return (this.child("syllabic")?.text ?? null) as Syllabic | null;
 	}
 
 	/**
@@ -112,8 +112,8 @@ export class Lyric extends MElement {
 		return this.runElements().map((child) => {
 			const font = fontOf(child);
 			return {
-				kind: child.tag as LyricRun['kind'],
-				text: child.text ?? '',
+				kind: child.tag as LyricRun["kind"],
+				text: child.text ?? "",
 				font,
 				resolvedFont: resolveFont(font, inherited),
 				color: colorOf(child),
@@ -142,25 +142,25 @@ export class Lyric extends MElement {
 
 	private runElements(): MElement[] {
 		return this.childrenOfType(MElement).filter(
-			(child) => child.tag === 'text' || child.tag === 'elision',
+			(child) => child.tag === "text" || child.tag === "elision",
 		);
 	}
 
 	/** Whether a melisma `<extend>` line trails this syllable. */
 	get extend(): boolean {
-		return this.child('extend') !== null;
+		return this.child("extend") !== null;
 	}
 
 	/** Which end of the melisma line the `<extend>` marks; null when it states none or there is none. */
 	get extendType(): LyricExtend | null {
-		const type = this.child('extend')?.getAttribute('type');
-		return type === 'start' || type === 'stop' || type === 'continue'
+		const type = this.child("extend")?.getAttribute("type");
+		return type === "start" || type === "stop" || type === "continue"
 			? type
 			: null;
 	}
 
 	/** `placement`: above or below the staff; null when unstated. */
-	get placement(): 'above' | 'below' | null {
+	get placement(): "above" | "below" | null {
 		return placementOf(this);
 	}
 
@@ -171,12 +171,12 @@ export class Lyric extends MElement {
 
 	/** Whether the lyric is drawn (`print-object`); true when unstated. */
 	get printObject(): boolean {
-		return yesNoOf(this, 'print-object', true);
+		return yesNoOf(this, "print-object", true);
 	}
 
 	/** Set `print-object`, or remove it with null to restore the default. */
 	setPrintObject(value: boolean | null): void {
-		setYesNo(this, 'print-object', value);
+		setYesNo(this, "print-object", value);
 	}
 	/** Where this is drawn, in tenths. Layout only: it never moves the onset. */
 	get position(): Position {
@@ -192,42 +192,42 @@ export class Lyric extends MElement {
 /** Build the `<lyric>` a {@link LyricSpec} describes, in the schema's child order. */
 export function buildLyric(spec: LyricSpec): Lyric {
 	const texts =
-		typeof spec.text === 'string' ? [spec.text] : [...(spec.text ?? [])];
+		typeof spec.text === "string" ? [spec.text] : [...(spec.text ?? [])];
 	if (texts.length === 0 && !spec.extend) {
-		throw new Error('mdom: a lyric needs text or an extend');
+		throw new Error("mdom: a lyric needs text or an extend");
 	}
 	const lyric = new Lyric();
 	if (spec.verse !== undefined) {
-		lyric.setAttribute('number', spec.verse);
+		lyric.setAttribute("number", spec.verse);
 	}
 	if (spec.name !== undefined) {
-		lyric.setAttribute('name', spec.name);
+		lyric.setAttribute("name", spec.name);
 	}
 	if (spec.placement !== undefined) {
-		lyric.setAttribute('placement', spec.placement);
+		lyric.setAttribute("placement", spec.placement);
 	}
 	if (texts.length > 0) {
 		const syllabic = spec.syllabic ?? syllabicFromHyphens(texts);
-		const syllabicNode = new MElement('syllabic');
+		const syllabicNode = new MElement("syllabic");
 		syllabicNode.setText(syllabic);
 		lyric.append(syllabicNode);
 		texts.forEach((run, index) => {
 			if (index > 0) {
-				const elision = new MElement('elision');
+				const elision = new MElement("elision");
 				if (spec.elision) {
 					elision.setText(spec.elision);
 				}
 				lyric.append(elision);
 			}
-			const textNode = new MElement('text');
+			const textNode = new MElement("text");
 			textNode.setText(run);
 			lyric.append(textNode);
 		});
 	}
 	if (spec.extend) {
-		const extend = new MElement('extend');
+		const extend = new MElement("extend");
 		if (spec.extend !== true) {
-			extend.setAttribute('type', spec.extend);
+			extend.setAttribute("type", spec.extend);
 		}
 		lyric.append(extend);
 	}
@@ -243,13 +243,13 @@ function syllabicFromHyphens(texts: string[]): Syllabic {
 	const continuesBefore = /^-+(?=[^-])/.test(texts[0]!);
 	const continuesAfter = /(?<=[^-])-+$/.test(texts[last]!);
 	if (continuesBefore) {
-		texts[0] = texts[0]!.replace(/^-+/, '');
+		texts[0] = texts[0]!.replace(/^-+/, "");
 	}
 	if (continuesAfter) {
-		texts[last] = texts[last]!.replace(/-+$/, '');
+		texts[last] = texts[last]!.replace(/-+$/, "");
 	}
 	if (continuesBefore) {
-		return continuesAfter ? 'middle' : 'end';
+		return continuesAfter ? "middle" : "end";
 	}
-	return continuesAfter ? 'begin' : 'single';
+	return continuesAfter ? "begin" : "single";
 }

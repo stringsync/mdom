@@ -1,11 +1,11 @@
-import type { Resource } from 'webappwiz/disposable';
-import { Dispatcher, type Events } from 'webappwiz/events';
-import { MMutation } from './m-mutation';
-import type { MElement } from './m-node';
+import type { Resource } from "core/disposable";
+import { Dispatcher, type Events } from "core/events";
+import type { MElement } from "./m-element";
+import { MMutation } from "./m-mutation";
 
 /** A committed edit, undo, or redo. History state is already updated when delivered. */
 export interface MHistoryChange {
-	readonly kind: 'edit' | 'undo' | 'redo';
+	readonly kind: "edit" | "undo" | "redo";
 	readonly label: string;
 }
 
@@ -41,16 +41,16 @@ export class MHistory implements Resource {
 	): T {
 		MMutation.assertIdle();
 		if (
-			Object.prototype.toString.call(operation) === '[object AsyncFunction]'
+			Object.prototype.toString.call(operation) === "[object AsyncFunction]"
 		) {
-			throw new Error('mdom: transaction callbacks must be synchronous');
+			throw new Error("mdom: transaction callbacks must be synchronous");
 		}
 		const mutation = new MMutation(this.root);
 		const result = mutation.run(operation);
 		if (mutation.commit()) {
 			this.past.push({ label, mutation });
 			this.future = [];
-			this.notify('edit', label);
+			this.notify("edit", label);
 		}
 		return result;
 	}
@@ -62,9 +62,9 @@ export class MHistory implements Resource {
 		if (!step) {
 			return false;
 		}
-		step.mutation.restore('before');
+		step.mutation.restore("before");
 		this.future.push(step);
-		this.notify('undo', step.label);
+		this.notify("undo", step.label);
 		return true;
 	}
 
@@ -75,9 +75,9 @@ export class MHistory implements Resource {
 		if (!step) {
 			return false;
 		}
-		step.mutation.restore('after');
+		step.mutation.restore("after");
 		this.past.push(step);
-		this.notify('redo', step.label);
+		this.notify("redo", step.label);
 		return true;
 	}
 
@@ -89,9 +89,9 @@ export class MHistory implements Resource {
 		this.dispatcher.dispose();
 	}
 
-	private notify(kind: MHistoryChange['kind'], label: string): void {
+	private notify(kind: MHistoryChange["kind"], label: string): void {
 		MMutation.notify(() =>
-			this.dispatcher.dispatch('change', Object.freeze({ kind, label })),
+			this.dispatcher.dispatch("change", Object.freeze({ kind, label })),
 		);
 	}
 }

@@ -1,10 +1,10 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './m-dom-parser';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser } from "./m-dom-parser";
 
 // A cross-stave slur, the way Finale exports every other bar of piano writing:
 // the slur STARTS in the left hand and STOPS on a right-hand note the exporter
 // wrote earlier in the file, because a <backup> puts the lower voice last. In
-// document order the stop sits before the start and nothing pairs — the arc runs
+// document order the stop sits before the start and nothing pairs, the arc runs
 // on until measure 2's stop, two bars of ink across the page. In onset order they
 // are start (beat 0, lower) then stop (beat 1, upper), which is what sounds.
 const CROSS_STAVE = `<score-partwise><part id="P1">
@@ -24,23 +24,23 @@ const CROSS_STAVE = `<score-partwise><part id="P1">
   </measure>
 </part></score-partwise>`;
 
-describe('slur — paired in onset order, not document order', () => {
+describe("slur, paired in onset order, not document order", () => {
 	const part = new MDOMParser()
 		.parseFromString(CROSS_STAVE)
-		.score.getPart('P1')!;
-	const [upperC, upperD, lowerC] = part.getMeasure('1')!.notes;
-	const nextMeasureNote = part.getMeasure('2')!.notes[0]!;
+		.score.getPart("P1")!;
+	const [upperC, upperD, lowerC] = part.getMeasure("1")!.notes;
+	const nextMeasureNote = part.getMeasure("2")!.notes[0]!;
 
-	it('pairs a slur whose stop was written before its start across a <backup>', () => {
+	it("pairs a slur whose stop was written before its start across a <backup>", () => {
 		const start = lowerC!.slurs[0]!;
 		const stop = upperD!.slurs[0]!;
-		expect(start.slurType).toBe('start');
+		expect(start.slurType).toBe("start");
 		expect(start.partner).toBe(stop);
 		expect(stop.partner).toBe(start);
 	});
 
-	it('does not run the arc on to a later measure that also stops number 1', () => {
-		// The stray stop is orphaned, which is the honest answer — it is not the
+	it("does not run the arc on to a later measure that also stops number 1", () => {
+		// The stray stop is orphaned, which is the honest answer, it is not the
 		// partner of the left hand's start.
 		expect(nextMeasureNote.slurs[0]!.partner).toBeNull();
 		expect(upperC!.slurs).toEqual([]);

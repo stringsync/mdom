@@ -1,17 +1,17 @@
-import { MElement } from './m-node';
-import { insertMetadata } from './score-metadata';
+import { MElement } from "./m-element";
+import { insertMetadata } from "./score-metadata";
 
 /** Canonical child order of the MusicXML `<appearance>` sequence. */
 const ORDER = [
-	'line-width',
-	'note-size',
-	'distance',
-	'glyph',
-	'other-appearance',
+	"line-width",
+	"note-size",
+	"distance",
+	"glyph",
+	"other-appearance",
 ];
 
 /** Which notes a `<note-size>` sizes: cue, grace, grace-cue or large. */
-export type NoteSizeType = 'cue' | 'grace' | 'grace-cue' | 'large';
+export type NoteSizeType = "cue" | "grace" | "grace-cue" | "large";
 
 /** One typed value in `<appearance>`: its `type` attribute and its number. */
 export interface AppearanceValue<T extends string = string> {
@@ -19,7 +19,7 @@ export interface AppearanceValue<T extends string = string> {
 	value: number;
 }
 
-const NOTE_SIZE_TYPES = new Set(['cue', 'grace', 'grace-cue', 'large']);
+const NOTE_SIZE_TYPES = new Set(["cue", "grace", "grace-cue", "large"]);
 
 /**
  * The score-wide `<defaults><appearance>`: line thicknesses and standard
@@ -31,27 +31,27 @@ const NOTE_SIZE_TYPES = new Set(['cue', 'grace', 'grace-cue', 'large']);
  */
 export class Appearance extends MElement {
 	constructor() {
-		super('appearance');
+		super("appearance");
 	}
 
 	/** Every `<line-width>` as written, in tenths. */
 	get lineWidths(): AppearanceValue[] {
-		return this.typedValues('line-width');
+		return this.typedValues("line-width");
 	}
 
 	/** The `<line-width>` of `type` in tenths; null when unset. */
 	getLineWidth(type: string): number | null {
-		return this.numberOf('line-width', type);
+		return this.numberOf("line-width", type);
 	}
 
 	/** Set the `<line-width>` of `type` in tenths, or remove it with null. */
 	setLineWidth(type: string, tenths: number | null): void {
-		this.setValue('line-width', type, tenths);
+		this.setValue("line-width", type, tenths);
 	}
 
 	/** Every `<note-size>` as written, as percentages of the regular note size. */
 	get noteSizes(): AppearanceValue<NoteSizeType>[] {
-		return this.typedValues('note-size').filter(
+		return this.typedValues("note-size").filter(
 			(each): each is AppearanceValue<NoteSizeType> =>
 				NOTE_SIZE_TYPES.has(each.type),
 		);
@@ -59,32 +59,32 @@ export class Appearance extends MElement {
 
 	/** The `<note-size>` of `type` as a percentage; null when unset. */
 	getNoteSize(type: NoteSizeType): number | null {
-		return this.numberOf('note-size', type);
+		return this.numberOf("note-size", type);
 	}
 
 	/** Set the `<note-size>` of `type` as a percentage, or remove it with null. */
 	setNoteSize(type: NoteSizeType, percent: number | null): void {
-		this.setValue('note-size', type, percent);
+		this.setValue("note-size", type, percent);
 	}
 
 	/** Every `<distance>` as written, in tenths. */
 	get distances(): AppearanceValue[] {
-		return this.typedValues('distance');
+		return this.typedValues("distance");
 	}
 
 	/** The `<distance>` of `type` in tenths; null when unset. */
 	getDistance(type: string): number | null {
-		return this.numberOf('distance', type);
+		return this.numberOf("distance", type);
 	}
 
 	/** Set the `<distance>` of `type` in tenths, or remove it with null. */
 	setDistance(type: string, tenths: number | null): void {
-		this.setValue('distance', type, tenths);
+		this.setValue("distance", type, tenths);
 	}
 
 	private typedValues(tag: string): AppearanceValue[] {
 		return this.childrenNamed(tag).flatMap((node) => {
-			const type = node.getAttribute('type');
+			const type = node.getAttribute("type");
 			const text = node.text;
 			return type === null || text == null
 				? []
@@ -106,7 +106,7 @@ export class Appearance extends MElement {
 		}
 		if (!node) {
 			node = new MElement(tag);
-			node.setAttribute('type', type);
+			node.setAttribute("type", type);
 			insertMetadata(this, node, ORDER);
 		}
 		node.setText(String(value));
@@ -115,7 +115,7 @@ export class Appearance extends MElement {
 	private entry(tag: string, type: string): MElement | null {
 		return (
 			this.childrenNamed(tag).find(
-				(node) => node.getAttribute('type') === type,
+				(node) => node.getAttribute("type") === type,
 			) ?? null
 		);
 	}

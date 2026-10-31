@@ -1,3 +1,4 @@
+// vet-ignore-file compact-files: the part node and its measure editing share private storage.
 import {
 	type MidiDevice,
 	type MidiDeviceSpec,
@@ -11,12 +12,13 @@ import {
 	writeMidiDevice,
 	writeMidiInstrument,
 	writeScoreInstrument,
-} from './instrument';
-import { MElement, required } from './m-node';
-import { appendValue, carrySignaturesAfterInto, Measure } from './measure';
-import { Note, WRITE_DIVISIONS } from './note';
-import { memo, stampOf } from './read-cache';
-import { Score } from './score';
+} from "./instrument";
+import { MElement } from "./m-element";
+import { required } from "./m-node";
+import { appendValue, carrySignaturesAfterInto, Measure } from "./measure";
+import { Note, WRITE_DIVISIONS } from "./note";
+import { memo, stampOf } from "./read-cache";
+import { Score } from "./score";
 import {
 	ensureMetadata,
 	insertMetadata,
@@ -26,19 +28,19 @@ import {
 	nameDisplay,
 	partMetadataOrder,
 	setMetadataText,
-} from './score-metadata';
+} from "./score-metadata";
 import {
 	appliesToStaff,
 	attributeBackFrom,
 	divisionsBackFrom,
-} from './signature';
-import type { StaffTuning } from './staff-tuning';
-import { Time } from './time';
+} from "./signature";
+import type { StaffTuning } from "./staff-tuning";
+import { Time } from "./time";
 
 /** A `<part>`: a sequence of measures, keyed to a `<score-part>` by id. */
 export class Part extends MElement {
 	constructor() {
-		super('part');
+		super("part");
 	}
 
 	/**
@@ -46,12 +48,12 @@ export class Part extends MElement {
 	 * MusicXML, and addPart sets one; absence is a malformed document.
 	 */
 	get id(): string {
-		return required(this.getAttribute('id'), 'id on <part>');
+		return required(this.getAttribute("id"), "id on <part>");
 	}
 
 	/** The score this part belongs to. An attached part always has one. */
 	get score(): Score {
-		return required(this.closest(Score), '<score-partwise> ancestor of <part>');
+		return required(this.closest(Score), "<score-partwise> ancestor of <part>");
 	}
 
 	/**
@@ -74,45 +76,45 @@ export class Part extends MElement {
 	 * `<part-list>` (a sibling cross-reference, joined by this part's id).
 	 */
 	get label(): string | null {
-		return scorePartOf(this)?.child('part-name')?.text ?? null;
+		return scorePartOf(this)?.child("part-name")?.text ?? null;
 	}
 
 	get abbreviation(): string | null {
-		return scorePartOf(this)?.child('part-abbreviation')?.text ?? null;
+		return scorePartOf(this)?.child("part-abbreviation")?.text ?? null;
 	}
 	get nameDisplay(): NameDisplay | null {
-		return nameDisplay(scorePartOf(this)?.child('part-name-display') ?? null);
+		return nameDisplay(scorePartOf(this)?.child("part-name-display") ?? null);
 	}
 	get abbreviationDisplay(): NameDisplay | null {
 		return nameDisplay(
-			scorePartOf(this)?.child('part-abbreviation-display') ?? null,
+			scorePartOf(this)?.child("part-abbreviation-display") ?? null,
 		);
 	}
 	/** Set the plain name without changing a separately specified display name. */
 	setLabel(value: string): void {
 		setMetadataText(
-			required(scorePartOf(this), '<score-part> for part'),
-			'part-name',
+			required(scorePartOf(this), "<score-part> for part"),
+			"part-name",
 			value,
 			partMetadataOrder,
 		);
 	}
 	setAbbreviation(value: string | null): void {
 		setMetadataText(
-			required(scorePartOf(this), '<score-part> for part'),
-			'part-abbreviation',
+			required(scorePartOf(this), "<score-part> for part"),
+			"part-abbreviation",
 			value,
 			partMetadataOrder,
 		);
 	}
 	setNameDisplay(spec: NameDisplaySpec | null): void {
-		this.setDisplay('part-name-display', spec);
+		this.setDisplay("part-name-display", spec);
 	}
 	setAbbreviationDisplay(spec: NameDisplaySpec | null): void {
-		this.setDisplay('part-abbreviation-display', spec);
+		this.setDisplay("part-abbreviation-display", spec);
 	}
 	private setDisplay(tag: string, spec: NameDisplaySpec | null): void {
-		const parent = required(scorePartOf(this), '<score-part> for part');
+		const parent = required(scorePartOf(this), "<score-part> for part");
 		if (spec === null) {
 			parent.child(tag)?.remove();
 			return;
@@ -122,9 +124,9 @@ export class Part extends MElement {
 			child.remove();
 		}
 		if (spec.printObject === undefined) {
-			node.removeAttribute('print-object');
+			node.removeAttribute("print-object");
 		} else {
-			node.setAttribute('print-object', spec.printObject);
+			node.setAttribute("print-object", spec.printObject);
 		}
 		for (const run of spec.runs) {
 			node.append(makeFormattedText(run.kind, run));
@@ -142,8 +144,8 @@ export class Part extends MElement {
 	 */
 	get program(): number | null {
 		const text = scorePartOf(this)
-			?.child('midi-instrument')
-			?.child('midi-program')
+			?.child("midi-instrument")
+			?.child("midi-program")
 			?.text?.trim();
 		if (text == null || !/^\d+$/.test(text)) {
 			return null;
@@ -158,7 +160,7 @@ export class Part extends MElement {
 	 * among them with {@link Note.instrumentIds}.
 	 */
 	get instruments(): ScoreInstrument[] {
-		return (scorePartOf(this)?.childrenNamed('score-instrument') ?? []).map(
+		return (scorePartOf(this)?.childrenNamed("score-instrument") ?? []).map(
 			readScoreInstrument,
 		);
 	}
@@ -174,20 +176,20 @@ export class Part extends MElement {
 	 * including any whose id names no declared instrument.
 	 */
 	get midiInstruments(): MidiInstrument[] {
-		return (scorePartOf(this)?.childrenNamed('midi-instrument') ?? []).map(
+		return (scorePartOf(this)?.childrenNamed("midi-instrument") ?? []).map(
 			readMidiInstrument,
 		);
 	}
 
 	/** The `<midi-instrument>` assigned to the instrument with this id, or null. */
 	getMidiInstrument(instrumentId: string): MidiInstrument | null {
-		const node = midiNode(this, 'midi-instrument', instrumentId);
+		const node = midiNode(this, "midi-instrument", instrumentId);
 		return node ? readMidiInstrument(node) : null;
 	}
 
 	/** Every `<midi-device>` in the part's `<score-part>`, in document order. */
 	get midiDevices(): MidiDevice[] {
-		return (scorePartOf(this)?.childrenNamed('midi-device') ?? []).map(
+		return (scorePartOf(this)?.childrenNamed("midi-device") ?? []).map(
 			readMidiDevice,
 		);
 	}
@@ -198,8 +200,8 @@ export class Part extends MElement {
 	 */
 	getMidiDevice(instrumentId: string): MidiDevice | null {
 		const node =
-			midiNode(this, 'midi-device', instrumentId) ??
-			midiNode(this, 'midi-device', null);
+			midiNode(this, "midi-device", instrumentId) ??
+			midiNode(this, "midi-device", null);
 		return node ? readMidiDevice(node) : null;
 	}
 
@@ -209,20 +211,20 @@ export class Part extends MElement {
 	 * document throws.
 	 */
 	addInstrument(spec: ScoreInstrumentSpec): ScoreInstrument {
-		const scorePart = required(scorePartOf(this), '<score-part> for part');
+		const scorePart = required(scorePartOf(this), "<score-part> for part");
 		const id = spec.id ?? freeInstrumentId(this);
 		if (documentIds(this).has(id)) {
 			throw new Error(`id "${id}" is already used in the document`);
 		}
-		const node = new MElement('score-instrument');
-		node.setAttribute('id', id);
+		const node = new MElement("score-instrument");
+		node.setAttribute("id", id);
 		writeScoreInstrument(node, spec);
 		insertMetadata(scorePart, node, partMetadataOrder);
 		return readScoreInstrument(node);
 	}
 
 	/** Replace the identity of the instrument with this id; its MIDI fields stay. */
-	setInstrument(id: string, spec: Omit<ScoreInstrumentSpec, 'id'>): void {
+	setInstrument(id: string, spec: Omit<ScoreInstrumentSpec, "id">): void {
 		writeScoreInstrument(requiredInstrument(this, id), spec);
 	}
 
@@ -240,8 +242,8 @@ export class Part extends MElement {
 		) {
 			throw new Error(`notes still play instrument "${id}"`);
 		}
-		midiNode(this, 'midi-instrument', id)?.remove();
-		midiNode(this, 'midi-device', id)?.remove();
+		midiNode(this, "midi-instrument", id)?.remove();
+		midiNode(this, "midi-device", id)?.remove();
 		node.remove();
 	}
 
@@ -254,18 +256,18 @@ export class Part extends MElement {
 		spec: MidiInstrumentSpec | null,
 	): void {
 		requiredInstrument(this, instrumentId);
-		const existing = midiNode(this, 'midi-instrument', instrumentId);
+		const existing = midiNode(this, "midi-instrument", instrumentId);
 		if (spec === null) {
 			existing?.remove();
 			return;
 		}
-		const node = existing ?? new MElement('midi-instrument');
+		const node = existing ?? new MElement("midi-instrument");
 		writeMidiInstrument(node, spec);
 		if (!existing) {
-			node.setAttribute('id', instrumentId);
+			node.setAttribute("id", instrumentId);
 			// Right after its own device, so each device/instrument pair stays together.
-			const device = midiNode(this, 'midi-device', instrumentId);
-			const scorePart = required(scorePartOf(this), '<score-part> for part');
+			const device = midiNode(this, "midi-device", instrumentId);
+			const scorePart = required(scorePartOf(this), "<score-part> for part");
 			scorePart.insertBefore(node, device ? nextSibling(device) : null);
 		}
 	}
@@ -281,7 +283,7 @@ export class Part extends MElement {
 		if (instrumentId !== null) {
 			requiredInstrument(this, instrumentId);
 		}
-		const existing = midiNode(this, 'midi-device', instrumentId);
+		const existing = midiNode(this, "midi-device", instrumentId);
 		if (spec === null) {
 			existing?.remove();
 			return;
@@ -290,12 +292,12 @@ export class Part extends MElement {
 			writeMidiDevice(existing, spec);
 			return;
 		}
-		const node = new MElement('midi-device');
+		const node = new MElement("midi-device");
 		if (instrumentId !== null) {
-			node.setAttribute('id', instrumentId);
+			node.setAttribute("id", instrumentId);
 		}
 		writeMidiDevice(node, spec);
-		const scorePart = required(scorePartOf(this), '<score-part> for part');
+		const scorePart = required(scorePartOf(this), "<score-part> for part");
 		// A part-wide device leads the MIDI sequence; an instrument's own device
 		// sits just before its <midi-instrument>, or last until one is added.
 		const before =
@@ -303,17 +305,17 @@ export class Part extends MElement {
 				? (scorePart.children.find(
 						(child) =>
 							child instanceof MElement &&
-							(child.tag === 'midi-device' || child.tag === 'midi-instrument'),
+							(child.tag === "midi-device" || child.tag === "midi-instrument"),
 					) ?? null)
-				: midiNode(this, 'midi-instrument', instrumentId);
+				: midiNode(this, "midi-instrument", instrumentId);
 		scorePart.insertBefore(node, before);
 	}
 
 	/** Append a `<measure>`, numbered after the last one when `number` is omitted. */
-	addMeasure(opts?: { number?: string }): Measure {
+	addMeasure(opts?: MeasureNumberOptions): Measure {
 		const measure = new Measure();
 		measure.setAttribute(
-			'number',
+			"number",
 			opts?.number ?? String(measuresOf(this).length + 1),
 		);
 		this.append(measure);
@@ -322,15 +324,15 @@ export class Part extends MElement {
 
 	/**
 	 * Insert a new `<measure>` at `index` (appending when `index` is the measure
-	 * count). Numbering is the caller's to set — a non-musical spacer measure
+	 * count). Numbering is the caller's to set, a non-musical spacer measure
 	 * legitimately wants none, so unlike {@link addMeasure} this assigns one only
 	 * when asked. Pair it with {@link Measure.copySignaturesFrom} when the new
 	 * measure lands before the declarations it needs.
 	 */
-	insertMeasureAt(index: number, opts?: { number?: string }): Measure {
+	insertMeasureAt(index: number, opts?: MeasureNumberOptions): Measure {
 		const measure = new Measure();
 		if (opts?.number != null) {
-			measure.setAttribute('number', opts.number);
+			measure.setAttribute("number", opts.number);
 		}
 		this.insertBefore(measure, measuresOf(this)[index] ?? null);
 		return measure;
@@ -345,18 +347,18 @@ export class Part extends MElement {
 	insertMeasureAfter(measure: Measure): Measure {
 		const index = measureIndexIn(this, measure);
 		if (index < 0) {
-			throw new Error('mdom: measure to insert after is not in this part');
+			throw new Error("mdom: measure to insert after is not in this part");
 		}
 		const divisions =
 			divisionsBackFrom(measure, measure.children.length) ?? WRITE_DIVISIONS;
 		const time = attributeBackFrom(
 			measure,
 			measure.children.length,
-			'time-at-end:1',
+			"time-at-end:1",
 			(attrs) =>
 				attrs
 					.childrenOfType(Time)
-					.find((candidate) => appliesToStaff(candidate, '1')),
+					.find((candidate) => appliesToStaff(candidate, "1")),
 		);
 		const duration = measureRestDuration(time, divisions);
 		const numbering = numberingRuns(this);
@@ -379,7 +381,7 @@ export class Part extends MElement {
 	removeMeasure(measure: Measure): void {
 		const index = measureIndexIn(this, measure);
 		if (index < 0) {
-			throw new Error('mdom: measure to remove is not in this part');
+			throw new Error("mdom: measure to remove is not in this part");
 		}
 		if (measuresOf(this).length === 1) {
 			return;
@@ -397,10 +399,10 @@ export class Part extends MElement {
 	/**
 	 * The `<staff-tuning>` declarations for `staff` (default '1'): the first
 	 * `<staff-details>` anywhere in the part that carries them. Tuning is
-	 * effectively a per-part constant, like {@link partSymbol} — use
+	 * effectively a per-part constant, like {@link partSymbol}, use
 	 * {@link Measure.getStaffTunings} when a mid-score retuning matters.
 	 */
-	getStaffTunings(staff = '1'): StaffTuning[] {
+	getStaffTunings(staff = "1"): StaffTuning[] {
 		for (const measure of measuresOf(this)) {
 			const tunings = measure.getStaffTunings(staff);
 			if (tunings.length > 0) {
@@ -416,8 +418,8 @@ export class Part extends MElement {
 	 */
 	get staveCount(): number {
 		for (const measure of measuresOf(this)) {
-			for (const attrs of measure.childrenNamed('attributes')) {
-				const staves = attrs.child('staves')?.text;
+			for (const attrs of measure.childrenNamed("attributes")) {
+				const staves = attrs.child("staves")?.text;
 				if (staves != null) {
 					return Number(staves);
 				}
@@ -431,12 +433,12 @@ export class Part extends MElement {
 	 * declaration in any measure's attributes); null when never declared. It is
 	 * effectively a per-part constant, so it lives here rather than per-measure.
 	 */
-	get partSymbol(): 'none' | 'line' | 'bracket' | 'brace' | 'square' | null {
+	get partSymbol(): "none" | "line" | "bracket" | "brace" | "square" | null {
 		for (const measure of measuresOf(this)) {
-			for (const attrs of measure.childrenNamed('attributes')) {
-				const symbol = attrs.child('part-symbol')?.text;
+			for (const attrs of measure.childrenNamed("attributes")) {
+				const symbol = attrs.child("part-symbol")?.text;
 				if (symbol != null) {
-					return symbol as 'none' | 'line' | 'bracket' | 'brace' | 'square';
+					return symbol as "none" | "line" | "bracket" | "brace" | "square";
 				}
 			}
 		}
@@ -446,7 +448,7 @@ export class Part extends MElement {
 
 /** The part's measures, cached until its child list changes. Never mutate it. */
 export function measuresOf(part: Part): readonly Measure[] {
-	return memo(part, 'measures', stampOf(part, 'children'), () =>
+	return memo(part, "measures", stampOf(part, "children"), () =>
 		Object.freeze(part.childrenOfType(Measure)),
 	);
 }
@@ -455,8 +457,8 @@ export function measuresOf(part: Part): readonly Measure[] {
 export function measureIndexIn(part: Part, measure: Measure): number {
 	const indexes = memo(
 		part,
-		'measure-indexes',
-		stampOf(part, 'children'),
+		"measure-indexes",
+		stampOf(part, "children"),
 		() =>
 			new Map(measuresOf(part).map((each, index) => [each, index] as const)),
 	);
@@ -465,11 +467,11 @@ export function measureIndexIn(part: Part, measure: Measure): number {
 
 function buildMeasureRest(duration: number): Note {
 	const note = new Note();
-	const rest = new MElement('rest');
-	rest.setAttribute('measure', 'yes');
+	const rest = new MElement("rest");
+	rest.setAttribute("measure", "yes");
 	note.append(rest);
-	appendValue(note, 'duration', String(duration));
-	appendValue(note, 'voice', '1');
+	appendValue(note, "duration", String(duration));
+	appendValue(note, "voice", "1");
 	return note;
 }
 
@@ -478,11 +480,11 @@ function measureRestDuration(time: Time | null, divisions: number): number {
 		return 4 * divisions;
 	}
 	if (time.isSenzaMisura) {
-		throw new Error('mdom: cannot fill a complete unmetered measure');
+		throw new Error("mdom: cannot fill a complete unmetered measure");
 	}
 	let duration = 0;
 	for (const component of time.components) {
-		const pieces = component.beats.split('+');
+		const pieces = component.beats.split("+");
 		const beatType = Number(component.beatType);
 		if (
 			pieces.some((piece) => !/^\d+$/.test(piece)) ||
@@ -490,14 +492,14 @@ function measureRestDuration(time: Time | null, divisions: number): number {
 			beatType <= 0
 		) {
 			throw new Error(
-				'mdom: cannot fill a measure with an invalid time signature',
+				"mdom: cannot fill a measure with an invalid time signature",
 			);
 		}
 		const beats = pieces.reduce((sum, piece) => sum + Number(piece), 0);
 		duration += (beats * 4 * divisions) / beatType;
 	}
 	if (!Number.isInteger(duration) || duration <= 0) {
-		throw new Error('mdom: measure duration is not representable in divisions');
+		throw new Error("mdom: measure duration is not representable in divisions");
 	}
 	return duration;
 }
@@ -537,7 +539,7 @@ function numberingRuns(part: Part): Map<Measure, NumberingRun> {
 }
 
 function ordinaryMeasureNumber(measure: Measure): number | null {
-	const raw = measure.getAttribute('number');
+	const raw = measure.getAttribute("number");
 	if (measure.isImplicit || raw === null || !/^\d+$/.test(raw)) {
 		return null;
 	}
@@ -557,7 +559,7 @@ function renumberMeasures(
 		const run = first ? numbering.get(first) : undefined;
 		if (run && existing.every((measure) => numbering.get(measure) === run)) {
 			current.forEach((measure, index) => {
-				measure.setAttribute('number', String(run.start + index));
+				measure.setAttribute("number", String(run.start + index));
 			});
 		}
 		current = [];
@@ -605,19 +607,19 @@ function unlinkCrossingSpans(measure: Measure): void {
 	});
 	for (const { marker, partner } of crossings) {
 		const tiedEnds =
-			marker.tag === 'tied'
+			marker.tag === "tied"
 				? [marker, partner].flatMap((end) => {
 						const note = end.closest(Note);
-						const type = end.getAttribute('type');
-						return note && (type === 'start' || type === 'stop')
-							? [{ note, type: type as 'start' | 'stop' }]
+						const type = end.getAttribute("type");
+						return note && (type === "start" || type === "stop")
+							? [{ note, type: type as "start" | "stop" }]
 							: [];
 					})
 				: [];
 		marker.remove();
 		partner.remove();
 		for (const { note, type } of tiedEnds) {
-			if (!note.ties.some((tie) => tie.getAttribute('type') === type)) {
+			if (!note.ties.some((tie) => tie.getAttribute("type") === type)) {
 				note.setPlaybackTie(type, false);
 			}
 		}
@@ -626,8 +628,8 @@ function unlinkCrossingSpans(measure: Measure): void {
 
 function preserveRightBarline(removed: Measure, previous: Measure): void {
 	const isBoundary = (barline: (typeof removed.barlines)[number]) =>
-		barline.location === 'right' &&
-		(barline.barStyle === 'light-heavy' || barline.repeat === 'backward');
+		barline.location === "right" &&
+		(barline.barStyle === "light-heavy" || barline.repeat === "backward");
 	if (previous.barlines.some(isBoundary)) {
 		return;
 	}
@@ -641,17 +643,17 @@ function scorePartOf(part: Part): MElement | null {
 	return (
 		part
 			.closest(Score)
-			?.child('part-list')
-			?.childrenNamed('score-part')
-			.find((entry) => entry.getAttribute('id') === part.id) ?? null
+			?.child("part-list")
+			?.childrenNamed("score-part")
+			.find((entry) => entry.getAttribute("id") === part.id) ?? null
 	);
 }
 
 function instrumentNode(part: Part, id: string): MElement | null {
 	return (
 		scorePartOf(part)
-			?.childrenNamed('score-instrument')
-			.find((node) => node.getAttribute('id') === id) ?? null
+			?.childrenNamed("score-instrument")
+			.find((node) => node.getAttribute("id") === id) ?? null
 	);
 }
 
@@ -666,13 +668,13 @@ function requiredInstrument(part: Part, id: string): MElement {
 /** The `<tag>` in `part`'s `<score-part>` whose id is `id` (null: has no id). */
 function midiNode(
 	part: Part,
-	tag: 'midi-instrument' | 'midi-device',
+	tag: "midi-instrument" | "midi-device",
 	id: string | null,
 ): MElement | null {
 	return (
 		scorePartOf(part)
 			?.childrenNamed(tag)
-			.find((node) => node.getAttribute('id') === id) ?? null
+			.find((node) => node.getAttribute("id") === id) ?? null
 	);
 }
 
@@ -687,17 +689,17 @@ function nextSibling(node: MElement): MElement | null {
 
 /** Tags whose `id` is an IDREF to another element, not an ID of its own. */
 const idReferenceTags = new Set([
-	'part',
-	'instrument',
-	'midi-instrument',
-	'midi-device',
+	"part",
+	"instrument",
+	"midi-instrument",
+	"midi-device",
 ]);
 
 /** Every XML ID in the document, which score-instrument ids must not repeat. */
 function documentIds(part: Part): Set<string> {
 	const ids = new Set<string>();
 	const visit = (node: MElement) => {
-		const id = node.getAttribute('id');
+		const id = node.getAttribute("id");
 		if (id !== null && !idReferenceTags.has(node.tag)) {
 			ids.add(id);
 		}
@@ -716,4 +718,8 @@ function freeInstrumentId(part: Part): string {
 		index++;
 	}
 	return `${part.id}-I${index}`;
+}
+
+interface MeasureNumberOptions {
+	number?: string;
 }

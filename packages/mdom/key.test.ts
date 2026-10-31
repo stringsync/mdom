@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { MDOMParser } from './m-dom-parser';
+import { describe, expect, it } from "bun:test";
+import { MDOMParser } from "./m-dom-parser";
 
 // Eb major (3 flats), declared once in m1. m2 never restates it.
 const SAMPLE = `<score-partwise>
@@ -14,21 +14,21 @@ const SAMPLE = `<score-partwise>
   </part>
 </score-partwise>`;
 
-describe('Key', () => {
-	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart('P1')!;
+describe("Key", () => {
+	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart("P1")!;
 
-	it('reads fifths and mode, and derives the tonic', () => {
-		const key = part.getMeasure('1')!.getKey()!;
+	it("reads fifths and mode, and derives the tonic", () => {
+		const key = part.getMeasure("1")!.getKey()!;
 		expect(key.fifths).toBe(-3);
-		expect(key.mode).toBe('major');
-		expect(key.rootNote).toBe('Eb');
+		expect(key.mode).toBe("major");
+		expect(key.rootNote).toBe("Eb");
 	});
 
-	it('carries the key into a later measure that never declares one', () => {
+	it("carries the key into a later measure that never declares one", () => {
 		// m2 has no <key> of its own; key() returns the one still in effect, so the
 		// caller never walks backwards through earlier measures itself.
-		const key = part.getMeasure('2')!.getKey()!;
+		const key = part.getMeasure("2")!.getKey()!;
 		expect(key.fifths).toBe(-3);
-		expect(key.rootNote).toBe('Eb');
+		expect(key.rootNote).toBe("Eb");
 	});
 });

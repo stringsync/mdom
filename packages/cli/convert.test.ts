@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it } from 'bun:test';
-import { GuitarProParser, MDOMParser, MXLSerializer } from '@stringsync/mdom';
-import { MemoryLogger } from 'webappwiz/log';
-import { type ConvertOptions, convert } from './convert';
-import { FakeScoreFiles } from './fake-score-files';
+import { beforeEach, describe, expect, it } from "bun:test";
+import { GuitarProParser, MDOMParser, MXLSerializer } from "@stringsync/mdom";
+import { MemoryLogger } from "core/log";
+import { type ConvertOptions, convert } from "./convert";
+import { FakeScoreFiles } from "./fake-score-files";
 
-describe('convert', () => {
+describe("convert", () => {
 	let files: FakeScoreFiles;
 	let log: MemoryLogger;
 	let opts: ConvertOptions;
@@ -14,9 +14,9 @@ describe('convert', () => {
 		files = new FakeScoreFiles();
 		log = new MemoryLogger();
 		opts = {
-			input: 'song.musicxml',
-			output: 'song.gp',
-			cwd: '/scores',
+			input: "song.musicxml",
+			output: "song.gp",
+			cwd: "/scores",
 			files,
 			log,
 		};
@@ -26,82 +26,82 @@ describe('convert', () => {
 			<part id="P1"><measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
 			<note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note>
 			</measure></part></score-partwise>`;
-		files.contents.set('/scores/song.musicxml', new TextEncoder().encode(xml));
+		files.contents.set("/scores/song.musicxml", new TextEncoder().encode(xml));
 	});
 
-	it('converts MusicXML to Guitar Pro with the score intact', async () => {
+	it("converts MusicXML to Guitar Pro with the score intact", async () => {
 		await convert(opts);
 		const doc = await new GuitarProParser().parseFromBytes(
-			await files.read('/scores/song.gp'),
+			await files.read("/scores/song.gp"),
 		);
 
-		expect(doc.score.title).toBe('Étude & variations');
+		expect(doc.score.title).toBe("Étude & variations");
 		expect(doc.score.parts[0]!.measures[0]!.notes[0]).toMatchObject({
 			beats: 4,
-			pitch: { step: 'C', octave: 4 },
+			pitch: { step: "C", octave: 4 },
 		});
 		expect(log.entries).toContainEqual(
 			expect.objectContaining({
-				level: 'info',
-				message: 'wrote /scores/song.gp',
+				level: "info",
+				message: "wrote /scores/song.gp",
 			}),
 		);
 	});
 
-	it('converts MusicXML to a compressed MusicXML archive', async () => {
-		await convert({ ...opts, output: 'song.mxl' });
+	it("converts MusicXML to a compressed MusicXML archive", async () => {
+		await convert({ ...opts, output: "song.mxl" });
 		const doc = await new MDOMParser().parseFromBlob(
-			new Blob([await files.read('/scores/song.mxl')]),
+			new Blob([await files.read("/scores/song.mxl")]),
 		);
 
-		expect(doc.score.title).toBe('Étude & variations');
-		expect(doc.score.parts[0]!.measures[0]!.notes[0]!.pitch?.step).toBe('C');
+		expect(doc.score.title).toBe("Étude & variations");
+		expect(doc.score.parts[0]!.measures[0]!.notes[0]!.pitch?.step).toBe("C");
 	});
 
-	it('converts compressed MusicXML to plain MusicXML', async () => {
+	it("converts compressed MusicXML to plain MusicXML", async () => {
 		const blob = await new MXLSerializer().serializeToBlob(
 			new MDOMParser().parseFromString(xml),
 		);
 		files.contents.set(
-			'/scores/source.mxl',
+			"/scores/source.mxl",
 			new Uint8Array(await blob.arrayBuffer()),
 		);
-		await convert({ ...opts, input: 'source.mxl', output: 'result.xml' });
+		await convert({ ...opts, input: "source.mxl", output: "result.xml" });
 		const doc = new MDOMParser().parseFromString(
-			new TextDecoder().decode(await files.read('/scores/result.xml')),
+			new TextDecoder().decode(await files.read("/scores/result.xml")),
 		);
 
-		expect(doc.score.title).toBe('Étude & variations');
+		expect(doc.score.title).toBe("Étude & variations");
 		expect(doc.score.parts[0]!.measures[0]!.notes[0]!.beats).toBe(4);
 	});
 
-	it('converts compressed MusicXML to Guitar Pro', async () => {
+	it("converts compressed MusicXML to Guitar Pro", async () => {
 		const blob = await new MXLSerializer().serializeToBlob(
 			new MDOMParser().parseFromString(xml),
 		);
 		files.contents.set(
-			'/scores/source.mxl',
+			"/scores/source.mxl",
 			new Uint8Array(await blob.arrayBuffer()),
 		);
-		await convert({ ...opts, input: 'source.mxl' });
+		await convert({ ...opts, input: "source.mxl" });
 		const doc = await new GuitarProParser().parseFromBytes(
-			await files.read('/scores/song.gp'),
+			await files.read("/scores/song.gp"),
 		);
 
-		expect(doc.score.title).toBe('Étude & variations');
+		expect(doc.score.title).toBe("Étude & variations");
 		expect(doc.score.parts[0]!.measures[0]!.notes[0]!.beats).toBe(4);
 	});
 
-	it('converts an independent Guitar Pro fixture to MusicXML', async () => {
+	it("converts an independent Guitar Pro fixture to MusicXML", async () => {
 		const bytes = new Uint8Array(
 			await Bun.file(
-				new URL('../mdom/fixtures/guitar-pro/strings.gp', import.meta.url),
+				new URL("../mdom/fixtures/guitar-pro/strings.gp", import.meta.url),
 			).arrayBuffer(),
 		);
-		files.contents.set('/scores/source.gp', bytes);
-		await convert({ ...opts, input: 'source.gp', output: 'result.musicxml' });
+		files.contents.set("/scores/source.gp", bytes);
+		await convert({ ...opts, input: "source.gp", output: "result.musicxml" });
 		const doc = new MDOMParser().parseFromString(
-			new TextDecoder().decode(await files.read('/scores/result.musicxml')),
+			new TextDecoder().decode(await files.read("/scores/result.musicxml")),
 		);
 
 		expect(
@@ -119,18 +119,18 @@ describe('convert', () => {
 		]);
 	});
 
-	it('converts a Guitar Pro 6 .gpx fixture to MusicXML', async () => {
+	it("converts a Guitar Pro 6 .gpx fixture to MusicXML", async () => {
 		files.contents.set(
-			'/scores/source.gpx',
+			"/scores/source.gpx",
 			new Uint8Array(
 				await Bun.file(
-					new URL('../mdom/fixtures/guitar-pro/strings.gpx', import.meta.url),
+					new URL("../mdom/fixtures/guitar-pro/strings.gpx", import.meta.url),
 				).arrayBuffer(),
 			),
 		);
-		await convert({ ...opts, input: 'source.gpx', output: 'result.musicxml' });
+		await convert({ ...opts, input: "source.gpx", output: "result.musicxml" });
 		const doc = new MDOMParser().parseFromString(
-			new TextDecoder().decode(await files.read('/scores/result.musicxml')),
+			new TextDecoder().decode(await files.read("/scores/result.musicxml")),
 		);
 
 		expect(doc.score.parts[0]!.measures[0]!.notes[0]).toMatchObject({
@@ -139,18 +139,18 @@ describe('convert', () => {
 		});
 	});
 
-	it('converts a Guitar Pro 5 .gp5 fixture to MusicXML', async () => {
+	it("converts a Guitar Pro 5 .gp5 fixture to MusicXML", async () => {
 		files.contents.set(
-			'/scores/source.gp5',
+			"/scores/source.gp5",
 			new Uint8Array(
 				await Bun.file(
-					new URL('../mdom/fixtures/guitar-pro/strings.gp5', import.meta.url),
+					new URL("../mdom/fixtures/guitar-pro/strings.gp5", import.meta.url),
 				).arrayBuffer(),
 			),
 		);
-		await convert({ ...opts, input: 'source.gp5', output: 'result.musicxml' });
+		await convert({ ...opts, input: "source.gp5", output: "result.musicxml" });
 		const doc = new MDOMParser().parseFromString(
-			new TextDecoder().decode(await files.read('/scores/result.musicxml')),
+			new TextDecoder().decode(await files.read("/scores/result.musicxml")),
 		);
 
 		expect(doc.score.parts[0]!.measures[0]!.notes[0]).toMatchObject({
@@ -159,65 +159,84 @@ describe('convert', () => {
 		});
 	});
 
-	for (const extension of ['gp3', 'gp4']) {
-		it(`converts a .${extension} fixture to MusicXML`, async () => {
-			files.contents.set(
-				`/scores/source.${extension}`,
-				new Uint8Array(
-					await Bun.file(
-						new URL(
-							`../mdom/fixtures/guitar-pro/strings.${extension}`,
-							import.meta.url,
-						),
-					).arrayBuffer(),
-				),
-			);
-			await convert({
-				...opts,
-				input: `source.${extension}`,
-				output: 'result.musicxml',
-			});
-			const doc = new MDOMParser().parseFromString(
-				new TextDecoder().decode(await files.read('/scores/result.musicxml')),
-			);
-
-			expect(doc.score.parts[0]!.measures[0]!.notes[0]).toMatchObject({
-				string: 1,
-				fret: 1,
-			});
+	it(`converts a .gp3 fixture to MusicXML`, async () => {
+		files.contents.set(
+			`/scores/source.gp3`,
+			new Uint8Array(
+				await Bun.file(
+					new URL(`../mdom/fixtures/guitar-pro/strings.gp3`, import.meta.url),
+				).arrayBuffer(),
+			),
+		);
+		await convert({
+			...opts,
+			input: `source.gp3`,
+			output: "result.musicxml",
 		});
-	}
-
-	it('refuses to write .gp5', async () => {
-		files.contents.set(
-			'/scores/song.musicxml',
-			new TextEncoder().encode('<score-partwise/>'),
+		const doc = new MDOMParser().parseFromString(
+			new TextDecoder().decode(await files.read("/scores/result.musicxml")),
 		);
-		await expect(
-			convert({ ...opts, input: 'song.musicxml', output: 'song.gp5' }),
-		).rejects.toThrow('.gp5');
+
+		expect(doc.score.parts[0]!.measures[0]!.notes[0]).toMatchObject({
+			string: 1,
+			fret: 1,
+		});
 	});
 
-	it('refuses to write .gpx', async () => {
+	it(`converts a .gp4 fixture to MusicXML`, async () => {
 		files.contents.set(
-			'/scores/song.musicxml',
-			new TextEncoder().encode('<score-partwise/>'),
+			`/scores/source.gp4`,
+			new Uint8Array(
+				await Bun.file(
+					new URL(`../mdom/fixtures/guitar-pro/strings.gp4`, import.meta.url),
+				).arrayBuffer(),
+			),
 		);
-		await expect(
-			convert({ ...opts, input: 'song.musicxml', output: 'song.gpx' }),
-		).rejects.toThrow('.gpx');
+		await convert({
+			...opts,
+			input: `source.gp4`,
+			output: "result.musicxml",
+		});
+		const doc = new MDOMParser().parseFromString(
+			new TextDecoder().decode(await files.read("/scores/result.musicxml")),
+		);
+
+		expect(doc.score.parts[0]!.measures[0]!.notes[0]).toMatchObject({
+			string: 1,
+			fret: 1,
+		});
 	});
 
-	it('converts an independent Guitar Pro fixture to compressed MusicXML', async () => {
+	it("refuses to write .gp5", async () => {
+		files.contents.set(
+			"/scores/song.musicxml",
+			new TextEncoder().encode("<score-partwise/>"),
+		);
+		expect(
+			convert({ ...opts, input: "song.musicxml", output: "song.gp5" }),
+		).rejects.toThrow(".gp5");
+	});
+
+	it("refuses to write .gpx", async () => {
+		files.contents.set(
+			"/scores/song.musicxml",
+			new TextEncoder().encode("<score-partwise/>"),
+		);
+		expect(
+			convert({ ...opts, input: "song.musicxml", output: "song.gpx" }),
+		).rejects.toThrow(".gpx");
+	});
+
+	it("converts an independent Guitar Pro fixture to compressed MusicXML", async () => {
 		const bytes = new Uint8Array(
 			await Bun.file(
-				new URL('../mdom/fixtures/guitar-pro/strings.gp', import.meta.url),
+				new URL("../mdom/fixtures/guitar-pro/strings.gp", import.meta.url),
 			).arrayBuffer(),
 		);
-		files.contents.set('/scores/source.gp', bytes);
-		await convert({ ...opts, input: 'source.gp', output: 'result.mxl' });
+		files.contents.set("/scores/source.gp", bytes);
+		await convert({ ...opts, input: "source.gp", output: "result.mxl" });
 		const doc = await new MDOMParser().parseFromBlob(
-			new Blob([await files.read('/scores/result.mxl')]),
+			new Blob([await files.read("/scores/result.mxl")]),
 		);
 
 		expect(doc.score.parts[0]!.measures[0]!.notes[0]).toMatchObject({
@@ -227,142 +246,142 @@ describe('convert', () => {
 		});
 	});
 
-	it('recognizes uppercase extensions and the xml alias', async () => {
-		files.contents.set('/scores/INPUT.XML', new TextEncoder().encode(xml));
-		await convert({ ...opts, input: 'INPUT.XML', output: 'OUTPUT.MXL' });
+	it("recognizes uppercase extensions and the xml alias", async () => {
+		files.contents.set("/scores/INPUT.XML", new TextEncoder().encode(xml));
+		await convert({ ...opts, input: "INPUT.XML", output: "OUTPUT.MXL" });
 		const doc = await new MDOMParser().parseFromBlob(
-			new Blob([await files.read('/scores/OUTPUT.MXL')]),
+			new Blob([await files.read("/scores/OUTPUT.MXL")]),
 		);
 
-		expect(doc.score.title).toBe('Étude & variations');
+		expect(doc.score.title).toBe("Étude & variations");
 	});
 
-	it('resolves both paths against the invocation directory', async () => {
-		await convert({ ...opts, output: '../exports/song.gp' });
+	it("resolves both paths against the invocation directory", async () => {
+		await convert({ ...opts, output: "../exports/song.gp" });
 
 		expect([...files.contents.keys()]).toEqual([
-			'/scores/song.musicxml',
-			'/exports/song.gp',
+			"/scores/song.musicxml",
+			"/exports/song.gp",
 		]);
 	});
 
-	it('keeps absolute paths absolute', async () => {
+	it("keeps absolute paths absolute", async () => {
 		await convert({
 			...opts,
-			input: '/scores/song.musicxml',
-			output: '/exports/song.xml',
-			cwd: '/elsewhere',
+			input: "/scores/song.musicxml",
+			output: "/exports/song.xml",
+			cwd: "/elsewhere",
 		});
 
-		expect(files.contents.has('/exports/song.xml')).toBe(true);
+		expect(files.contents.has("/exports/song.xml")).toBe(true);
 	});
 
-	it('rejects an unsupported input extension before reading', async () => {
-		await expect(convert({ ...opts, input: 'legacy.gtp' })).rejects.toThrow(
-			'Unsupported score extension: .gtp',
+	it("rejects an unsupported input extension before reading", async () => {
+		expect(convert({ ...opts, input: "legacy.gtp" })).rejects.toThrow(
+			"Unsupported score extension: .gtp",
 		);
-		expect(files.contents.has('/scores/song.gp')).toBe(false);
+		expect(files.contents.has("/scores/song.gp")).toBe(false);
 	});
 
-	it('rejects an output without a format extension', async () => {
-		await expect(convert({ ...opts, output: 'result' })).rejects.toThrow(
-			'Unsupported score extension: (none)',
+	it("rejects an output without a format extension", async () => {
+		expect(convert({ ...opts, output: "result" })).rejects.toThrow(
+			"Unsupported score extension: (none)",
 		);
-		expect(files.contents.has('/scores/result')).toBe(false);
+		expect(files.contents.has("/scores/result")).toBe(false);
 	});
 
-	it('rejects identical paths even when force is requested', async () => {
-		await expect(
-			convert({ ...opts, output: './song.musicxml', force: true }),
-		).rejects.toThrow('different paths');
+	it("rejects identical paths even when force is requested", async () => {
 		expect(
-			new TextDecoder().decode(await files.read('/scores/song.musicxml')),
+			convert({ ...opts, output: "./song.musicxml", force: true }),
+		).rejects.toThrow("different paths");
+		expect(
+			new TextDecoder().decode(await files.read("/scores/song.musicxml")),
 		).toBe(xml);
 	});
 
-	it('keeps an existing output unless force is requested', async () => {
-		files.contents.set('/scores/song.gp', new Uint8Array([1, 2, 3]));
+	it("keeps an existing output unless force is requested", async () => {
+		files.contents.set("/scores/song.gp", new Uint8Array([1, 2, 3]));
 
-		await expect(convert(opts)).rejects.toThrow('Output already exists');
-		expect(await files.read('/scores/song.gp')).toEqual(
+		expect(convert(opts)).rejects.toThrow("Output already exists");
+		expect(await files.read("/scores/song.gp")).toEqual(
 			new Uint8Array([1, 2, 3]),
 		);
 		expect(log.entries).toEqual([]);
 	});
 
-	it('replaces an existing output when force is requested', async () => {
-		files.contents.set('/scores/song.gp', new Uint8Array([1, 2, 3]));
+	it("replaces an existing output when force is requested", async () => {
+		files.contents.set("/scores/song.gp", new Uint8Array([1, 2, 3]));
 		await convert({ ...opts, force: true });
 		const doc = await new GuitarProParser().parseFromBytes(
-			await files.read('/scores/song.gp'),
+			await files.read("/scores/song.gp"),
 		);
 
-		expect(doc.score.title).toBe('Étude & variations');
+		expect(doc.score.title).toBe("Étude & variations");
 	});
 
-	it('leaves an output intact when conversion fails even with force', async () => {
+	it("leaves an output intact when conversion fails even with force", async () => {
 		files.contents.set(
-			'/scores/song.musicxml',
-			new TextEncoder().encode('<broken'),
+			"/scores/song.musicxml",
+			new TextEncoder().encode("<broken"),
 		);
-		files.contents.set('/scores/song.gp', new Uint8Array([1, 2, 3]));
+		files.contents.set("/scores/song.gp", new Uint8Array([1, 2, 3]));
 
-		await expect(convert({ ...opts, force: true })).rejects.toThrow();
-		expect(await files.read('/scores/song.gp')).toEqual(
+		expect(convert({ ...opts, force: true })).rejects.toThrow();
+		expect(await files.read("/scores/song.gp")).toEqual(
 			new Uint8Array([1, 2, 3]),
 		);
 	});
 
-	it('reports a missing input without writing an output', async () => {
-		files.contents.delete('/scores/song.musicxml');
+	it("reports a missing input without writing an output", async () => {
+		files.contents.delete("/scores/song.musicxml");
 
-		await expect(convert(opts)).rejects.toThrow('Input does not exist');
+		expect(convert(opts)).rejects.toThrow("Input does not exist");
 		expect(files.contents.size).toBe(0);
 	});
 
-	it('rejects XML that is not a partwise score', async () => {
+	it("rejects XML that is not a partwise score", async () => {
 		files.contents.set(
-			'/scores/song.musicxml',
-			new TextEncoder().encode('<html/>'),
+			"/scores/song.musicxml",
+			new TextEncoder().encode("<html/>"),
 		);
 
-		await expect(convert({ ...opts, output: 'result.mxl' })).rejects.toThrow(
-			'Expected a score-partwise document',
+		expect(convert({ ...opts, output: "result.mxl" })).rejects.toThrow(
+			"Expected a score-partwise document",
 		);
-		expect(files.contents.has('/scores/result.mxl')).toBe(false);
+		expect(files.contents.has("/scores/result.mxl")).toBe(false);
 	});
 
-	it('rejects unsupported Guitar Pro annotations by default', async () => {
+	it("rejects unsupported Guitar Pro annotations by default", async () => {
 		files.contents.set(
-			'/scores/song.musicxml',
+			"/scores/song.musicxml",
 			new TextEncoder().encode(
 				xml.replace(
-					'</note>',
+					"</note>",
 					'</note><direction><direction-type><wedge type="crescendo"/></direction-type></direction>',
 				),
 			),
 		);
 
-		await expect(convert(opts)).rejects.toThrow('<wedge>');
-		expect(files.contents.has('/scores/song.gp')).toBe(false);
+		expect(convert(opts)).rejects.toThrow("<wedge>");
+		expect(files.contents.has("/scores/song.gp")).toBe(false);
 	});
 
-	it('omits unsupported annotations when explicitly requested', async () => {
+	it("omits unsupported annotations when explicitly requested", async () => {
 		files.contents.set(
-			'/scores/song.musicxml',
+			"/scores/song.musicxml",
 			new TextEncoder().encode(
 				xml.replace(
-					'</note>',
+					"</note>",
 					'</note><direction><direction-type><wedge type="crescendo"/></direction-type></direction>',
 				),
 			),
 		);
 		await convert({ ...opts, omitUnsupported: true });
 		const doc = await new GuitarProParser().parseFromBytes(
-			await files.read('/scores/song.gp'),
+			await files.read("/scores/song.gp"),
 		);
 
-		expect(doc.score.parts[0]!.measures[0]!.notes[0]!.pitch?.step).toBe('C');
+		expect(doc.score.parts[0]!.measures[0]!.notes[0]!.pitch?.step).toBe("C");
 		expect(doc.score.parts[0]!.measures[0]!.notes.length).toBe(1);
 	});
 });

@@ -1,6 +1,7 @@
-import { Direction } from './direction';
-import { MElement, required } from './m-node';
-import { Measure } from './measure';
+import { Direction } from "./direction";
+import { MElement } from "./m-element";
+import { required } from "./m-node";
+import { Measure } from "./measure";
 import {
 	colorOf,
 	type LineStyle,
@@ -14,30 +15,30 @@ import {
 	setPositionOf,
 	setYesNo,
 	yesNoOf,
-} from './print-style';
-import { directionMarkers, Spanner, type SpannerSpec } from './spanner';
-import { setOrRemove } from './text-format';
+} from "./print-style";
+import { directionMarkers, Spanner, type SpannerSpec } from "./spanner";
+import { setOrRemove } from "./text-format";
 
-export type WedgeType = 'crescendo' | 'diminuendo' | 'stop' | 'continue';
+export type WedgeType = "crescendo" | "diminuendo" | "stop" | "continue";
 
 /**
  * A `<wedge>` (hairpin) under `<direction-type>`. Like every spanner it pairs
- * start/stop by `number`, but it hangs off a `<direction>`, not a note — so its
+ * start/stop by `number`, but it hangs off a `<direction>`, not a note, so its
  * endpoint is {@link direction}, and its onset comes from {@link measureBeat}.
  */
 export class Wedge extends MElement {
 	constructor() {
-		super('wedge');
+		super("wedge");
 	}
 
 	/** Pairing key; '1' when omitted. */
 	get number(): string {
-		return this.getAttribute('number') ?? '1';
+		return this.getAttribute("number") ?? "1";
 	}
 
 	/** `type`: required on a `<wedge>` and drives pairing. */
 	get wedgeType(): WedgeType {
-		return required(this.getAttribute('type'), 'type on <wedge>') as WedgeType;
+		return required(this.getAttribute("type"), "type on <wedge>") as WedgeType;
 	}
 
 	/**
@@ -46,12 +47,12 @@ export class Wedge extends MElement {
 	 * a diminuendo the reverse. Null when unstated, for the renderer to choose.
 	 */
 	get spread(): number | null {
-		return numberOf(this, 'spread');
+		return numberOf(this, "spread");
 	}
 
 	/** Set `spread` in tenths, or remove it with null. */
 	setSpread(tenths: number | null): void {
-		setOrRemove(this, 'spread', tenths === null ? null : String(tenths));
+		setOrRemove(this, "spread", tenths === null ? null : String(tenths));
 	}
 
 	/**
@@ -59,12 +60,12 @@ export class Wedge extends MElement {
 	 * niente; false when unstated.
 	 */
 	get niente(): boolean {
-		return yesNoOf(this, 'niente', false);
+		return yesNoOf(this, "niente", false);
 	}
 
 	/** Set `niente`, or remove it with null. */
 	setNiente(value: boolean | null): void {
-		setYesNo(this, 'niente', value);
+		setYesNo(this, "niente", value);
 	}
 
 	/** The stroke: `line-type` and the dash and space lengths in tenths. */
@@ -100,12 +101,12 @@ export class Wedge extends MElement {
 	 * an attached marker always has one.
 	 */
 	get direction(): Direction {
-		return required(this.closest(Direction), '<direction> ancestor of <wedge>');
+		return required(this.closest(Direction), "<direction> ancestor of <wedge>");
 	}
 
 	/** The measure this marker sits in. An attached marker always has one. */
 	get measure(): Measure {
-		return required(this.closest(Measure), '<measure> ancestor of <wedge>');
+		return required(this.closest(Measure), "<measure> ancestor of <wedge>");
 	}
 
 	/** The marker at the far end (same number), or null. */
@@ -128,13 +129,13 @@ export class Wedge extends MElement {
 			siblings: directionMarkers(
 				this,
 				(direction) => direction.wedges,
-				'wedges',
+				"wedges",
 			),
 			// Raw reads so resolution tolerates a malformed typeless marker.
 			isOpen: (wedge) =>
-				wedge.getAttribute('type') === 'crescendo' ||
-				wedge.getAttribute('type') === 'diminuendo',
-			isClose: (wedge) => wedge.getAttribute('type') === 'stop',
+				wedge.getAttribute("type") === "crescendo" ||
+				wedge.getAttribute("type") === "diminuendo",
+			isClose: (wedge) => wedge.getAttribute("type") === "stop",
 		};
 	}
 }

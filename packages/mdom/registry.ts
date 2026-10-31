@@ -1,138 +1,65 @@
-import { Accidental } from './accidental';
-import { Appearance } from './appearance';
-import { ARTICULATION_TAGS, Articulation } from './articulation';
-import { Barline } from './barline';
-import { Beam } from './beam';
-import { Bracket } from './bracket';
-import { Clef } from './clef';
-import { Dashes } from './dashes';
-import { Direction } from './direction';
-import { Dynamics } from './dynamics';
-import { Figure, FiguredBass } from './figured-bass';
-import { Frame, FrameNote } from './frame';
-import { Glissando } from './glissando';
-import { HammerOn } from './hammer-on';
-import { Harmony } from './harmony';
-import { Key } from './key';
-import { LineDetail } from './line-detail';
-import { Lyric } from './lyric';
-import { MCData, MElement, type MNode, MText } from './m-node';
-import { Measure } from './measure';
-import { MeasureStyle } from './measure-style';
-import { Metronome, MetronomeNote } from './metronome';
-import { Note } from './note';
-import { OctaveShift } from './octave-shift';
-import { ORNAMENT_TAGS, Ornament } from './ornament';
-import { PageLayout } from './page-layout';
-import { Part } from './part';
-import { Pedal } from './pedal';
-import { Pitch } from './pitch';
-import { Print } from './print';
-import { PullOff } from './pull-off';
-import { Rehearsal } from './rehearsal';
-import { Score } from './score';
-import { Slide } from './slide';
-import { Slur } from './slur';
-import { Sound } from './sound';
-import { StaffDetails } from './staff-details';
-import { StaffLayout } from './staff-layout';
-import { StaffTuning } from './staff-tuning';
-import { SystemLayout } from './system-layout';
-import { TECHNICAL_TAGS, Technical } from './technical';
-import { Tie } from './tie';
-import { Time } from './time';
-import { ForPart, PartClef, PartTranspose, Transpose } from './transpose';
-import { Tuplet } from './tuplet';
-import { WavyLine } from './wavy-line';
-import { Wedge } from './wedge';
-import { Words } from './words';
-
-/**
- * Tag -> typed node. Classes with a fixed tag take no constructor argument;
- * {@link Ornament}, {@link Technical} and {@link Articulation} stand in for a whole family of tags, so
- * the tag is passed in — which is why the map's value type takes one.
- */
-type ElementCtor = new (tag: string) => MElement;
-
-let registry: Record<string, ElementCtor> | null = null;
-
-/**
- * The tag map, built on first use rather than at module load: the element modules
- * import each other, so a top-level literal would read a class binding that is
- * still being initialized.
- */
-function tags(): Record<string, ElementCtor> {
-	if (registry) {
-		return registry;
-	}
-	registry = {
-		'score-partwise': Score,
-		part: Part,
-		measure: Measure,
-		note: Note,
-		pitch: Pitch,
-		accidental: Accidental,
-		lyric: Lyric,
-		barline: Barline,
-		clef: Clef,
-		slur: Slur,
-		key: Key,
-		time: Time,
-		tied: Tie,
-		beam: Beam,
-		tuplet: Tuplet,
-		'wavy-line': WavyLine,
-		wedge: Wedge,
-		pedal: Pedal,
-		'octave-shift': OctaveShift,
-		bracket: Bracket,
-		dashes: Dashes,
-		direction: Direction,
-		dynamics: Dynamics,
-		rehearsal: Rehearsal,
-		words: Words,
-		metronome: Metronome,
-		'metronome-note': MetronomeNote,
-		sound: Sound,
-		'figured-bass': FiguredBass,
-		figure: Figure,
-		'staff-details': StaffDetails,
-		'measure-style': MeasureStyle,
-		'staff-tuning': StaffTuning,
-		frame: Frame,
-		'frame-note': FrameNote,
-		harmony: Harmony,
-		'hammer-on': HammerOn,
-		'pull-off': PullOff,
-		slide: Slide,
-		glissando: Glissando,
-		'line-detail': LineDetail,
-		print: Print,
-		'page-layout': PageLayout,
-		'system-layout': SystemLayout,
-		'staff-layout': StaffLayout,
-		appearance: Appearance,
-		transpose: Transpose,
-		'for-part': ForPart,
-		'part-clef': PartClef,
-		'part-transpose': PartTranspose,
-	};
-	for (const tag of ORNAMENT_TAGS) {
-		registry[tag] = Ornament;
-	}
-	for (const tag of ARTICULATION_TAGS) {
-		registry[tag] = Articulation;
-	}
-	for (const tag of TECHNICAL_TAGS) {
-		registry[tag] = Technical;
-	}
-	return registry;
-}
+import { Accidental } from "./accidental";
+import { Appearance } from "./appearance";
+import { ARTICULATION_TAGS, Articulation } from "./articulation";
+import { Barline } from "./barline";
+import { Beam } from "./beam";
+import { Bracket } from "./bracket";
+import { Clef } from "./clef";
+import { Dashes } from "./dashes";
+import { Direction } from "./direction";
+import { Dynamics } from "./dynamics";
+import { Figure } from "./figure";
+import { FiguredBass } from "./figured-bass";
+import { ForPart } from "./for-part";
+import { Frame } from "./frame";
+import { FrameNote } from "./frame-note";
+import { Glissando } from "./glissando";
+import { HammerOn } from "./hammer-on";
+import { Harmony } from "./harmony";
+import { Key } from "./key";
+import { LineDetail } from "./line-detail";
+import { Lyric } from "./lyric";
+import { MCData } from "./m-cdata";
+import { MElement } from "./m-element";
+import type { MNode } from "./m-node";
+import { MText } from "./m-text";
+import { Measure } from "./measure";
+import { MeasureStyle } from "./measure-style";
+import { Metronome } from "./metronome";
+import { MetronomeNote } from "./metronome-note";
+import { Note } from "./note";
+import { OctaveShift } from "./octave-shift";
+import { ORNAMENT_TAGS, Ornament } from "./ornament";
+import { PageLayout } from "./page-layout";
+import { Part } from "./part";
+import { PartClef } from "./part-clef";
+import { PartTranspose } from "./part-transpose";
+import { Pedal } from "./pedal";
+import { Pitch } from "./pitch";
+import { Print } from "./print";
+import { PullOff } from "./pull-off";
+import { Rehearsal } from "./rehearsal";
+import { Score } from "./score";
+import { Slide } from "./slide";
+import { Slur } from "./slur";
+import { Sound } from "./sound";
+import { StaffDetails } from "./staff-details";
+import { StaffLayout } from "./staff-layout";
+import { StaffTuning } from "./staff-tuning";
+import { SystemLayout } from "./system-layout";
+import { TECHNICAL_TAGS, Technical } from "./technical";
+import { Tie } from "./tie";
+import { Time } from "./time";
+import { Transpose } from "./transpose";
+import { Tuplet } from "./tuplet";
+import { WavyLine } from "./wavy-line";
+import { Wedge } from "./wedge";
+import { Words } from "./words";
 
 /**
  * A fresh element for `tag`: the typed node when the tag is modeled, else a plain
  * {@link MElement} (which still round-trips). The single place tags become
- * classes — the parser builds with it, and so does {@link cloneNode}, so a copied
+ * classes, the parser builds with it, and so does {@link cloneNode}, so a copied
  * subtree answers the same typed queries the parsed one does.
  */
 export function elementFor(tag: string): MElement {
@@ -162,4 +89,86 @@ export function cloneNode(node: MNode): MNode {
 /** {@link cloneNode} for an element, typed so callers don't cast. */
 export function cloneElement(element: MElement): MElement {
 	return cloneNode(element) as MElement;
+}
+
+/**
+ * Tag -> typed node. Classes with a fixed tag take no constructor argument;
+ * {@link Ornament}, {@link Technical} and {@link Articulation} stand in for a whole family of tags, so
+ * the tag is passed in, which is why the map's value type takes one.
+ */
+type ElementCtor = new (tag: string) => MElement;
+
+let registry: Record<string, ElementCtor> | null = null;
+
+/**
+ * The tag map, built on first use rather than at module load: the element modules
+ * import each other, so a top-level literal would read a class binding that is
+ * still being initialized.
+ */
+function tags(): Record<string, ElementCtor> {
+	if (registry) {
+		return registry;
+	}
+	registry = {
+		"score-partwise": Score,
+		part: Part,
+		measure: Measure,
+		note: Note,
+		pitch: Pitch,
+		accidental: Accidental,
+		lyric: Lyric,
+		barline: Barline,
+		clef: Clef,
+		slur: Slur,
+		key: Key,
+		time: Time,
+		tied: Tie,
+		beam: Beam,
+		tuplet: Tuplet,
+		"wavy-line": WavyLine,
+		wedge: Wedge,
+		pedal: Pedal,
+		"octave-shift": OctaveShift,
+		bracket: Bracket,
+		dashes: Dashes,
+		direction: Direction,
+		dynamics: Dynamics,
+		rehearsal: Rehearsal,
+		words: Words,
+		metronome: Metronome,
+		"metronome-note": MetronomeNote,
+		sound: Sound,
+		"figured-bass": FiguredBass,
+		figure: Figure,
+		"staff-details": StaffDetails,
+		"measure-style": MeasureStyle,
+		"staff-tuning": StaffTuning,
+		frame: Frame,
+		"frame-note": FrameNote,
+		harmony: Harmony,
+		"hammer-on": HammerOn,
+		"pull-off": PullOff,
+		slide: Slide,
+		glissando: Glissando,
+		"line-detail": LineDetail,
+		print: Print,
+		"page-layout": PageLayout,
+		"system-layout": SystemLayout,
+		"staff-layout": StaffLayout,
+		appearance: Appearance,
+		transpose: Transpose,
+		"for-part": ForPart,
+		"part-clef": PartClef,
+		"part-transpose": PartTranspose,
+	};
+	for (const tag of ORNAMENT_TAGS) {
+		registry[tag] = Ornament;
+	}
+	for (const tag of ARTICULATION_TAGS) {
+		registry[tag] = Articulation;
+	}
+	for (const tag of TECHNICAL_TAGS) {
+		registry[tag] = Technical;
+	}
+	return registry;
 }

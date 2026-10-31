@@ -22,7 +22,7 @@ export class Scaling {
 	 */
 	static readonly default = new Scaling(7, 40);
 
-	/** Millimeters per tenth — the conversion factor. */
+	/** Millimeters per tenth, the conversion factor. */
 	get mmPerTenth(): number {
 		return this.millimeters / this.tenths;
 	}

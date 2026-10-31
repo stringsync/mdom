@@ -1,6 +1,6 @@
-import { Chord, groupChords } from './chord';
-import { MElement } from './m-node';
-import { appendValue, type Measure } from './measure';
+import { Chord, groupChords } from "./chord";
+import { MElement } from "./m-element";
+import { appendValue, type Measure } from "./measure";
 import {
 	buildPitch,
 	type DurationSpec,
@@ -11,12 +11,12 @@ import {
 	type PitchSpec,
 	type UnpitchedNoteSpec,
 	WRITE_DIVISIONS,
-} from './note';
-import type { Part } from './part';
-import { removeRhythmEntry, replaceRest, resize } from './rhythm-edits';
-import { divisionsBackFrom } from './signature';
-import { buildTimeModification } from './time-modification';
-import { alignCursor, onsetOf } from './timeline';
+} from "./note";
+import type { Part } from "./part";
+import { removeRhythmEntry, replaceRest, resize } from "./rhythm-edits";
+import { divisionsBackFrom } from "./signature";
+import { buildTimeModification } from "./time-modification";
+import { alignCursor, onsetOf } from "./timeline";
 
 // The note vocabulary and duration math live in note.ts (Voice builds on Note);
 // re-exported here so callers can keep importing them from either place.
@@ -27,10 +27,10 @@ export type {
 	NoteType,
 	PitchSpec,
 	UnpitchedNoteSpec,
-} from './note';
+} from "./note";
 
 /**
- * A single `<voice>` within a measure — read and write. Reading: `notes` is the
+ * A single `<voice>` within a measure, read and write. Reading: `notes` is the
  * live slice for this voice and `chords()` groups its `<chord/>` stacks. Writing:
  * note/rest/chord append or edit at fixed onsets on this voice's staff, and mdom
  * lays out the `<backup>`/`<forward>`, `<duration>`, `<voice>`, and `<staff>` so
@@ -40,7 +40,7 @@ export class Voice {
 	constructor(
 		readonly measure: Measure,
 		readonly id: string,
-		readonly staff: string = '1',
+		readonly staff: string = "1",
 	) {}
 
 	/** This voice's notes, in document order. */
@@ -161,24 +161,24 @@ export class Voice {
 	): Note {
 		const note = new Note();
 		if (isChord) {
-			note.append(new MElement('chord'));
+			note.append(new MElement("chord"));
 		}
 		if (pitch) {
 			note.append(buildPitch(pitch));
 		} else {
-			note.append(new MElement('rest'));
+			note.append(new MElement("rest"));
 		}
-		appendValue(note, 'duration', String(duration));
-		appendValue(note, 'voice', this.id);
-		appendValue(note, 'type', spec.type);
+		appendValue(note, "duration", String(duration));
+		appendValue(note, "voice", this.id);
+		appendValue(note, "type", spec.type);
 		for (let dot = 0; dot < (spec.dots ?? 0); dot++) {
-			note.append(new MElement('dot'));
+			note.append(new MElement("dot"));
 		}
 		if (spec.timeModification) {
 			note.append(buildTimeModification(spec.timeModification));
 		}
-		if (this.staff !== '1') {
-			appendValue(note, 'staff', this.staff);
+		if (this.staff !== "1") {
+			appendValue(note, "staff", this.staff);
 		}
 		return note;
 	}
@@ -198,13 +198,13 @@ export class Voice {
 }
 
 /**
- * Divisions elapsed at the end of the voice's last non-chord note — where the
+ * Divisions elapsed at the end of the voice's last non-chord note, where the
  * next note in this voice lands by default (0 for an empty voice).
  */
 function voiceEnd(measure: Measure, voiceId: string): number {
 	let end = 0;
 	for (const note of measure.notes) {
-		if (note.voice !== voiceId || note.child('chord') !== null) {
+		if (note.voice !== voiceId || note.child("chord") !== null) {
 			continue;
 		}
 		const onset = onsetOf(measure, note);

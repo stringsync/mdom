@@ -17,7 +17,7 @@ const ILLEGAL_CHAR = /[^\t\n\r\u0020-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/u;
  */
 const DOCTYPE = new RegExp(
 	`^${NAME.source.slice(1, -1)}(?:\\s+(?:SYSTEM\\s+${literal()}|PUBLIC\\s+${literal()}\\s+${literal()}))?$`,
-	'u',
+	"u",
 );
 
 /** The XML declaration's pseudo-attributes and the values each may take. */
@@ -39,10 +39,10 @@ export function escapeXmlText(value: string): string {
 	assertXmlChars(value);
 	// \r is escaped because parsers fold a literal CR into \n on read.
 	return value
-		.replace(/&/g, '&amp;')
-		.replace(/</g, '&lt;')
-		.replace(/>/g, '&gt;')
-		.replace(/\r/g, '&#13;');
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/\r/g, "&#13;");
 }
 
 /** Escapes a value for a double-quoted attribute, whitespace included. */
@@ -50,9 +50,9 @@ export function escapeXmlAttribute(value: string): string {
 	// Literal tabs and newlines in attributes are normalized to spaces on read,
 	// so they go out as character references to survive a round trip.
 	return escapeXmlText(value)
-		.replace(/"/g, '&quot;')
-		.replace(/\t/g, '&#9;')
-		.replace(/\n/g, '&#10;');
+		.replace(/"/g, "&quot;")
+		.replace(/\t/g, "&#9;")
+		.replace(/\n/g, "&#10;");
 }
 
 /**
@@ -61,7 +61,7 @@ export function escapeXmlAttribute(value: string): string {
  */
 export function escapeXmlCData(value: string): string {
 	assertXmlChars(value);
-	return `<![CDATA[${value.replace(/]]>/g, ']]]]><![CDATA[>')}]]>`;
+	return `<![CDATA[${value.replace(/]]>/g, "]]]]><![CDATA[>")}]]>`;
 }
 
 /** Whether `doctype` is a doctype body mdom can write back safely. */
@@ -91,7 +91,7 @@ function assertXmlChars(value: string): void {
 	if (match) {
 		const code = match[0].codePointAt(0)?.toString(16).toUpperCase();
 		throw new Error(
-			`mdom: U+${code?.padStart(4, '0')} cannot be represented in XML`,
+			`mdom: U+${code?.padStart(4, "0")} cannot be represented in XML`,
 		);
 	}
 }

@@ -1,11 +1,13 @@
 import {
 	type ArchiveOptions,
 	DEFAULT_MAX_UNCOMPRESSED_BYTES,
-} from './archive-reader';
+} from "./archive-reader";
+import { BitReader } from "./guitar-pro-bit-reader";
+import { TruncatedError } from "./guitar-pro-truncated-error";
 
 const SECTOR_SIZE = 0x1000;
-const BCFS = 'BCFS';
-const BCFZ = 'BCFZ';
+const BCFS = "BCFS";
+const BCFZ = "BCFZ";
 
 /** Whether the bytes start with a Guitar Pro 6 `.gpx` container header. */
 export function isGpx(bytes: Uint8Array): boolean {
@@ -30,7 +32,7 @@ export class GpxFileSystem {
 			}
 			blocks = bytes.subarray(4);
 		} else {
-			throw new Error('Expected a Guitar Pro 6 .gpx container');
+			throw new Error("Expected a Guitar Pro 6 .gpx container");
 		}
 		return new GpxFileSystem(readFiles(blocks, limit));
 	}
@@ -48,50 +50,7 @@ export class GpxFileSystem {
 }
 
 function inflateError(): Error {
-	return new Error('mdom: archive inflates past maxUncompressedBytes');
-}
-
-/** Bit reader over a byte array: bits come most significant first. */
-class BitReader {
-	private position = 0;
-
-	constructor(
-		private readonly data: Uint8Array,
-		start: number,
-	) {
-		this.position = start * 8;
-	}
-
-	get exhausted(): boolean {
-		return this.position >= this.data.length * 8;
-	}
-
-	bit(): number {
-		const byte = this.data[this.position >> 3];
-		if (byte === undefined) {
-			throw new TruncatedError('Truncated Guitar Pro 6 container');
-		}
-		const value = (byte >> (7 - (this.position & 7))) & 1;
-		this.position++;
-		return value;
-	}
-
-	bits(count: number): number {
-		let value = 0;
-		for (let index = 0; index < count; index++) {
-			value = (value << 1) | this.bit();
-		}
-		return value;
-	}
-
-	/** Reads `count` bits, least significant first. */
-	bitsReversed(count: number): number {
-		let value = 0;
-		for (let index = 0; index < count; index++) {
-			value |= this.bit() << index;
-		}
-		return value;
-	}
+	return new Error("mdom: archive inflates past maxUncompressedBytes");
 }
 
 /** Inflates the BCFZ payload that follows the 4-byte header. */
@@ -127,8 +86,6 @@ function decompress(
 	return out.subarray(4, length);
 }
 
-class TruncatedError extends Error {}
-
 /** Inflates one literal run or back-reference into `out`, returning the new length. */
 function inflateToken(
 	reader: BitReader,
@@ -143,7 +100,7 @@ function inflateToken(
 		const size = reader.bitsReversed(wordSize);
 		const source = length - offset;
 		if (source < 0) {
-			throw new Error('Corrupt Guitar Pro 6 container');
+			throw new Error("Corrupt Guitar Pro 6 container");
 		}
 		const count = Math.min(offset, size, expectedLength - length);
 		out.copyWithin(length, source, source + count);
@@ -176,7 +133,7 @@ function readFiles(blocks: Uint8Array, limit: number): Map<string, Uint8Array> {
 				}
 				const sectorStart = sector * SECTOR_SIZE;
 				if (sectorStart >= blocks.length) {
-					throw new Error('Corrupt Guitar Pro 6 container');
+					throw new Error("Corrupt Guitar Pro 6 container");
 				}
 				// The next entry starts after the last data sector.
 				offset = sectorStart;
@@ -212,7 +169,7 @@ function readInt(data: Uint8Array, offset: number): number {
 }
 
 function readString(data: Uint8Array, offset: number, length: number): string {
-	let text = '';
+	let text = "";
 	for (let index = 0; index < length; index++) {
 		const code = data[offset + index];
 		if (code === undefined || code === 0) {

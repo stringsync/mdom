@@ -1,16 +1,5 @@
-import { MElement, MText } from './m-node';
-
-/** Canonical child order of the MusicXML `<system-layout>` sequence. */
-const ORDER = [
-	'system-margins',
-	'system-distance',
-	'top-system-distance',
-	'system-dividers',
-];
-
-function tenths(text: string | null | undefined): number | null {
-	return text == null ? null : Number(text);
-}
+import { MElement } from "./m-element";
+import { MText } from "./m-text";
 
 /**
  * A `<system-layout>`: how a system is spaced and indented, all in tenths
@@ -25,43 +14,43 @@ function tenths(text: string | null | undefined): number | null {
 export class SystemLayout extends MElement {
 	// ponytail: add <system-dividers> getters when a score actually needs to read them.
 	constructor() {
-		super('system-layout');
+		super("system-layout");
 	}
 
 	/** `<system-margins><left-margin>` in tenths (system indent); null when unset. */
 	get leftMargin(): number | null {
-		return tenths(this.child('system-margins')?.child('left-margin')?.text);
+		return tenths(this.child("system-margins")?.child("left-margin")?.text);
 	}
 
 	set leftMargin(value: number) {
-		this.setMargin('left-margin', value);
+		this.setMargin("left-margin", value);
 	}
 
 	/** `<system-margins><right-margin>` in tenths; null when unset. */
 	get rightMargin(): number | null {
-		return tenths(this.child('system-margins')?.child('right-margin')?.text);
+		return tenths(this.child("system-margins")?.child("right-margin")?.text);
 	}
 
 	set rightMargin(value: number) {
-		this.setMargin('right-margin', value);
+		this.setMargin("right-margin", value);
 	}
 
 	/** `<system-distance>`: vertical gap above this system from the previous one; null when unset. */
 	get systemDistance(): number | null {
-		return tenths(this.child('system-distance')?.text);
+		return tenths(this.child("system-distance")?.text);
 	}
 
 	set systemDistance(value: number) {
-		this.upsert('system-distance', value);
+		this.upsert("system-distance", value);
 	}
 
 	/** `<top-system-distance>`: gap from the top page margin to the first system on a page; null when unset. */
 	get topSystemDistance(): number | null {
-		return tenths(this.child('top-system-distance')?.text);
+		return tenths(this.child("top-system-distance")?.text);
 	}
 
 	set topSystemDistance(value: number) {
-		this.upsert('top-system-distance', value);
+		this.upsert("top-system-distance", value);
 	}
 
 	/** Upsert a direct value child, inserted to keep the schema's child order. */
@@ -77,11 +66,11 @@ export class SystemLayout extends MElement {
 	}
 
 	/** Upsert `left-margin`/`right-margin` inside `<system-margins>` (created if absent). */
-	private setMargin(tag: 'left-margin' | 'right-margin', value: number): void {
-		let margins = this.child('system-margins');
+	private setMargin(tag: "left-margin" | "right-margin", value: number): void {
+		let margins = this.child("system-margins");
 		if (!margins) {
-			margins = new MElement('system-margins');
-			this.insertBefore(margins, this.firstChildAfter('system-margins'));
+			margins = new MElement("system-margins");
+			this.insertBefore(margins, this.firstChildAfter("system-margins"));
 		}
 		const existing = margins.child(tag);
 		if (existing) {
@@ -93,7 +82,7 @@ export class SystemLayout extends MElement {
 		// left-margin precedes right-margin.
 		margins.insertBefore(
 			element,
-			tag === 'left-margin' ? margins.child('right-margin') : null,
+			tag === "left-margin" ? margins.child("right-margin") : null,
 		);
 	}
 
@@ -107,4 +96,16 @@ export class SystemLayout extends MElement {
 		}
 		return null;
 	}
+}
+
+/** Canonical child order of the MusicXML `<system-layout>` sequence. */
+const ORDER = [
+	"system-margins",
+	"system-distance",
+	"top-system-distance",
+	"system-dividers",
+];
+
+function tenths(text: string | null | undefined): number | null {
+	return text == null ? null : Number(text);
 }

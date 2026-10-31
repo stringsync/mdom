@@ -2,10 +2,10 @@
 // Guitar Pro's standard drum kit and GP6 drum mapping, from alphaTab's
 // PercussionMapper and test data. See THIRD_PARTY.md.
 // Copyright © 2025 Daniel Kuschny and Contributors.
-import { GuitarProValues } from './guitar-pro-values';
-import { GuitarProXml as X } from './guitar-pro-xml';
-import type { MElement } from './m-node';
-import type { DisplayPositionSpec, NoteheadValue } from './note';
+import { GuitarProValues } from "./guitar-pro-values";
+import { GuitarProXml as X } from "./guitar-pro-xml";
+import type { MElement } from "./m-element";
+import type { DisplayPositionSpec, NoteheadValue } from "./note";
 
 /** One playable sound of a Guitar Pro drum kit, as GPIF's `<Articulation>` stores it. */
 export interface GuitarProDrumArticulation {
@@ -243,6 +243,7 @@ const elements: ElementRow[] = [
 	]],
 ];
 
+// vet-ignore export-leads-the-file: the table is built at load from the data above, so it cannot move below the export.
 export const guitarProDrumKit: readonly GuitarProDrumArticulation[] =
 	elements.flatMap(([element, elementType, soundbank, articulations]) =>
 		articulations.map(
@@ -261,7 +262,7 @@ export const guitarProDrumKit: readonly GuitarProDrumArticulation[] =
 				soundbank,
 				name,
 				staffLine,
-				noteheads: noteheads.split(' '),
+				noteheads: noteheads.split(" "),
 				techniquePlacement,
 				techniqueSymbol,
 				id,
@@ -303,31 +304,31 @@ export function gp6ArticulationId(
 
 /** The kit's articulations from a GPIF `<InstrumentSet>`, in index order. */
 export function readDrumKit(set: MElement): GuitarProDrumArticulation[] {
-	return (set.child('Elements')?.childrenNamed('Element') ?? []).flatMap(
+	return (set.child("Elements")?.childrenNamed("Element") ?? []).flatMap(
 		(element) =>
-			(element.child('Articulations')?.childrenNamed('Articulation') ?? []).map(
+			(element.child("Articulations")?.childrenNamed("Articulation") ?? []).map(
 				(articulation) => {
-					const text = (tag: string) => articulation.child(tag)?.text ?? '';
+					const text = (tag: string) => articulation.child(tag)?.text ?? "";
 					return {
-						element: element.child('Name')?.text ?? '',
-						elementType: element.child('Type')?.text ?? '',
-						soundbank: element.child('SoundbankName')?.text ?? '',
-						name: text('Name'),
+						element: element.child("Name")?.text ?? "",
+						elementType: element.child("Type")?.text ?? "",
+						soundbank: element.child("SoundbankName")?.text ?? "",
+						name: text("Name"),
 						staffLine: GuitarProValues.integer(
-							Number(text('StaffLine') || 0),
-							'drum staff line',
+							Number(text("StaffLine") || 0),
+							"drum staff line",
 							// Lines that keep the display octave within MusicXML's 0 to 9.
 							-31,
 							TOP_LINE,
 						),
-						noteheads: text('Noteheads').split(' ').filter(Boolean),
-						techniquePlacement: text('TechniquePlacement'),
-						techniqueSymbol: text('TechniqueSymbol'),
-						id: Number(text('InputMidiNumbers').split(' ')[0] ?? -1),
-						rseSound: text('OutputRSESound'),
+						noteheads: text("Noteheads").split(" ").filter(Boolean),
+						techniquePlacement: text("TechniquePlacement"),
+						techniqueSymbol: text("TechniqueSymbol"),
+						id: Number(text("InputMidiNumbers").split(" ")[0] ?? -1),
+						rseSound: text("OutputRSESound"),
 						output: GuitarProValues.integer(
-							Number(text('OutputMidiNumber') || 0),
-							'drum MIDI key',
+							Number(text("OutputMidiNumber") || 0),
+							"drum MIDI key",
 							0,
 							127,
 						),
@@ -345,23 +346,23 @@ export function writeDrumKit(
 	set: MElement,
 	kit: readonly GuitarProDrumArticulation[] = guitarProDrumKit,
 ): void {
-	const elementsNode = set.child('Elements') ?? X.add(set, 'Elements');
+	const elementsNode = set.child("Elements") ?? X.add(set, "Elements");
 	let elementNode: MElement | null = null;
-	let elementName = '';
+	let elementName = "";
 	for (const articulation of kit) {
 		if (!elementNode || articulation.element !== elementName) {
 			elementName = articulation.element;
-			elementNode = X.add(elementsNode, 'Element');
-			X.add(elementNode, 'Name', articulation.element);
-			X.add(elementNode, 'Type', articulation.elementType);
-			X.add(elementNode, 'SoundbankName', articulation.soundbank);
-			X.add(elementNode, 'Articulations');
+			elementNode = X.add(elementsNode, "Element");
+			X.add(elementNode, "Name", articulation.element);
+			X.add(elementNode, "Type", articulation.elementType);
+			X.add(elementNode, "SoundbankName", articulation.soundbank);
+			X.add(elementNode, "Articulations");
 		}
-		const node = X.add(elementNode.child('Articulations')!, 'Articulation');
+		const node = X.add(elementNode.child("Articulations")!, "Articulation");
 		for (const [tag, value] of Object.entries({
 			Name: articulation.name,
 			StaffLine: articulation.staffLine,
-			Noteheads: articulation.noteheads.join(' '),
+			Noteheads: articulation.noteheads.join(" "),
 			TechniquePlacement: articulation.techniquePlacement,
 			TechniqueSymbol: articulation.techniqueSymbol,
 			InputMidiNumbers: articulation.id,
@@ -373,9 +374,9 @@ export function writeDrumKit(
 	}
 }
 
-const STEPS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+const STEPS = ["C", "D", "E", "F", "G", "A", "B"];
 // Staff line 0 is the top line, F5 through a percussion clef as through a treble clef.
-const TOP_LINE = 5 * 7 + STEPS.indexOf('F');
+const TOP_LINE = 5 * 7 + STEPS.indexOf("F");
 
 /** The display step and octave of a Guitar Pro drum staff line. */
 export function displayOfStaffLine(line: number): DisplayPositionSpec {
@@ -402,7 +403,7 @@ export function drumGlyph(
 			({ half: 1, whole: 2 } as Record<string, number>)[type] ?? 0
 		] ??
 		drum.noteheads[0] ??
-		''
+		""
 	);
 }
 
@@ -414,25 +415,25 @@ export function noteheadOfGlyph(
 		return null;
 	}
 	if (/^notehead(X|HeavyX)/.test(glyph)) {
-		return { value: 'x' };
+		return { value: "x" };
 	}
-	if (glyph === 'noteheadCircleX') {
-		return { value: 'circle-x' };
+	if (glyph === "noteheadCircleX") {
+		return { value: "circle-x" };
 	}
-	if (glyph === 'noteheadCircleSlash') {
-		return { value: 'circled' };
+	if (glyph === "noteheadCircleSlash") {
+		return { value: "circled" };
 	}
-	if (glyph.startsWith('noteheadDiamond')) {
-		return { value: 'diamond', filled: glyph.includes('Black') };
+	if (glyph.startsWith("noteheadDiamond")) {
+		return { value: "diamond", filled: glyph.includes("Black") };
 	}
-	if (glyph.startsWith('noteheadTriangleUp')) {
-		return { value: 'triangle' };
+	if (glyph.startsWith("noteheadTriangleUp")) {
+		return { value: "triangle" };
 	}
-	if (glyph.startsWith('noteheadSlashed')) {
-		return { value: 'slashed' };
+	if (glyph.startsWith("noteheadSlashed")) {
+		return { value: "slashed" };
 	}
-	if (glyph === 'noteheadNull') {
-		return { value: 'none' };
+	if (glyph === "noteheadNull") {
+		return { value: "none" };
 	}
 	return null;
 }

@@ -35,6 +35,12 @@ mdom fix    # typecheck, format, lint
 `mdom test` needs `xmllint` on PATH: the writer tests validate their output
 against the vendored [MusicXML XSD](./packages/mdom/schema).
 
+## Contributing
+
+Pull requests are welcome, though they are imported into the private
+repository this one is mirrored from rather than merged here. See
+[CONTRIBUTING.md](./CONTRIBUTING.md).
+
 ## Converting scores
 
 Use `convert` to change the file format. Transposition means changing musical
@@ -73,7 +79,7 @@ processes. Run them with `mdom test packages/cli`.
 mdom ship patch  # or minor, major
 ```
 
-`webappwiz/ship` owns the flow. It builds every public package into a `dist/`
+`core/ship` owns the flow. It builds every public package into a `dist/`
 of JavaScript and declarations, stamps one version across the workspace,
 commits, publishes to npm, tags, and writes the GitHub release notes. Nothing
 here publishes source, so a consumer needs no compiler.

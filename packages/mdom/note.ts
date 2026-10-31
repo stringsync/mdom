@@ -1,9 +1,10 @@
-import { Accidental } from './accidental';
-import { Articulation } from './articulation';
-import { Beam } from './beam';
-import { Clef } from './clef';
-import { Glissando } from './glissando';
-import { HammerOn } from './hammer-on';
+// vet-ignore-file compact-files: the note node and its pitch, technique and tie editing share private storage.
+import { Accidental } from "./accidental";
+import { Articulation } from "./articulation";
+import { Beam } from "./beam";
+import { Clef } from "./clef";
+import { Glissando } from "./glissando";
+import { HammerOn } from "./hammer-on";
 import {
 	type Listen,
 	type ListenSpec,
@@ -13,19 +14,20 @@ import {
 	readPlay,
 	writeListen,
 	writePlay,
-} from './instrument';
-import { Key } from './key';
-import { buildLyric, Lyric, type LyricSpec } from './lyric';
-import { MElement, required } from './m-node';
-import { appendValue, Measure } from './measure';
+} from "./instrument";
+import { Key } from "./key";
+import { buildLyric, Lyric, type LyricSpec } from "./lyric";
+import { MElement } from "./m-element";
+import { required } from "./m-node";
+import { appendValue, Measure } from "./measure";
 import {
 	buildOctaveShiftDirection,
 	type OctaveShift,
 	type Ottava,
-} from './octave-shift';
-import { Ornament } from './ornament';
-import { Part } from './part';
-import { Pitch, transposePitch } from './pitch';
+} from "./octave-shift";
+import { Ornament } from "./ornament";
+import { Part } from "./part";
+import { Pitch, transposePitch } from "./pitch";
 import {
 	colorOf,
 	type LineType,
@@ -36,17 +38,17 @@ import {
 	setPositionOf,
 	setYesNo,
 	yesNoOf,
-} from './print-style';
-import { PullOff } from './pull-off';
+} from "./print-style";
+import { PullOff } from "./pull-off";
 import {
 	appliesToStaff,
 	attributeBackFrom,
 	childIndexIn,
 	divisionsBackFrom,
-} from './signature';
-import { Slide } from './slide';
-import { Slur } from './slur';
-import { allocateSpanNumber } from './spanner-numbers';
+} from "./signature";
+import { Slide } from "./slide";
+import { Slur } from "./slur";
+import { allocateSpanNumber } from "./spanner-numbers";
 import {
 	type BendShape,
 	type ClosedLocation,
@@ -56,160 +58,35 @@ import {
 	type HarmonicKind,
 	type HarmonicPitch,
 	Technical,
-} from './technical';
-import { setOrRemove } from './text-format';
-import { Tie } from './tie';
-import { Time } from './time';
+} from "./technical";
+import { setOrRemove } from "./text-format";
+import { Tie } from "./tie";
+import { Time } from "./time";
 import {
 	buildTimeModification,
 	readTimeModification,
 	type TimeModificationSpec,
 	validateDots,
 	validateTimeModification,
-} from './time-modification';
-import { onsetOf, repairTimelineAfter } from './timeline';
-import { Transpose } from './transpose';
-import { buildTuplet, Tuplet, type TupletSpec } from './tuplet';
-import { WavyLine } from './wavy-line';
-
-/** MusicXML note-type values, coarsest to finest. */
-export type NoteType =
-	| 'whole'
-	| 'half'
-	| 'quarter'
-	| 'eighth'
-	| '16th'
-	| '32nd'
-	| '64th'
-	| '128th';
-
-/**
- * A MusicXML `symbol-size`: the drawn size of a note's `<type>`. MusicXML
- * defaults it from the note: `cue` for a cue or grace note, `grace-cue` for
- * one that is both, `full` otherwise.
- */
-export type SymbolSize = 'full' | 'cue' | 'grace-cue' | 'large';
-
-/** MusicXML notehead-value enum: the glyph drawn for a note's head. */
-export type NoteheadValue =
-	| 'normal'
-	| 'x'
-	| 'diamond'
-	| 'slash'
-	| 'triangle'
-	| 'cross'
-	| 'circle-x'
-	| 'circled'
-	| 'slashed'
-	| 'none';
-
-/** A musical duration: a note type, optional dots, and an optional onset. */
-export interface DurationSpec {
-	type: NoteType;
-	dots?: number;
-	timeModification?: TimeModificationSpec;
-	/**
-	 * Beat within the measure to place this at; defaults to the voice's own cursor
-	 * (the end of its last note). Pass it to jump back and stack, or leave a gap.
-	 */
-	onset?: number;
-}
-
-/** A pitch: step, octave, and optional alteration in semitones. */
-export interface PitchSpec {
-	step: string;
-	octave: number;
-	alter?: number;
-}
-
-/** A pitched note: a {@link PitchSpec} plus a {@link DurationSpec}. */
-export type NoteSpec = PitchSpec & DurationSpec;
-
-/**
- * An unpitched (percussion) note's staff position: the step and octave of the
- * line or space it is drawn on, read through the clef as if it were a pitch.
- */
-export interface DisplayPositionSpec {
-	step: string;
-	octave: number;
-}
-
-/** An unpitched note: an optional {@link DisplayPositionSpec} plus a {@link DurationSpec}. */
-export type UnpitchedNoteSpec = Partial<DisplayPositionSpec> & DurationSpec;
-
-/** Quarter-note beats per note type; dots add half of the previous increment. */
-const QUARTER_BEATS: Record<NoteType, number> = {
-	whole: 4,
-	half: 2,
-	quarter: 1,
-	eighth: 0.5,
-	'16th': 0.25,
-	'32nd': 0.125,
-	'64th': 0.0625,
-	'128th': 0.03125,
-};
-
-// Fixed PPQ supports up to triple dots and ratios with factors 3, 5 and 7.
-// Imported scores retain their divisions; unrepresentable durations throw.
-export const WRITE_DIVISIONS = 256 * 3 * 5 * 7;
-
-/** How a note plays, read from its `<note>` attributes; see {@link Note.performance}. */
-export interface NotePerformance {
-	/** `dynamics`: loudness at the attack, as a percent of a forte velocity (90 MIDI). */
-	dynamics: number | null;
-	/** `end-dynamics`: loudness at the release, as the same percent. */
-	endDynamics: number | null;
-	/** `attack`: how far the attack moves from the onset, in quarter-note beats. */
-	attack: number | null;
-	/** `release`: how far the release moves from the note's end, in quarter-note beats. */
-	release: number | null;
-	/** `pizzicato`: whether a string note plays plucked (true) or bowed (false). */
-	pizzicato: boolean | null;
-}
-
-/** How a note plays, to write: {@link NotePerformance} with every field optional. */
-export interface NotePerformanceSpec {
-	dynamics?: number;
-	endDynamics?: number;
-	attack?: number;
-	release?: number;
-	pizzicato?: boolean;
-}
-
-/** `<note>` children that follow its `<tie>`s, in schema order. */
-const AFTER_TIE = new Set([
-	'instrument',
-	'footnote',
-	'level',
-	'voice',
-	'type',
-	'dot',
-	'accidental',
-	'time-modification',
-	'stem',
-	'notehead',
-	'notehead-text',
-	'staff',
-	'beam',
-	'notations',
-	'lyric',
-	'play',
-	'listen',
-]);
+} from "./time-modification";
+import { onsetOf, repairTimelineAfter } from "./timeline";
+import { Transpose } from "./transpose";
+import { buildTuplet, Tuplet, type TupletSpec } from "./tuplet";
+import { WavyLine } from "./wavy-line";
 
 /**
  * A single note. Chords, ties, beams, slurs, voice/staff grouping, and the
- * backup/forward timeline are not stored as structure here — they round-trip as
+ * backup/forward timeline are not stored as structure here, they round-trip as
  * plain child MElements, and the query layer derives them on demand.
  */
 export class Note extends MElement {
 	constructor() {
-		super('note');
+		super("note");
 	}
 
 	/** Whether this note is a `<rest>`. */
 	get isRest(): boolean {
-		return this.child('rest') !== null;
+		return this.child("rest") !== null;
 	}
 
 	/** The note's pitch; null for rests / unpitched notes. */
@@ -224,29 +101,29 @@ export class Note extends MElement {
 
 	/** `<duration>` in divisions; null for grace notes, which carry none (see {@link isGrace}). */
 	get duration(): number | null {
-		const duration = this.child('duration')?.text;
+		const duration = this.child("duration")?.text;
 		return duration == null ? null : Number(duration);
 	}
 
 	/** The notated `<type>` (whole/half/quarter/...), or null. */
 	get type(): string | null {
-		return this.child('type')?.text ?? null;
+		return this.child("type")?.text ?? null;
 	}
 
 	/** Augmentation `<dot>` count (0 when none); the read side of {@link setDuration}'s `dots`. */
 	get dots(): number {
-		return this.childrenNamed('dot').length;
+		return this.childrenNamed("dot").length;
 	}
 
 	/** The staff this note is on; '1' when omitted (single-staff parts). */
 	get staff(): string {
-		return this.child('staff')?.text ?? '1';
+		return this.child("staff")?.text ?? "1";
 	}
 
 	/**
 	 * The `<clef>` in effect for this note's staff: the nearest one at or before
 	 * this note, scanning back through the part. This single query is the whole
-	 * "carried-forward signature" computation — no Signature objects, no
+	 * "carried-forward signature" computation, no Signature objects, no
 	 * per-fragment threading. The same backward walk answers key/time/divisions.
 	 */
 	get clef(): Clef | null {
@@ -256,7 +133,7 @@ export class Note extends MElement {
 		);
 	}
 
-	/** `<key>` in effect for this note's staff — same backward walk as {@link clef}. */
+	/** `<key>` in effect for this note's staff, same backward walk as {@link clef}. */
 	get key(): Key | null {
 		const staff = this.staff;
 		return this.attributeBack(`key:${staff}`, (attrs) =>
@@ -309,7 +186,7 @@ export class Note extends MElement {
 	}
 
 	/**
-	 * `<divisions>` in effect (global, not per-staff) — needed to read
+	 * `<divisions>` in effect (global, not per-staff), needed to read
 	 * `<duration>` as beats. Same backward walk, proving it generalizes.
 	 */
 	get divisions(): number | null {
@@ -322,8 +199,8 @@ export class Note extends MElement {
 	/** `<staves>` count in effect (global, not per-staff); 1 when never declared. */
 	get staveCount(): number {
 		const found = this.attributeBack(
-			'staves',
-			(attrs) => attrs.child('staves') ?? undefined,
+			"staves",
+			(attrs) => attrs.child("staves") ?? undefined,
 		);
 		return found?.text == null ? 1 : Number(found.text);
 	}
@@ -336,9 +213,9 @@ export class Note extends MElement {
 		const staff = this.staff;
 		const lines = this.attributeBack(`staff-lines:${staff}`, (attrs) =>
 			attrs
-				.childrenNamed('staff-details')
+				.childrenNamed("staff-details")
 				.filter((details) => appliesToStaff(details, staff))
-				.map((details) => details.child('staff-lines'))
+				.map((details) => details.child("staff-lines"))
 				.find((node) => node != null),
 		);
 		return lines?.text == null ? 5 : Number(lines.text);
@@ -383,20 +260,20 @@ export class Note extends MElement {
 			return value == null || divisions == null ? null : value / divisions;
 		};
 		return {
-			dynamics: percent('dynamics'),
-			endDynamics: percent('end-dynamics'),
-			attack: beats('attack'),
-			release: beats('release'),
+			dynamics: percent("dynamics"),
+			endDynamics: percent("end-dynamics"),
+			attack: beats("attack"),
+			release: beats("release"),
 			pizzicato:
-				this.getAttribute('pizzicato') == null
+				this.getAttribute("pizzicato") == null
 					? null
-					: yesNoOf(this, 'pizzicato', false),
+					: yesNoOf(this, "pizzicato", false),
 		};
 	}
 
 	/** The note's `<play>` (mute, IPA, semi-pitched range), or null when it has none. */
 	get play(): Play | null {
-		const node = this.child('play');
+		const node = this.child("play");
 		return node ? readPlay(node) : null;
 	}
 
@@ -405,28 +282,28 @@ export class Note extends MElement {
 	 * last among the note's other children.
 	 */
 	setPlay(spec: PlaySpec | null): void {
-		this.child('play')?.remove();
+		this.child("play")?.remove();
 		if (spec == null) {
 			return;
 		}
-		const node = new MElement('play');
+		const node = new MElement("play");
 		writePlay(node, spec);
-		this.insertBefore(node, this.child('listen'));
+		this.insertBefore(node, this.child("listen"));
 	}
 
 	/** The note's `<listen>` actions, or null when it has none. */
 	get listen(): Listen | null {
-		const node = this.child('listen');
+		const node = this.child("listen");
 		return node ? readListen(node) : null;
 	}
 
 	/** Replace the note's `<listen>`, last among its children; null removes it. */
 	setListen(spec: ListenSpec | null): void {
-		this.child('listen')?.remove();
+		this.child("listen")?.remove();
 		if (spec == null) {
 			return;
 		}
-		const node = new MElement('listen');
+		const node = new MElement("listen");
 		writeListen(node, spec);
 		this.append(node);
 	}
@@ -444,38 +321,38 @@ export class Note extends MElement {
 						beats *
 							required(
 								this.divisions,
-								'divisions to write a note attack or release',
+								"divisions to write a note attack or release",
 							),
 					);
-		setOrRemove(this, 'dynamics', spec?.dynamics?.toString() ?? null);
-		setOrRemove(this, 'end-dynamics', spec?.endDynamics?.toString() ?? null);
-		setOrRemove(this, 'attack', timing(spec?.attack));
-		setOrRemove(this, 'release', timing(spec?.release));
-		setYesNo(this, 'pizzicato', spec?.pizzicato ?? null);
+		setOrRemove(this, "dynamics", spec?.dynamics?.toString() ?? null);
+		setOrRemove(this, "end-dynamics", spec?.endDynamics?.toString() ?? null);
+		setOrRemove(this, "attack", timing(spec?.attack));
+		setOrRemove(this, "release", timing(spec?.release));
+		setYesNo(this, "pizzicato", spec?.pizzicato ?? null);
 	}
 
 	/**
 	 * The `<voice>` this note belongs to; '1' when omitted, matching {@link staff}.
-	 * A `<chord/>` member stacks on the note it follows and so shares its voice —
+	 * A `<chord/>` member stacks on the note it follows and so shares its voice -
 	 * exporters routinely leave `<voice>` off chord members, and bucketing those
 	 * into '1' both invents a voice and collapses the orphaned run into one chord.
 	 */
 	get voice(): string {
-		const own = this.child('voice')?.text;
+		const own = this.child("voice")?.text;
 		if (own != null) {
 			return own;
 		}
-		return this.isChordMember ? (adjacentNote(this, -1)?.voice ?? '1') : '1';
+		return this.isChordMember ? (adjacentNote(this, -1)?.voice ?? "1") : "1";
 	}
 
 	/** Whether this note carries `<chord/>` (stacks on the previous note's onset). */
 	get isChordMember(): boolean {
-		return this.child('chord') !== null;
+		return this.child("chord") !== null;
 	}
 
 	/** Whether this note carries `<grace/>` (stolen time, so no `<duration>`). */
 	get isGrace(): boolean {
-		return this.child('grace') !== null;
+		return this.child("grace") !== null;
 	}
 
 	/**
@@ -483,14 +360,14 @@ export class Note extends MElement {
 	 * and begins another). Each resolves its far end via `partner`.
 	 */
 	get slurs(): Slur[] {
-		return this.childrenNamed('notations').flatMap((notations) =>
+		return this.childrenNamed("notations").flatMap((notations) =>
 			notations.childrenOfType(Slur),
 		);
 	}
 
 	/** `<tied>` markers in `<notations>`; each resolves its far end via partner(). */
 	get ties(): Tie[] {
-		return this.childrenNamed('notations').flatMap((notations) =>
+		return this.childrenNamed("notations").flatMap((notations) =>
 			notations.childrenOfType(Tie),
 		);
 	}
@@ -499,12 +376,12 @@ export class Note extends MElement {
 	 * The `<tie>` elements on this note, document order: the tie as playback
 	 * hears it, a `'start'` holding the note into the next and a `'stop'`
 	 * continuing the one before. Distinct from {@link ties}, the notated
-	 * `<tied>` curves — an exporter may write either without the other.
+	 * `<tied>` curves, an exporter may write either without the other.
 	 */
-	get playbackTies(): Array<'start' | 'stop'> {
-		return this.childrenNamed('tie').flatMap((tie) => {
-			const type = tie.getAttribute('type');
-			return type === 'start' || type === 'stop' ? [type] : [];
+	get playbackTies(): Array<"start" | "stop"> {
+		return this.childrenNamed("tie").flatMap((tie) => {
+			const type = tie.getAttribute("type");
+			return type === "start" || type === "stop" ? [type] : [];
 		});
 	}
 
@@ -514,10 +391,10 @@ export class Note extends MElement {
 	 * the two in step; this is for a tie that plays but does not print. A cue
 	 * note sounds nothing, so it takes no `<tie>`.
 	 */
-	setPlaybackTie(type: 'start' | 'stop', present: boolean): void {
-		const existing = this.childrenNamed('tie');
+	setPlaybackTie(type: "start" | "stop", present: boolean): void {
+		const existing = this.childrenNamed("tie");
 		const matching = existing.filter(
-			(tie) => tie.getAttribute('type') === type,
+			(tie) => tie.getAttribute("type") === type,
 		);
 		if (!present) {
 			for (const tie of matching) {
@@ -525,11 +402,11 @@ export class Note extends MElement {
 			}
 			return;
 		}
-		if (matching.length > 0 || this.child('cue')) {
+		if (matching.length > 0 || this.child("cue")) {
 			return;
 		}
-		const tie = new MElement('tie');
-		tie.setAttribute('type', type);
+		const tie = new MElement("tie");
+		tie.setAttribute("type", type);
 		const afterTies =
 			this.children.find(
 				(child): child is MElement =>
@@ -538,7 +415,7 @@ export class Note extends MElement {
 		// A stop continues the tie before, so it reads first.
 		this.insertBefore(
 			tie,
-			type === 'stop' ? (existing[0] ?? afterTies) : afterTies,
+			type === "stop" ? (existing[0] ?? afterTies) : afterTies,
 		);
 	}
 
@@ -549,15 +426,15 @@ export class Note extends MElement {
 
 	/** `<tuplet>` markers in `<notations>`. */
 	get tuplets(): Tuplet[] {
-		return this.childrenNamed('notations').flatMap((notations) =>
+		return this.childrenNamed("notations").flatMap((notations) =>
 			notations.childrenOfType(Tuplet),
 		);
 	}
 
 	/** `<wavy-line>` markers in `<notations><ornaments>`. */
 	get wavyLines(): WavyLine[] {
-		return this.childrenNamed('notations')
-			.flatMap((notations) => notations.childrenNamed('ornaments'))
+		return this.childrenNamed("notations")
+			.flatMap((notations) => notations.childrenNamed("ornaments"))
 			.flatMap((ornaments) => ornaments.childrenOfType(WavyLine));
 	}
 
@@ -583,11 +460,11 @@ export class Note extends MElement {
 
 	/**
 	 * Articulation marking names in `<notations><articulations>` (staccato, accent,
-	 * tenuto, …), in document order — the child tags, mirroring {@link slurs}/{@link ties}.
+	 * tenuto, …), in document order, the child tags, mirroring {@link slurs}/{@link ties}.
 	 */
 	get articulations(): string[] {
-		return this.childrenNamed('notations')
-			.flatMap((notations) => notations.childrenNamed('articulations'))
+		return this.childrenNamed("notations")
+			.flatMap((notations) => notations.childrenNamed("articulations"))
 			.flatMap((articulations) => articulations.childrenOfType(MElement))
 			.map((articulation) => articulation.tag);
 	}
@@ -596,7 +473,7 @@ export class Note extends MElement {
 	 * The `<notehead>` glyph, or null when the note draws the default head.
 	 * `parentheses` is the `parentheses="yes"` attribute (a ghost note). `filled`
 	 * is the tri-state `filled` attribute: null means unstated, so the duration
-	 * decides — an explicit `filled="no"` on a quarter draws an OPEN head (a ghost
+	 * decides, an explicit `filled="no"` on a quarter draws an OPEN head (a ghost
 	 * or ringing note), which is not the same as saying nothing.
 	 */
 	get notehead(): {
@@ -605,15 +482,15 @@ export class Note extends MElement {
 		filled: boolean | null;
 		color: string | null;
 	} | null {
-		const notehead = this.child('notehead');
+		const notehead = this.child("notehead");
 		if (!notehead) {
 			return null;
 		}
-		const filled = notehead.getAttribute('filled');
+		const filled = notehead.getAttribute("filled");
 		return {
-			value: (notehead.text ?? 'normal') as NoteheadValue,
-			parentheses: notehead.getAttribute('parentheses') === 'yes',
-			filled: filled == null ? null : filled === 'yes',
+			value: (notehead.text ?? "normal") as NoteheadValue,
+			parentheses: notehead.getAttribute("parentheses") === "yes",
+			filled: filled == null ? null : filled === "yes",
 			color: colorOf(notehead),
 		};
 	}
@@ -622,12 +499,12 @@ export class Note extends MElement {
 	 * The `<notations><fermata>` type: 'upright' (the default when the element is
 	 * present without a `type`) or 'inverted'; null when there is no fermata.
 	 */
-	get fermata(): 'upright' | 'inverted' | null {
-		const fermata = this.notationsChild('fermata');
+	get fermata(): "upright" | "inverted" | null {
+		const fermata = this.notationsChild("fermata");
 		if (!fermata) {
 			return null;
 		}
-		return fermata.getAttribute('type') === 'inverted' ? 'inverted' : 'upright';
+		return fermata.getAttribute("type") === "inverted" ? "inverted" : "upright";
 	}
 
 	/**
@@ -636,39 +513,39 @@ export class Note extends MElement {
 	 * when there is no fermata. An unknown shape reads as written.
 	 */
 	get fermataShape(): FermataShape | null {
-		const fermata = this.notationsChild('fermata');
+		const fermata = this.notationsChild("fermata");
 		if (!fermata) {
 			return null;
 		}
 		const shape = fermata.text?.trim();
-		return (shape ? shape : 'normal') as FermataShape;
+		return (shape ? shape : "normal") as FermataShape;
 	}
 
 	/**
 	 * The `<notations><arpeggiate>` roll: outer null = no element; inner
 	 * `direction: null` = an undirected roll (element present, no `direction`
-	 * attribute) — a distinct rendering, so the two nulls stay separate.
+	 * attribute), a distinct rendering, so the two nulls stay separate.
 	 * `number` tells apart simultaneous rolls across the parts or staves they
 	 * join; null when unstated.
 	 */
 	get arpeggiate(): {
-		direction: 'up' | 'down' | null;
+		direction: "up" | "down" | null;
 		number: number | null;
 	} | null {
-		const arpeggiate = this.notationsChild('arpeggiate');
+		const arpeggiate = this.notationsChild("arpeggiate");
 		if (!arpeggiate) {
 			return null;
 		}
-		const direction = arpeggiate.getAttribute('direction');
+		const direction = arpeggiate.getAttribute("direction");
 		return {
-			direction: direction === 'up' || direction === 'down' ? direction : null,
-			number: integerAttribute(arpeggiate, 'number'),
+			direction: direction === "up" || direction === "down" ? direction : null,
+			number: integerAttribute(arpeggiate, "number"),
 		};
 	}
 
 	/** Whether this is a slashed grace note (`<grace slash="yes"/>`, an acciaccatura). */
 	get graceSlash(): boolean {
-		return this.child('grace')?.getAttribute('slash') === 'yes';
+		return this.child("grace")?.getAttribute("slash") === "yes";
 	}
 
 	/**
@@ -678,7 +555,7 @@ export class Note extends MElement {
 	 * to 0–100; the consumer clamps.
 	 */
 	get graceStealTimePrevious(): number | null {
-		return this.graceNumber('steal-time-previous');
+		return this.graceNumber("steal-time-previous");
 	}
 
 	/**
@@ -688,7 +565,7 @@ export class Note extends MElement {
 	 * 0–100; the consumer clamps.
 	 */
 	get graceStealTimeFollowing(): number | null {
-		return this.graceNumber('steal-time-following');
+		return this.graceNumber("steal-time-following");
 	}
 
 	/**
@@ -698,7 +575,7 @@ export class Note extends MElement {
 	 * effect, or this isn't a grace note.
 	 */
 	get graceMakeTime(): number | null {
-		const makeTime = this.graceNumber('make-time');
+		const makeTime = this.graceNumber("make-time");
 		const divisions = this.divisions;
 		if (makeTime == null || divisions == null) {
 			return null;
@@ -708,8 +585,8 @@ export class Note extends MElement {
 
 	/** A numeric `<grace>` attribute, leniently: null unless a finite number. */
 	private graceNumber(name: string): number | null {
-		const raw = this.child('grace')?.getAttribute(name);
-		if (raw == null || raw.trim() === '') {
+		const raw = this.child("grace")?.getAttribute(name);
+		if (raw == null || raw.trim() === "") {
 			return null;
 		}
 		const value = Number(raw);
@@ -721,12 +598,12 @@ export class Note extends MElement {
 	 * together, the opposite of {@link arpeggiate}. `type="bottom"` sits on the
 	 * lowest member it covers and `type="top"` on the highest, with nothing on the
 	 * members between; null when this note carries neither. A half-marked chord
-	 * (only one end present — exporters emit these) reports what is there, and the
+	 * (only one end present, exporters emit these) reports what is there, and the
 	 * consumer decides how to bracket out to the chord edge.
 	 */
-	get nonArpeggiate(): 'top' | 'bottom' | null {
-		const type = this.notationsChild('non-arpeggiate')?.getAttribute('type');
-		return type === 'top' || type === 'bottom' ? type : null;
+	get nonArpeggiate(): "top" | "bottom" | null {
+		const type = this.notationsChild("non-arpeggiate")?.getAttribute("type");
+		return type === "top" || type === "bottom" ? type : null;
 	}
 
 	/**
@@ -734,8 +611,8 @@ export class Note extends MElement {
 	 * several brackets overlap; null when unstated or there is none.
 	 */
 	get nonArpeggiateNumber(): number | null {
-		const nonArpeggiate = this.notationsChild('non-arpeggiate');
-		return nonArpeggiate ? integerAttribute(nonArpeggiate, 'number') : null;
+		const nonArpeggiate = this.notationsChild("non-arpeggiate");
+		return nonArpeggiate ? integerAttribute(nonArpeggiate, "number") : null;
 	}
 
 	/**
@@ -743,7 +620,7 @@ export class Note extends MElement {
 	 * note's duration still counts in its voice's timeline.
 	 */
 	get isCue(): boolean {
-		return this.child('cue') !== null;
+		return this.child("cue") !== null;
 	}
 
 	/**
@@ -753,21 +630,21 @@ export class Note extends MElement {
 	 * `number` pairs a start with its stop.
 	 */
 	get otherNotations(): Array<{
-		type: 'start' | 'stop' | 'single';
+		type: "start" | "stop" | "single";
 		number: number;
 		text: string;
 		smufl: string | null;
-		placement: 'above' | 'below' | null;
+		placement: "above" | "below" | null;
 	}> {
-		return this.childrenNamed('notations')
-			.flatMap((notations) => notations.childrenNamed('other-notation'))
+		return this.childrenNamed("notations")
+			.flatMap((notations) => notations.childrenNamed("other-notation"))
 			.map((node) => {
-				const type = node.getAttribute('type');
+				const type = node.getAttribute("type");
 				return {
-					type: type === 'start' || type === 'stop' ? type : 'single',
-					number: integerAttribute(node, 'number') ?? 1,
-					text: node.text ?? '',
-					smufl: node.getAttribute('smufl'),
+					type: type === "start" || type === "stop" ? type : "single",
+					number: integerAttribute(node, "number") ?? 1,
+					text: node.text ?? "",
+					smufl: node.getAttribute("smufl"),
 					placement: placementOf(node),
 				};
 			});
@@ -775,34 +652,34 @@ export class Note extends MElement {
 
 	/**
 	 * `<unpitched><display-step>/<display-octave>`: the staff POSITION of an
-	 * unpitched (percussion) note — which line or space to draw the glyph on, not a
+	 * unpitched (percussion) note, which line or space to draw the glyph on, not a
 	 * pitch. A kick, a snare, and a hi-hat read as three different rows under one
 	 * percussion clef entirely through this. Null when the note is pitched or
 	 * carries no pair.
 	 */
 	get unpitched(): { step: string; octave: number } | null {
-		return displayPosition(this.child('unpitched'));
+		return displayPosition(this.child("unpitched"));
 	}
 
 	/**
-	 * The same `<display-step>`/`<display-octave>` pair on a `<rest>` — pinning a
+	 * The same `<display-step>`/`<display-octave>` pair on a `<rest>`, pinning a
 	 * rest to a chosen line instead of the default centered one, standard in
 	 * multi-voice writing. Null when the rest carries none.
 	 */
 	get restPosition(): { step: string; octave: number } | null {
-		return displayPosition(this.child('rest'));
+		return displayPosition(this.child("rest"));
 	}
 
 	/**
 	 * Every child across this note's `<notations><ornaments>` blocks, in document
-	 * order — trills, turns, mordents, tremolos, and the `<accidental-mark>`s, so a
+	 * order, trills, turns, mordents, tremolos, and the `<accidental-mark>`s, so a
 	 * consumer can attach each mark to the ornament it follows (a turn's pair reads
 	 * one above and one below). `<wavy-line>` is a spanner and stays on
 	 * {@link wavyLines}.
 	 */
 	get ornaments(): Ornament[] {
-		return this.childrenNamed('notations')
-			.flatMap((notations) => notations.childrenNamed('ornaments'))
+		return this.childrenNamed("notations")
+			.flatMap((notations) => notations.childrenNamed("ornaments"))
 			.flatMap((ornaments) => ornaments.childrenOfType(Ornament));
 	}
 
@@ -812,21 +689,21 @@ export class Note extends MElement {
 	 * names stay on {@link articulations}.
 	 */
 	get articulationMarks(): Articulation[] {
-		return this.childrenNamed('notations')
-			.flatMap((notations) => notations.childrenNamed('articulations'))
+		return this.childrenNamed("notations")
+			.flatMap((notations) => notations.childrenNamed("articulations"))
 			.flatMap((block) => block.childrenOfType(Articulation));
 	}
 
 	/**
 	 * Every child across this note's `<notations><technical>` blocks, document
 	 * order: fingerings, plucks, bowings, open strings, and the rest. The common
-	 * tablature reads — {@link string}, {@link fret}, {@link bend},
-	 * {@link isHarmonic} — stay on this class; `<hammer-on>`/`<pull-off>` are
+	 * tablature reads, {@link string}, {@link fret}, {@link bend},
+	 * {@link isHarmonic}, stay on this class; `<hammer-on>`/`<pull-off>` are
 	 * spanners and stay on {@link hammerOns}/{@link pullOffs}.
 	 */
 	get technicals(): Technical[] {
-		return this.childrenNamed('notations')
-			.flatMap((notations) => notations.childrenNamed('technical'))
+		return this.childrenNamed("notations")
+			.flatMap((notations) => notations.childrenNamed("technical"))
 			.flatMap((technical) => technical.childrenOfType(Technical));
 	}
 
@@ -855,30 +732,30 @@ export class Note extends MElement {
 
 	/** The measure this note sits in. A note attached to a tree always has one. */
 	get measure(): Measure {
-		return required(this.closest(Measure), '<measure> ancestor of <note>');
+		return required(this.closest(Measure), "<measure> ancestor of <note>");
 	}
 
 	/** The part this note belongs to. A note attached to a tree always has one. */
 	get part(): Part {
-		return required(this.closest(Part), '<part> ancestor of <note>');
+		return required(this.closest(Part), "<part> ancestor of <note>");
 	}
 
 	/** Whether this note carries `<notations><technical><harmonic>`. */
 	get isHarmonic(): boolean {
-		return this.technicalChild('harmonic') !== null;
+		return this.technicalChild("harmonic") !== null;
 	}
 
 	/**
 	 * The `<notations><technical><harmonic>`: `kind` is natural or artificial (an
 	 * artificial one covers pinch harmonics) and `pitch` which pitch the note is
-	 * written at — the base (played) pitch, the touching pitch, or the sounding
+	 * written at, the base (played) pitch, the touching pitch, or the sounding
 	 * pitch. Either is null when unstated. Null when the note is no harmonic.
 	 */
 	get harmonic(): {
 		kind: HarmonicKind | null;
 		pitch: HarmonicPitch | null;
 	} | null {
-		const harmonic = this.technicalChild('harmonic');
+		const harmonic = this.technicalChild("harmonic");
 		if (!harmonic) {
 			return null;
 		}
@@ -924,23 +801,23 @@ export class Note extends MElement {
 
 	/** Text of each `<notations><technical><other-technical>` (free text like `P.M.`), document order. */
 	get otherTechnical(): string[] {
-		return this.technicalChildrenNamed('other-technical').map(
-			(node) => node.text ?? '',
+		return this.technicalChildrenNamed("other-technical").map(
+			(node) => node.text ?? "",
 		);
 	}
 
 	/** The `smufl` glyph name of each `<other-technical>` that gives one, document order. */
 	get otherTechnicalGlyphs(): string[] {
-		return this.technicalChildrenNamed('other-technical').flatMap((node) => {
-			const glyph = node.getAttribute('smufl');
+		return this.technicalChildrenNamed("other-technical").flatMap((node) => {
+			const glyph = node.getAttribute("smufl");
 			return glyph == null ? [] : [glyph];
 		});
 	}
 
 	/** Add an `<other-technical>` drawn as the SMuFL glyph `smufl`. The write side of {@link otherTechnicalGlyphs}. */
 	addOtherTechnicalGlyph(smufl: string): void {
-		const mark = new Technical('other-technical');
-		mark.setAttribute('smufl', smufl);
+		const mark = new Technical("other-technical");
+		mark.setAttribute("smufl", smufl);
 		this.technical().append(mark);
 	}
 
@@ -950,7 +827,7 @@ export class Note extends MElement {
 	 */
 	get isLetRing(): boolean {
 		return (
-			this.ties.some((tie) => tie.getAttribute('type') === 'let-ring') ||
+			this.ties.some((tie) => tie.getAttribute("type") === "let-ring") ||
 			this.otherTechnical.some((text) => LET_RING_TEXT.test(text))
 		);
 	}
@@ -964,23 +841,23 @@ export class Note extends MElement {
 	}
 
 	/** `<stem>` direction (splits two voices on one stave; `none`/`double` are real values too); null when absent. */
-	get stem(): 'up' | 'down' | 'double' | 'none' | null {
-		const direction = this.child('stem')?.text;
-		return direction === 'up' ||
-			direction === 'down' ||
-			direction === 'double' ||
-			direction === 'none'
+	get stem(): "up" | "down" | "double" | "none" | null {
+		const direction = this.child("stem")?.text;
+		return direction === "up" ||
+			direction === "down" ||
+			direction === "double" ||
+			direction === "none"
 			? direction
 			: null;
 	}
 
 	/** The normalized `color` of the `<stem>`; null when unset or when there is no stem. */
 	get stemColor(): string | null {
-		return colorOf(this.child('stem'));
+		return colorOf(this.child("stem"));
 	}
 
 	/**
-	 * The normalized `color` of the note itself — the default for everything it
+	 * The normalized `color` of the note itself, the default for everything it
 	 * draws, which the `<notehead>`, `<stem>`, `<beam>`, and `<lyric>` colors
 	 * override individually. Null when unset.
 	 */
@@ -990,17 +867,17 @@ export class Note extends MElement {
 
 	/**
 	 * Whether this note is drawn at all. `print-object="no"` holds the note's tick
-	 * so the other voices stay aligned but prints nothing — exporters lean on it
+	 * so the other voices stay aligned but prints nothing, exporters lean on it
 	 * heavily for spacer notes, so drawing them puts noteheads on the page that
 	 * shouldn't be there.
 	 */
 	get printObject(): boolean {
-		return this.getAttribute('print-object') !== 'no';
+		return this.getAttribute("print-object") !== "no";
 	}
 
 	/** Set `print-object`: false hides the note but keeps its time. */
 	setPrintObject(value: boolean): void {
-		setYesNo(this, 'print-object', value);
+		setYesNo(this, "print-object", value);
 	}
 
 	/**
@@ -1008,12 +885,12 @@ export class Note extends MElement {
 	 * follows {@link printObject}, as MusicXML says.
 	 */
 	get printDot(): boolean {
-		return yesNoOf(this, 'print-dot', this.printObject);
+		return yesNoOf(this, "print-dot", this.printObject);
 	}
 
 	/** Set `print-dot`, or remove it with null so it follows {@link printObject}. */
 	setPrintDot(value: boolean | null): void {
-		setYesNo(this, 'print-dot', value);
+		setYesNo(this, "print-dot", value);
 	}
 
 	/**
@@ -1021,12 +898,12 @@ export class Note extends MElement {
 	 * {@link printObject}, as MusicXML says.
 	 */
 	get printLyric(): boolean {
-		return yesNoOf(this, 'print-lyric', this.printObject);
+		return yesNoOf(this, "print-lyric", this.printObject);
 	}
 
 	/** Set `print-lyric`, or remove it with null so it follows {@link printObject}. */
 	setPrintLyric(value: boolean | null): void {
-		setYesNo(this, 'print-lyric', value);
+		setYesNo(this, "print-lyric", value);
 	}
 
 	/**
@@ -1034,12 +911,12 @@ export class Note extends MElement {
 	 * (`print-spacing`); true when unstated.
 	 */
 	get printSpacing(): boolean {
-		return yesNoOf(this, 'print-spacing', true);
+		return yesNoOf(this, "print-spacing", true);
 	}
 
 	/** Set `print-spacing`, or remove it with null to restore the default. */
 	setPrintSpacing(value: boolean | null): void {
-		setYesNo(this, 'print-spacing', value);
+		setYesNo(this, "print-spacing", value);
 	}
 
 	/**
@@ -1061,7 +938,7 @@ export class Note extends MElement {
 	 * stem ends, relative to the top staff line. Null when there is no stem.
 	 */
 	get stemPosition(): Position | null {
-		const stem = this.child('stem');
+		const stem = this.child("stem");
 		return stem === null ? null : positionOf(stem);
 	}
 
@@ -1070,7 +947,7 @@ export class Note extends MElement {
 	 * when the note has no stem to place.
 	 */
 	setStemPosition(spec: PositionSpec | null): void {
-		setPositionOf(required(this.child('stem'), '<stem> on <note>'), spec);
+		setPositionOf(required(this.child("stem"), "<stem> on <note>"), spec);
 	}
 
 	/**
@@ -1078,11 +955,11 @@ export class Note extends MElement {
 	 * {@link SymbolSize} for the default) or when there is no `<type>`.
 	 */
 	get typeSize(): SymbolSize | null {
-		const size = this.child('type')?.getAttribute('size');
-		return size === 'full' ||
-			size === 'cue' ||
-			size === 'grace-cue' ||
-			size === 'large'
+		const size = this.child("type")?.getAttribute("size");
+		return size === "full" ||
+			size === "cue" ||
+			size === "grace-cue" ||
+			size === "large"
 			? size
 			: null;
 	}
@@ -1092,12 +969,12 @@ export class Note extends MElement {
 	 * when the note has no `<type>` to size.
 	 */
 	setTypeSize(size: SymbolSize | null): void {
-		const type = this.child('type');
+		const type = this.child("type");
 		if (size === null) {
-			type?.removeAttribute('size');
+			type?.removeAttribute("size");
 			return;
 		}
-		required(type, '<type> on <note>').setAttribute('size', size);
+		required(type, "<type> on <note>").setAttribute("size", size);
 	}
 
 	/**
@@ -1105,13 +982,13 @@ export class Note extends MElement {
 	 * 3:2 for a triplet), or null when this note isn't time-modified.
 	 */
 	get timeModification() {
-		return readTimeModification(this.child('time-modification'));
+		return readTimeModification(this.child("time-modification"));
 	}
 
 	/** Set the cumulative performed ratio, recomputing timing without changing the written type. */
 	setTimeModification(spec: TimeModificationSpec | null): void {
 		const block = spec == null ? null : buildTimeModification(spec);
-		const duration = this.child('duration');
+		const duration = this.child("duration");
 		const after =
 			duration == null
 				? null
@@ -1119,26 +996,26 @@ export class Note extends MElement {
 						{
 							type: required(
 								this.type,
-								'<type> on time-modified note',
+								"<type> on time-modified note",
 							) as NoteType,
 							dots: this.dots,
 							timeModification: spec ?? undefined,
 						},
-						required(this.divisions, 'divisions for time modification'),
+						required(this.divisions, "divisions for time modification"),
 					);
 		const before = this.duration ?? 0;
-		this.child('time-modification')?.remove();
+		this.child("time-modification")?.remove();
 		if (block) {
 			const following = new Set([
-				'stem',
-				'notehead',
-				'notehead-text',
-				'staff',
-				'beam',
-				'notations',
-				'lyric',
-				'play',
-				'listen',
+				"stem",
+				"notehead",
+				"notehead-text",
+				"staff",
+				"beam",
+				"notations",
+				"lyric",
+				"play",
+				"listen",
 			]);
 			this.insertBefore(
 				block,
@@ -1164,9 +1041,9 @@ export class Note extends MElement {
 			Tuplet,
 			(note) => note.tuplets,
 			(number) => {
-				const start = buildTuplet('start', number, spec);
+				const start = buildTuplet("start", number, spec);
 				this.notations().append(start);
-				other.notations().append(buildTuplet('stop', number, {}));
+				other.notations().append(buildTuplet("stop", number, {}));
 				return start;
 			},
 		);
@@ -1178,7 +1055,7 @@ export class Note extends MElement {
 	}
 
 	/** The lyric of `verse` (and `name`, when given); null when the note has none. */
-	getLyric(verse = '1', name?: string): Lyric | null {
+	getLyric(verse = "1", name?: string): Lyric | null {
 		return (
 			this.lyrics.find(
 				(lyric) =>
@@ -1194,7 +1071,7 @@ export class Note extends MElement {
 	 */
 	setLyric(spec: LyricSpec): Lyric {
 		const lyric = buildLyric(spec);
-		const verse = spec.verse ?? '1';
+		const verse = spec.verse ?? "1";
 		const existing = this.getLyric(verse, spec.name);
 		if (existing) {
 			this.replaceChild(existing, lyric);
@@ -1208,7 +1085,7 @@ export class Note extends MElement {
 			later ??
 				this.children.find(
 					(child) =>
-						child instanceof MElement && ['play', 'listen'].includes(child.tag),
+						child instanceof MElement && ["play", "listen"].includes(child.tag),
 				) ??
 				null,
 		);
@@ -1216,19 +1093,19 @@ export class Note extends MElement {
 	}
 
 	/** Remove the lyric of `verse` (and `name`, when given); a no-op when there is none. */
-	removeLyric(verse = '1', name?: string): void {
+	removeLyric(verse = "1", name?: string): void {
 		this.getLyric(verse, name)?.remove();
 	}
 
 	/** `<string>` in `<technical>`: the guitar string this note is fretted on, or null. */
 	get string(): number | null {
-		const value = this.technicalChild('string')?.text;
+		const value = this.technicalChild("string")?.text;
 		return value == null ? null : Number(value);
 	}
 
 	/** `<fret>` in `<technical>`: where the string is stopped (0 = open), or null. */
 	get fret(): number | null {
-		const value = this.technicalChild('fret')?.text;
+		const value = this.technicalChild("fret")?.text;
 		return value == null ? null : Number(value);
 	}
 
@@ -1239,8 +1116,8 @@ export class Note extends MElement {
 	 * ({@link Part.instruments}), unspecified when it declares several.
 	 */
 	get instrumentIds(): string[] {
-		return this.childrenNamed('instrument').flatMap((node) => {
-			const id = node.getAttribute('id');
+		return this.childrenNamed("instrument").flatMap((node) => {
+			const id = node.getAttribute("id");
 			return id === null ? [] : [id];
 		});
 	}
@@ -1257,7 +1134,7 @@ export class Note extends MElement {
 				throw new Error(`part "${part.id}" declares no instrument "${id}"`);
 			}
 		}
-		for (const node of this.childrenNamed('instrument')) {
+		for (const node of this.childrenNamed("instrument")) {
 			node.remove();
 		}
 		const before =
@@ -1265,8 +1142,8 @@ export class Note extends MElement {
 				(child) => child instanceof MElement && afterInstrument.has(child.tag),
 			) ?? null;
 		for (const id of ids) {
-			const node = new MElement('instrument');
-			node.setAttribute('id', id);
+			const node = new MElement("instrument");
+			node.setAttribute("id", id);
 			this.insertBefore(node, before);
 		}
 	}
@@ -1274,27 +1151,20 @@ export class Note extends MElement {
 	/**
 	 * Add an articulation mark (staccato, accent, tenuto, …), creating
 	 * `<notations><articulations>` as needed. MusicXML names the mark by its TAG,
-	 * so `name` is written through as one — the write side of {@link articulations},
+	 * so `name` is written through as one, the write side of {@link articulations},
 	 * spelled the way MusicXML spells it. `placement` pins it above or below the
 	 * note; left out, the renderer chooses.
 	 */
-	addArticulation(
-		name: string,
-		options: {
-			placement?: 'above' | 'below';
-			lineShape?: 'straight' | 'curved';
-			lineType?: 'solid' | 'dashed' | 'dotted' | 'wavy';
-		} = {},
-	): MElement {
+	addArticulation(name: string, opts: ArticulationOptions = {}): MElement {
 		const mark = new Articulation(name);
-		if (options.lineShape != null) {
-			mark.setAttribute('line-shape', options.lineShape);
+		if (opts.lineShape != null) {
+			mark.setAttribute("line-shape", opts.lineShape);
 		}
-		if (options.lineType != null) {
-			mark.setAttribute('line-type', options.lineType);
+		if (opts.lineType != null) {
+			mark.setAttribute("line-type", opts.lineType);
 		}
-		if (options.placement != null) {
-			mark.setAttribute('placement', options.placement);
+		if (opts.placement != null) {
+			mark.setAttribute("placement", opts.placement);
 		}
 		this.articulationsBlock().append(mark);
 		return mark;
@@ -1305,16 +1175,16 @@ export class Note extends MElement {
 	 * removes it. `shape` writes a {@link FermataShape} other than the default
 	 * normal one. The write side of {@link fermata} and {@link fermataShape}.
 	 */
-	setFermata(type: 'upright' | 'inverted' | null, shape?: FermataShape): void {
-		for (const notations of this.childrenNamed('notations')) {
-			for (const node of notations.childrenNamed('fermata')) {
+	setFermata(type: "upright" | "inverted" | null, shape?: FermataShape): void {
+		for (const notations of this.childrenNamed("notations")) {
+			for (const node of notations.childrenNamed("fermata")) {
 				node.remove();
 			}
 		}
 		if (type) {
-			const fermata = new MElement('fermata');
-			fermata.setAttribute('type', type);
-			if (shape != null && shape !== 'normal') {
+			const fermata = new MElement("fermata");
+			fermata.setAttribute("type", type);
+			if (shape != null && shape !== "normal") {
 				fermata.setText(shape);
 			}
 			this.notations().append(fermata);
@@ -1328,20 +1198,20 @@ export class Note extends MElement {
 	 * The write side of {@link arpeggiate}.
 	 */
 	setArpeggiate(
-		spec: { direction: 'up' | 'down' | null; number?: number } | null,
+		spec: { direction: "up" | "down" | null; number?: number } | null,
 	): void {
-		for (const notations of this.childrenNamed('notations')) {
-			for (const node of notations.childrenNamed('arpeggiate')) {
+		for (const notations of this.childrenNamed("notations")) {
+			for (const node of notations.childrenNamed("arpeggiate")) {
 				node.remove();
 			}
 		}
 		if (spec) {
-			const arpeggiate = new MElement('arpeggiate');
+			const arpeggiate = new MElement("arpeggiate");
 			if (spec.direction) {
-				arpeggiate.setAttribute('direction', spec.direction);
+				arpeggiate.setAttribute("direction", spec.direction);
 			}
 			if (spec.number != null) {
-				arpeggiate.setAttribute('number', String(spec.number));
+				arpeggiate.setAttribute("number", String(spec.number));
 			}
 			this.notations().append(arpeggiate);
 		}
@@ -1354,7 +1224,7 @@ export class Note extends MElement {
 	 */
 	setTremolo(marks: number | null): void {
 		for (const ornament of this.ornaments) {
-			if (ornament.tag === 'tremolo') {
+			if (ornament.tag === "tremolo") {
 				ornament.remove();
 			}
 		}
@@ -1366,13 +1236,13 @@ export class Note extends MElement {
 				`mdom: tremolo marks must be an integer 0-8, got ${marks}`,
 			);
 		}
-		const tremolo = new Ornament('tremolo');
-		tremolo.setAttribute('type', 'single');
+		const tremolo = new Ornament("tremolo");
+		tremolo.setAttribute("type", "single");
 		tremolo.setText(String(marks));
 		const notations = this.notations();
-		let block = notations.childrenNamed('ornaments')[0];
+		let block = notations.childrenNamed("ornaments")[0];
 		if (!block) {
-			block = new MElement('ornaments');
+			block = new MElement("ornaments");
 			notations.append(block);
 		}
 		// <tremolo> leads the ornament sequence, ahead of any accidental-marks.
@@ -1397,7 +1267,7 @@ export class Note extends MElement {
 				measure.directions.flatMap((direction) =>
 					direction.octaveShifts
 						.filter((shift) => {
-							if (shift.octaveShiftType === 'stop') {
+							if (shift.octaveShiftType === "stop") {
 								return false;
 							}
 							const end = shift.partner;
@@ -1467,8 +1337,8 @@ export class Note extends MElement {
 	addTie(other: Note): Tie {
 		return this.spanTo(other, Tie, (note) => note.ties, {
 			finish: () => {
-				this.setPlaybackTie('start', true);
-				other.setPlaybackTie('stop', true);
+				this.setPlaybackTie("start", true);
+				other.setPlaybackTie("stop", true);
 			},
 		});
 	}
@@ -1512,8 +1382,8 @@ export class Note extends MElement {
 	/** Hammer on from this note to `other`; the start carries the conventional "H" text. */
 	addHammerOn(other: Note): HammerOn {
 		return this.spanTo(other, HammerOn, (note) => note.hammerOns, {
-			block: 'technical',
-			finish: (start) => start.setText('H'),
+			block: "technical",
+			finish: (start) => start.setText("H"),
 		});
 	}
 
@@ -1525,8 +1395,8 @@ export class Note extends MElement {
 	/** Pull off from this note to `other`; the start carries the conventional "P" text. */
 	addPullOff(other: Note): PullOff {
 		return this.spanTo(other, PullOff, (note) => note.pullOffs, {
-			block: 'technical',
-			finish: (start) => start.setText('P'),
+			block: "technical",
+			finish: (start) => start.setText("P"),
 		});
 	}
 
@@ -1541,7 +1411,7 @@ export class Note extends MElement {
 	 */
 	addVibrato(other: Note): WavyLine {
 		return this.spanTo(other, WavyLine, (note) => note.wavyLines, {
-			block: 'ornaments',
+			block: "ornaments",
 		});
 	}
 
@@ -1552,19 +1422,19 @@ export class Note extends MElement {
 
 	/**
 	 * Replace this note's pitch in place (or give a rest one). The duration is
-	 * unchanged, so the timeline doesn't move and any attached slur/tie/beam — which
-	 * a remove-and-re-add would orphan — stays bound to this same note.
+	 * unchanged, so the timeline doesn't move and any attached slur/tie/beam, which
+	 * a remove-and-re-add would orphan, stays bound to this same note.
 	 */
 	setPitch(spec: PitchSpec): void {
 		const replacement = buildPitch(spec);
 		const existing =
-			this.child('pitch') ?? this.child('rest') ?? this.child('unpitched');
+			this.child("pitch") ?? this.child("rest") ?? this.child("unpitched");
 		if (existing) {
 			this.replaceChild(existing, replacement);
 		} else {
 			this.insertBefore(
 				replacement,
-				this.child('duration') ?? this.child('voice'),
+				this.child("duration") ?? this.child("voice"),
 			);
 		}
 	}
@@ -1576,32 +1446,32 @@ export class Note extends MElement {
 	 * pair it with {@link setInstrumentIds} to say which drum plays it.
 	 */
 	setUnpitched(position: DisplayPositionSpec | null = null): void {
-		const replacement = new MElement('unpitched');
+		const replacement = new MElement("unpitched");
 		if (position) {
-			appendValue(replacement, 'display-step', position.step);
-			appendValue(replacement, 'display-octave', String(position.octave));
+			appendValue(replacement, "display-step", position.step);
+			appendValue(replacement, "display-octave", String(position.octave));
 		}
 		const existing =
-			this.child('pitch') ?? this.child('rest') ?? this.child('unpitched');
+			this.child("pitch") ?? this.child("rest") ?? this.child("unpitched");
 		if (existing) {
 			this.replaceChild(existing, replacement);
 		} else {
 			this.insertBefore(
 				replacement,
-				this.child('duration') ?? this.child('voice'),
+				this.child("duration") ?? this.child("voice"),
 			);
 		}
 	}
 
 	/**
 	 * Silence this note: turn it into a `<rest>` of the same duration. The slot's
-	 * time survives, so the measure stays balanced — the "delete but keep the beat"
+	 * time survives, so the measure stays balanced, the "delete but keep the beat"
 	 * an editor's Delete key usually means (vs raw {@link remove}, which closes the gap).
 	 */
 	convertToRest(): void {
-		const pitched = this.child('pitch') ?? this.child('unpitched');
+		const pitched = this.child("pitch") ?? this.child("unpitched");
 		if (pitched) {
-			this.replaceChild(pitched, new MElement('rest'));
+			this.replaceChild(pitched, new MElement("rest"));
 		}
 	}
 
@@ -1616,8 +1486,8 @@ export class Note extends MElement {
 		}
 		const measure = this.closest(Measure);
 		const stolen = this.duration ?? 0;
-		this.insertBefore(new MElement('grace'), this.children[0] ?? null);
-		this.child('duration')?.remove();
+		this.insertBefore(new MElement("grace"), this.children[0] ?? null);
+		this.child("duration")?.remove();
 		if (measure) {
 			repairTimelineAfter(measure, this, -stolen);
 		}
@@ -1634,15 +1504,15 @@ export class Note extends MElement {
 			return;
 		}
 		if (!value) {
-			this.child('cue')?.remove();
+			this.child("cue")?.remove();
 			return;
 		}
-		const grace = this.child('grace');
+		const grace = this.child("grace");
 		this.insertBefore(
-			new MElement('cue'),
+			new MElement("cue"),
 			this.children[grace ? this.children.indexOf(grace) + 1 : 0] ?? null,
 		);
-		for (const tie of this.childrenNamed('tie')) {
+		for (const tie of this.childrenNamed("tie")) {
 			tie.remove();
 		}
 	}
@@ -1656,23 +1526,23 @@ export class Note extends MElement {
 	addOtherNotation(spec: {
 		text?: string;
 		smufl?: string;
-		type?: 'start' | 'stop' | 'single';
+		type?: "start" | "stop" | "single";
 		number?: number;
-		placement?: 'above' | 'below';
+		placement?: "above" | "below";
 	}): void {
 		if (spec.text == null && spec.smufl == null) {
-			throw new Error('mdom: an other-notation needs text or a smufl glyph');
+			throw new Error("mdom: an other-notation needs text or a smufl glyph");
 		}
-		const mark = new MElement('other-notation');
-		mark.setAttribute('type', spec.type ?? 'single');
+		const mark = new MElement("other-notation");
+		mark.setAttribute("type", spec.type ?? "single");
 		if (spec.number != null) {
-			mark.setAttribute('number', String(spec.number));
+			mark.setAttribute("number", String(spec.number));
 		}
 		if (spec.placement != null) {
-			mark.setAttribute('placement', spec.placement);
+			mark.setAttribute("placement", spec.placement);
 		}
 		if (spec.smufl != null) {
-			mark.setAttribute('smufl', spec.smufl);
+			mark.setAttribute("smufl", spec.smufl);
 		}
 		if (spec.text != null) {
 			mark.setText(spec.text);
@@ -1682,22 +1552,22 @@ export class Note extends MElement {
 
 	/** Remove every `<other-notation>` from this note. */
 	removeOtherNotations(): void {
-		for (const notations of this.childrenNamed('notations')) {
-			for (const node of notations.childrenNamed('other-notation')) {
+		for (const notations of this.childrenNamed("notations")) {
+			for (const node of notations.childrenNamed("other-notation")) {
 				node.remove();
 			}
 		}
 	}
 
 	/**
-	 * Place this note on a guitar string at a fret — the core of tablature,
+	 * Place this note on a guitar string at a fret, the core of tablature,
 	 * `<notations><technical><string>/<fret>`. Upserts both (creating
 	 * `<notations>`/`<technical>` as needed), leaving pitch and timeline alone: a
 	 * tab note carries its sounding pitch *and* where it's fretted.
 	 */
 	setStringFret(spec: { string: number; fret: number }): void {
-		this.upsertTechnical('string', spec.string);
-		this.upsertTechnical('fret', spec.fret);
+		this.upsertTechnical("string", spec.string);
+		this.upsertTechnical("fret", spec.fret);
 	}
 
 	/**
@@ -1717,7 +1587,7 @@ export class Note extends MElement {
 			shape?: BendShape;
 		} | null,
 	): void {
-		for (const bend of this.technicalChildrenNamed('bend')) {
+		for (const bend of this.technicalChildrenNamed("bend")) {
 			bend.remove();
 		}
 		if (!spec) {
@@ -1729,24 +1599,24 @@ export class Note extends MElement {
 			);
 		}
 		const technical = this.technical();
-		const bend = new Technical('bend');
-		appendValue(bend, 'bend-alter', String(spec.semitones));
+		const bend = new Technical("bend");
+		appendValue(bend, "bend-alter", String(spec.semitones));
 		if (spec.preBend) {
-			bend.append(new MElement('pre-bend'));
+			bend.append(new MElement("pre-bend"));
 		}
 		if (spec.withBar != null) {
-			appendValue(bend, 'with-bar', spec.withBar);
+			appendValue(bend, "with-bar", spec.withBar);
 		}
 		if (spec.shape != null) {
-			bend.setAttribute('shape', spec.shape);
+			bend.setAttribute("shape", spec.shape);
 		}
 		technical.append(bend);
 		if (spec.release) {
-			const release = new Technical('bend');
-			appendValue(release, 'bend-alter', String(-spec.semitones));
-			release.append(new MElement('release'));
+			const release = new Technical("bend");
+			appendValue(release, "bend-alter", String(-spec.semitones));
+			release.append(new MElement("release"));
 			if (spec.shape != null) {
-				release.setAttribute('shape', spec.shape);
+				release.setAttribute("shape", spec.shape);
 			}
 			technical.append(release);
 		}
@@ -1761,19 +1631,19 @@ export class Note extends MElement {
 			shape?: string;
 		} | null,
 	): void {
-		const hole = this.replaceTechnical('hole', spec);
+		const hole = this.replaceTechnical("hole", spec);
 		if (!hole || !spec) {
 			return;
 		}
 		if (spec.holeType != null) {
-			appendValue(hole, 'hole-type', spec.holeType);
+			appendValue(hole, "hole-type", spec.holeType);
 		}
-		const closed = appendValue(hole, 'hole-closed', spec.closed);
+		const closed = appendValue(hole, "hole-closed", spec.closed);
 		if (spec.location != null) {
-			closed.setAttribute('location', spec.location);
+			closed.setAttribute("location", spec.location);
 		}
 		if (spec.shape != null) {
-			appendValue(hole, 'hole-shape', spec.shape);
+			appendValue(hole, "hole-shape", spec.shape);
 		}
 	}
 
@@ -1784,26 +1654,26 @@ export class Note extends MElement {
 			| { direction: string; style?: string; arrowhead?: boolean }
 			| null,
 	): void {
-		const arrow = this.replaceTechnical('arrow', spec);
+		const arrow = this.replaceTechnical("arrow", spec);
 		if (!arrow || !spec) {
 			return;
 		}
-		if ('circular' in spec) {
-			appendValue(arrow, 'circular-arrow', spec.circular);
+		if ("circular" in spec) {
+			appendValue(arrow, "circular-arrow", spec.circular);
 			return;
 		}
-		appendValue(arrow, 'arrow-direction', spec.direction);
+		appendValue(arrow, "arrow-direction", spec.direction);
 		if (spec.style != null) {
-			appendValue(arrow, 'arrow-style', spec.style);
+			appendValue(arrow, "arrow-style", spec.style);
 		}
 		if (spec.arrowhead) {
-			arrow.append(new MElement('arrowhead'));
+			arrow.append(new MElement("arrowhead"));
 		}
 	}
 
 	/** Set or clear this note's `<handbell>` technique (damp, martellato, …); null removes it. */
 	setHandbell(value: string | null): void {
-		const bell = this.replaceTechnical('handbell', value);
+		const bell = this.replaceTechnical("handbell", value);
 		bell?.setText(value as string);
 	}
 
@@ -1811,13 +1681,13 @@ export class Note extends MElement {
 	setHarmonMute(
 		spec: { closed: ClosedValue; location?: ClosedLocation } | null,
 	): void {
-		const mute = this.replaceTechnical('harmon-mute', spec);
+		const mute = this.replaceTechnical("harmon-mute", spec);
 		if (!mute || !spec) {
 			return;
 		}
-		const closed = appendValue(mute, 'harmon-closed', spec.closed);
+		const closed = appendValue(mute, "harmon-closed", spec.closed);
 		if (spec.location != null) {
-			closed.setAttribute('location', spec.location);
+			closed.setAttribute("location", spec.location);
 		}
 	}
 
@@ -1825,19 +1695,19 @@ export class Note extends MElement {
 	 * The `<up-bow>`/`<down-bow>` stroke on this note, a bowing or a guitar pick
 	 * stroke; null when it has neither.
 	 */
-	get bowing(): 'up' | 'down' | null {
-		if (this.technicalChild('down-bow')) {
-			return 'down';
+	get bowing(): "up" | "down" | null {
+		if (this.technicalChild("down-bow")) {
+			return "down";
 		}
-		return this.technicalChild('up-bow') ? 'up' : null;
+		return this.technicalChild("up-bow") ? "up" : null;
 	}
 
 	/** Set or clear this note's `<up-bow>`/`<down-bow>` stroke; null removes it. The write side of {@link bowing}. */
-	setBowing(direction: 'up' | 'down' | null): void {
-		this.replaceTechnical('up-bow', null);
-		this.replaceTechnical('down-bow', null);
+	setBowing(direction: "up" | "down" | null): void {
+		this.replaceTechnical("up-bow", null);
+		this.replaceTechnical("down-bow", null);
 		this.replaceTechnical(
-			direction === 'up' ? 'up-bow' : 'down-bow',
+			direction === "up" ? "up-bow" : "down-bow",
 			direction,
 		);
 	}
@@ -1846,20 +1716,20 @@ export class Note extends MElement {
 	 * The `<tap>` on this note, with the tapping `hand` when stated; null when
 	 * the note is not tapped.
 	 */
-	get tap(): { hand: 'left' | 'right' | null } | null {
-		const tap = this.technicalChild('tap');
+	get tap(): { hand: "left" | "right" | null } | null {
+		const tap = this.technicalChild("tap");
 		if (!tap) {
 			return null;
 		}
-		const hand = tap.getAttribute('hand');
-		return { hand: hand === 'left' || hand === 'right' ? hand : null };
+		const hand = tap.getAttribute("hand");
+		return { hand: hand === "left" || hand === "right" ? hand : null };
 	}
 
 	/** Set or clear this note's `<tap>`; `hand` states which hand taps. The write side of {@link tap}. */
-	setTap(spec: { hand?: 'left' | 'right' } | null): void {
-		const tap = this.replaceTechnical('tap', spec);
+	setTap(spec: { hand?: "left" | "right" } | null): void {
+		const tap = this.replaceTechnical("tap", spec);
 		if (tap && spec?.hand) {
-			tap.setAttribute('hand', spec.hand);
+			tap.setAttribute("hand", spec.hand);
 		}
 	}
 
@@ -1885,13 +1755,13 @@ export class Note extends MElement {
 	setHarmonic(
 		spec: { kind?: HarmonicKind; pitch?: HarmonicPitch } | null,
 	): void {
-		for (const harmonic of this.technicalChildrenNamed('harmonic')) {
+		for (const harmonic of this.technicalChildrenNamed("harmonic")) {
 			harmonic.remove();
 		}
 		if (!spec) {
 			return;
 		}
-		const harmonic = new Technical('harmonic');
+		const harmonic = new Technical("harmonic");
 		if (spec.kind) {
 			harmonic.append(new MElement(spec.kind));
 		}
@@ -1914,23 +1784,23 @@ export class Note extends MElement {
 			filled?: boolean;
 		} | null,
 	): void {
-		const existing = this.child('notehead');
+		const existing = this.child("notehead");
 		if (!spec) {
 			existing?.remove();
 			return;
 		}
-		const notehead = new MElement('notehead');
-		const color = existing?.getAttribute('color');
+		const notehead = new MElement("notehead");
+		const color = existing?.getAttribute("color");
 		if (spec.filled != null) {
-			notehead.setAttribute('filled', spec.filled ? 'yes' : 'no');
+			notehead.setAttribute("filled", spec.filled ? "yes" : "no");
 		}
 		if (spec.parentheses) {
-			notehead.setAttribute('parentheses', 'yes');
+			notehead.setAttribute("parentheses", "yes");
 		}
 		if (color) {
-			notehead.setAttribute('color', color);
+			notehead.setAttribute("color", color);
 		}
-		notehead.setText(spec.value ?? 'normal');
+		notehead.setText(spec.value ?? "normal");
 		if (existing) {
 			this.replaceChild(existing, notehead);
 		} else {
@@ -1954,12 +1824,12 @@ export class Note extends MElement {
 		}
 		if (value) {
 			const tie = new Tie();
-			tie.setAttribute('type', 'let-ring');
+			tie.setAttribute("type", "let-ring");
 			this.notations().append(tie);
 			return;
 		}
 		for (const tie of this.ties) {
-			if (tie.getAttribute('type') === 'let-ring') {
+			if (tie.getAttribute("type") === "let-ring") {
 				tie.unlink();
 			}
 		}
@@ -1976,8 +1846,8 @@ export class Note extends MElement {
 			return;
 		}
 		if (value) {
-			const palmMute = new Technical('other-technical');
-			palmMute.setText('P.M.');
+			const palmMute = new Technical("other-technical");
+			palmMute.setText("P.M.");
 			this.technical().append(palmMute);
 			return;
 		}
@@ -1991,22 +1861,22 @@ export class Note extends MElement {
 	 */
 	setDuration(spec: { type: NoteType; dots?: number }): void {
 		validateDots(spec.dots);
-		const durationNode = this.child('duration');
+		const durationNode = this.child("duration");
 		if (durationNode === null) {
-			this.child('type')?.setText(spec.type);
+			this.child("type")?.setText(spec.type);
 			this.refreshDots(spec.dots ?? 0);
 			return; // a grace note carries no <duration>; only the notation changed
 		}
 		const divisions = required(
 			this.divisions,
-			'divisions to recompute <duration>',
+			"divisions to recompute <duration>",
 		);
 		const before = Number(durationNode.text ?? 0);
 		const after = durationDivisions(
 			{ ...spec, timeModification: this.timeModification ?? undefined },
 			divisions,
 		);
-		this.child('type')?.setText(spec.type);
+		this.child("type")?.setText(spec.type);
 		this.refreshDots(spec.dots ?? 0);
 		durationNode.setText(String(after));
 		const measure = this.closest(Measure);
@@ -2017,21 +1887,21 @@ export class Note extends MElement {
 
 	/** Replace this note's `<dot>` run with `count` dots, positioned just after `<type>`. */
 	private refreshDots(count: number): void {
-		for (const dot of this.childrenNamed('dot')) {
+		for (const dot of this.childrenNamed("dot")) {
 			dot.remove();
 		}
-		const type = this.child('type');
+		const type = this.child("type");
 		const afterType = type
 			? (this.children[this.children.indexOf(type) + 1] ?? null)
 			: null;
 		for (let index = 0; index < count; index++) {
-			this.insertBefore(new MElement('dot'), afterType);
+			this.insertBefore(new MElement("dot"), afterType);
 		}
 	}
 
 	/**
 	 * First `<attributes>` back from this note (nearest first) for which `pick`
-	 * returns a match — the shared shape of every carry-forward query.
+	 * returns a match, the shared shape of every carry-forward query.
 	 */
 	private attributeBack<T>(
 		key: string,
@@ -2053,43 +1923,39 @@ export class Note extends MElement {
 		other: Note,
 		Marker: new () => T,
 		existing: (note: Note) => T[],
-		options: {
-			lineType?: LineType;
-			block?: 'technical' | 'ornaments';
-			finish?: (start: T) => void;
-		} = {},
+		opts: SpanOptions<T> = {},
 	): T {
 		return allocateSpanNumber(this, other, Marker, existing, (number) => {
 			const start = new Marker();
-			start.setAttribute('type', 'start');
-			start.setAttribute('number', number);
-			if (options.lineType !== undefined) {
-				start.setAttribute('line-type', options.lineType);
+			start.setAttribute("type", "start");
+			start.setAttribute("number", number);
+			if (opts.lineType !== undefined) {
+				start.setAttribute("line-type", opts.lineType);
 			}
-			this.blockOf(options.block).append(start);
+			this.blockOf(opts.block).append(start);
 
 			const stop = new Marker();
-			stop.setAttribute('type', 'stop');
-			stop.setAttribute('number', number);
-			other.blockOf(options.block).append(stop);
+			stop.setAttribute("type", "stop");
+			stop.setAttribute("number", number);
+			other.blockOf(opts.block).append(stop);
 
-			options.finish?.(start);
+			opts.finish?.(start);
 			return start;
 		});
 	}
 
 	/** The `<notations>` child markers of this kind live under: itself, or a technical/ornaments block. */
-	private blockOf(block?: 'technical' | 'ornaments'): MElement {
-		if (block === 'technical') {
+	private blockOf(block?: "technical" | "ornaments"): MElement {
+		if (block === "technical") {
 			return this.technical();
 		}
-		if (block === 'ornaments') {
+		if (block === "ornaments") {
 			const notations = this.notations();
-			const existing = notations.childrenNamed('ornaments')[0];
+			const existing = notations.childrenNamed("ornaments")[0];
 			if (existing) {
 				return existing;
 			}
-			const ornaments = new MElement('ornaments');
+			const ornaments = new MElement("ornaments");
 			notations.append(ornaments);
 			return ornaments;
 		}
@@ -2098,17 +1964,17 @@ export class Note extends MElement {
 
 	/** Get or create this note's `<notations>` child. */
 	private notations(): MElement {
-		const existing = this.childrenNamed('notations')[0];
+		const existing = this.childrenNamed("notations")[0];
 		if (existing) {
 			return existing;
 		}
-		const notations = new MElement('notations');
+		const notations = new MElement("notations");
 		this.insertBefore(
 			notations,
 			this.children.find(
 				(child) =>
 					child instanceof MElement &&
-					['lyric', 'play', 'listen'].includes(child.tag),
+					["lyric", "play", "listen"].includes(child.tag),
 			) ?? null,
 		);
 		return notations;
@@ -2117,11 +1983,11 @@ export class Note extends MElement {
 	/** Get or create this note's `<notations><articulations>` child. */
 	private articulationsBlock(): MElement {
 		const notations = this.notations();
-		const existing = notations.childrenNamed('articulations')[0];
+		const existing = notations.childrenNamed("articulations")[0];
 		if (existing) {
 			return existing;
 		}
-		const articulations = new MElement('articulations');
+		const articulations = new MElement("articulations");
 		notations.append(articulations);
 		return articulations;
 	}
@@ -2129,7 +1995,7 @@ export class Note extends MElement {
 	/** First direct `<tag>` child across this note's `<notations>` blocks, or null. */
 	private notationsChild(tag: string): MElement | null {
 		return (
-			this.childrenNamed('notations').flatMap((notations) =>
+			this.childrenNamed("notations").flatMap((notations) =>
 				notations.childrenNamed(tag),
 			)[0] ?? null
 		);
@@ -2137,7 +2003,7 @@ export class Note extends MElement {
 
 	/** Typed markers directly under this note's `<notations>` (e.g. slides, glissandos). */
 	private notationsMarkers<T extends MElement>(type: new () => T): T[] {
-		return this.childrenNamed('notations').flatMap((notations) =>
+		return this.childrenNamed("notations").flatMap((notations) =>
 			notations.childrenOfType(type),
 		);
 	}
@@ -2149,8 +2015,8 @@ export class Note extends MElement {
 
 	/** Every `<tag>` inside this note's `<notations><technical>` blocks, document order. */
 	private technicalChildrenNamed(tag: string): MElement[] {
-		return this.childrenNamed('notations')
-			.flatMap((notations) => notations.childrenNamed('technical'))
+		return this.childrenNamed("notations")
+			.flatMap((notations) => notations.childrenNamed("technical"))
 			.flatMap((technical) => technical.childrenNamed(tag));
 	}
 
@@ -2158,27 +2024,27 @@ export class Note extends MElement {
 	private technicalMarkers<T extends MElement>(
 		type: new (...args: never[]) => T,
 	): T[] {
-		return this.childrenNamed('notations')
-			.flatMap((notations) => notations.childrenNamed('technical'))
+		return this.childrenNamed("notations")
+			.flatMap((notations) => notations.childrenNamed("technical"))
 			.flatMap((technical) => technical.childrenOfType(type));
 	}
 
 	/** Get or create this note's `<notations><technical>` child. */
 	private technical(): MElement {
 		const notations = this.notations();
-		const existing = notations.childrenNamed('technical')[0];
+		const existing = notations.childrenNamed("technical")[0];
 		if (existing) {
 			return existing;
 		}
-		const technical = new MElement('technical');
+		const technical = new MElement("technical");
 		notations.append(technical);
 		return technical;
 	}
 
 	/** Remove each `<other-technical>` whose text matches `pattern`. */
 	private removeOtherTechnical(pattern: RegExp): void {
-		for (const node of this.technicalChildrenNamed('other-technical')) {
-			if (pattern.test(node.text ?? '')) {
+		for (const node of this.technicalChildrenNamed("other-technical")) {
+			if (pattern.test(node.text ?? "")) {
 				node.remove();
 			}
 		}
@@ -2210,19 +2076,19 @@ function compareVerses(left: string, right: string): number {
  * the angled and square ones ask for shorter and longer holds.
  */
 export type FermataShape =
-	| 'normal'
-	| 'angled'
-	| 'square'
-	| 'double-angled'
-	| 'double-square'
-	| 'double-dot'
-	| 'half-curve'
-	| 'curlew';
+	| "normal"
+	| "angled"
+	| "square"
+	| "double-angled"
+	| "double-square"
+	| "double-dot"
+	| "half-curve"
+	| "curlew";
 
 /** A whole-number attribute, leniently: null unless an integer. */
 function integerAttribute(element: MElement, name: string): number | null {
 	const raw = element.getAttribute(name);
-	if (raw == null || raw.trim() === '') {
+	if (raw == null || raw.trim() === "") {
 		return null;
 	}
 	const value = Number(raw);
@@ -2237,33 +2103,33 @@ const PALM_MUTE_TEXT = /^\s*(p\.?\s*m\.?|palm[\s-]*mut(e|ed|ing))\s*$/i;
 
 /** `<note>` children the schema puts after `<notehead>`. */
 const AFTER_NOTEHEAD = new Set([
-	'notehead-text',
-	'staff',
-	'beam',
-	'notations',
-	'lyric',
-	'play',
-	'listen',
+	"notehead-text",
+	"staff",
+	"beam",
+	"notations",
+	"lyric",
+	"play",
+	"listen",
 ]);
 
 /** `<note>` children the schema puts after `<instrument>`. */
 const afterInstrument = new Set([
-	'footnote',
-	'level',
-	'voice',
-	'type',
-	'dot',
-	'accidental',
-	'time-modification',
-	'stem',
-	'notehead',
-	'notehead-text',
-	'staff',
-	'beam',
-	'notations',
-	'lyric',
-	'play',
-	'listen',
+	"footnote",
+	"level",
+	"voice",
+	"type",
+	"dot",
+	"accidental",
+	"time-modification",
+	"stem",
+	"notehead",
+	"notehead-text",
+	"staff",
+	"beam",
+	"notations",
+	"lyric",
+	"play",
+	"listen",
 ]);
 
 /** A point in a part as one comparable number: measure index, then beat. */
@@ -2303,7 +2169,7 @@ export function durationDivisions(
 /**
  * The nearest non-`<chord/>`-member {@link Note} sibling of `element` in the same
  * measure, walking document order (`step` = 1 forward, -1 backward). Directions
- * and harmonies sit between notes and bind to a neighbor — a pedal start to the
+ * and harmonies sit between notes and bind to a neighbor, a pedal start to the
  * note that follows, a chord symbol to the note it sits above.
  */
 export function adjacentNote(element: MElement, step: 1 | -1): Note | null {
@@ -2327,13 +2193,14 @@ export function adjacentNote(element: MElement, step: 1 | -1): Note | null {
 
 /**
  * The `<display-step>`/`<display-octave>` pair inside a `<rest>` or `<unpitched>`
- * — a staff position, not a pitch. Null when the element or either half is absent.
+ *, a staff position, not a pitch. Null when the element or either half is absent.
  */
 function displayPosition(
+	// vet-ignore noop-objects-over-null: an absent optional child is XML data, passed straight in from child().
 	element: MElement | null,
 ): { step: string; octave: number } | null {
-	const step = element?.child('display-step')?.text;
-	const octave = element?.child('display-octave')?.text;
+	const step = element?.child("display-step")?.text;
+	const octave = element?.child("display-octave")?.text;
 	if (step == null || octave == null) {
 		return null;
 	}
@@ -2343,10 +2210,147 @@ function displayPosition(
 /** Build a `<pitch>` from a {@link PitchSpec}. */
 export function buildPitch(spec: PitchSpec): Pitch {
 	const pitch = new Pitch();
-	appendValue(pitch, 'step', spec.step);
+	appendValue(pitch, "step", spec.step);
 	if (spec.alter != null) {
-		appendValue(pitch, 'alter', String(spec.alter));
+		appendValue(pitch, "alter", String(spec.alter));
 	}
-	appendValue(pitch, 'octave', String(spec.octave));
+	appendValue(pitch, "octave", String(spec.octave));
 	return pitch;
+}
+
+interface ArticulationOptions {
+	placement?: "above" | "below";
+	lineShape?: "straight" | "curved";
+	lineType?: "solid" | "dashed" | "dotted" | "wavy";
+}
+
+interface SpanOptions<T> {
+	lineType?: LineType;
+	block?: "technical" | "ornaments";
+	finish?: (start: T) => void;
+}
+
+/** Quarter-note beats per note type; dots add half of the previous increment. */
+const QUARTER_BEATS: Record<NoteType, number> = {
+	whole: 4,
+	half: 2,
+	quarter: 1,
+	eighth: 0.5,
+	"16th": 0.25,
+	"32nd": 0.125,
+	"64th": 0.0625,
+	"128th": 0.03125,
+};
+
+/** `<note>` children that follow its `<tie>`s, in schema order. */
+const AFTER_TIE = new Set([
+	"instrument",
+	"footnote",
+	"level",
+	"voice",
+	"type",
+	"dot",
+	"accidental",
+	"time-modification",
+	"stem",
+	"notehead",
+	"notehead-text",
+	"staff",
+	"beam",
+	"notations",
+	"lyric",
+	"play",
+	"listen",
+]);
+
+/** MusicXML note-type values, coarsest to finest. */
+export type NoteType =
+	| "whole"
+	| "half"
+	| "quarter"
+	| "eighth"
+	| "16th"
+	| "32nd"
+	| "64th"
+	| "128th";
+
+/**
+ * A MusicXML `symbol-size`: the drawn size of a note's `<type>`. MusicXML
+ * defaults it from the note: `cue` for a cue or grace note, `grace-cue` for
+ * one that is both, `full` otherwise.
+ */
+export type SymbolSize = "full" | "cue" | "grace-cue" | "large";
+
+/** MusicXML notehead-value enum: the glyph drawn for a note's head. */
+export type NoteheadValue =
+	| "normal"
+	| "x"
+	| "diamond"
+	| "slash"
+	| "triangle"
+	| "cross"
+	| "circle-x"
+	| "circled"
+	| "slashed"
+	| "none";
+
+/** A musical duration: a note type, optional dots, and an optional onset. */
+export interface DurationSpec {
+	type: NoteType;
+	dots?: number;
+	timeModification?: TimeModificationSpec;
+	/**
+	 * Beat within the measure to place this at; defaults to the voice's own cursor
+	 * (the end of its last note). Pass it to jump back and stack, or leave a gap.
+	 */
+	onset?: number;
+}
+
+/** A pitch: step, octave, and optional alteration in semitones. */
+export interface PitchSpec {
+	step: string;
+	octave: number;
+	alter?: number;
+}
+
+/** A pitched note: a {@link PitchSpec} plus a {@link DurationSpec}. */
+export type NoteSpec = PitchSpec & DurationSpec;
+
+/**
+ * An unpitched (percussion) note's staff position: the step and octave of the
+ * line or space it is drawn on, read through the clef as if it were a pitch.
+ */
+export interface DisplayPositionSpec {
+	step: string;
+	octave: number;
+}
+
+/** An unpitched note: an optional {@link DisplayPositionSpec} plus a {@link DurationSpec}. */
+export type UnpitchedNoteSpec = Partial<DisplayPositionSpec> & DurationSpec;
+
+// Fixed PPQ supports up to triple dots and ratios with factors 3, 5 and 7.
+// Imported scores retain their divisions; unrepresentable durations throw.
+export const WRITE_DIVISIONS = 256 * 3 * 5 * 7;
+
+/** How a note plays, read from its `<note>` attributes; see {@link Note.performance}. */
+export interface NotePerformance {
+	/** `dynamics`: loudness at the attack, as a percent of a forte velocity (90 MIDI). */
+	dynamics: number | null;
+	/** `end-dynamics`: loudness at the release, as the same percent. */
+	endDynamics: number | null;
+	/** `attack`: how far the attack moves from the onset, in quarter-note beats. */
+	attack: number | null;
+	/** `release`: how far the release moves from the note's end, in quarter-note beats. */
+	release: number | null;
+	/** `pizzicato`: whether a string note plays plucked (true) or bowed (false). */
+	pizzicato: boolean | null;
+}
+
+/** How a note plays, to write: {@link NotePerformance} with every field optional. */
+export interface NotePerformanceSpec {
+	dynamics?: number;
+	endDynamics?: number;
+	attack?: number;
+	release?: number;
+	pizzicato?: boolean;
 }

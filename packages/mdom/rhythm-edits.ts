@@ -1,5 +1,7 @@
-import type { Chord } from './chord';
-import { MElement, type MNode, required } from './m-node';
+// vet-ignore-file compact-files: the rhythm edits share one duration model.
+import type { Chord } from "./chord";
+import { MElement } from "./m-element";
+import { type MNode, required } from "./m-node";
 import {
 	type DurationSpec,
 	durationDivisions,
@@ -7,10 +9,10 @@ import {
 	type NoteSpec,
 	type NoteType,
 	type PitchSpec,
-} from './note';
-import type { TimeModificationSpec } from './time-modification';
-import { onsetOf, repairTimelineAfter } from './timeline';
-import type { Voice } from './voice';
+} from "./note";
+import type { TimeModificationSpec } from "./time-modification";
+import { onsetOf, repairTimelineAfter } from "./timeline";
+import type { Voice } from "./voice";
 
 export type RhythmBuild = (
 	spec: DurationSpec,
@@ -41,14 +43,14 @@ interface RestPlan {
 }
 
 const NOTE_TYPES: NoteType[] = [
-	'whole',
-	'half',
-	'quarter',
-	'eighth',
-	'16th',
-	'32nd',
-	'64th',
-	'128th',
+	"whole",
+	"half",
+	"quarter",
+	"eighth",
+	"16th",
+	"32nd",
+	"64th",
+	"128th",
 ];
 
 export function replaceRest(
@@ -61,19 +63,19 @@ export function replaceRest(
 	const entries = entriesIn(voice);
 	const target = locate(voice, rest, entries);
 	if (!target.chord.lead.isRest || target.chord.notes.length !== 1) {
-		throw new Error('replaceRest target must be a single rest');
+		throw new Error("replaceRest target must be a single rest");
 	}
 	const divisions = noteDivisions(rest);
 	const isChord = Array.isArray(specOrPitches);
 	const spec = (isChord ? chordSpec : specOrPitches) as DurationSpec;
 	if (!spec || (isChord && specOrPitches.length === 0)) {
-		throw new Error('rest replacement needs a duration and at least one pitch');
+		throw new Error("rest replacement needs a duration and at least one pitch");
 	}
 	const duration = durationDivisions(spec, divisions);
 	if (duration <= 0 || duration > target.duration) {
-		throw new Error('replacement duration must fit within the rest');
+		throw new Error("replacement duration must fit within the rest");
 	}
-	const replacementIsRest = !isChord && !('step' in specOrPitches);
+	const replacementIsRest = !isChord && !("step" in specOrPitches);
 	const plan = restPlan(voice, entries, {
 		anchors: [target],
 		removals: [target],
@@ -106,13 +108,13 @@ export function resize(
 	const entries = entriesIn(voice);
 	const entry = locate(voice, target, entries);
 	if (entry.chord.lead.isRest || entry.chord.lead.isGrace) {
-		throw new Error('resize target must be a timed note or chord');
+		throw new Error("resize target must be a timed note or chord");
 	}
 	const divisions = noteDivisions(entry.chord.lead);
 	const timeModification = entry.chord.lead.timeModification ?? undefined;
 	const after = durationDivisions({ ...spec, timeModification }, divisions);
 	if (after <= 0) {
-		throw new Error('resize duration must be positive');
+		throw new Error("resize duration must be positive");
 	}
 	if (after === entry.duration) {
 		for (const note of entry.chord.notes) {
@@ -120,7 +122,7 @@ export function resize(
 		}
 		return;
 	}
-	assertUnmarked(entry, 'resize');
+	assertUnmarked(entry, "resize");
 	const index = entries.indexOf(entry);
 	const newEnd = entry.onset + after;
 	if (after < entry.duration) {
@@ -143,13 +145,13 @@ export function resize(
 
 	const limit = measureLimit(voice, entry, entries);
 	if (newEnd > limit) {
-		throw new Error('resize cannot overrun the measure');
+		throw new Error("resize cannot overrun the measure");
 	}
 	const overlapped = entries
 		.slice(index + 1)
 		.filter((candidate) => candidate.onset < newEnd);
 	for (const candidate of overlapped) {
-		assertUnmarked(candidate, 'overwrite');
+		assertUnmarked(candidate, "overwrite");
 	}
 	const previousVoiceEnd = entries.at(-1)?.end ?? entry.end;
 	const partial = overlapped.at(-1);
@@ -213,15 +215,15 @@ export function removeRhythmEntry(
 ): void {
 	const entries = entriesIn(voice);
 	const entry = locate(voice, target, entries);
-	assertUnmarked(entry, 'remove');
+	assertUnmarked(entry, "remove");
 	if (target instanceof Note && entry.chord.notes.length > 1) {
 		const members = entry.chord.notes;
 		const index = members.indexOf(target);
 		if (index < 0) {
-			throw new Error('removeEntry target must belong to the chord');
+			throw new Error("removeEntry target must belong to the chord");
 		}
 		if (index === 0) {
-			members[1]!.child('chord')?.remove();
+			members[1]!.child("chord")?.remove();
 		}
 		target.remove();
 		return;
@@ -243,7 +245,7 @@ export function removeRhythmEntry(
 function locate(voice: Voice, target: Note | Chord, entries: Entry[]): Entry {
 	const lead = target instanceof Note ? target : target.lead;
 	if (!lead || lead.parent !== voice.measure || lead.voice !== voice.id) {
-		throw new Error('rhythm edit target must belong to this voice and measure');
+		throw new Error("rhythm edit target must belong to this voice and measure");
 	}
 	const entry = entries.find((candidate) =>
 		target instanceof Note
@@ -251,7 +253,7 @@ function locate(voice: Voice, target: Note | Chord, entries: Entry[]): Entry {
 			: candidate.chord.lead === lead,
 	);
 	if (!entry || entry.chord.lead.isGrace || entry.duration <= 0) {
-		throw new Error('rhythm edits require a timed, non-grace entry');
+		throw new Error("rhythm edits require a timed, non-grace entry");
 	}
 	return entry;
 }
@@ -274,7 +276,7 @@ function entriesIn(voice: Voice): Entry[] {
 }
 
 function noteDivisions(note: Note): number {
-	return required(note.divisions, 'divisions for rhythm edit');
+	return required(note.divisions, "divisions for rhythm edit");
 }
 
 function assertUnmarked(entry: Entry, action: string): void {
@@ -310,7 +312,7 @@ function restPlan(
 	const removals = [...options.removals];
 	let { start, end } = options;
 	if (end < start) {
-		throw new Error('rest gap cannot be negative');
+		throw new Error("rest gap cannot be negative");
 	}
 	const indexed = removals.length > 0 ? removals : options.anchors.slice(-1);
 	const indexes = indexed.map((entry) => entries.indexOf(entry));
@@ -389,7 +391,7 @@ function regionFor(voice: Voice, entries: Entry[]): Region {
 		entry.chord.notes.map((note) => children.indexOf(note)),
 	);
 	if (indexes.some((index) => index < 0)) {
-		throw new Error('rhythm edit region is detached');
+		throw new Error("rhythm edit region is detached");
 	}
 	const first = Math.min(...indexes);
 	const last = Math.max(...indexes);
@@ -397,9 +399,9 @@ function regionFor(voice: Voice, entries: Entry[]): Region {
 		const node = children[index];
 		if (
 			node instanceof MElement &&
-			(node.tag === 'backup' || node.tag === 'forward')
+			(node.tag === "backup" || node.tag === "forward")
 		) {
-			throw new Error('rhythm edits cannot cross backup/forward movers');
+			throw new Error("rhythm edits cannot cross backup/forward movers");
 		}
 	}
 	return { reference: children[last + 1] ?? null };
@@ -421,7 +423,7 @@ function applyRestPlan(
 		at += duration;
 	}
 	if (at !== plan.end) {
-		throw new Error('internal rest plan did not fill its gap');
+		throw new Error("internal rest plan did not fill its gap");
 	}
 	for (const note of replacements) {
 		voice.measure.insertBefore(note, plan.region.reference);
@@ -439,18 +441,18 @@ function writeDuration(
 	spec: { type: NoteType; dots?: number },
 	duration: number,
 ): void {
-	const type = required(note.child('type'), '<type> on resized note');
+	const type = required(note.child("type"), "<type> on resized note");
 	const durationNode = required(
-		note.child('duration'),
-		'<duration> on resized note',
+		note.child("duration"),
+		"<duration> on resized note",
 	);
 	type.setText(spec.type);
-	for (const dot of note.childrenNamed('dot')) {
+	for (const dot of note.childrenNamed("dot")) {
 		dot.remove();
 	}
 	const afterType = note.children[note.children.indexOf(type) + 1] ?? null;
 	for (let index = 0; index < (spec.dots ?? 0); index++) {
-		note.insertBefore(new MElement('dot'), afterType);
+		note.insertBefore(new MElement("dot"), afterType);
 	}
 	durationNode.setText(String(duration));
 }
@@ -535,7 +537,7 @@ function metricGroups(
 		if (!Number.isSafeInteger(unit) || unit <= 0) {
 			return [];
 		}
-		for (const numerator of component.beats.split('+')) {
+		for (const numerator of component.beats.split("+")) {
 			const beats = Number(numerator);
 			if (!Number.isSafeInteger(beats) || beats <= 0) {
 				return [];
