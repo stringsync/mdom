@@ -324,16 +324,27 @@ export class MirrorStep implements Step {
 		return published;
 	}
 
-	/** Puts each `config.replace` file at the path it stands in for. */
+	/**
+	 * Puts each `config.replace` file at the path it stands in for. Several paths may share one
+	 * source, so the sources are removed only once every replacement is in place.
+	 */
 	private async replace(mirror: string): Promise<void> {
-		for (const [to, from] of Object.entries(this.opts.config?.replace ?? {})) {
+		const entries = Object.entries(this.opts.config?.replace ?? {});
+		for (const [to, from] of entries) {
 			if (!(await this.fs.exists(`${mirror}/${from}`))) {
 				throw new Error(
 					`${this.opts.project} replaces ${to} with ${from}, which the mirror does not hold`,
 				);
 			}
+		}
+		for (const [to, from] of entries) {
 			await this.copyFile(`${mirror}/${from}`, `${mirror}/${to}`);
-			await this.fs.rm(`${mirror}/${from}`);
+		}
+		const targets = new Set(entries.map(([to]) => to));
+		for (const from of new Set(entries.map(([, from]) => from))) {
+			if (!targets.has(from)) {
+				await this.fs.rm(`${mirror}/${from}`);
+			}
 		}
 	}
 
