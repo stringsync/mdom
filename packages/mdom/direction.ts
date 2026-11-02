@@ -12,7 +12,13 @@ import { adjacentNote, type Note, type NoteType } from "./note";
 import { OctaveShift } from "./octave-shift";
 import { type Offset, type OffsetSpec, offsetOf, writeOffset } from "./offset";
 import { Pedal } from "./pedal";
-import { colorOf, placementOf, setYesNo, yesNoOf } from "./print-style";
+import {
+	colorOf,
+	placementOf,
+	setPlacementOf,
+	setYesNo,
+	yesNoOf,
+} from "./print-style";
 import { Rehearsal } from "./rehearsal";
 import { childIndexIn, divisionsBackFrom } from "./signature";
 import { Sound, type SoundSpec, writeSound } from "./sound";
@@ -162,6 +168,11 @@ export class Direction extends MElement {
 	/** `placement`; null when unstated (the default is the renderer's choice). */
 	get placement(): "above" | "below" | null {
 		return placementOf(this);
+	}
+
+	/** Pin the direction above or below the staff; null restores the default. */
+	setPlacement(placement: "above" | "below" | null): void {
+		setPlacementOf(this, placement);
 	}
 
 	/** The normalized `color`; null when unset. */

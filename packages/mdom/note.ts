@@ -35,6 +35,7 @@ import {
 	type PositionSpec,
 	placementOf,
 	positionOf,
+	setPlacementOf,
 	setPositionOf,
 	setYesNo,
 	yesNoOf,
@@ -849,6 +850,54 @@ export class Note extends MElement {
 			direction === "none"
 			? direction
 			: null;
+	}
+
+	/**
+	 * Set the `<stem>` direction, or remove the element with null. The element
+	 * keeps its other attributes (color, position) when only the direction changes.
+	 */
+	setStem(direction: "up" | "down" | "double" | "none" | null): void {
+		const existing = this.child("stem");
+		if (direction === null) {
+			existing?.remove();
+			return;
+		}
+		if (existing !== null) {
+			existing.setText(direction);
+			return;
+		}
+		const stem = new MElement("stem");
+		stem.setText(direction);
+		this.insertBefore(
+			stem,
+			this.children.find(
+				(child) => child instanceof MElement && AFTER_STEM.has(child.tag),
+			) ?? null,
+		);
+	}
+
+	/**
+	 * Pin every mark this note carries in `<notations>` (articulations,
+	 * ornaments, technical marks, dynamics, other notations) above or below the
+	 * staff; null removes the `placement` so the renderer chooses again.
+	 */
+	setPlacement(placement: "above" | "below" | null): void {
+		for (const notations of this.childrenNamed("notations")) {
+			for (const child of notations.children) {
+				if (!(child instanceof MElement)) {
+					continue;
+				}
+				if (MARK_BLOCKS.has(child.tag)) {
+					for (const mark of child.children) {
+						if (mark instanceof MElement) {
+							setPlacementOf(mark, placement);
+						}
+					}
+				} else if (child.tag === "other-notation" || child.tag === "dynamics") {
+					setPlacementOf(child, placement);
+				}
+			}
+		}
 	}
 
 	/** The normalized `color` of the `<stem>`; null when unset or when there is no stem. */
@@ -2100,6 +2149,21 @@ const LET_RING_TEXT = /^\s*(let[\s-]*ring|l\.\s*r\.?)\s*$/i;
 
 /** `<other-technical>` text read as palm mute: `P.M.`, `PM`, `palm mute(d)`. */
 const PALM_MUTE_TEXT = /^\s*(p\.?\s*m\.?|palm[\s-]*mut(e|ed|ing))\s*$/i;
+
+/** `<note>` children the schema puts after `<stem>`. */
+const AFTER_STEM = new Set([
+	"notehead",
+	"notehead-text",
+	"staff",
+	"beam",
+	"notations",
+	"lyric",
+	"play",
+	"listen",
+]);
+
+/** `<notations>` blocks whose children each carry a `placement`. */
+const MARK_BLOCKS = new Set(["articulations", "ornaments", "technical"]);
 
 /** `<note>` children the schema puts after `<notehead>`. */
 const AFTER_NOTEHEAD = new Set([

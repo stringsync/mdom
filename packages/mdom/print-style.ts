@@ -29,6 +29,14 @@ export function placementOf(
 	return placement === "above" || placement === "below" ? placement : null;
 }
 
+/** Set the `placement` of `element`, or remove it with null so the renderer chooses again. */
+export function setPlacementOf(
+	element: MElement,
+	placement: "above" | "below" | null,
+): void {
+	setOrRemove(element, "placement", placement);
+}
+
 /**
  * The MusicXML `position` attribute group, in tenths (convert with the score's
  * `scaling`). `defaultX`/`defaultY` move the origin the application computes,
