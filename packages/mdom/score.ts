@@ -5,6 +5,7 @@ import {
 	convertPartsToTransposedPitch,
 } from "./concert-pitch";
 import { ForPart } from "./for-part";
+import { type ImportPartOptions, importPart } from "./import-part";
 import { descendants, MElement } from "./m-element";
 import { appendValue } from "./measure";
 import { PageLayout } from "./page-layout";
@@ -319,11 +320,9 @@ export class Score extends MElement {
 	}
 
 	/**
-	 * The `<part-group>` spans, the braces and brackets drawn across parts -
-	 * outermost first. The markers in `<part-list>` are flat, interleaved with the
-	 * `<score-part>` entries and paired by `number`, so each span's members are
-	 * resolved by counting parts between its start and stop. Groups that never
-	 * close, or that cover no part, are dropped.
+	 * The `<part-group>` spans, the braces and brackets drawn across parts,
+	 * outermost first. Groups that never close, or that cover no part, are
+	 * dropped.
 	 */
 	get partGroups(): PartGroupSpan[] {
 		return partGroupsOf(this);
@@ -693,6 +692,15 @@ export class Score extends MElement {
 		part.setAttribute("id", id);
 		this.append(part);
 		return part;
+	}
+
+	/**
+	 * Add a copy of a part from another document, e.g. a tab part built
+	 * elsewhere, last or after `opts.after`. The source is left unchanged.
+	 * Throws when the part's measure count differs from the score's other parts.
+	 */
+	importPart(part: Part, opts?: ImportPartOptions): Part {
+		return importPart(this, part, opts);
 	}
 }
 

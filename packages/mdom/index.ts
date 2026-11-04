@@ -71,6 +71,7 @@ export {
 	type HarmonyStepSpec,
 	type HarmonyType,
 } from "./harmony";
+export type { ImportPartOptions } from "./import-part";
 export type {
 	InstrumentChange,
 	InstrumentChangeSpec,
