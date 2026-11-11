@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { GuitarProParser } from "./guitar-pro-parser";
 import { GuitarProSerializer } from "./guitar-pro-serializer";
+import { collectUnsupported } from "./guitar-pro-test-events";
 import { MDocument } from "./m-document";
 import type { Measure } from "./measure";
 import { schemaErrors } from "./music-xml-schema";
@@ -8,7 +9,7 @@ import { schemaErrors } from "./music-xml-schema";
 const fixture = async (name: string, lost: string[] = []) =>
 	new GuitarProParser().parseFromBlob(
 		Bun.file(new URL(`./fixtures/guitar-pro/${name}`, import.meta.url)),
-		{ unsupported: "omit", onUnsupported: (feature) => lost.push(feature) },
+		{ unsupported: "omit", events: collectUnsupported(lost) },
 	);
 
 const leads = (measure: Measure) =>

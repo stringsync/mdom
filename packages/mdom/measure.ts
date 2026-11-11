@@ -157,13 +157,31 @@ export class Measure extends MElement {
 		);
 	}
 
-	/** `<staves>` count in effect (global); 1 when never declared. */
+	/**
+	 * `<staves>` count in effect (global); when never declared, the part's
+	 * highest numbered clef in effect or note staff here (1 for a single staff).
+	 */
 	get staveCount(): number {
 		const staves = this.attributeBack(
 			"staves",
 			(attrs) => attrs.child("staves") ?? undefined,
 		);
-		return staves?.text == null ? 1 : Number(staves.text);
+		if (staves?.text != null) {
+			return Number(staves.text);
+		}
+		// Walks only this measure and its carried clefs, so a loop over a part's
+		// measures stays linear.
+		let highest = 1;
+		while (this.getClef(String(highest + 1)) != null) {
+			highest++;
+		}
+		for (const note of this.childrenNamed("note")) {
+			const staff = Number(note.child("staff")?.text);
+			if (Number.isInteger(staff) && staff > highest) {
+				highest = staff;
+			}
+		}
+		return highest;
 	}
 
 	/** `<staff-lines>` in effect for `staff` (default '1'); 5 lines when unspecified. */

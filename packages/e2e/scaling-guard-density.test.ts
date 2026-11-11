@@ -1,14 +1,19 @@
 import { describe, it } from "bun:test";
 import { guardRatio, seed } from "./scaling-guard-support";
 import type { Operation } from "./scaling-operations";
-import { syntheticScore } from "./scaling-score";
+import { ScoreBuilder } from "./scaling-score-builder";
 
 // Notes per measure grow at a fixed 16 measures: the audit's dense cursor walk
 // (#42) rescanned each measure's prefix per note.
 describe("notes-per-measure scaling guards (32 → 128)", () => {
 	const densities = [32, 128] as const;
 	const denseInputs = densities.map((notes) =>
-		syntheticScore(seed, { measures: 16, parts: 1, voices: 1, notes }),
+		new ScoreBuilder(seed).synthetic({
+			measures: 16,
+			parts: 1,
+			voices: 1,
+			notes,
+		}),
 	);
 	const guardDense = (operation: Operation) =>
 		guardRatio(

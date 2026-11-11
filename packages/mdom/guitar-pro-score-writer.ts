@@ -59,11 +59,10 @@ export class GuitarProScoreWriter {
 	>();
 	/** Each measure's MasterBar, by measure index. */
 	private readonly masterBars: MElement[] = [];
-	private readonly directionIndex = new GuitarProDirectionIndex((feature) =>
-		this.values.unsupported(feature),
-	);
+	private readonly directionIndex: GuitarProDirectionIndex;
 	constructor(opts: GuitarProOptions = {}) {
 		this.values = new GuitarProValues(opts);
+		this.directionIndex = new GuitarProDirectionIndex(this.values);
 		this.effects = new GuitarProBeatEffectWriter(this.values);
 	}
 

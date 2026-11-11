@@ -4,6 +4,7 @@ import JSZip from "jszip";
 import { guitarProDrumKit } from "./guitar-pro-drum-kit";
 import { GuitarProParser } from "./guitar-pro-parser";
 import { GuitarProSerializer } from "./guitar-pro-serializer";
+import { collectUnsupported } from "./guitar-pro-test-events";
 import type { MDocument } from "./m-document";
 import { MDOMParser } from "./m-dom-parser";
 import type { MElement } from "./m-element";
@@ -250,7 +251,7 @@ describe("Guitar Pro percussion export", () => {
 		const restored = await new GuitarProParser().parseFromBytes(
 			await new GuitarProSerializer().serializeToBytes(document, {
 				unsupported: "omit",
-				onUnsupported: (feature) => omitted.push(feature),
+				events: collectUnsupported(omitted),
 			}),
 		);
 

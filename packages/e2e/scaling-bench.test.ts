@@ -8,7 +8,8 @@ import {
 	type Sample,
 } from "./scaling-operations";
 import { type CaseResult, formatTable, summarize } from "./scaling-report";
-import { repeatScore, scoreCounts, syntheticScore } from "./scaling-score";
+import { scoreCounts } from "./scaling-score";
+import { ScoreBuilder } from "./scaling-score-builder";
 
 const parser = new MDOMParser();
 const seedXml = `<score-partwise version="4.0"><part-list><score-part id="P1"><part-name>Seed</part-name></score-part></part-list><part id="P1">
@@ -30,7 +31,7 @@ function sample(elapsedMs: number, heapDeltaBytes: number): Sample {
 
 describe("scaling benchmark", () => {
 	it("repeats real measures with paired spans and strips dangling truncated endpoints", () => {
-		const xml = repeatScore(parser.parseFromString(seedXml), 5, 2);
+		const xml = new ScoreBuilder(parser.parseFromString(seedXml)).repeat(5, 2);
 		const document = parser.parseFromString(xml);
 		expect(document.score.parts.map((part) => part.id)).toEqual([
 			"P1-bench-1",
@@ -73,7 +74,7 @@ describe("scaling benchmark", () => {
 	});
 
 	it("generates independent dimensions with aligned voices and complete ties/slurs", () => {
-		const xml = syntheticScore(parser.parseFromString(seedXml), {
+		const xml = new ScoreBuilder(parser.parseFromString(seedXml)).synthetic({
 			measures: 3,
 			parts: 2,
 			voices: 3,
@@ -148,7 +149,7 @@ describe("scaling benchmark", () => {
 						),
 					)
 				: parser.parseFromString(seedXml);
-		const xml = syntheticScore(seed, {
+		const xml = new ScoreBuilder(seed).synthetic({
 			measures: 1,
 			parts: 1,
 			voices: 1,
@@ -234,7 +235,7 @@ describe("scaling benchmark", () => {
 		const seed = parser.parseFromString(
 			await files.read(`${import.meta.dir}/examples/actor_prelude_sample.xml`),
 		);
-		const document = parser.parseFromString(repeatScore(seed, 1));
+		const document = parser.parseFromString(new ScoreBuilder(seed).repeat(1));
 		expect(document.score.parts).toHaveLength(seed.score.parts.length);
 		const parts = document.score.parts;
 		expect(parts.map((part) => part.measures.length)).toEqual(

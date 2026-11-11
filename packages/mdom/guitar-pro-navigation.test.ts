@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "bun:test";
 import JSZip from "jszip";
 import { GuitarProParser } from "./guitar-pro-parser";
 import { GuitarProSerializer } from "./guitar-pro-serializer";
+import { collectUnsupported } from "./guitar-pro-test-events";
 import { MDocument } from "./m-document";
 import { MDOMParser } from "./m-dom-parser";
 import type { MElement } from "./m-element";
@@ -142,7 +143,7 @@ describe("Guitar Pro endings and jumps", () => {
 			Bun.file(new URL("./fixtures/guitar-pro/fermata.gp", import.meta.url)),
 			{
 				unsupported: "omit",
-				onUnsupported: (feature) => omitted.push(feature),
+				events: collectUnsupported(omitted),
 			},
 		);
 

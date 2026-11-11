@@ -42,7 +42,7 @@ export { FormattedTextElement } from "./formatted-text";
 export { Frame, type FrameSpec } from "./frame";
 export { FrameNote, type FrameNoteSpec } from "./frame-note";
 export { Glissando } from "./glissando";
-export type { GuitarProOptions } from "./guitar-pro-options";
+export type { GuitarProEvents, GuitarProOptions } from "./guitar-pro-options";
 export { GuitarProParser } from "./guitar-pro-parser";
 export { GuitarProSerializer } from "./guitar-pro-serializer";
 export { HammerOn } from "./hammer-on";

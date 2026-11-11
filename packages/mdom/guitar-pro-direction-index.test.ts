@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { GuitarProScoreWriter } from "./guitar-pro-score-writer";
+import { collectUnsupported } from "./guitar-pro-test-events";
 import { MDocument } from "./m-document";
 import { MDOMParser } from "./m-dom-parser";
 import type { MElement } from "./m-element";
@@ -48,7 +49,7 @@ describe("GuitarProScoreWriter dynamics and free text", () => {
 
 		const root = new GuitarProScoreWriter({
 			unsupported: "omit",
-			onUnsupported: (feature) => unsupported.push(feature),
+			events: collectUnsupported(unsupported),
 		}).write(document).root;
 
 		expect(unsupported).toEqual(["dynamic sfz"]);

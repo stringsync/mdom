@@ -1,4 +1,3 @@
-import { GuitarProParser, MDOMParser } from "@stringsync/mdom";
 import { cli } from "core/cmd";
 import { NodeFs, NodePs } from "core/system";
 import { z } from "zod";
@@ -8,12 +7,8 @@ import {
 	operations,
 } from "./scaling-operations";
 import { type CaseResult, formatTable, summarize } from "./scaling-report";
-import {
-	type Axis,
-	repeatScore,
-	scoreCounts,
-	syntheticScore,
-} from "./scaling-score";
+import { type Axis, scoreCounts } from "./scaling-score";
+import { ScoreFactory } from "./scaling-score-factory";
 
 const positiveInteger = z.coerce.number().int().positive().max(1_000_000);
 const program = cli("scaling-bench").fallback("run");
@@ -61,6 +56,7 @@ program
 	})
 	.action(async (options, { log, ps: processes }) => {
 		const files = new NodeFs();
+		const scores = new ScoreFactory(files);
 		const selectedOperations: readonly Operation[] = operations.filter(
 			(operation) =>
 				options.operation === "all" || operation === options.operation,
@@ -137,29 +133,7 @@ program
 							result.counts = childResult.counts;
 							result.samples.push(...childResult.samples);
 						} else {
-							// GP operations use a real GP import, repeated in MusicXML then
-							// re-exported untimed. Other operations share the real XML seed.
-							const seed =
-								operation === "gp-parse" ||
-								operation === "gpif-parse" ||
-								operation === "serialize-gp"
-									? await new GuitarProParser().parseFromBytes(
-											await files.readBytes(options["gp-seed"]),
-										)
-									: new MDOMParser().parseFromString(
-											await files.read(options.seed),
-										);
-							const shape = {
-								measures: options.measures,
-								parts: options.parts,
-								voices: options.voices,
-								notes: options.notes,
-								[options.axis]: size,
-							};
-							const xml =
-								options.synthetic || options.axis !== "measures"
-									? syntheticScore(seed, shape)
-									: repeatScore(seed, size);
+							const xml = await scores.build(operation, size, options);
 							result.counts = scoreCounts(xml);
 							result.samples.push(
 								await measureOperation(operation, xml, options.edits),

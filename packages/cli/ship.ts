@@ -41,7 +41,8 @@ const SHIP_BUMP = "SPLATES_SHIP_BUMP";
  * splates Ships page sets. Neither is an error, so nothing ships a silent patch.
  */
 export function bumpOf(type: string | undefined, ps: Ps): Bump {
-	const value = type ?? nonEmpty(ps.env(SHIP_BUMP));
+	const fromEnv = ps.env(SHIP_BUMP);
+	const value = type ?? (fromEnv === "" ? undefined : fromEnv);
 	if (value === undefined) {
 		throw new Error(
 			`missing version bump (expected ${TYPES.join(", ")}, as an argument or ${SHIP_BUMP})`,
@@ -55,10 +56,6 @@ export function bumpOf(type: string | undefined, ps: Ps): Bump {
 		);
 	}
 	return value;
-}
-
-function nonEmpty(value: string | undefined): string | undefined {
-	return value === "" ? undefined : value;
 }
 
 export async function ship(type: string | undefined, opts: ShipOptions = {}) {

@@ -1,4 +1,5 @@
 import type { Direction } from "./direction";
+import type { GuitarProValues } from "./guitar-pro-values";
 import type { Measure } from "./measure";
 
 const DYNAMICS = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"];
@@ -41,10 +42,10 @@ export class GuitarProDirectionIndex {
 	private readonly ends = new Map<Measure, Map<string, string>>();
 
 	/**
-	 * @param report Called once for each unsupported dynamic mark, when the
+	 * @param values Told once of each unsupported dynamic mark, when the
 	 * first beat it reaches is written.
 	 */
-	constructor(private readonly report: (feature: string) => void) {}
+	constructor(private readonly values: GuitarProValues) {}
 
 	/** The dynamic in force at `onset` on `staff` of `measure`: forte before any mark. */
 	dynamicAt(measure: Measure, staff: string, onset: number): string {
@@ -173,7 +174,7 @@ export class GuitarProDirectionIndex {
 		entry.reported = count;
 		for (const direction of fresh) {
 			for (const feature of direction.unsupported) {
-				this.report(feature);
+				this.values.unsupported(feature);
 			}
 		}
 	}

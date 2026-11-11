@@ -158,8 +158,8 @@ round-trip as a `<wavy-line>` over each note (a wide one names the
 `wiggleVibratoWide` glyph). Unsupported techniques and annotations, such as
 trills, throw by default. To deliberately
 discard unsupported annotations, pass `{ unsupported: 'omit' }` as the last
-argument to either parser or serializer methods, and add
-`onUnsupported: (feature) => ...` to hear each feature it drops. Invalid core
+argument to either parser or serializer methods, and pass a
+`core/events` `Dispatcher` as `events` and listen for `unsupported` to hear each feature it drops. Invalid core
 data still throws:
 for example, missing string assignments on a tuned staff, pitch/fret mismatches,
 inconsistent durations, or mismatched meters across parts. `.gpx`

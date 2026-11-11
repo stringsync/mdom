@@ -2,10 +2,12 @@ import { describe, expect, it } from "bun:test";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import {
+	type GuitarProEvents,
 	GuitarProParser,
 	GuitarProSerializer,
 	MDOMParser,
 } from "@stringsync/mdom";
+import { Dispatcher } from "core/events";
 
 // The Guitar Pro coverage scoreboard: every Guitar Pro fixture imported and every
 // MusicXML file in the corpus exported, with each feature `unsupported: 'omit'`
@@ -24,10 +26,10 @@ describe("Guitar Pro coverage scoreboard", () => {
 				const bytes = new Uint8Array(
 					fs.readFileSync(path.join(fixtures, file)),
 				);
-				return convert(file, (onUnsupported) =>
+				return convert(file, (events) =>
 					new GuitarProParser().parseFromBytes(bytes, {
 						unsupported: "omit",
-						onUnsupported,
+						events,
 					}),
 				);
 			}),
@@ -40,10 +42,10 @@ describe("Guitar Pro coverage scoreboard", () => {
 		const rows: Row[] = await Promise.all(
 			musicXmlFiles(examples).map((file) => {
 				const xml = fs.readFileSync(path.join(examples, file), "utf-8");
-				return convert(file, (onUnsupported) =>
+				return convert(file, (events) =>
 					new GuitarProSerializer().serializeToBytes(
 						new MDOMParser().parseFromString(xml),
-						{ unsupported: "omit", onUnsupported },
+						{ unsupported: "omit", events },
 					),
 				);
 			}),
@@ -64,12 +66,14 @@ interface Row {
 
 const convert = async (
 	file: string,
-	conversion: (onUnsupported: (feature: string) => void) => Promise<unknown>,
+	conversion: (events: Dispatcher<GuitarProEvents>) => Promise<unknown>,
 ): Promise<Row> => {
 	const features = new Set<string>();
 	let error: string | null = null;
 	try {
-		await conversion((feature) => features.add(feature));
+		const events = new Dispatcher<GuitarProEvents>();
+		events.on("unsupported", (feature) => features.add(feature));
+		await conversion(events);
 	} catch (thrown) {
 		error = (thrown instanceof Error ? thrown.message : String(thrown)).split(
 			"\n",

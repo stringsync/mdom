@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { GuitarProParser } from "./guitar-pro-parser";
 import { GuitarProSerializer } from "./guitar-pro-serializer";
+import { collectUnsupported } from "./guitar-pro-test-events";
 import { MDocument } from "./m-document";
 import type { Note } from "./note";
 
@@ -255,7 +256,7 @@ describe("Guitar Pro note techniques", () => {
 		const omitted: string[] = [];
 		const bytes = await new GuitarProSerializer().serializeToBytes(document, {
 			unsupported: "omit",
-			onUnsupported: (feature) => omitted.push(feature),
+			events: collectUnsupported(omitted),
 		});
 		expect(omitted.sort()).toEqual([
 			"slurs that do not join later notes of one voice",
@@ -286,7 +287,7 @@ describe("Guitar Pro note techniques", () => {
 		const omitted: string[] = [];
 		const bytes = await new GuitarProSerializer().serializeToBytes(document, {
 			unsupported: "omit",
-			onUnsupported: (feature) => omitted.push(feature),
+			events: collectUnsupported(omitted),
 		});
 		expect(omitted).toEqual([]);
 		const restored = (await parser.parseFromBytes(bytes)).score.parts[0]!

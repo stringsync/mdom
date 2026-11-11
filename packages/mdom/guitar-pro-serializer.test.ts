@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import JSZip from "jszip";
 import { GuitarProSerializer } from "./guitar-pro-serializer";
+import { collectUnsupported } from "./guitar-pro-test-events";
 import { MDocument } from "./m-document";
 import { MDOMParser } from "./m-dom-parser";
 import { MElement } from "./m-element";
@@ -256,7 +257,7 @@ describe("GuitarProSerializer", () => {
 		const features: string[] = [];
 		await serializer.serializeToBlob(document, {
 			unsupported: "omit",
-			onUnsupported: (feature) => features.push(feature),
+			events: collectUnsupported(features),
 		});
 
 		expect(features).toEqual(["<harmony>", "<harmony>"]);
@@ -274,8 +275,9 @@ describe("GuitarProSerializer", () => {
 	});
 
 	it("rejects notes on an undeclared staff instead of dropping them", async () => {
+		measure.setStaveCount(2);
 		measure
-			.getOrCreateVoice("1", { staff: "2" })
+			.getOrCreateVoice("1", { staff: "3" })
 			.addNote({ step: "C", octave: 4, type: "whole" });
 
 		expect(serializer.serializeToBlob(document)).rejects.toThrow(

@@ -10,11 +10,9 @@ import { schemaErrors } from "./music-xml-schema";
 describe("Guitar Pro tablature", () => {
 	let document: MDocument;
 	let measure: Measure;
-	let parser: GuitarProParser;
 	let serializer: GuitarProSerializer;
 
 	beforeEach(() => {
-		parser = new GuitarProParser();
 		serializer = new GuitarProSerializer();
 		document = new MDOMParser().parseFromString(`<score-partwise version="4.0">
       <part-list><score-part id="P1"><part-name>Two strings</part-name></score-part></part-list>
@@ -40,6 +38,7 @@ describe("Guitar Pro tablature", () => {
 		);
 		chord.notes[0]!.setStringFret({ string: 1, fret: 0 });
 		chord.notes[1]!.setStringFret({ string: 2, fret: 0 });
+		const parser = new GuitarProParser();
 		const result = await parser.parseFromBlob(
 			await serializer.serializeToBlob(document),
 		);

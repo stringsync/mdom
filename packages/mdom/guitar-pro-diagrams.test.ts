@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import JSZip from "jszip";
 import { GuitarProParser } from "./guitar-pro-parser";
 import { GuitarProSerializer } from "./guitar-pro-serializer";
+import { collectUnsupported } from "./guitar-pro-test-events";
 import type { Harmony } from "./harmony";
 import { MDocument } from "./m-document";
 import { schemaErrors } from "./music-xml-schema";
@@ -129,7 +130,7 @@ describe("Guitar Pro chord diagrams", () => {
 			await archive(gpif),
 			{
 				unsupported: "omit",
-				onUnsupported: (feature) => omitted.push(feature),
+				events: collectUnsupported(omitted),
 			},
 		);
 		const measure = doc.score.parts[0]!.measures[0]!;
@@ -225,7 +226,7 @@ describe("Guitar Pro chord diagrams", () => {
 		const omitted: string[] = [];
 		const gp = await new GuitarProSerializer().serializeToBytes(doc, {
 			unsupported: "omit",
-			onUnsupported: (feature) => omitted.push(feature),
+			events: collectUnsupported(omitted),
 		});
 		expect(omitted).toEqual([]);
 		const back = await new GuitarProParser().parseFromBytes(gp);
@@ -257,7 +258,7 @@ describe("Guitar Pro chord diagrams", () => {
 		const omitted: string[] = [];
 		await new GuitarProSerializer().serializeToBytes(doc, {
 			unsupported: "omit",
-			onUnsupported: (feature) => omitted.push(feature),
+			events: collectUnsupported(omitted),
 		});
 		expect(omitted).toEqual([
 			"chord symbols without a single letter root",

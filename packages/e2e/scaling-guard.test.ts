@@ -1,14 +1,19 @@
 import { describe, expect, it } from "bun:test";
 import { guardRatio, historyRetention, seed } from "./scaling-guard-support";
 import type { Operation } from "./scaling-operations";
-import { syntheticScore } from "./scaling-score";
+import { ScoreBuilder } from "./scaling-score-builder";
 
 // Evidence and axis limitations: notes/performance-audit.md (#42).
 // Only measures grow: one part, one voice, four notes per measure.
 describe("bounded-density measure scaling guards (64 → 256)", () => {
 	const sizes = [64, 256] as const;
 	const inputs = sizes.map((measures) =>
-		syntheticScore(seed, { measures, parts: 1, voices: 1, notes: 4 }),
+		new ScoreBuilder(seed).synthetic({
+			measures,
+			parts: 1,
+			voices: 1,
+			notes: 4,
+		}),
 	);
 	const guardLinear = (operation: Operation) =>
 		guardRatio(

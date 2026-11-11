@@ -413,8 +413,9 @@ export class Part extends MElement {
 	}
 
 	/**
-	 * `<staves>` count (first declaration in any measure's attributes); 1 (single
-	 * staff) when never declared.
+	 * `<staves>` count (first declaration in any measure's attributes); when never
+	 * declared, the highest staff number a `<clef number>` or note `<staff>` uses
+	 * (1 for a single staff).
 	 */
 	get staveCount(): number {
 		for (const measure of measuresOf(this)) {
@@ -425,7 +426,33 @@ export class Part extends MElement {
 				}
 			}
 		}
-		return 1;
+		return this.highestStaffNumber();
+	}
+
+	/**
+	 * The highest staff number the part uses, from its numbered `<clef>`s and its
+	 * notes' `<staff>`s (1 when none): what some exporters write instead of a
+	 * `<staves>` declaration.
+	 */
+	private highestStaffNumber(): number {
+		let highest = 1;
+		const take = (text: string | null | undefined) => {
+			const number = Number(text);
+			if (Number.isInteger(number) && number > highest) {
+				highest = number;
+			}
+		};
+		for (const measure of measuresOf(this)) {
+			for (const attrs of measure.childrenNamed("attributes")) {
+				for (const clef of attrs.childrenNamed("clef")) {
+					take(clef.getAttribute("number"));
+				}
+			}
+			for (const note of measure.childrenNamed("note")) {
+				take(note.child("staff")?.text);
+			}
+		}
+		return highest;
 	}
 
 	/**
