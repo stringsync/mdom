@@ -27,5 +27,5 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: npm install -g npm@latest
       - run: bun install --frozen-lockfile
-      - run: bun packages/core/ship/npm/cli.ts build mdom/packages/mdom
-      - run: npm publish ./mdom/packages/mdom/dist --access public
+      - run: bun packages/core/ship/npm/cli.ts build packages/mdom
+      - run: npm publish ./packages/mdom/dist --access public
