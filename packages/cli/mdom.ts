@@ -1,10 +1,12 @@
-import { cli, type Deps } from "core/cmd";
-import { type Clock, SystemClock } from "core/time";
+import { cli, type Deps, timed } from "core/cmd";
+import { serve } from "core/ship";
+import type { Clock } from "core/time";
 import { z } from "zod";
 import { convert } from "./convert";
 import { fix } from "./fix";
+import { publish, ship, trust } from "./legacy-ship";
 import type { ScoreFiles } from "./score-files";
-import { publish, ship, trust } from "./ship";
+import { mdomShip } from "./ship";
 import { test } from "./test";
 
 /** Dependencies supplied when running the mdom command program. */
@@ -16,12 +18,7 @@ export interface MdomDeps extends Deps {
 
 export const mdom = cli<MdomDeps>("mdom");
 
-mdom.use<MdomDeps>(async (ctx, next) => {
-	const clock = ctx.clock ?? new SystemClock();
-	const start = clock.now();
-	await next(ctx);
-	ctx.log.info(`done in ${clock.now().subtract(start).human()}`);
-});
+mdom.use<MdomDeps>((ctx, next) => timed<MdomDeps>(ctx.clock)(ctx, next));
 
 mdom
 	.command("fix")
@@ -73,15 +70,28 @@ mdom
 
 mdom
 	.command("ship")
-	.description("bump the version, then commit, tag, and publish")
-	.arg("type", z.enum(["patch", "minor", "major"] as const).optional())
-	.option("dry-run", z.boolean(), {
-		default: false,
-		description: "rehearse the release, publishing and pushing nothing",
+	.description(
+		"ship @stringsync/mdom to npm: answers splates's plan, done and run, or ships it all at a terminal",
+	)
+	.rest("args", z.string(), {
+		description: "[plan | done <step> | run <step>] [--bump patch|minor|major]",
 	})
-	.action((opts, { ps, log }) =>
-		ship(opts.type, { ps, log, dryRun: opts["dry-run"] }),
-	);
+	.allowUnknownOption()
+	.action((opts, { ps }) => {
+		// The release's commands run from mono's root, one above mdom's.
+		ps.cd(`${ps.cwd()}/..`);
+		return serve(mdomShip, opts.args, { ps });
+	});
+
+mdom
+	.command("legacy-ship")
+	.description(
+		"the legacy ship: bump the version, then commit, tag, and publish",
+	)
+	.allowUnknownOption()
+	.passThroughOptions()
+	.rest("args", z.string())
+	.action((opts, { ps, log }) => ship(opts.args, { ps, log }));
 
 mdom
 	.command("publish")

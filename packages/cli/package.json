@@ -5,8 +5,8 @@
 	"type": "module",
 	"module": "index.ts",
 	"exports": {
-		"./mirror": "./mirror.ts",
-		"./ship": "./ship.ts"
+		"./mirror": "./legacy-ship-mirror.ts",
+		"./ship": "./legacy-ship.ts"
 	},
 	"bin": {
 		"mdom": "./index.ts"
