@@ -248,6 +248,9 @@ export const mdom = target({
   only the mirror has (its guide, Dockerfile, workflows); `keep: ["skills/x/**"]`
   carries paths the mirror would leave out. It installs and builds there, then
   pushes `Release <package> <version>`.
+- **login** signs in to npm (`npm login --auth-type=web`) only when
+  `npm whoami` fails, so a signed-in machine skips it; the login link reaches
+  the user as a prompt.
 - **first-publish**, only for a package npm has never had, builds and
   publishes from this machine, since npm trusts a workflow only for a
   package it has.
@@ -257,8 +260,9 @@ export const mdom = target({
   has the version, failing when the run fails.
 - **tag** creates the GitHub release, tagging `v<version>` with its notes.
 
-Signing in to npm (`npm login --auth-type=web`) and a second-factor link
-reach the user as prompts. The build (`bun packages/core/ship/npm/cli.ts
+The login, first-publish and trust steps run npm under a pseudo-terminal
+(`script`), since npm starts its web sign-in and one-time-password flow only
+for a terminal; the sign-in and second-factor links reach the user as prompts. The build (`bun packages/core/ship/npm/cli.ts
 build <folder>`, what the workflow runs) writes `dist/`: JavaScript with
 `core` and any private workspace package bundled in, declarations under
 `dist/types` pointed at each other rather than at those packages, the files

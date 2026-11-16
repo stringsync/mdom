@@ -79,6 +79,14 @@ export function release(opts: ReleaseOptions): Step[] {
 				.split("\n")
 				.pop() as string,
 		) as { dir: string; version?: string };
+	/**
+	 * `command` under a pseudo-terminal, so npm sees a terminal and starts its
+	 * web sign-in and one-time-password flow instead of failing over pipes.
+	 * Python's `pty` makes one without needing a terminal on stdin, which
+	 * `script` does (it fails when stdin is a socket), and keeps the exit code.
+	 */
+	const tty = (command: string) =>
+		`python3 -I -c ${quote("import os,pty,sys; sys.exit(os.waitstatus_to_exitcode(pty.spawn(['sh','-c',sys.argv[1]])))")} ${quote(command)}`;
 	const publishedVersions = async (ctx: Ctx) =>
 		(
 			await ctx.sh(
@@ -161,15 +169,24 @@ export function release(opts: ReleaseOptions): Step[] {
 			},
 		}),
 		step({
+			id: "login",
+			does: "Sign in to npm, unless this machine already is",
+			dependencies: ["mirror"],
+			done: (ctx) => ok(ctx, "npm whoami"),
+			run: (ctx) => ctx.sh(tty("npm login --auth-type=web"), { prompts: true }),
+		}),
+		step({
 			id: "first-publish",
 			does: `Publish ${opts.package} from this machine, since npm has never had it`,
-			dependencies: ["mirror"],
+			dependencies: ["mirror", "login"],
 			done: async (ctx) => Boolean(await publishedVersions(ctx)),
 			run: async (ctx) => {
 				const { dir: monoDir, version } = await read();
 				const dir = inMirror(monoDir);
 				await ctx.sh(
-					`cd ${quote(checkout)}/${quote(dir)}/dist && npm publish --access public`,
+					tty(
+						`cd ${quote(checkout)}/${quote(dir)}/dist && npm publish --access public`,
+					),
 					{ prompts: true },
 				);
 				ctx.update(`Published ${opts.package}@${version}`);
@@ -178,7 +195,7 @@ export function release(opts: ReleaseOptions): Step[] {
 		step({
 			id: "trust",
 			does: `Have npm trust ${WORKFLOW_FILE} of ${opts.repository} to publish ${opts.package}`,
-			dependencies: ["first-publish"],
+			dependencies: ["first-publish", "login"],
 			done: (ctx) =>
 				ok(
 					ctx,
@@ -186,7 +203,9 @@ export function release(opts: ReleaseOptions): Step[] {
 				),
 			run: (ctx) =>
 				ctx.sh(
-					`npm trust github ${quote(opts.package)} --repo ${quote(opts.repository)} --file ${quote(WORKFLOW_FILE)} --yes`,
+					tty(
+						`npm trust github ${quote(opts.package)} --repo ${quote(opts.repository)} --file ${quote(WORKFLOW_FILE)} --allow-publish --yes`,
+					),
 					{ prompts: true },
 				),
 		}),

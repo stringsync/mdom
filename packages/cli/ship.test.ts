@@ -12,6 +12,7 @@ test("mdom ships to npm through its mirror, at the bump asked for", () => {
 		"version",
 		"workflow",
 		"mirror",
+		"login",
 		"first-publish",
 		"trust",
 		"publish",

@@ -22,7 +22,7 @@ export interface Quiet {
 const YES_NO = /\s*[([]\s*y(?:es)?\s*\/\s*n(?:o)?\s*[)\]]\s*/i;
 const URL = /https?:\/\/[^\s"'<>]+/g;
 const CODE = /\b[A-Z0-9]{4}(?:-[A-Z0-9]{4})+\b/;
-const SIGN_IN = /log ?in|sign ?in|authori[sz]|device|browser/i;
+const SIGN_IN = /log ?in|sign ?in|authori[sz]|authenticat|device|browser/i;
 
 /**
  * Runs `command` with its stdin open, and each time it goes quiet reads what
