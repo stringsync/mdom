@@ -12,52 +12,6 @@ import { schemaErrors } from "./music-xml-schema";
 import { MusicXMLSerializer } from "./music-xml-serializer";
 import type { Note } from "./note";
 
-const fixture = (name: string) =>
-	new Uint8Array(
-		readFileSync(new URL(`./fixtures/guitar-pro/${name}`, import.meta.url)),
-	);
-
-const xml = (document: MDocument) =>
-	new MusicXMLSerializer().serializeToString(document);
-
-async function gpifOf(bytes: Uint8Array): Promise<MElement> {
-	const zip = await JSZip.loadAsync(bytes);
-	return new MDOMParser().parseFromString(
-		await zip.file("Content/score.gpif")!.async("string"),
-	).root;
-}
-
-async function archive(gpif: string): Promise<Uint8Array> {
-	const zip = new JSZip();
-	zip.file("Content/score.gpif", gpif);
-	return zip.generateAsync({ type: "uint8array" });
-}
-
-/** The drum a note plays: its instrument's name and MIDI key, staff position and notehead. */
-function drum(note: Note) {
-	const part = note.part;
-	const id = note.instrumentIds[0]!;
-	return {
-		name: part.getInstrument(id)?.name,
-		key: part.getMidiInstrument(id)?.unpitched,
-		position: note.unpitched,
-		notehead: note.notehead?.value ?? null,
-	};
-}
-
-/** A GPIF score of one percussion track, one bar of quarter notes. */
-function percussionGpif(track: string, notes: string[]): string {
-	const ids = notes.map((_, index) => index);
-	return `<GPIF><MasterTrack><Tracks>0</Tracks></MasterTrack>
-<Tracks><Track id="0"><Name>Drums</Name>${track}</Track></Tracks>
-<MasterBars><MasterBar><Time>${notes.length}/4</Time><Bars>0</Bars></MasterBar></MasterBars>
-<Bars><Bar id="0"><Clef>Neutral</Clef><Voices>0</Voices></Bar></Bars>
-<Voices><Voice id="0"><Beats>${ids.join(" ")}</Beats></Voice></Voices>
-<Beats>${ids.map((id) => `<Beat id="${id}"><Rhythm ref="0"/><Notes>${id}</Notes></Beat>`).join("")}</Beats>
-<Notes>${notes.map((note, id) => `<Note id="${id}">${note}</Note>`).join("")}</Notes>
-<Rhythms><Rhythm id="0"><NoteValue>Quarter</NoteValue></Rhythm></Rhythms></GPIF>`;
-}
-
 describe("Guitar Pro percussion import", () => {
 	it("reads drum-tabs.gp as unpitched notes, one instrument per drum", async () => {
 		const document = await new GuitarProParser().parseFromBytes(
@@ -434,3 +388,49 @@ describe("Unpitched note writers", () => {
 		expect(schemaErrors(document)).toEqual([]);
 	});
 });
+
+const fixture = (name: string) =>
+	new Uint8Array(
+		readFileSync(new URL(`./fixtures/guitar-pro/${name}`, import.meta.url)),
+	);
+
+const xml = (document: MDocument) =>
+	new MusicXMLSerializer().serializeToString(document);
+
+async function gpifOf(bytes: Uint8Array): Promise<MElement> {
+	const zip = await JSZip.loadAsync(bytes);
+	return new MDOMParser().parseFromString(
+		await zip.file("Content/score.gpif")!.async("string"),
+	).root;
+}
+
+async function archive(gpif: string): Promise<Uint8Array> {
+	const zip = new JSZip();
+	zip.file("Content/score.gpif", gpif);
+	return zip.generateAsync({ type: "uint8array" });
+}
+
+/** The drum a note plays: its instrument's name and MIDI key, staff position and notehead. */
+function drum(note: Note) {
+	const part = note.part;
+	const id = note.instrumentIds[0]!;
+	return {
+		name: part.getInstrument(id)?.name,
+		key: part.getMidiInstrument(id)?.unpitched,
+		position: note.unpitched,
+		notehead: note.notehead?.value ?? null,
+	};
+}
+
+/** A GPIF score of one percussion track, one bar of quarter notes. */
+function percussionGpif(track: string, notes: string[]): string {
+	const ids = notes.map((_, index) => index);
+	return `<GPIF><MasterTrack><Tracks>0</Tracks></MasterTrack>
+<Tracks><Track id="0"><Name>Drums</Name>${track}</Track></Tracks>
+<MasterBars><MasterBar><Time>${notes.length}/4</Time><Bars>0</Bars></MasterBar></MasterBars>
+<Bars><Bar id="0"><Clef>Neutral</Clef><Voices>0</Voices></Bar></Bars>
+<Voices><Voice id="0"><Beats>${ids.join(" ")}</Beats></Voice></Voices>
+<Beats>${ids.map((id) => `<Beat id="${id}"><Rhythm ref="0"/><Notes>${id}</Notes></Beat>`).join("")}</Beats>
+<Notes>${notes.map((note, id) => `<Note id="${id}">${note}</Note>`).join("")}</Notes>
+<Rhythms><Rhythm id="0"><NoteValue>Quarter</NoteValue></Rhythm></Rhythms></GPIF>`;
+}

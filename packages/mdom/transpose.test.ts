@@ -11,68 +11,8 @@ import {
 } from "./index";
 import { schemaErrors } from "./music-xml-schema";
 
-const parse = (xml: string) => new MDOMParser().parseFromString(xml);
-const serialize = (doc: MDocument) =>
-	new MusicXMLSerializer().serializeToString(doc);
-
-// A two-staff part: staff 1 a B♭ clarinet, staff 2 doubled an octave above;
-// measure 2 changes staff 1 to A clarinet mid-measure and puts the whole part
-// back to concert pitch from measure 3.
-const TRANSPOSED = `<?xml version="1.0" encoding="UTF-8"?>
-<score-partwise version="4.0">
-	<part-list><score-part id="P1"><part-name>Clarinets</part-name></score-part></part-list>
-	<part id="P1">
-		<measure number="1">
-			<attributes>
-				<divisions>1</divisions>
-				<staves>2</staves>
-				<clef number="1"><sign>G</sign><line>2</line></clef>
-				<clef number="2"><sign>G</sign><line>2</line><clef-octave-change>-1</clef-octave-change></clef>
-				<transpose number="1"><diatonic>-1</diatonic><chromatic>-2</chromatic></transpose>
-				<transpose number="2"><chromatic>0</chromatic><octave-change>-1</octave-change><double above="yes"/></transpose>
-			</attributes>
-			<note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><staff>1</staff></note>
-		</measure>
-		<measure number="2">
-			<note><pitch><step>D</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><staff>1</staff></note>
-			<attributes>
-				<transpose number="1"><diatonic>-2</diatonic><chromatic>-3</chromatic></transpose>
-			</attributes>
-			<note><pitch><step>E</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><staff>1</staff></note>
-			<backup><duration>4</duration></backup>
-			<note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>2</voice><staff>2</staff></note>
-		</measure>
-		<measure number="3">
-			<attributes><transpose><chromatic>0</chromatic></transpose></attributes>
-			<note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><staff>1</staff></note>
-		</measure>
-	</part>
-</score-partwise>`;
-
-const CONCERT = `<?xml version="1.0" encoding="UTF-8"?>
-<score-partwise version="4.0">
-	<defaults><concert-score/></defaults>
-	<part-list><score-part id="P1"><part-name>Bass Clarinet</part-name></score-part></part-list>
-	<part id="P1">
-		<measure number="1">
-			<attributes>
-				<divisions>1</divisions>
-				<clef><sign>F</sign><line>4</line></clef>
-				<for-part>
-					<part-clef><sign>G</sign><line>2</line></part-clef>
-					<part-transpose><diatonic>-1</diatonic><chromatic>-2</chromatic><octave-change>-1</octave-change></part-transpose>
-				</for-part>
-			</attributes>
-			<note><pitch><step>C</step><octave>3</octave></pitch><duration>4</duration><voice>1</voice></note>
-		</measure>
-		<measure number="2">
-			<note><pitch><step>C</step><octave>3</octave></pitch><duration>4</duration><voice>1</voice></note>
-		</measure>
-	</part>
-</score-partwise>`;
-
 describe("transpose, reading", () => {
-	const part = parse(TRANSPOSED).score.getPart("P1")!;
+	const part = parse(transposedXml()).score.getPart("P1")!;
 	const [first, second, third] = part.measures;
 
 	it("reads every field as declared, absence kept as null", () => {
@@ -543,3 +483,71 @@ describe("converting between concert and transposed pitch", () => {
 		expect(serialize(concert)).toBe(serialize(parse(CONCERT)));
 	});
 });
+
+function parse(xml: string) {
+	return new MDOMParser().parseFromString(xml);
+}
+
+function serialize(doc: MDocument) {
+	return new MusicXMLSerializer().serializeToString(doc);
+}
+
+// A two-staff part: staff 1 a B♭ clarinet, staff 2 doubled an octave above;
+// measure 2 changes staff 1 to A clarinet mid-measure and puts the whole part
+// back to concert pitch from measure 3.
+function transposedXml() {
+	return `<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0">
+	<part-list><score-part id="P1"><part-name>Clarinets</part-name></score-part></part-list>
+	<part id="P1">
+		<measure number="1">
+			<attributes>
+				<divisions>1</divisions>
+				<staves>2</staves>
+				<clef number="1"><sign>G</sign><line>2</line></clef>
+				<clef number="2"><sign>G</sign><line>2</line><clef-octave-change>-1</clef-octave-change></clef>
+				<transpose number="1"><diatonic>-1</diatonic><chromatic>-2</chromatic></transpose>
+				<transpose number="2"><chromatic>0</chromatic><octave-change>-1</octave-change><double above="yes"/></transpose>
+			</attributes>
+			<note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><staff>1</staff></note>
+		</measure>
+		<measure number="2">
+			<note><pitch><step>D</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><staff>1</staff></note>
+			<attributes>
+				<transpose number="1"><diatonic>-2</diatonic><chromatic>-3</chromatic></transpose>
+			</attributes>
+			<note><pitch><step>E</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><staff>1</staff></note>
+			<backup><duration>4</duration></backup>
+			<note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>2</voice><staff>2</staff></note>
+		</measure>
+		<measure number="3">
+			<attributes><transpose><chromatic>0</chromatic></transpose></attributes>
+			<note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><staff>1</staff></note>
+		</measure>
+	</part>
+</score-partwise>`;
+}
+
+const TRANSPOSED = transposedXml();
+
+const CONCERT = `<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0">
+	<defaults><concert-score/></defaults>
+	<part-list><score-part id="P1"><part-name>Bass Clarinet</part-name></score-part></part-list>
+	<part id="P1">
+		<measure number="1">
+			<attributes>
+				<divisions>1</divisions>
+				<clef><sign>F</sign><line>4</line></clef>
+				<for-part>
+					<part-clef><sign>G</sign><line>2</line></part-clef>
+					<part-transpose><diatonic>-1</diatonic><chromatic>-2</chromatic><octave-change>-1</octave-change></part-transpose>
+				</for-part>
+			</attributes>
+			<note><pitch><step>C</step><octave>3</octave></pitch><duration>4</duration><voice>1</voice></note>
+		</measure>
+		<measure number="2">
+			<note><pitch><step>C</step><octave>3</octave></pitch><duration>4</duration><voice>1</voice></note>
+		</measure>
+	</part>
+</score-partwise>`;

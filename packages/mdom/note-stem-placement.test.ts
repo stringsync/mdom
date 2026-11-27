@@ -3,43 +3,6 @@ import type { MDocument } from "./m-document";
 import { MDOMParser } from "./m-dom-parser";
 import { MusicXMLSerializer } from "./music-xml-serializer";
 
-const SCORE = `<score-partwise><part id="P1"><measure number="1">
-  <attributes><divisions>4</divisions></attributes>
-  <direction placement="above"><direction-type><words>dolce</words></direction-type></direction>
-  <note>
-    <pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type>
-    <stem color="#FF0000">up</stem>
-    <notations>
-      <articulations><staccato placement="above"/></articulations>
-      <ornaments><trill-mark/></ornaments>
-      <dynamics><p/></dynamics>
-      <other-notation type="single">x</other-notation>
-    </notations>
-  </note>
-  <note>
-    <pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type>
-    <staff>1</staff>
-  </note>
-</measure></part></score-partwise>`;
-
-function measureOf(xml: string) {
-	return new MDOMParser()
-		.parseFromString(xml)
-		.score.getPart("P1")!
-		.getMeasure("1")!;
-}
-
-function load() {
-	const doc = new MDOMParser().parseFromString(SCORE);
-	const measure = doc.score.getPart("P1")!.getMeasure("1")!;
-	const [first, second] = measure.notes;
-	return { doc, first: first!, second: second!, measure };
-}
-
-function reparse(doc: MDocument) {
-	return measureOf(new MusicXMLSerializer().serializeToString(doc)).notes;
-}
-
 describe("Note.setStem", () => {
 	it("changes the direction and keeps the stem's attributes", () => {
 		const { doc, first } = load();
@@ -94,3 +57,40 @@ describe("placement writes", () => {
 		).toBeNull();
 	});
 });
+
+const SCORE = `<score-partwise><part id="P1"><measure number="1">
+  <attributes><divisions>4</divisions></attributes>
+  <direction placement="above"><direction-type><words>dolce</words></direction-type></direction>
+  <note>
+    <pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type>
+    <stem color="#FF0000">up</stem>
+    <notations>
+      <articulations><staccato placement="above"/></articulations>
+      <ornaments><trill-mark/></ornaments>
+      <dynamics><p/></dynamics>
+      <other-notation type="single">x</other-notation>
+    </notations>
+  </note>
+  <note>
+    <pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><type>quarter</type>
+    <staff>1</staff>
+  </note>
+</measure></part></score-partwise>`;
+
+function measureOf(xml: string) {
+	return new MDOMParser()
+		.parseFromString(xml)
+		.score.getPart("P1")!
+		.getMeasure("1")!;
+}
+
+function load() {
+	const doc = new MDOMParser().parseFromString(SCORE);
+	const measure = doc.score.getPart("P1")!.getMeasure("1")!;
+	const [first, second] = measure.notes;
+	return { doc, first: first!, second: second!, measure };
+}
+
+function reparse(doc: MDocument) {
+	return measureOf(new MusicXMLSerializer().serializeToString(doc)).notes;
+}

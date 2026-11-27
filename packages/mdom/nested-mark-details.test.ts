@@ -6,36 +6,6 @@ import { schemaErrors } from "./music-xml-schema";
 import { MusicXMLSerializer } from "./music-xml-serializer";
 import type { Note } from "./note";
 
-/** A one-part document with a voice ready for notes. */
-const build = () => {
-	const doc = MDocument.empty();
-	const measure = doc.score.addPart({ id: "P1", name: "Guitar" }).addMeasure();
-	measure.setDivisions(4);
-	measure.setClef({ sign: "G", line: 2 });
-	measure.setTime({ beats: 4, beatType: 4 });
-	const voice = measure.getOrCreateVoice("1");
-	return { doc, measure, voice };
-};
-
-/** Serialize and parse back. */
-const roundTrip = (doc: MDocument): MDocument =>
-	new MDOMParser().parseFromString(
-		new MusicXMLSerializer().serializeToString(doc),
-	);
-
-/** The first measure's notes of a one-measure part parsed from `body`. */
-const parseMeasure = (body: string) =>
-	new MDOMParser()
-		.parseFromString(
-			`<score-partwise version="4.0"><part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list>
-			<part id="P1"><measure number="1"><attributes><divisions>1</divisions></attributes>${body}</measure></part></score-partwise>`,
-		)
-		.score.getPart("P1")!
-		.getMeasure("1")!;
-
-const firstNote = (doc: MDocument): Note =>
-	doc.score.getPart("P1")!.getMeasure("1")!.notes[0]!;
-
 describe("nested technique reads", () => {
 	const measure = parseMeasure(`
 		<note><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration><type>quarter</type>
@@ -355,3 +325,36 @@ describe("nested mark writers", () => {
 		]);
 	});
 });
+
+/** A one-part document with a voice ready for notes. */
+function build() {
+	const doc = MDocument.empty();
+	const measure = doc.score.addPart({ id: "P1", name: "Guitar" }).addMeasure();
+	measure.setDivisions(4);
+	measure.setClef({ sign: "G", line: 2 });
+	measure.setTime({ beats: 4, beatType: 4 });
+	const voice = measure.getOrCreateVoice("1");
+	return { doc, measure, voice };
+}
+
+/** Serialize and parse back. */
+function roundTrip(doc: MDocument): MDocument {
+	return new MDOMParser().parseFromString(
+		new MusicXMLSerializer().serializeToString(doc),
+	);
+}
+
+/** The first measure's notes of a one-measure part parsed from `body`. */
+function parseMeasure(body: string) {
+	return new MDOMParser()
+		.parseFromString(
+			`<score-partwise version="4.0"><part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list>
+			<part id="P1"><measure number="1"><attributes><divisions>1</divisions></attributes>${body}</measure></part></score-partwise>`,
+		)
+		.score.getPart("P1")!
+		.getMeasure("1")!;
+}
+
+function firstNote(doc: MDocument): Note {
+	return doc.score.getPart("P1")!.getMeasure("1")!.notes[0]!;
+}

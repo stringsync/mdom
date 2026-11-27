@@ -44,55 +44,64 @@ describe("LilyPond 72c, a transposition change", () => {
 });
 
 describe("LilyPond 72a-c, converting to concert pitch and back", () => {
-	const sounding = (score: Score) =>
-		score.parts.flatMap((part) =>
-			part.measures.flatMap((measure) =>
-				measure.notes.flatMap((note) => {
-					const pitch = note.soundingPitch;
-					return pitch ? [`${pitch.step}${pitch.alter}/${pitch.octave}`] : [];
-				}),
-			),
-		);
-	const written = (score: Score) =>
-		score.parts.flatMap((part) =>
-			part.measures.flatMap((measure) =>
-				measure.notes.flatMap((note) =>
-					note.pitch
-						? [`${note.pitch.step}${note.pitch.alter}/${note.pitch.octave}`]
-						: [],
-				),
-			),
-		);
+	it("keeps every sounding pitch and returns to the written ones: lilypond/72a-TransposingInstruments.xml", () => {
+		assertRoundTrip("lilypond/72a-TransposingInstruments.xml");
+	});
 
-	for (const file of [
-		"lilypond/72a-TransposingInstruments.xml",
-		"lilypond/72b-TransposingInstruments-Full.xml",
-		"lilypond/72c-TransposingInstruments-Change.xml",
-	]) {
-		it(`keeps every sounding pitch and returns to the written ones: ${file}`, () => {
-			const doc = new MDOMParser().parseFromString(
-				fs.readFileSync(path.join(__dirname, "examples", file), "utf-8"),
-			);
-			const score = doc.score;
-			const original = { sounding: sounding(score), written: written(score) };
-			score.convertToConcertScore();
-			expect(score.isConcertScore).toBe(true);
-			expect(sounding(score)).toEqual(original.sounding);
-			expect(
-				score.parts.every((part) =>
-					part.measures.every((measure) =>
-						measure.notes.every(
-							(note) => !note.transpose || note.transpose.chromatic === 0,
-						),
-					),
-				),
-			).toBe(true);
-			expect(schemaErrors(doc)).toEqual([]);
-			score.convertToTransposedScore();
-			expect(score.isConcertScore).toBe(false);
-			expect(written(score)).toEqual(original.written);
-			expect(sounding(score)).toEqual(original.sounding);
-			expect(schemaErrors(doc)).toEqual([]);
-		});
-	}
+	it("keeps every sounding pitch and returns to the written ones: lilypond/72b-TransposingInstruments-Full.xml", () => {
+		assertRoundTrip("lilypond/72b-TransposingInstruments-Full.xml");
+	});
+
+	it("keeps every sounding pitch and returns to the written ones: lilypond/72c-TransposingInstruments-Change.xml", () => {
+		assertRoundTrip("lilypond/72c-TransposingInstruments-Change.xml");
+	});
 });
+
+function sounding(score: Score) {
+	return score.parts.flatMap((part) =>
+		part.measures.flatMap((measure) =>
+			measure.notes.flatMap((note) => {
+				const pitch = note.soundingPitch;
+				return pitch ? [`${pitch.step}${pitch.alter}/${pitch.octave}`] : [];
+			}),
+		),
+	);
+}
+
+function written(score: Score) {
+	return score.parts.flatMap((part) =>
+		part.measures.flatMap((measure) =>
+			measure.notes.flatMap((note) =>
+				note.pitch
+					? [`${note.pitch.step}${note.pitch.alter}/${note.pitch.octave}`]
+					: [],
+			),
+		),
+	);
+}
+
+function assertRoundTrip(file: string) {
+	const doc = new MDOMParser().parseFromString(
+		fs.readFileSync(path.join(__dirname, "examples", file), "utf-8"),
+	);
+	const score = doc.score;
+	const original = { sounding: sounding(score), written: written(score) };
+	score.convertToConcertScore();
+	expect(score.isConcertScore).toBe(true);
+	expect(sounding(score)).toEqual(original.sounding);
+	expect(
+		score.parts.every((part) =>
+			part.measures.every((measure) =>
+				measure.notes.every(
+					(note) => !note.transpose || note.transpose.chromatic === 0,
+				),
+			),
+		),
+	).toBe(true);
+	expect(schemaErrors(doc)).toEqual([]);
+	score.convertToTransposedScore();
+	expect(score.isConcertScore).toBe(false);
+	expect(written(score)).toEqual(original.written);
+	expect(sounding(score)).toEqual(original.sounding);
+	expect(schemaErrors(doc)).toEqual([]);
+}

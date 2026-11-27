@@ -9,41 +9,6 @@ import type { Part } from "./part";
 import { attributeBackFrom } from "./signature";
 import { onsetOf } from "./timeline";
 
-const NOTE =
-	"<note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type></note>";
-
-/** A part of `count` measures, a key of `fifths` declared in the first only. */
-function score(count: number, fifths = 2): MDocument {
-	const measures = Array.from(
-		{ length: count },
-		(_, index) =>
-			`<measure number="${index + 1}">${
-				index === 0
-					? `<attributes><divisions>4</divisions><key><fifths>${fifths}</fifths></key></attributes>`
-					: ""
-			}${NOTE}${NOTE}</measure>`,
-	);
-	return new MDOMParser().parseFromString(
-		`<score-partwise version="4.0"><part id="P1">${measures.join("")}</part></score-partwise>`,
-	);
-}
-
-function partOf(doc: MDocument): Part {
-	return required(doc.score.parts[0], "part");
-}
-
-function lastMeasure(doc: MDocument): Measure {
-	return required(partOf(doc).measures.at(-1), "last measure");
-}
-
-/** Reads the carried `<fifths>`, counting how many `<attributes>` it visits. */
-function carriedFifths(measure: Measure, visits: { count: number }) {
-	return attributeBackFrom(measure, 0, "test-fifths", (attrs) => {
-		visits.count++;
-		return attrs.child("key")?.child("fifths")?.text ?? null;
-	});
-}
-
 describe("read caches scoped to what changed", () => {
 	it("keeps a carried signature across pitch edits in the same part", () => {
 		const doc = score(200);
@@ -203,3 +168,38 @@ describe("read caches scoped to what changed", () => {
 		expect(Cursor.at(voice, 2).note).toBe(second);
 	});
 });
+
+const NOTE =
+	"<note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type></note>";
+
+/** A part of `count` measures, a key of `fifths` declared in the first only. */
+function score(count: number, fifths = 2): MDocument {
+	const measures = Array.from(
+		{ length: count },
+		(_, index) =>
+			`<measure number="${index + 1}">${
+				index === 0
+					? `<attributes><divisions>4</divisions><key><fifths>${fifths}</fifths></key></attributes>`
+					: ""
+			}${NOTE}${NOTE}</measure>`,
+	);
+	return new MDOMParser().parseFromString(
+		`<score-partwise version="4.0"><part id="P1">${measures.join("")}</part></score-partwise>`,
+	);
+}
+
+function partOf(doc: MDocument): Part {
+	return required(doc.score.parts[0], "part");
+}
+
+function lastMeasure(doc: MDocument): Measure {
+	return required(partOf(doc).measures.at(-1), "last measure");
+}
+
+/** Reads the carried `<fifths>`, counting how many `<attributes>` it visits. */
+function carriedFifths(measure: Measure, visits: { count: number }) {
+	return attributeBackFrom(measure, 0, "test-fifths", (attrs) => {
+		visits.count++;
+		return attrs.child("key")?.child("fifths")?.text ?? null;
+	});
+}

@@ -6,6 +6,7 @@ import { assertXmlName } from "./xml-syntax";
 type Ctor<T> = new (...args: never[]) => T;
 
 let appendAll: (parent: MElement, children: readonly MNode[]) => void;
+let onPublishChildren: ((children: readonly MNode[]) => void) | null = null;
 
 /**
  * Append nodes in order, as if by {@link MElement.append} on each, publishing
@@ -19,6 +20,30 @@ export function appendChildren(
 	children: readonly MNode[],
 ): void {
 	appendAll(parent, children);
+}
+
+/**
+ * Count the child references published by {@link MElement} while `run` executes,
+ * filtering with `counts` when given. Internal: not exported from the package.
+ */
+export function countPublishedChildren(
+	run: () => void,
+	counts: (children: readonly MNode[]) => boolean = () => true,
+): number {
+	let copied = 0;
+	const previous = onPublishChildren;
+	onPublishChildren = (children) => {
+		if (counts(children)) {
+			copied += children.length;
+		}
+		previous?.(children);
+	};
+	try {
+		run();
+	} finally {
+		onPublishChildren = previous;
+	}
+	return copied;
 }
 
 /** An element: a tag with attributes, child nodes, and the tree-query axes. */
@@ -201,15 +226,11 @@ export class MElement extends MNode {
 	}
 
 	private setChildren(children: readonly MNode[]): void {
-		MMutation.set(
-			this,
-			"children",
-			this._children,
-			Object.freeze(children),
-			(value) => {
-				this._children = value;
-			},
-		);
+		const frozen = Object.freeze(children);
+		onPublishChildren?.(frozen);
+		MMutation.set(this, "children", this._children, frozen, (value) => {
+			this._children = value;
+		});
 	}
 
 	private prepareChild(child: MNode): void {

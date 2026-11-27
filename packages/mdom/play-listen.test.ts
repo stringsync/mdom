@@ -2,30 +2,6 @@ import { describe, expect, it } from "bun:test";
 import { MDOMParser, MDocument, type MElement } from "./index";
 import { schemaErrors } from "./music-xml-schema";
 
-const SCORE = `<?xml version="1.0" encoding="UTF-8"?>
-<score-partwise version="4.0">
-  <part-list><score-part id="P1"><part-name>Brass</part-name>
-    <score-instrument id="P1-I1"><instrument-name>Trumpet</instrument-name></score-instrument>
-  </score-part></part-list>
-  <part id="P1">
-    <measure number="1">
-      <attributes><divisions>1</divisions></attributes>
-      <direction><direction-type><words>mute</words></direction-type>
-        <sound>
-          <instrument-change id="P1-I1"><instrument-sound>brass.trumpet.piccolo</instrument-sound><solo/></instrument-change>
-          <midi-instrument id="P1-I1"><midi-program>57</midi-program></midi-instrument>
-          <play id="P1-I1"><mute>straight</mute><other-play type="x">y</other-play></play>
-        </sound>
-      </direction>
-      <note>
-        <pitch><step>C</step><octave>4</octave></pitch><duration>4</duration>
-        <play><ipa>la</ipa><semi-pitched>high</semi-pitched></play>
-        <listen><assess type="no" player="p1" time-only="1,3"/><wait/><other-listen type="t">z</other-listen></listen>
-      </note>
-    </measure>
-  </part>
-</score-partwise>`;
-
 describe("play, listen and instrument-change", () => {
 	it("reads them", () => {
 		const measure = new MDOMParser().parseFromString(SCORE).score.getPart("P1")!
@@ -114,3 +90,27 @@ describe("play, listen and instrument-change", () => {
 		expect(() => note.setPlay({ mute: "bogus" as never })).toThrow("mute");
 	});
 });
+
+const SCORE = `<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Brass</part-name>
+    <score-instrument id="P1-I1"><instrument-name>Trumpet</instrument-name></score-instrument>
+  </score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes><divisions>1</divisions></attributes>
+      <direction><direction-type><words>mute</words></direction-type>
+        <sound>
+          <instrument-change id="P1-I1"><instrument-sound>brass.trumpet.piccolo</instrument-sound><solo/></instrument-change>
+          <midi-instrument id="P1-I1"><midi-program>57</midi-program></midi-instrument>
+          <play id="P1-I1"><mute>straight</mute><other-play type="x">y</other-play></play>
+        </sound>
+      </direction>
+      <note>
+        <pitch><step>C</step><octave>4</octave></pitch><duration>4</duration>
+        <play><ipa>la</ipa><semi-pitched>high</semi-pitched></play>
+        <listen><assess type="no" player="p1" time-only="1,3"/><wait/><other-listen type="t">z</other-listen></listen>
+      </note>
+    </measure>
+  </part>
+</score-partwise>`;

@@ -7,32 +7,6 @@ import { schemaErrors } from "./music-xml-schema";
 import { MusicXMLSerializer } from "./music-xml-serializer";
 import type { Part } from "./part";
 
-/** A one-part document of `count` 4/4 measures, each holding a whole note. */
-const build = (count: number): { doc: MDocument; part: Part } => {
-	const doc = MDocument.empty();
-	const part = doc.score.addPart({ id: "P1", name: "Piano" });
-	for (let index = 0; index < count; index++) {
-		const measure = part.addMeasure();
-		if (index === 0) {
-			measure.setDivisions(4);
-			measure.setClef({ sign: "G", line: 2 });
-			measure.setTime({ beats: 4, beatType: 4 });
-		}
-	}
-	return { doc, part };
-};
-
-const fill = (measure: Measure): void => {
-	measure
-		.getOrCreateVoice("1")
-		.addNote({ step: "C", octave: 4, type: "whole" });
-};
-
-const roundTrip = (doc: MDocument): MDocument =>
-	new MDOMParser().parseFromString(
-		new MusicXMLSerializer().serializeToString(doc),
-	);
-
 describe("volta endings", () => {
 	it("opens on the left barline and closes on the right, joining the repeat there", () => {
 		const { doc, part } = build(3);
@@ -241,3 +215,29 @@ describe("navigation marks", () => {
 		expect(schemaErrors(doc)).toEqual([]);
 	});
 });
+
+/** A one-part document of `count` 4/4 measures, each holding a whole note. */
+const build = (count: number): { doc: MDocument; part: Part } => {
+	const doc = MDocument.empty();
+	const part = doc.score.addPart({ id: "P1", name: "Piano" });
+	for (let index = 0; index < count; index++) {
+		const measure = part.addMeasure();
+		if (index === 0) {
+			measure.setDivisions(4);
+			measure.setClef({ sign: "G", line: 2 });
+			measure.setTime({ beats: 4, beatType: 4 });
+		}
+	}
+	return { doc, part };
+};
+
+const fill = (measure: Measure): void => {
+	measure
+		.getOrCreateVoice("1")
+		.addNote({ step: "C", octave: 4, type: "whole" });
+};
+
+const roundTrip = (doc: MDocument): MDocument =>
+	new MDOMParser().parseFromString(
+		new MusicXMLSerializer().serializeToString(doc),
+	);

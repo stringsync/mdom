@@ -2,69 +2,6 @@ import { describe, expect, it } from "bun:test";
 import { MDOMParser, MDocument, MusicXMLSerializer } from "./index";
 import { schemaErrors } from "./music-xml-schema";
 
-const parse = (xml: string) => new MDOMParser().parseFromString(xml);
-const serialize = (doc: MDocument) =>
-	new MusicXMLSerializer().serializeToString(doc);
-
-const UNSET = {
-	defaultX: null,
-	defaultY: null,
-	relativeX: null,
-	relativeY: null,
-};
-
-// Shaped like Finale's export: every note, stem, slur and hairpin carries the
-// coordinates the exporter laid it out at.
-const ENGRAVED = `<?xml version="1.0" encoding="UTF-8"?>
-<score-partwise version="4.0">
-	<part-list><score-part id="P1"><part-name>Flute</part-name></score-part></part-list>
-	<part id="P1"><measure number="1">
-		<attributes><divisions>2</divisions></attributes>
-		<direction placement="below"><direction-type>
-			<wedge type="crescendo" spread="0" default-y="-58" relative-x="-4.5" line-type="dashed" dash-length="5" space-length="3" niente="yes" color="#FF0000"/>
-		</direction-type></direction>
-		<note default-x="151" default-y="-12" print-spacing="no" print-dot="no">
-			<pitch><step>A</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice>
-			<type size="cue">quarter</type><stem default-y="-27">down</stem>
-			<notations>
-				<slur type="start" number="1" placement="above" default-x="6" default-y="22" bezier-x="9" bezier-y="33" bezier-offset="2" orientation="over" line-type="dotted"/>
-				<tied type="start" bezier-x2="4" color="#00FF00"/>
-			</notations>
-			<lyric number="1" print-object="no"><text>la</text></lyric>
-		</note>
-		<direction><direction-type><wedge type="stop" spread="15"/></direction-type></direction>
-		<direction><direction-type><dynamics default-x="3" default-y="-80"><p/></dynamics></direction-type></direction>
-		<direction><direction-type><words relative-y="10">dolce</words></direction-type></direction>
-		<note>
-			<pitch><step>A</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice>
-			<type>quarter</type>
-			<notations><slur type="stop" number="1"/><tied type="stop"/></notations>
-		</note>
-		<harmony print-object="no"><root><root-step>C</root-step></root><kind>major</kind></harmony>
-		<note print-object="no">
-			<rest/><duration>4</duration><voice>1</voice><type>half</type><dot/>
-		</note>
-	</measure></part>
-</score-partwise>`;
-
-function fixture() {
-	const doc = parse(ENGRAVED);
-	const measure = doc.score.parts[0]!.measures[0]!;
-	const [first, second, spacer] = measure.notes;
-	const [crescendo, stop] = measure.directions.flatMap(
-		(direction) => direction.wedges,
-	);
-	return {
-		doc,
-		measure,
-		first: first!,
-		second: second!,
-		spacer: spacer!,
-		crescendo: crescendo!,
-		stop: stop!,
-	};
-}
-
 describe("engraving geometry, reads", () => {
 	const { doc, measure, first, second, spacer, crescendo, stop } = fixture();
 
@@ -277,3 +214,68 @@ describe("engraving geometry, writes", () => {
 		expect(schemaErrors(doc)).toEqual([]);
 	});
 });
+
+function parse(xml: string) {
+	return new MDOMParser().parseFromString(xml);
+}
+
+function serialize(doc: MDocument) {
+	return new MusicXMLSerializer().serializeToString(doc);
+}
+
+const UNSET = {
+	defaultX: null,
+	defaultY: null,
+	relativeX: null,
+	relativeY: null,
+};
+
+function fixture() {
+	// Shaped like Finale's export: every note, stem, slur and hairpin carries the
+	// coordinates the exporter laid it out at.
+	const doc = parse(`<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0">
+	<part-list><score-part id="P1"><part-name>Flute</part-name></score-part></part-list>
+	<part id="P1"><measure number="1">
+		<attributes><divisions>2</divisions></attributes>
+		<direction placement="below"><direction-type>
+			<wedge type="crescendo" spread="0" default-y="-58" relative-x="-4.5" line-type="dashed" dash-length="5" space-length="3" niente="yes" color="#FF0000"/>
+		</direction-type></direction>
+		<note default-x="151" default-y="-12" print-spacing="no" print-dot="no">
+			<pitch><step>A</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice>
+			<type size="cue">quarter</type><stem default-y="-27">down</stem>
+			<notations>
+				<slur type="start" number="1" placement="above" default-x="6" default-y="22" bezier-x="9" bezier-y="33" bezier-offset="2" orientation="over" line-type="dotted"/>
+				<tied type="start" bezier-x2="4" color="#00FF00"/>
+			</notations>
+			<lyric number="1" print-object="no"><text>la</text></lyric>
+		</note>
+		<direction><direction-type><wedge type="stop" spread="15"/></direction-type></direction>
+		<direction><direction-type><dynamics default-x="3" default-y="-80"><p/></dynamics></direction-type></direction>
+		<direction><direction-type><words relative-y="10">dolce</words></direction-type></direction>
+		<note>
+			<pitch><step>A</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice>
+			<type>quarter</type>
+			<notations><slur type="stop" number="1"/><tied type="stop"/></notations>
+		</note>
+		<harmony print-object="no"><root><root-step>C</root-step></root><kind>major</kind></harmony>
+		<note print-object="no">
+			<rest/><duration>4</duration><voice>1</voice><type>half</type><dot/>
+		</note>
+	</measure></part>
+</score-partwise>`);
+	const measure = doc.score.parts[0]!.measures[0]!;
+	const [first, second, spacer] = measure.notes;
+	const [crescendo, stop] = measure.directions.flatMap(
+		(direction) => direction.wedges,
+	);
+	return {
+		doc,
+		measure,
+		first: first!,
+		second: second!,
+		spacer: spacer!,
+		crescendo: crescendo!,
+		stop: stop!,
+	};
+}

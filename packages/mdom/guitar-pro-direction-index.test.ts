@@ -110,18 +110,16 @@ function reads(measures: number): number {
 		"directions",
 	)!;
 	let count = 0;
-	Object.defineProperty(Measure.prototype, "directions", {
-		...descriptor,
-		get(this: Measure) {
-			count++;
-			return descriptor.get!.call(this);
-		},
-	});
-	try {
-		new GuitarProScoreWriter().write(document);
-	} finally {
-		Object.defineProperty(Measure.prototype, "directions", descriptor);
+	for (const measure of part.measures) {
+		Object.defineProperty(measure, "directions", {
+			...descriptor,
+			get(this: Measure) {
+				count++;
+				return descriptor.get!.call(this);
+			},
+		});
 	}
+	new GuitarProScoreWriter().write(document);
 	return count;
 }
 

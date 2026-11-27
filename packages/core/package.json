@@ -8,12 +8,7 @@
 		"./cmd": "./cmd/index.ts",
 		"./disposable": "./disposable/index.ts",
 		"./events": "./events/index.ts",
-		"./id": "./id/index.ts",
 		"./log": "./log/index.ts",
-		"./legacy-ship": "./legacy-ship/index.ts",
-		"./legacy-ship/contract": "./legacy-ship/contract.ts",
-		"./legacy-ship/aws": "./legacy-ship/aws/index.ts",
-		"./legacy-ship/testing": "./legacy-ship/testing.ts",
 		"./ship": "./ship/index.ts",
 		"./system": "./system/index.ts",
 		"./system/testing": "./system/testing.ts",
@@ -23,22 +18,10 @@
 	"dependencies": {
 		"@standard-schema/spec": "catalog:"
 	},
-	"peerDependencies": {
-		"@aws-cdk/toolkit-lib": "catalog:",
-		"aws-cdk-lib": "catalog:"
-	},
-	"peerDependenciesMeta": {
-		"@aws-cdk/toolkit-lib": {
-			"optional": true
-		},
-		"aws-cdk-lib": {
-			"optional": true
-		}
-	},
+	"peerDependencies": {},
+	"peerDependenciesMeta": {},
 	"devDependencies": {
-		"@aws-cdk/toolkit-lib": "catalog:",
-		"aws-cdk-lib": "catalog:",
 		"zod": "catalog:"
 	},
-	"version": "0.8.18"
+	"version": "0.8.19"
 }

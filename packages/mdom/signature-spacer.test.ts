@@ -2,6 +2,33 @@ import { describe, expect, it } from "bun:test";
 import { MDOMParser } from "./m-dom-parser";
 import type { Part } from "./part";
 
+describe("part, insertMeasureAt + copySignaturesFrom for a spacer measure", () => {
+	it("inserts at an index, leaving numbering to the caller", () => {
+		const part = parse();
+		const gap = part.insertMeasureAt(0);
+
+		expect(part.measures[0]).toBe(gap);
+		expect(part.measures).toHaveLength(5);
+		expect(gap.getAttribute("number")).toBeNull();
+		expect(part.insertMeasureAt(5, { number: "X" }).number).toBe("X");
+	});
+
+	it("gives a gap inserted before every declaration a stave to draw", () => {
+		const part = parse();
+		const displaced = part.getMeasure("1")!;
+		const gap = part.insertMeasureAt(0);
+		// Nothing precedes the gap, so carry-forward alone leaves it bare.
+		expect(gap.getClef("1")).toBeNull();
+
+		gap.copySignaturesFrom(displaced);
+		expect(gap.getClef("1")?.sign).toBe("G");
+		expect(gap.getClef("2")?.sign).toBe("F");
+		expect(gap.getKey()?.fifths).toBe(2);
+		expect(gap.getTime()?.beats).toBe("3");
+		expect(gap.staveCount).toBe(2);
+	});
+});
+
 // A two-staff part that declares its signatures in measure 1, changes the lower
 // staff's clef in measure 3, and states nothing in measures 2 and 4, the shape
 // every slice and every inserted spacer measure has to cope with.
@@ -30,30 +57,3 @@ const SCORE = `<score-partwise><part id="P1">
 function parse(): Part {
 	return new MDOMParser().parseFromString(SCORE).score.getPart("P1")!;
 }
-
-describe("part, insertMeasureAt + copySignaturesFrom for a spacer measure", () => {
-	it("inserts at an index, leaving numbering to the caller", () => {
-		const part = parse();
-		const gap = part.insertMeasureAt(0);
-
-		expect(part.measures[0]).toBe(gap);
-		expect(part.measures).toHaveLength(5);
-		expect(gap.getAttribute("number")).toBeNull();
-		expect(part.insertMeasureAt(5, { number: "X" }).number).toBe("X");
-	});
-
-	it("gives a gap inserted before every declaration a stave to draw", () => {
-		const part = parse();
-		const displaced = part.getMeasure("1")!;
-		const gap = part.insertMeasureAt(0);
-		// Nothing precedes the gap, so carry-forward alone leaves it bare.
-		expect(gap.getClef("1")).toBeNull();
-
-		gap.copySignaturesFrom(displaced);
-		expect(gap.getClef("1")?.sign).toBe("G");
-		expect(gap.getClef("2")?.sign).toBe("F");
-		expect(gap.getKey()?.fifths).toBe(2);
-		expect(gap.getTime()?.beats).toBe("3");
-		expect(gap.staveCount).toBe(2);
-	});
-});

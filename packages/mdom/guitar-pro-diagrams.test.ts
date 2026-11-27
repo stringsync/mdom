@@ -8,71 +8,6 @@ import type { Harmony } from "./harmony";
 import { MDocument } from "./m-document";
 import { schemaErrors } from "./music-xml-schema";
 
-const fixture = (name: string) =>
-	new Uint8Array(
-		readFileSync(new URL(`./fixtures/guitar-pro/${name}`, import.meta.url)),
-	);
-
-function summary(harmony: Harmony) {
-	return {
-		root: harmony.root,
-		kind: harmony.kind?.value,
-		text: harmony.kind?.text,
-		bass: harmony.bass && [harmony.bass.step, harmony.bass.alter],
-		degrees: harmony.degrees.map((harmonyDegree) => [
-			harmonyDegree.type,
-			harmonyDegree.value,
-			harmonyDegree.alter,
-		]),
-		printFrame: harmony.printFrame,
-		frame: harmony.frame && {
-			strings: harmony.frame.strings,
-			frets: harmony.frame.frets,
-			firstFret: harmony.frame.firstFret,
-			notes: harmony.frame.frameNotes.map((frameNote) => [
-				frameNote.string,
-				frameNote.fret,
-				frameNote.fingering,
-				frameNote.barre,
-			]),
-		},
-	};
-}
-
-// A Guitar Pro 6 style track: diagrams on the track, named but without <Chord>.
-const gpif = `<GPIF><GPVersion>6</GPVersion>
-<MasterTrack><Tracks>0</Tracks></MasterTrack>
-<Tracks><Track id="0"><Name>Guitar</Name><Properties>
- <Property name="Tuning"><Pitches>40 45 50 55 59 64</Pitches></Property>
- <Property name="DiagramCollection"><Items>
-  <Item id="0" name="F#m7/C#"><Diagram stringCount="6" fretCount="4" baseFret="0">
-   <Fret string="1" fret="4"/><Fret string="2" fret="4"/><Fret string="3" fret="2"/><Fret string="4" fret="2"/><Fret string="5" fret="2"/>
-   <Fingering><Position finger="Index" fret="2" string="3"/><Position finger="Index" fret="2" string="5"/><Position finger="Ring" fret="4" string="1"/><Position finger="Pinky" fret="4" string="2"/></Fingering>
-  </Diagram></Item>
-  <Item id="1" name="N.C."><Diagram stringCount="6" fretCount="4" baseFret="0"/></Item>
-  <Item id="2" name="C7(b9)"><Diagram stringCount="6" fretCount="4" baseFret="0"><Property name="ShowDiagram" type="bool" value="false"/></Diagram>
-   <Chord><KeyNote step="C" accidental="Natural"/><BassNote step="C" accidental="Natural"/>
-    <Degree interval="Third" alteration="Major" omitted="false"/><Degree interval="Fifth" alteration="Perfect" omitted="true"/>
-    <Degree interval="Seventh" alteration="Minor" omitted="false"/><Degree interval="Ninth" alteration="Minor" omitted="false"/></Chord></Item>
- </Items></Property>
-</Properties></Track></Tracks>
-<MasterBars><MasterBar><Time>4/4</Time><Bars>0</Bars></MasterBar></MasterBars>
-<Bars><Bar id="0"><Clef>G2</Clef><Voices>0</Voices></Bar></Bars>
-<Voices><Voice id="0"><Beats>0 1 2</Beats></Voice></Voices>
-<Beats>
- <Beat id="0"><Rhythm ref="0"/><Chord>0</Chord></Beat>
- <Beat id="1"><Rhythm ref="0"/><Chord>2</Chord></Beat>
- <Beat id="2"><Rhythm ref="1"/><Chord>1</Chord></Beat>
-</Beats>
-<Notes/>
-<Rhythms><Rhythm id="0"><NoteValue>Quarter</NoteValue></Rhythm><Rhythm id="1"><NoteValue>Half</NoteValue></Rhythm></Rhythms></GPIF>`;
-
-async function archive(xml: string): Promise<Uint8Array> {
-	const zip = new JSZip();
-	zip.file("Content/score.gpif", xml);
-	return zip.generateAsync({ type: "uint8array" });
-}
-
 describe("Guitar Pro chord diagrams", () => {
 	it("imports diagrams as harmonies with root, kind and frame", async () => {
 		const doc = await new GuitarProParser().parseFromBytes(
@@ -266,3 +201,68 @@ describe("Guitar Pro chord diagrams", () => {
 		]);
 	});
 });
+
+const fixture = (name: string) =>
+	new Uint8Array(
+		readFileSync(new URL(`./fixtures/guitar-pro/${name}`, import.meta.url)),
+	);
+
+function summary(harmony: Harmony) {
+	return {
+		root: harmony.root,
+		kind: harmony.kind?.value,
+		text: harmony.kind?.text,
+		bass: harmony.bass && [harmony.bass.step, harmony.bass.alter],
+		degrees: harmony.degrees.map((harmonyDegree) => [
+			harmonyDegree.type,
+			harmonyDegree.value,
+			harmonyDegree.alter,
+		]),
+		printFrame: harmony.printFrame,
+		frame: harmony.frame && {
+			strings: harmony.frame.strings,
+			frets: harmony.frame.frets,
+			firstFret: harmony.frame.firstFret,
+			notes: harmony.frame.frameNotes.map((frameNote) => [
+				frameNote.string,
+				frameNote.fret,
+				frameNote.fingering,
+				frameNote.barre,
+			]),
+		},
+	};
+}
+
+// A Guitar Pro 6 style track: diagrams on the track, named but without <Chord>.
+const gpif = `<GPIF><GPVersion>6</GPVersion>
+<MasterTrack><Tracks>0</Tracks></MasterTrack>
+<Tracks><Track id="0"><Name>Guitar</Name><Properties>
+ <Property name="Tuning"><Pitches>40 45 50 55 59 64</Pitches></Property>
+ <Property name="DiagramCollection"><Items>
+  <Item id="0" name="F#m7/C#"><Diagram stringCount="6" fretCount="4" baseFret="0">
+   <Fret string="1" fret="4"/><Fret string="2" fret="4"/><Fret string="3" fret="2"/><Fret string="4" fret="2"/><Fret string="5" fret="2"/>
+   <Fingering><Position finger="Index" fret="2" string="3"/><Position finger="Index" fret="2" string="5"/><Position finger="Ring" fret="4" string="1"/><Position finger="Pinky" fret="4" string="2"/></Fingering>
+  </Diagram></Item>
+  <Item id="1" name="N.C."><Diagram stringCount="6" fretCount="4" baseFret="0"/></Item>
+  <Item id="2" name="C7(b9)"><Diagram stringCount="6" fretCount="4" baseFret="0"><Property name="ShowDiagram" type="bool" value="false"/></Diagram>
+   <Chord><KeyNote step="C" accidental="Natural"/><BassNote step="C" accidental="Natural"/>
+    <Degree interval="Third" alteration="Major" omitted="false"/><Degree interval="Fifth" alteration="Perfect" omitted="true"/>
+    <Degree interval="Seventh" alteration="Minor" omitted="false"/><Degree interval="Ninth" alteration="Minor" omitted="false"/></Chord></Item>
+ </Items></Property>
+</Properties></Track></Tracks>
+<MasterBars><MasterBar><Time>4/4</Time><Bars>0</Bars></MasterBar></MasterBars>
+<Bars><Bar id="0"><Clef>G2</Clef><Voices>0</Voices></Bar></Bars>
+<Voices><Voice id="0"><Beats>0 1 2</Beats></Voice></Voices>
+<Beats>
+ <Beat id="0"><Rhythm ref="0"/><Chord>0</Chord></Beat>
+ <Beat id="1"><Rhythm ref="0"/><Chord>2</Chord></Beat>
+ <Beat id="2"><Rhythm ref="1"/><Chord>1</Chord></Beat>
+</Beats>
+<Notes/>
+<Rhythms><Rhythm id="0"><NoteValue>Quarter</NoteValue></Rhythm><Rhythm id="1"><NoteValue>Half</NoteValue></Rhythm></Rhythms></GPIF>`;
+
+async function archive(xml: string): Promise<Uint8Array> {
+	const zip = new JSZip();
+	zip.file("Content/score.gpif", xml);
+	return zip.generateAsync({ type: "uint8array" });
+}

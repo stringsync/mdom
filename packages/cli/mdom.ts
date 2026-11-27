@@ -4,7 +4,6 @@ import type { Clock } from "core/time";
 import { z } from "zod";
 import { convert } from "./convert";
 import { fix } from "./fix";
-import { publish, ship, trust } from "./legacy-ship";
 import type { ScoreFiles } from "./score-files";
 import { mdomShip } from "./ship";
 import { test } from "./test";
@@ -82,27 +81,3 @@ mdom
 		ps.cd(`${ps.cwd()}/..`);
 		return serve(mdomShip, opts.args, { ps });
 	});
-
-mdom
-	.command("legacy-ship")
-	.description(
-		"the legacy ship: bump the version, then commit, tag, and publish",
-	)
-	.allowUnknownOption()
-	.passThroughOptions()
-	.rest("args", z.string())
-	.action((opts, { ps, log }) => ship(opts.args, { ps, log }));
-
-mdom
-	.command("publish")
-	.description(
-		"build @stringsync/mdom and publish it at this checkout's version: what stringsync/mdom's publish workflow runs, from a job npm trusts",
-	)
-	.action((_opts, { ps, log }) => publish({ ps, log }));
-
-mdom
-	.command("trust")
-	.description(
-		"have npm trust stringsync/mdom's publish workflow to publish @stringsync/mdom; once, signing in in a browser",
-	)
-	.action((_opts, { ps, log }) => trust({ ps, log }));

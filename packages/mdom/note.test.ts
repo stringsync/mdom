@@ -1,36 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import { MDOMParser } from "./m-dom-parser";
 
-const SAMPLE = `<score-partwise>
-  <part-list>
-    <score-part id="P1">
-      <part-name>Music</part-name>
-    </score-part>
-  </part-list>
-  <part id="P1">
-    <measure number="1">
-      <note>
-        <pitch>
-          <step>C</step>
-          <alter>1</alter>
-          <octave>4</octave>
-        </pitch>
-        <duration>4</duration>
-        <type>quarter</type>
-      </note>
-      <note>
-        <rest/>
-        <duration>4</duration>
-        <type>quarter</type>
-      </note>
-    </measure>
-  </part>
-</score-partwise>`;
-
 describe("Note", () => {
 	const parser = new MDOMParser();
 	const notes =
-		parser.parseFromString(SAMPLE).score?.getPart("P1")?.getMeasure("1")
+		parser.parseFromString(sampleXml()).score?.getPart("P1")?.getMeasure("1")
 			?.notes ?? [];
 
 	it("lists every note in the measure", () => {
@@ -133,3 +107,31 @@ describe("Note spanner numbers", () => {
 		expect(outer.number).not.toBe(inner.number);
 	});
 });
+
+function sampleXml() {
+	return `<score-partwise>
+  <part-list>
+    <score-part id="P1">
+      <part-name>Music</part-name>
+    </score-part>
+  </part-list>
+  <part id="P1">
+    <measure number="1">
+      <note>
+        <pitch>
+          <step>C</step>
+          <alter>1</alter>
+          <octave>4</octave>
+        </pitch>
+        <duration>4</duration>
+        <type>quarter</type>
+      </note>
+      <note>
+        <rest/>
+        <duration>4</duration>
+        <type>quarter</type>
+      </note>
+    </measure>
+  </part>
+</score-partwise>`;
+}

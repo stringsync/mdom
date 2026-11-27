@@ -1,11 +1,12 @@
 import type { StepCtxs, Terminal } from "./process-ctx";
 import { runSteps } from "./runner";
-import { type Bump, steps, type Target, type Upstream } from "./target";
+import { type Bump, steps, type Target, type Upstream, view } from "./target";
 
 /** One ship of a target run in a terminal. */
 export interface TerminalShip {
 	target: Target;
 	bump?: Bump;
+	version?: string;
 	upstream: (name: string) => Upstream;
 }
 
@@ -20,12 +21,34 @@ export async function shipInTerminal(
 	terminal: Terminal,
 	ctxs: StepCtxs,
 ): Promise<boolean> {
-	const planned = steps(ship.target, {
+	const reviewed = view(ship.target, {
 		bump: ship.bump,
+		version: ship.version,
 		upstream: ship.upstream,
 	});
-	const at = ship.bump ?? ship.target.bump;
-	terminal.print(`${ship.target.name}${at ? ` at the next ${at}` : ""}:`);
+	const followed = followedVersion(ship.target, ship.upstream);
+	if (
+		ship.target.version &&
+		reviewed.version === undefined &&
+		followed === undefined
+	) {
+		const follows = ship.target.version.follows;
+		throw new Error(
+			follows !== undefined
+				? `The target "${ship.target.name}" needs --version, --bump, or --upstream ${follows}=<version>`
+				: `The target "${ship.target.name}" needs --version or --bump`,
+		);
+	}
+	const planned = steps(ship.target, {
+		version: reviewed.version,
+		bump: reviewed.bump,
+		upstream: ship.upstream,
+	});
+	const at = reviewed.bump;
+	const shownVersion = reviewed.version ?? followed;
+	terminal.print(
+		`${ship.target.name}${shownVersion ? ` at ${shownVersion}` : at ? ` at the next ${at}` : ""}:`,
+	);
 	for (const each of planned) {
 		terminal.print(`  ${each.id}: ${each.does}`);
 	}
@@ -46,4 +69,19 @@ export async function shipInTerminal(
 	});
 	terminal.print(`Shipped ${ship.target.name}.`);
 	return true;
+}
+
+function followedVersion(
+	target: Target,
+	upstream: (name: string) => Upstream,
+): string | undefined {
+	const follows = target.version?.follows;
+	if (follows === undefined) {
+		return undefined;
+	}
+	try {
+		return upstream(follows).version;
+	} catch {
+		return undefined;
+	}
 }

@@ -7,34 +7,6 @@ import { MDOMParser } from "./m-dom-parser";
 import { MElement } from "./m-element";
 import { schemaErrors } from "./music-xml-schema";
 
-// Hand-authored GPIF: noncontiguous IDs, tables out of order, and reversed
-// track table order. The MasterTrack and MasterBar references define the music.
-const gpif = `<GPIF><GPVersion>7</GPVersion>
-<Notes>
- <Note id="n9"><Properties><Property name="ConcertPitch"><Pitch><Step>E</Step><Accidental>b</Accidental><Octave>5</Octave></Pitch></Property></Properties></Note>
- <Note id="n2"><Properties><Property name="Midi"><Number>48</Number></Property></Properties></Note>
-</Notes>
-<Score><Title><![CDATA[Rock & <roll>]]></Title><Music><![CDATA[A & B]]></Music></Score>
-<MasterTrack><Tracks>lead bass</Tracks><Automations><Automation><Type>Tempo</Type><Bar>0</Bar><Position>0</Position><Value>90 3</Value></Automation></Automations></MasterTrack>
-<Tracks><Track id="bass"><Name>Bass</Name><Staves><Staff/></Staves></Track><Track id="lead"><Name><![CDATA[Lead & solo]]></Name><Staves><Staff/></Staves></Track></Tracks>
-<MasterBars><MasterBar><Key><AccidentalCount>-3</AccidentalCount><Mode>Major</Mode></Key><Time>4/4</Time><Bars>b7 b3</Bars></MasterBar></MasterBars>
-<Bars><Bar id="b3"><Clef>F4</Clef><Voices>v5</Voices></Bar><Bar id="b7"><Clef>G2</Clef><Voices>-1 v8 -1 -1</Voices></Bar></Bars>
-<Voices><Voice id="v8"><Beats>beat4</Beats></Voice><Voice id="v5"><Beats>beat6</Beats></Voice></Voices>
-<Beats><Beat id="beat6"><Rhythm ref="r2"/><Notes>n2</Notes></Beat><Beat id="beat4"><Rhythm ref="r2"/><Notes>n9</Notes></Beat></Beats>
-<Rhythms><Rhythm id="r2"><NoteValue>Whole</NoteValue></Rhythm></Rhythms></GPIF>`;
-
-async function archive(
-	xml: string,
-	configuration?: Uint8Array,
-): Promise<Uint8Array> {
-	const zip = new JSZip();
-	zip.file("Content/score.gpif", xml);
-	if (configuration) {
-		zip.file("Content/PartConfiguration", configuration);
-	}
-	return zip.generateAsync({ type: "uint8array" });
-}
-
 describe("native GPIF conversion", () => {
 	it("resolves references independently of table order and preserves voice slots", async () => {
 		const doc = await new GuitarProParser().parseFromBytes(await archive(gpif));
@@ -236,3 +208,31 @@ describe("native GPIF conversion", () => {
 		).toBeInstanceOf(MElement);
 	});
 });
+
+// Hand-authored GPIF: noncontiguous IDs, tables out of order, and reversed
+// track table order. The MasterTrack and MasterBar references define the music.
+const gpif = `<GPIF><GPVersion>7</GPVersion>
+<Notes>
+ <Note id="n9"><Properties><Property name="ConcertPitch"><Pitch><Step>E</Step><Accidental>b</Accidental><Octave>5</Octave></Pitch></Property></Properties></Note>
+ <Note id="n2"><Properties><Property name="Midi"><Number>48</Number></Property></Properties></Note>
+</Notes>
+<Score><Title><![CDATA[Rock & <roll>]]></Title><Music><![CDATA[A & B]]></Music></Score>
+<MasterTrack><Tracks>lead bass</Tracks><Automations><Automation><Type>Tempo</Type><Bar>0</Bar><Position>0</Position><Value>90 3</Value></Automation></Automations></MasterTrack>
+<Tracks><Track id="bass"><Name>Bass</Name><Staves><Staff/></Staves></Track><Track id="lead"><Name><![CDATA[Lead & solo]]></Name><Staves><Staff/></Staves></Track></Tracks>
+<MasterBars><MasterBar><Key><AccidentalCount>-3</AccidentalCount><Mode>Major</Mode></Key><Time>4/4</Time><Bars>b7 b3</Bars></MasterBar></MasterBars>
+<Bars><Bar id="b3"><Clef>F4</Clef><Voices>v5</Voices></Bar><Bar id="b7"><Clef>G2</Clef><Voices>-1 v8 -1 -1</Voices></Bar></Bars>
+<Voices><Voice id="v8"><Beats>beat4</Beats></Voice><Voice id="v5"><Beats>beat6</Beats></Voice></Voices>
+<Beats><Beat id="beat6"><Rhythm ref="r2"/><Notes>n2</Notes></Beat><Beat id="beat4"><Rhythm ref="r2"/><Notes>n9</Notes></Beat></Beats>
+<Rhythms><Rhythm id="r2"><NoteValue>Whole</NoteValue></Rhythm></Rhythms></GPIF>`;
+
+async function archive(
+	xml: string,
+	configuration?: Uint8Array,
+): Promise<Uint8Array> {
+	const zip = new JSZip();
+	zip.file("Content/score.gpif", xml);
+	if (configuration) {
+		zip.file("Content/PartConfiguration", configuration);
+	}
+	return zip.generateAsync({ type: "uint8array" });
+}

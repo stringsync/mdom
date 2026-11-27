@@ -1,38 +1,17 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import { GuitarProParser } from "./guitar-pro-parser";
 import { GuitarProScoreWriter } from "./guitar-pro-score-writer";
 import { GuitarProSerializer } from "./guitar-pro-serializer";
 import type { MDocument } from "./m-document";
 import { MDOMParser } from "./m-dom-parser";
-import { appendChildren, descendants, MElement } from "./m-element";
+import {
+	appendChildren,
+	countPublishedChildren,
+	descendants,
+	MElement,
+} from "./m-element";
 import type { MNode } from "./m-node";
 import { MText } from "./m-text";
-
-// Every published children list is a frozen array: summing the lengths frozen
-// while building counts the child references copied, quadratic when wide lists
-// are built one append at a time.
-const freeze = Object.freeze;
-afterEach(() => {
-	Object.freeze = freeze;
-});
-function copiedReferences(
-	build: () => unknown,
-	counts: (list: unknown[]) => boolean = () => true,
-): number {
-	let copied = 0;
-	Object.freeze = (<T>(value: T): T => {
-		if (Array.isArray(value) && counts(value)) {
-			copied += value.length;
-		}
-		return freeze(value);
-	}) as typeof Object.freeze;
-	try {
-		build();
-	} finally {
-		Object.freeze = freeze;
-	}
-	return copied;
-}
 
 function leaves(count: number): MElement[] {
 	return Array.from({ length: count }, () => new MElement("leaf"));
@@ -68,7 +47,9 @@ describe("appendChildren", () => {
 		const root = new MElement("root");
 		const added = leaves(1000);
 
-		expect(copiedReferences(() => appendChildren(root, added))).toBe(1000);
+		expect(countPublishedChildren(() => appendChildren(root, added))).toBe(
+			1000,
+		);
 	});
 
 	it("moves attached and repeated nodes as appending each would", () => {
@@ -138,7 +119,7 @@ describe("bulk tree construction", () => {
 	it("parses a wide part and dense measures copying each child list once", () => {
 		const xml = widePart(400, 24);
 		let document!: MDocument;
-		const copied = copiedReferences(() => {
+		const copied = countPublishedChildren(() => {
 			document = new MDOMParser().parseFromString(xml);
 		});
 
@@ -159,9 +140,9 @@ describe("bulk tree construction", () => {
 		let gpif!: MDocument;
 		// Only GPIF lists, whose tags are capitalized: the writer's reads of the
 		// source score keep their own caches.
-		const gpifList = (list: unknown[]) =>
+		const gpifList = (list: readonly MNode[]) =>
 			list.every((node) => node instanceof MElement && /^[A-Z]/.test(node.tag));
-		const copied = copiedReferences(() => {
+		const copied = countPublishedChildren(() => {
 			gpif = new GuitarProScoreWriter().write(source);
 		}, gpifList);
 

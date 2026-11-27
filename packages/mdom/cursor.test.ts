@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { Cursor } from "./cursor";
 import { MDocument } from "./m-document";
 import { MDOMParser } from "./m-dom-parser";
-import { MElement } from "./m-element";
+import { descendants, MElement } from "./m-element";
 import type { Part } from "./part";
 
 // A two-measure single line: m1 = C D E F (quarters), m2 = G A. The cursor is an
@@ -213,34 +213,35 @@ function walkWork(measures: number, notes: number): number {
 
 function countScans(part: Part, walk: () => void): number {
 	expect(part.measures.length).toBeGreaterThan(0);
-	const prototype = MElement.prototype;
-	const children = Object.getOwnPropertyDescriptor(prototype, "children")!;
-	const { childrenOfType, childrenNamed } = prototype;
+	const children = Object.getOwnPropertyDescriptor(
+		MElement.prototype,
+		"children",
+	)!;
+	const { childrenOfType, childrenNamed } = MElement.prototype;
 	let scanned = 0;
-	Object.defineProperty(prototype, "children", {
-		...children,
-		get(this: MElement) {
-			const found = children.get!.call(this) as readonly unknown[];
-			scanned += found.length;
+	for (const node of descendants(part.parent ?? part)) {
+		if (!(node instanceof MElement)) {
+			continue;
+		}
+		Object.defineProperty(node, "children", {
+			...children,
+			get(this: MElement) {
+				const found = children.get!.call(this) as readonly unknown[];
+				scanned += found.length;
+				return found;
+			},
+		});
+		node.childrenOfType = function (this: MElement, type) {
+			const found = childrenOfType.call(this, type);
+			scanned += this.children.length - found.length;
 			return found;
-		},
-	});
-	prototype.childrenOfType = function (this: MElement, type) {
-		const found = childrenOfType.call(this, type);
-		scanned += this.children.length - found.length;
-		return found;
-	} as typeof childrenOfType;
-	prototype.childrenNamed = function (this: MElement, tag) {
-		const found = childrenNamed.call(this, tag);
-		scanned += this.children.length - found.length;
-		return found;
-	};
-	try {
-		walk();
-	} finally {
-		Object.defineProperty(prototype, "children", children);
-		prototype.childrenOfType = childrenOfType;
-		prototype.childrenNamed = childrenNamed;
+		} as typeof childrenOfType;
+		node.childrenNamed = function (this: MElement, tag) {
+			const found = childrenNamed.call(this, tag);
+			scanned += this.children.length - found.length;
+			return found;
+		};
 	}
+	walk();
 	return scanned;
 }

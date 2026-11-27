@@ -295,33 +295,35 @@ function assertUnmarked(entry: Entry, action: string): void {
 	}
 }
 
+interface RestPlanOptions {
+	anchors: Entry[];
+	removals: Entry[];
+	start: number;
+	end: number;
+	timeModification?: TimeModificationSpec;
+	mergeBefore: boolean;
+	mergeAfter: boolean;
+	divisions: number;
+}
+
 function restPlan(
 	voice: Voice,
 	entries: Entry[],
-	options: {
-		anchors: Entry[];
-		removals: Entry[];
-		start: number;
-		end: number;
-		timeModification?: TimeModificationSpec;
-		mergeBefore: boolean;
-		mergeAfter: boolean;
-		divisions: number;
-	},
+	opts: RestPlanOptions,
 ): RestPlan {
-	const removals = [...options.removals];
-	let { start, end } = options;
+	const removals = [...opts.removals];
+	let { start, end } = opts;
 	if (end < start) {
 		throw new Error("rest gap cannot be negative");
 	}
-	const indexed = removals.length > 0 ? removals : options.anchors.slice(-1);
+	const indexed = removals.length > 0 ? removals : opts.anchors.slice(-1);
 	const indexes = indexed.map((entry) => entries.indexOf(entry));
 	let first = Math.min(...indexes);
 	let last = Math.max(...indexes);
-	if (options.mergeBefore) {
+	if (opts.mergeBefore) {
 		while (first > 0) {
 			const candidate = entries[first - 1]!;
-			if (!isCompatibleRest(candidate, start, true, options.timeModification)) {
+			if (!isCompatibleRest(candidate, start, true, opts.timeModification)) {
 				break;
 			}
 			removals.unshift(candidate);
@@ -329,11 +331,11 @@ function restPlan(
 			first--;
 		}
 	}
-	if (options.mergeAfter) {
+	if (opts.mergeAfter) {
 		let next = Math.max(last + 1, first);
 		while (next < entries.length) {
 			const candidate = entries[next]!;
-			if (!isCompatibleRest(candidate, end, false, options.timeModification)) {
+			if (!isCompatibleRest(candidate, end, false, opts.timeModification)) {
 				break;
 			}
 			removals.push(candidate);
@@ -346,16 +348,16 @@ function restPlan(
 	const specs = restSpecs(
 		start,
 		end,
-		options.divisions,
-		options.timeModification,
-		metricGroups(voice, options.divisions),
+		opts.divisions,
+		opts.timeModification,
+		metricGroups(voice, opts.divisions),
 	);
 	return {
-		region: regionFor(voice, [...options.anchors, ...uniqueRemovals]),
+		region: regionFor(voice, [...opts.anchors, ...uniqueRemovals]),
 		start,
 		end,
-		divisions: options.divisions,
-		timeModification: options.timeModification,
+		divisions: opts.divisions,
+		timeModification: opts.timeModification,
 		specs,
 		removals: uniqueRemovals,
 	};

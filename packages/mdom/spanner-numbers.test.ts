@@ -6,99 +6,6 @@ import type { Note } from "./note";
 import { Part } from "./part";
 import { allocateSpanNumber } from "./spanner-numbers";
 
-type Markers = (note: Note) => (MElement & { number: string })[];
-
-const kinds = {
-	slur: (note: Note) => note.slurs,
-	tuplet: (note: Note) => note.tuplets,
-	tie: (note: Note) => note.ties,
-	glissando: (note: Note) => note.glissandos,
-} satisfies Record<string, Markers>;
-type Kind = keyof typeof kinds;
-
-function add(kind: Kind, first: Note, last: Note): string {
-	switch (kind) {
-		case "slur":
-			return first.addSlur(last).number;
-		case "tuplet":
-			return first.addTuplet(last).number;
-		case "tie":
-			return first.addTie(last).number;
-		case "glissando":
-			return first.addGlissando(last).number;
-	}
-}
-
-/** The full-part scan the index replaces, kept as the reference it must match. */
-function scannedNumber(first: Note, last: Note, existing: Markers): string {
-	const part = first.closest(Part);
-	const notes = part ? part.measures.flatMap((measure) => measure.notes) : [];
-	const from = notes.indexOf(first);
-	const to = notes.indexOf(last);
-	const blocked = new Set<string>();
-	const open = new Map<string, number>();
-	notes.forEach((note, position) => {
-		for (const marker of existing(note)) {
-			const type = marker.getAttribute("type");
-			if (type === "start") {
-				open.set(marker.number, position);
-			} else if (type === "stop") {
-				const start = open.get(marker.number) ?? -Infinity;
-				open.delete(marker.number);
-				if (start <= to && position >= from) {
-					blocked.add(marker.number);
-				}
-			}
-		}
-	});
-	for (const [number, start] of open) {
-		if (start <= to) {
-			blocked.add(number);
-		}
-	}
-	let candidate = 1;
-	while (blocked.has(String(candidate))) {
-		candidate++;
-	}
-	return String(candidate);
-}
-
-const note =
-	"<note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>";
-function score(parts: number, measures: number, notes: number): MDocument {
-	const ids = Array.from({ length: parts }, (_, index) => `P${index + 1}`);
-	const measureXml = Array.from(
-		{ length: measures },
-		(_, index) =>
-			`<measure number="${index + 1}">${note.repeat(notes)}</measure>`,
-	).join("");
-	return new MDOMParser().parseFromString(
-		`<score-partwise><part-list>${ids
-			.map(
-				(id) =>
-					`<score-part id="${id}"><part-name>${id}</part-name></score-part>`,
-			)
-			.join("")}</part-list>${ids
-			.map((id) => `<part id="${id}">${measureXml}</part>`)
-			.join("")}</score-partwise>`,
-	);
-}
-
-function partNotes(part: Part): Note[] {
-	return part.measures.flatMap((measure) => measure.notes);
-}
-
-/** A seeded generator, so a failing sequence replays. */
-function random(seed: number): () => number {
-	let state = seed;
-	return () => {
-		state = (state + 0x6d2b79f5) | 0;
-		let mixed = Math.imul(state ^ (state >>> 15), 1 | state);
-		mixed = (mixed + Math.imul(mixed ^ (mixed >>> 7), 61 | mixed)) ^ mixed;
-		return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
-	};
-}
-
 describe("spanner number allocation", () => {
 	it("matches a full-part scan through adds, raw edits, removals and moves", () => {
 		const seeds = Array.from({ length: 20 }, (_unused, index) => index + 1);
@@ -257,4 +164,97 @@ function mismatchesForSeed(seed: number) {
 		}
 	}
 	return mismatches;
+}
+
+type Markers = (note: Note) => (MElement & { number: string })[];
+
+const kinds = {
+	slur: (note: Note) => note.slurs,
+	tuplet: (note: Note) => note.tuplets,
+	tie: (note: Note) => note.ties,
+	glissando: (note: Note) => note.glissandos,
+} satisfies Record<string, Markers>;
+type Kind = keyof typeof kinds;
+
+function add(kind: Kind, first: Note, last: Note): string {
+	switch (kind) {
+		case "slur":
+			return first.addSlur(last).number;
+		case "tuplet":
+			return first.addTuplet(last).number;
+		case "tie":
+			return first.addTie(last).number;
+		case "glissando":
+			return first.addGlissando(last).number;
+	}
+}
+
+/** The full-part scan the index replaces, kept as the reference it must match. */
+function scannedNumber(first: Note, last: Note, existing: Markers): string {
+	const part = first.closest(Part);
+	const notes = part ? part.measures.flatMap((measure) => measure.notes) : [];
+	const from = notes.indexOf(first);
+	const to = notes.indexOf(last);
+	const blocked = new Set<string>();
+	const open = new Map<string, number>();
+	notes.forEach((note, position) => {
+		for (const marker of existing(note)) {
+			const type = marker.getAttribute("type");
+			if (type === "start") {
+				open.set(marker.number, position);
+			} else if (type === "stop") {
+				const start = open.get(marker.number) ?? -Infinity;
+				open.delete(marker.number);
+				if (start <= to && position >= from) {
+					blocked.add(marker.number);
+				}
+			}
+		}
+	});
+	for (const [number, start] of open) {
+		if (start <= to) {
+			blocked.add(number);
+		}
+	}
+	let candidate = 1;
+	while (blocked.has(String(candidate))) {
+		candidate++;
+	}
+	return String(candidate);
+}
+
+const note =
+	"<note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>";
+function score(parts: number, measures: number, notes: number): MDocument {
+	const ids = Array.from({ length: parts }, (_, index) => `P${index + 1}`);
+	const measureXml = Array.from(
+		{ length: measures },
+		(_, index) =>
+			`<measure number="${index + 1}">${note.repeat(notes)}</measure>`,
+	).join("");
+	return new MDOMParser().parseFromString(
+		`<score-partwise><part-list>${ids
+			.map(
+				(id) =>
+					`<score-part id="${id}"><part-name>${id}</part-name></score-part>`,
+			)
+			.join("")}</part-list>${ids
+			.map((id) => `<part id="${id}">${measureXml}</part>`)
+			.join("")}</score-partwise>`,
+	);
+}
+
+function partNotes(part: Part): Note[] {
+	return part.measures.flatMap((measure) => measure.notes);
+}
+
+/** A seeded generator, so a failing sequence replays. */
+function random(seed: number): () => number {
+	let state = seed;
+	return () => {
+		state = (state + 0x6d2b79f5) | 0;
+		let mixed = Math.imul(state ^ (state >>> 15), 1 | state);
+		mixed = (mixed + Math.imul(mixed ^ (mixed >>> 7), 61 | mixed)) ^ mixed;
+		return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
+	};
 }

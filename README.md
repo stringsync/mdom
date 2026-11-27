@@ -76,10 +76,10 @@ processes. Run them with `mdom test packages/cli`.
 ## Shipping
 
 ```sh
-mdom ship patch  # or minor, major
+bin/mdom ship plan --bump patch  # or minor, major; shipping starts from the Ships page
 ```
 
-`core/legacy-ship` owns the flow. It builds every public package into a `dist/`
+`core/ship` owns the flow. It builds every public package into a `dist/`
 of JavaScript and declarations, stamps one version across the workspace,
 commits, publishes to npm, tags, and writes the GitHub release notes. Nothing
 here publishes source, so a consumer needs no compiler.

@@ -4,51 +4,10 @@ import type { Slur } from "./slur";
 import { directionMarkers, noteMarkers, Spanner } from "./spanner";
 import type { Wedge } from "./wedge";
 
-// One part exercising the generic resolver directly (not through Slur/Wedge):
-// m1 has a self-contained slur; m2→m3 a cross-measure slur reusing number 1;
-// m4 nests slurs 1 and 2; m5 is a 3-point slur (start/continue/stop) on number
-// 1; a crescendo hairpin spans m1 on a <direction>. The same SpannerSpec rules
-// must pair all of these, including the reused number and the nesting.
-const SAMPLE = `<score-partwise>
-  <part id="P1">
-    <measure number="1">
-      <direction placement="below"><direction-type><wedge type="crescendo" number="1"/></direction-type></direction>
-      <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration>
-        <notations><slur number="1" type="start"/></notations></note>
-      <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration></note>
-      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration>
-        <notations><slur number="1" type="stop"/></notations></note>
-      <direction placement="below"><direction-type><wedge type="stop" number="1"/></direction-type></direction>
-    </measure>
-    <measure number="2">
-      <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration>
-        <notations><slur number="1" type="start"/></notations></note>
-    </measure>
-    <measure number="3">
-      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration>
-        <notations><slur number="1" type="stop"/></notations></note>
-    </measure>
-    <measure number="4">
-      <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration>
-        <notations><slur number="1" type="start"/><slur number="2" type="start"/></notations></note>
-      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration>
-        <notations><slur number="2" type="stop"/></notations></note>
-      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration>
-        <notations><slur number="1" type="stop"/></notations></note>
-    </measure>
-    <measure number="5">
-      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration>
-        <notations><slur number="1" type="start"/></notations></note>
-      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration>
-        <notations><slur number="1" type="continue"/></notations></note>
-      <note><pitch><step>F</step><octave>5</octave></pitch><duration>4</duration>
-        <notations><slur number="1" type="stop"/></notations></note>
-    </measure>
-  </part>
-</score-partwise>`;
-
 describe("spanner, the generic start/stop resolver", () => {
-	const part = new MDOMParser().parseFromString(SAMPLE).score.getPart("P1")!;
+	const part = new MDOMParser()
+		.parseFromString(sampleXml())
+		.score.getPart("P1")!;
 
 	// Build a SpannerSpec<Slur> exactly the way Slur.spec() does, every slur in
 	// the part in document order, plus how a marker's type opens or closes a span.
@@ -173,3 +132,48 @@ describe("spanner, the generic start/stop resolver", () => {
 		expect(wedgeSpanner.partnerOf(firstWedge)!.wedgeType).toBe("stop");
 	});
 });
+
+// One part exercising the generic resolver directly (not through Slur/Wedge):
+// m1 has a self-contained slur; m2→m3 a cross-measure slur reusing number 1;
+// m4 nests slurs 1 and 2; m5 is a 3-point slur (start/continue/stop) on number
+// 1; a crescendo hairpin spans m1 on a <direction>. The same SpannerSpec rules
+// must pair all of these, including the reused number and the nesting.
+function sampleXml() {
+	return `<score-partwise>
+  <part id="P1">
+    <measure number="1">
+      <direction placement="below"><direction-type><wedge type="crescendo" number="1"/></direction-type></direction>
+      <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration>
+        <notations><slur number="1" type="start"/></notations></note>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration></note>
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration>
+        <notations><slur number="1" type="stop"/></notations></note>
+      <direction placement="below"><direction-type><wedge type="stop" number="1"/></direction-type></direction>
+    </measure>
+    <measure number="2">
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration>
+        <notations><slur number="1" type="start"/></notations></note>
+    </measure>
+    <measure number="3">
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration>
+        <notations><slur number="1" type="stop"/></notations></note>
+    </measure>
+    <measure number="4">
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration>
+        <notations><slur number="1" type="start"/><slur number="2" type="start"/></notations></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration>
+        <notations><slur number="2" type="stop"/></notations></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration>
+        <notations><slur number="1" type="stop"/></notations></note>
+    </measure>
+    <measure number="5">
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration>
+        <notations><slur number="1" type="start"/></notations></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration>
+        <notations><slur number="1" type="continue"/></notations></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>4</duration>
+        <notations><slur number="1" type="stop"/></notations></note>
+    </measure>
+  </part>
+</score-partwise>`;
+}

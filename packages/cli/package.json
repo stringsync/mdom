@@ -4,10 +4,6 @@
 	"private": true,
 	"type": "module",
 	"module": "index.ts",
-	"exports": {
-		"./mirror": "./legacy-ship-mirror.ts",
-		"./ship": "./legacy-ship.ts"
-	},
 	"bin": {
 		"mdom": "./index.ts"
 	},
